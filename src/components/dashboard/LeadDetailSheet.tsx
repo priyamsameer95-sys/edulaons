@@ -30,6 +30,7 @@ interface Lead {
   lender_name: string;
   loan_type: 'secured' | 'unsecured';
   status: string;
+  sub_status?: string;
   amount_requested: number;
   docs_verified_count: number;
   required_docs_count: number;
@@ -243,13 +244,27 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Current Status</span>
-                  <Badge className={cn("capitalize", 
-                    lead.status === 'sanctioned' ? 'bg-success text-success-foreground' : 
-                    lead.status === 'docs_verified' ? 'bg-primary text-primary-foreground' :
-                    'bg-warning text-warning-foreground'
-                  )}>
-                    {lead.status.replace('_', ' ')}
-                  </Badge>
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className={cn("capitalize", 
+                      // Success States
+                      lead.status === 'sanctioned' || lead.status === 'disbursed' || lead.status === 'login_confirmed' ? 'bg-success text-success-foreground' :
+                      // In Progress States  
+                      lead.status === 'qualified' || lead.status === 'docs_verified' || lead.status === 'applied' ? 'bg-primary text-primary-foreground' :
+                      // Pending States
+                      lead.status === 'new' || lead.status === 'docs_pending' || lead.status === 'future_intake' || lead.status === 'intake_deferred' ? 'bg-warning text-warning-foreground' :
+                      // Negative States
+                      lead.status === 'rejected' || lead.status === 'lost_to_competitor' || lead.status === 'sanctioned_declined' || lead.status === 'login_rejected' ? 'bg-destructive text-destructive-foreground' :
+                      // Neutral/Other States
+                      'bg-secondary text-secondary-foreground'
+                    )}>
+                      {lead.status.replace(/_/g, ' ')}
+                    </Badge>
+                    {lead.sub_status && (
+                      <Badge variant="outline" className="text-xs">
+                        {lead.sub_status.replace(/_/g, ' ')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-2">

@@ -35,6 +35,7 @@ interface Lead {
   lender_name: string;
   loan_type: 'secured' | 'unsecured';
   status: string;
+  sub_status?: string;
   amount_requested: number;
   docs_verified_count: number;
   required_docs_count: number;
@@ -72,14 +73,34 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-muted text-muted-foreground';
-      case 'qualified': return 'bg-accent text-accent-foreground';
-      case 'docs_pending': return 'bg-warning text-warning-foreground';
-      case 'docs_verified': return 'bg-primary text-primary-foreground';
-      case 'applied': return 'bg-accent text-accent-foreground';
+      // Success States
       case 'sanctioned': return 'bg-success text-success-foreground';
       case 'disbursed': return 'bg-success text-success-foreground';
+      case 'login_confirmed': return 'bg-success text-success-foreground';
+      
+      // In Progress States  
+      case 'qualified': return 'bg-primary text-primary-foreground';
+      case 'docs_verified': return 'bg-primary text-primary-foreground';
+      case 'applied': return 'bg-primary text-primary-foreground';
+      
+      // Pending States
+      case 'new': return 'bg-warning text-warning-foreground';
+      case 'docs_pending': return 'bg-warning text-warning-foreground';
+      case 'future_intake': return 'bg-warning text-warning-foreground';
+      case 'intake_deferred': return 'bg-warning text-warning-foreground';
+      
+      // Negative States
       case 'rejected': return 'bg-destructive text-destructive-foreground';
+      case 'lost_to_competitor': return 'bg-destructive text-destructive-foreground';
+      case 'sanctioned_declined': return 'bg-destructive text-destructive-foreground';
+      case 'login_rejected': return 'bg-destructive text-destructive-foreground';
+      
+      // Neutral/Other States
+      case 'loan_via_us_other_lender': return 'bg-secondary text-secondary-foreground';
+      case 'self_funding': return 'bg-secondary text-secondary-foreground';
+      case 'duplicate_lead': return 'bg-secondary text-secondary-foreground';
+      case 'relook_reopened': return 'bg-secondary text-secondary-foreground';
+      
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -190,6 +211,16 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                   <SelectItem value="applied">Applied</SelectItem>
                   <SelectItem value="sanctioned">Sanctioned</SelectItem>
                   <SelectItem value="disbursed">Disbursed</SelectItem>
+                  <SelectItem value="login_confirmed">Login Confirmed</SelectItem>
+                  <SelectItem value="login_rejected">Login Rejected</SelectItem>
+                  <SelectItem value="lost_to_competitor">Lost to Competitor</SelectItem>
+                  <SelectItem value="intake_deferred">Intake Deferred</SelectItem>
+                  <SelectItem value="loan_via_us_other_lender">Loan via Us (Other Lender)</SelectItem>
+                  <SelectItem value="future_intake">Future Intake</SelectItem>
+                  <SelectItem value="sanctioned_declined">Sanctioned Declined</SelectItem>
+                  <SelectItem value="self_funding">Self Funding</SelectItem>
+                  <SelectItem value="duplicate_lead">Duplicate Lead</SelectItem>
+                  <SelectItem value="relook_reopened">Relook/Re-opened</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
@@ -339,9 +370,16 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn("capitalize", getStatusColor(lead.status))}>
-                            {lead.status.replace('_', ' ')}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge className={cn("capitalize", getStatusColor(lead.status))}>
+                              {lead.status.replace(/_/g, ' ')}
+                            </Badge>
+                            {lead.sub_status && (
+                              <Badge variant="outline" className="text-xs">
+                                {lead.sub_status.replace(/_/g, ' ')}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
