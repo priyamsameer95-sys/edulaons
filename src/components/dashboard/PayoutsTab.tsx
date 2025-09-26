@@ -25,42 +25,15 @@ export const PayoutsTab = () => {
   const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
 
-  // Mock data - replace with Supabase queries
+  // TODO: Replace with Supabase queries filtered by status='disbursed'
   useEffect(() => {
-    const mockPayouts: Payout[] = [
-      {
-        case_id: "EDU-2023-045",
-        student_name: "Ananya Singh",
-        lender_name: "HDFC Bank",
-        loan_type: "secured",
-        sanction_amount: 1200000,
-        disbursal_date: "2024-01-10",
-        notes: "Full amount disbursed to university"
-      },
-      {
-        case_id: "EDU-2023-052",
-        student_name: "Vikram Mehta",
-        lender_name: "ICICI Bank", 
-        loan_type: "unsecured",
-        sanction_amount: 800000,
-        disbursal_date: "2024-01-08",
-        notes: "Tranche 1 of 2"
-      },
-      {
-        case_id: "EDU-2023-061",
-        student_name: "Sneha Reddy",
-        lender_name: "SBI",
-        loan_type: "secured",
-        sanction_amount: 1800000,
-        disbursal_date: "2024-01-05",
-        notes: "Complete disbursement"
-      }
-    ];
-
-    setTimeout(() => {
-      setPayouts(mockPayouts);
+    // Simulate initial load
+    const timer = setTimeout(() => {
+      setPayouts([]); // Start with empty data
       setLoading(false);
-    }, 800);
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const getLoanTypeBadge = (type: string) => {
@@ -73,15 +46,15 @@ export const PayoutsTab = () => {
     setExporting(true);
     
     try {
-      // Mock API call - replace with actual edge function call
+      // TODO: Replace with actual edge function call to /exports
       // const response = await fetch('/api/exports', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify({ filters: currentFilters })
       // });
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate processing delay for demo
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Mock CSV generation
       const csvData = [
@@ -192,10 +165,17 @@ export const PayoutsTab = () => {
                   ))
                 ) : payouts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      <div className="flex flex-col items-center space-y-2">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">No disbursed payouts found</p>
+                    <TableCell colSpan={7} className="text-center py-12">
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="rounded-full bg-muted/20 p-4">
+                          <BadgeIndianRupee className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium">No disbursements yet</p>
+                          <p className="text-sm text-muted-foreground">
+                            Payouts will appear here once loans are successfully disbursed
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>

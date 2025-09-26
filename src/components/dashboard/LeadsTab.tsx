@@ -19,11 +19,14 @@ import {
   FileWarning,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  Users,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LeadDetailSheet } from "./LeadDetailSheet";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Lead {
   case_id: string;
@@ -40,7 +43,11 @@ interface Lead {
   university: string;
 }
 
-export const LeadsTab = () => {
+interface LeadsTabProps {
+  onNewLead?: () => void;
+}
+
+export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -52,57 +59,15 @@ export const LeadsTab = () => {
   const [loanTypeFilter, setLoanTypeFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
-  // Mock data - replace with Supabase queries
+  // TODO: Replace with Supabase queries
   useEffect(() => {
-    const mockLeads: Lead[] = [
-      {
-        case_id: "EDU-2024-001",
-        student_name: "Arjun Patel",
-        student_phone_masked: "XXXX5678",
-        lender_name: "HDFC Bank",
-        loan_type: "secured",
-        status: "docs_verified",
-        amount_requested: 1500000,
-        docs_verified_count: 8,
-        required_docs_count: 10,
-        created_at: "2024-01-15",
-        country: "India",
-        university: "Stanford University"
-      },
-      {
-        case_id: "EDU-2024-002",
-        student_name: "Priya Sharma",
-        student_phone_masked: "XXXX9012",
-        lender_name: "ICICI Bank",
-        loan_type: "unsecured",
-        status: "sanctioned",
-        amount_requested: 800000,
-        docs_verified_count: 12,
-        required_docs_count: 12,
-        created_at: "2024-01-14",
-        country: "USA",
-        university: "MIT"
-      },
-      {
-        case_id: "EDU-2024-003",
-        student_name: "Rahul Kumar",
-        student_phone_masked: "XXXX3456",
-        lender_name: "SBI",
-        loan_type: "secured",
-        status: "docs_pending",
-        amount_requested: 2000000,
-        docs_verified_count: 5,
-        required_docs_count: 15,
-        created_at: "2024-01-13",
-        country: "Canada",
-        university: "University of Toronto"
-      }
-    ];
-
-    setTimeout(() => {
-      setLeads(mockLeads);
+    // Simulate initial load
+    const timer = setTimeout(() => {
+      setLeads([]); // Start with empty data
       setLoading(false);
-    }, 1000);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -281,30 +246,30 @@ export const LeadsTab = () => {
         </CardContent>
       </Card>
 
-      {/* Data Table */}
-      <Card className="border-0 shadow-md">
-        <CardHeader>
-          <CardTitle>Leads Overview</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-muted">
-                  <TableHead className="font-semibold">Case ID</TableHead>
-                  <TableHead className="font-semibold">Student</TableHead>
-                  <TableHead className="font-semibold">Lender</TableHead>
-                  <TableHead className="font-semibold">Loan Type</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Docs</TableHead>
-                  <TableHead className="font-semibold">Amount</TableHead>
-                  <TableHead className="font-semibold">Updated</TableHead>
-                  <TableHead className="font-semibold">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
+      {/* Data Table or Empty State */}
+      {loading ? (
+        <Card className="border-0 shadow-md">
+          <CardHeader>
+            <CardTitle>Leads Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-muted">
+                    <TableHead className="font-semibold">Case ID</TableHead>
+                    <TableHead className="font-semibold">Student</TableHead>
+                    <TableHead className="font-semibold">Lender</TableHead>
+                    <TableHead className="font-semibold">Loan Type</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Docs</TableHead>
+                    <TableHead className="font-semibold">Amount</TableHead>
+                    <TableHead className="font-semibold">Updated</TableHead>
+                    <TableHead className="font-semibold">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
@@ -316,9 +281,45 @@ export const LeadsTab = () => {
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  leads.map((lead) => {
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : leads.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No leads yet"
+          description="Create your first lead to start managing education loan applications and track their progress through the pipeline."
+          action={onNewLead ? {
+            label: "Create First Lead",
+            onClick: onNewLead
+          } : undefined}
+        />
+      ) : (
+        <Card className="border-0 shadow-md">
+          <CardHeader>
+            <CardTitle>Leads Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-muted">
+                    <TableHead className="font-semibold">Case ID</TableHead>
+                    <TableHead className="font-semibold">Student</TableHead>
+                    <TableHead className="font-semibold">Lender</TableHead>
+                    <TableHead className="font-semibold">Loan Type</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Docs</TableHead>
+                    <TableHead className="font-semibold">Amount</TableHead>
+                    <TableHead className="font-semibold">Updated</TableHead>
+                    <TableHead className="font-semibold">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leads.map((lead) => {
                     const docsProgress = getDocsProgress(lead.docs_verified_count, lead.required_docs_count);
                     const IconComponent = docsProgress.icon;
                     
@@ -366,13 +367,13 @@ export const LeadsTab = () => {
                         </TableCell>
                       </TableRow>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lead Detail Sheet */}
       <LeadDetailSheet

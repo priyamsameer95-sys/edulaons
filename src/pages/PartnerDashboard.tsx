@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, FileBarChart, Users, CheckCircle, BadgeIndianRupee } from "lucide-react";
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
@@ -10,14 +11,31 @@ import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
 const PartnerDashboard = () => {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("leads");
+  const [kpisLoading, setKpisLoading] = useState(true);
 
-  // Mock KPI data - in real app, fetch from Supabase
-  const kpis = {
-    totalLeads: 248,
-    inPipeline: 87,
-    sanctioned: 42,
-    disbursed: 119
-  };
+  // TODO: Replace with actual Supabase queries to calculate KPIs
+  const [kpis, setKpis] = useState({
+    totalLeads: 0,
+    inPipeline: 0,
+    sanctioned: 0,
+    disbursed: 0
+  });
+
+  // Simulate KPI loading - replace with real data fetching
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // In real app, calculate these from partner_cases_overview
+      setKpis({
+        totalLeads: 0,  // count(*) from partner_cases_overview
+        inPipeline: 0,  // count where status in ('new','qualified','docs_pending','docs_verified','applied')
+        sanctioned: 0,  // count where status='sanctioned'
+        disbursed: 0    // count where status='disbursed'
+      });
+      setKpisLoading(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +87,11 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">All-time leads created</p>
                 </CardContent>
               </Card>
@@ -82,7 +104,11 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">Active processing</p>
                 </CardContent>
               </Card>
@@ -95,7 +121,11 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">Approved loans</p>
                 </CardContent>
               </Card>
@@ -108,13 +138,17 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16 mb-1" />
+                  ) : (
+                    <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">Funds released</p>
                 </CardContent>
               </Card>
             </div>
 
-            <LeadsTab />
+            <LeadsTab onNewLead={() => setNewLeadOpen(true)} />
           </TabsContent>
 
           <TabsContent value="payouts" className="space-y-6">
