@@ -7,8 +7,8 @@ async function loadUniversityData(): Promise<UniversityData[]> {
   try {
     console.log('Loading university data from CSV file...');
     
-    // Fetch the CSV file
-    const response = await fetch('/src/data/University_Level_data-2.csv');
+    // Fetch the comprehensive CSV file
+    const response = await fetch('/src/data/University_Level_data-3.csv');
     const csvText = await response.text();
     
     // Parse CSV
