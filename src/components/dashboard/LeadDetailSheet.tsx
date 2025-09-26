@@ -29,6 +29,7 @@ import {
 import { Lead } from "@/types/lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
+import { DocumentUploadSection } from "./DocumentUploadSection";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeadDetailSheetProps {
@@ -43,7 +44,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
   
   // Real data from Supabase
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
-  const { documents, loading: documentsLoading, getDownloadUrl } = useLeadDocuments(lead?.id);
+  const { documents, loading: documentsLoading, getDownloadUrl, refetch: refetchDocuments } = useLeadDocuments(lead?.id);
 
   if (!lead) return null;
 
@@ -314,12 +315,19 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     })
                   )}
                   
-                  {/* Upload Button - TODO: Add upload functionality */}
+                  {/* Document Upload Section */}
                   <div className="pt-4 border-t">
-                    <Button variant="outline" className="w-full" disabled>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Documents (Coming Soon)
-                    </Button>
+                    <DocumentUploadSection 
+                      leadId={lead.id}
+                      onDocumentsChange={() => {
+                        // Refetch documents when uploads complete
+                        refetchDocuments();
+                        toast({
+                          title: "Documents Updated",
+                          description: "Document status has been refreshed",
+                        });
+                      }}
+                    />
                   </div>
                 </CardContent>
               </Card>
