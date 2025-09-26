@@ -101,11 +101,11 @@ export const PayoutsTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card className="border shadow-lg">
+      <Card className="border-0 shadow-md bg-gradient-card">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl flex items-center text-foreground">
+              <CardTitle className="text-xl flex items-center">
                 <BadgeIndianRupee className="h-5 w-5 mr-2 text-primary" />
                 Disbursed Payouts
               </CardTitle>
@@ -116,7 +116,7 @@ export const PayoutsTab = () => {
             <Button
               onClick={handleExportCSV}
               disabled={exporting || payouts.length === 0}
-              className="shadow-lg"
+              className="bg-gradient-primary hover:bg-primary-hover"
             >
               {exporting ? (
                 <>
@@ -135,7 +135,7 @@ export const PayoutsTab = () => {
       </Card>
 
       {/* Payouts Table */}
-      <Card className="border shadow-lg">
+      <Card className="border-0 shadow-md">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -210,9 +210,9 @@ export const PayoutsTab = () => {
 
       {/* Summary Stats */}
       {!loading && payouts.length > 0 && (
-        <Card className="border shadow-lg">
+        <Card className="border-0 shadow-md">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-primary">
                   {payouts.length}

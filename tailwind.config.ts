@@ -67,10 +67,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      backgroundColor: {
-        'surface-primary': 'var(--surface-primary)',
-        'surface-secondary': 'var(--surface-secondary)',
-        'card-elevated': 'var(--card-elevated)',
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
+        'gradient-card': 'var(--gradient-card)',
+        'gradient-accent': 'var(--gradient-accent)',
       },
       boxShadow: {
         'sm': 'var(--shadow-sm)',
