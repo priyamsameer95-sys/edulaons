@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CalendarIcon, User, GraduationCap, Loader2, Trophy, Users, ChevronDown } from "lucide-react";
+import { CalendarIcon, User, GraduationCap, Phone, Mail, MapPin, DollarSign, Building2, Loader2, Trophy, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { UniversitySelector } from "@/components/ui/university-selector";
@@ -27,7 +26,7 @@ interface FormData {
   student_pin_code: string;
   country: string;
   universities: string[];
-  intake_month: string; // "YYYY-MM" format
+  intake_month: string;
   loan_type: 'secured' | 'unsecured' | '';
   amount_requested: string;
   // Test scores (optional)
@@ -64,6 +63,56 @@ interface FormErrors {
   co_applicant_pin_code?: string;
 }
 
+// Animation variants
+const modalVariants = {
+  hidden: { 
+    opacity: 0, 
+    scale: 0.95,
+    y: 20
+  },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      duration: 0.3,
+      bounce: 0.1
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    scale: 0.95,
+    y: 20,
+    transition: {
+      duration: 0.2
+    }
+  }
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.4, 0, 0.2, 1] as [number, number, number, number]
+    }
+  }
+};
+
+const inputVariants = {
+  focus: { 
+    scale: 1.01,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }
+  },
+  blur: { 
+    scale: 1,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }
+  }
+};
+
 export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProps) => {
   const [formData, setFormData] = useState<FormData>({
     student_name: '',
@@ -85,8 +134,9 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     co_applicant_relationship: '',
     co_applicant_pin_code: ''
   });
-  const [testScoresOpen, setTestScoresOpen] = useState(false);
-  const [coApplicantOpen, setCoApplicantOpen] = useState(true); // Open by default since mandatory
+  
+  const [activeSection, setActiveSection] = useState<'student' | 'case'>('student');
+  const [showTestScores, setShowTestScores] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const { toast } = useToast();
@@ -114,7 +164,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       newErrors.student_name = 'Name must be at least 2 characters';
     }
 
-    // Phone validation (Indian 10-digit or E.164 format)
+    // Phone validation
     const phoneRegex = /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/;
     if (!formData.student_phone.trim()) {
       newErrors.student_phone = 'Mobile number is required';
@@ -257,7 +307,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         student_name: formData.student_name.trim(),
         student_email: formData.student_email.trim() || '',
         student_phone: formData.student_phone.trim(),
-        lender: 'Default Lender', // You may want to add a lender field
+        lender: 'Default Lender',
         loan_type: formData.loan_type === 'secured' ? 'Secured' : 'Unsecured',
         loan_amount: parseFloat(formData.amount_requested),
         study_destination: formData.country,
@@ -283,7 +333,6 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       
       // Insert university selections if available
       if (formData.universities.length > 0 && formData.universities[0].trim()) {
-        // First, try to find universities by name
         const { data: universities, error: univError } = await supabase
           .from('universities')
           .select('id, name')
@@ -332,6 +381,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         co_applicant_pin_code: ''
       });
       setErrors({});
+      setActiveSection('student');
+      setShowTestScores(false);
 
       // Close modal and trigger parent callback
       onOpenChange(false);
@@ -357,477 +408,583 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     }
   };
 
+  const InputField = ({ 
+    id, 
+    label, 
+    value, 
+    onChange, 
+    placeholder, 
+    type = "text", 
+    required = false, 
+    error, 
+    icon: Icon,
+    ...props 
+  }: any) => (
+    <motion.div 
+      className="space-y-2"
+      variants={inputVariants}
+      whileFocus="focus"
+      initial="blur"
+    >
+      <Label htmlFor={id} className="text-sm font-medium text-muted-foreground">
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      <div className="relative">
+        {Icon && (
+          <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        )}
+        <Input
+          id={id}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={cn(
+            "transition-all duration-200 ease-in-out border-0 bg-muted/30 backdrop-blur-sm",
+            "focus:bg-background/50 focus:ring-2 focus:ring-primary/20",
+            "hover:bg-background/30",
+            Icon && "pl-10",
+            error && "border-destructive focus:ring-destructive/20"
+          )}
+          {...props}
+        />
+      </div>
+      <AnimatePresence>
+        {error && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="text-sm text-destructive"
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Create New Lead</DialogTitle>
-        </DialogHeader>
+      <DialogOverlay className="bg-background/80 backdrop-blur-md" />
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden border-0 bg-background/95 backdrop-blur-xl shadow-2xl">
+        <AnimatePresence mode="wait">
+          {open && (
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="w-full h-full"
+            >
+              <DialogHeader className="pb-6 border-b border-border/50">
+                <DialogTitle className="text-2xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  Create New Lead
+                </DialogTitle>
+                
+                {/* Section Navigation */}
+                <div className="flex space-x-1 mt-4 p-1 bg-muted/30 rounded-xl backdrop-blur-sm">
+                  <button
+                    type="button"
+                    onClick={() => setActiveSection('student')}
+                    className={cn(
+                      "flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                      activeSection === 'student'
+                        ? "bg-background shadow-sm text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    )}
+                  >
+                    <User className="h-4 w-4 inline mr-2" />
+                    Student Info
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSection('case')}
+                    className={cn(
+                      "flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                      activeSection === 'case'
+                        ? "bg-background shadow-sm text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    )}
+                  >
+                    <GraduationCap className="h-4 w-4 inline mr-2" />
+                    Case Details
+                  </button>
+                </div>
+              </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Student Information Section */}
-          <Card className="border-muted">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center">
-                <User className="h-5 w-5 mr-2 text-primary" />
-                Student Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <Label htmlFor="student_name" className="text-sm font-medium">
-                  Full Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="student_name"
-                  value={formData.student_name}
-                  onChange={(e) => handleInputChange('student_name', e.target.value)}
-                  placeholder="Enter student's full name"
-                  className={errors.student_name ? 'border-destructive' : ''}
-                />
-                {errors.student_name && (
-                  <p className="text-sm text-destructive">{errors.student_name}</p>
-                )}
-              </div>
-
-              {/* Mobile Number */}
-              <div className="space-y-2">
-                <Label htmlFor="student_phone" className="text-sm font-medium">
-                  Mobile Number <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="student_phone"
-                  value={formData.student_phone}
-                  onChange={(e) => handleInputChange('student_phone', e.target.value)}
-                  placeholder="10-digit Indian number or +Country Code"
-                  className={errors.student_phone ? 'border-destructive' : ''}
-                />
-                {errors.student_phone && (
-                  <p className="text-sm text-destructive">{errors.student_phone}</p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="student_email" className="text-sm font-medium">
-                  Email Address <span className="text-muted-foreground">(Optional)</span>
-                </Label>
-                <Input
-                  id="student_email"
-                  type="email"
-                  value={formData.student_email}
-                  onChange={(e) => handleInputChange('student_email', e.target.value)}
-                  placeholder="student@example.com"
-                  className={errors.student_email ? 'border-destructive' : ''}
-                />
-                {errors.student_email && (
-                  <p className="text-sm text-destructive">{errors.student_email}</p>
-                )}
-              </div>
-
-              {/* Student PIN Code */}
-              <div className="space-y-2">
-                <Label htmlFor="student_pin_code" className="text-sm font-medium">
-                  PIN Code <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="student_pin_code"
-                  value={formData.student_pin_code}
-                  onChange={(e) => handleInputChange('student_pin_code', e.target.value)}
-                  placeholder="6-digit PIN code"
-                  maxLength={6}
-                  className={errors.student_pin_code ? 'border-destructive' : ''}
-                />
-                {errors.student_pin_code && (
-                  <p className="text-sm text-destructive">{errors.student_pin_code}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Test Scores Section */}
-          <Collapsible open={testScoresOpen} onOpenChange={setTestScoresOpen}>
-            <Card className="border-muted">
-              <CollapsibleTrigger asChild>
-                <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Trophy className="h-5 w-5 mr-2 text-primary" />
-                      Test Scores
-                      <span className="text-sm text-muted-foreground font-normal ml-2">(Optional)</span>
-                    </div>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", testScoresOpen && "transform rotate-180")} />
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* GMAT Score */}
-                    <div className="space-y-2">
-                      <Label htmlFor="gmat_score" className="text-sm font-medium">
-                        GMAT Score <span className="text-muted-foreground">(200-800)</span>
-                      </Label>
-                      <Input
-                        id="gmat_score"
-                        type="number"
-                        value={formData.gmat_score}
-                        onChange={(e) => handleInputChange('gmat_score', e.target.value)}
-                        placeholder="e.g., 650"
-                        min="200"
-                        max="800"
-                        className={errors.gmat_score ? 'border-destructive' : ''}
-                      />
-                      {errors.gmat_score && (
-                        <p className="text-sm text-destructive">{errors.gmat_score}</p>
-                      )}
-                    </div>
-
-                    {/* GRE Score */}
-                    <div className="space-y-2">
-                      <Label htmlFor="gre_score" className="text-sm font-medium">
-                        GRE Score <span className="text-muted-foreground">(260-340)</span>
-                      </Label>
-                      <Input
-                        id="gre_score"
-                        type="number"
-                        value={formData.gre_score}
-                        onChange={(e) => handleInputChange('gre_score', e.target.value)}
-                        placeholder="e.g., 310"
-                        min="260"
-                        max="340"
-                        className={errors.gre_score ? 'border-destructive' : ''}
-                      />
-                      {errors.gre_score && (
-                        <p className="text-sm text-destructive">{errors.gre_score}</p>
-                      )}
-                    </div>
-
-                    {/* TOEFL Score */}
-                    <div className="space-y-2">
-                      <Label htmlFor="toefl_score" className="text-sm font-medium">
-                        TOEFL Score <span className="text-muted-foreground">(0-120)</span>
-                      </Label>
-                      <Input
-                        id="toefl_score"
-                        type="number"
-                        value={formData.toefl_score}
-                        onChange={(e) => handleInputChange('toefl_score', e.target.value)}
-                        placeholder="e.g., 90"
-                        min="0"
-                        max="120"
-                        className={errors.toefl_score ? 'border-destructive' : ''}
-                      />
-                      {errors.toefl_score && (
-                        <p className="text-sm text-destructive">{errors.toefl_score}</p>
-                      )}
-                    </div>
-
-                    {/* PTE Score */}
-                    <div className="space-y-2">
-                      <Label htmlFor="pte_score" className="text-sm font-medium">
-                        PTE Score <span className="text-muted-foreground">(10-90)</span>
-                      </Label>
-                      <Input
-                        id="pte_score"
-                        type="number"
-                        value={formData.pte_score}
-                        onChange={(e) => handleInputChange('pte_score', e.target.value)}
-                        placeholder="e.g., 65"
-                        min="10"
-                        max="90"
-                        className={errors.pte_score ? 'border-destructive' : ''}
-                      />
-                      {errors.pte_score && (
-                        <p className="text-sm text-destructive">{errors.pte_score}</p>
-                      )}
-                    </div>
-
-                    {/* IELTS Score */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="ielts_score" className="text-sm font-medium">
-                        IELTS Score <span className="text-muted-foreground">(0-9, with 0.5 increments)</span>
-                      </Label>
-                      <Input
-                        id="ielts_score"
-                        type="number"
-                        value={formData.ielts_score}
-                        onChange={(e) => handleInputChange('ielts_score', e.target.value)}
-                        placeholder="e.g., 6.5"
-                        min="0"
-                        max="9"
-                        step="0.5"
-                        className={errors.ielts_score ? 'border-destructive' : ''}
-                      />
-                      {errors.ielts_score && (
-                        <p className="text-sm text-destructive">{errors.ielts_score}</p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-
-          {/* Case Information Section */}
-          <Card className="border-muted">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center">
-                <GraduationCap className="h-5 w-5 mr-2 text-primary" />
-                Study Destination & Program
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Country */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Country <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={formData.country}
-                  onValueChange={(value) => {
-                    setFormData(prev => ({ ...prev, country: value }));
-                    if (errors.country) {
-                      setErrors(prev => ({ ...prev, country: undefined }));
-                    }
-                  }}
-                >
-                  <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select destination country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries.map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {country}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.country && (
-                  <p className="text-sm text-destructive">{errors.country}</p>
-                )}
-              </div>
-
-              {/* Universities */}
-              <UniversitySelector
-                country={formData.country}
-                universities={formData.universities}
-                onChange={(universities) => {
-                  setFormData(prev => ({ ...prev, universities }));
-                  if (errors.universities) {
-                    setErrors(prev => ({ ...prev, universities: undefined }));
-                  }
-                }}
-                error={errors.universities}
-              />
-
-              {/* Intake Month */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Intake Month & Year <span className="text-destructive">*</span>
-                </Label>
-                <MonthYearPicker
-                  value={formData.intake_month}
-                  onChange={(value) => {
-                    setFormData(prev => ({ ...prev, intake_month: value }));
-                    if (errors.intake_month) {
-                      setErrors(prev => ({ ...prev, intake_month: undefined }));
-                    }
-                  }}
-                  placeholder="Select intake month and year"
-                  error={!!errors.intake_month}
-                />
-                {errors.intake_month && (
-                  <p className="text-sm text-destructive">{errors.intake_month}</p>
-                )}
-              </div>
-
-              {/* Loan Type */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Loan Type <span className="text-destructive">*</span>
-                </Label>
-                <RadioGroup
-                  value={formData.loan_type}
-                  onValueChange={(value: 'secured' | 'unsecured') => {
-                    setFormData(prev => ({ ...prev, loan_type: value }));
-                    if (errors.loan_type) {
-                      setErrors(prev => ({ ...prev, loan_type: undefined }));
-                    }
-                  }}
-                  className="flex space-x-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="secured" id="secured" />
-                    <Label htmlFor="secured" className="font-normal">Secured</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="unsecured" id="unsecured" />
-                    <Label htmlFor="unsecured" className="font-normal">Unsecured</Label>
-                  </div>
-                </RadioGroup>
-                {errors.loan_type && (
-                  <p className="text-sm text-destructive">{errors.loan_type}</p>
-                )}
-              </div>
-
-              {/* Requested Amount */}
-              <div className="space-y-2">
-                <Label htmlFor="amount_requested" className="text-sm font-medium">
-                  Requested Amount (₹) <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="amount_requested"
-                  type="number"
-                  value={formData.amount_requested}
-                  onChange={(e) => handleInputChange('amount_requested', e.target.value)}
-                  placeholder="Enter loan amount in rupees"
-                  min="1"
-                  step="1000"
-                  className={errors.amount_requested ? 'border-destructive' : ''}
-                />
-                {errors.amount_requested && (
-                  <p className="text-sm text-destructive">{errors.amount_requested}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Co-applicant Section */}
-          <Collapsible open={coApplicantOpen} onOpenChange={setCoApplicantOpen}>
-            <Card className="border-muted">
-              <CollapsibleTrigger asChild>
-                <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 mr-2 text-primary" />
-                      Co-applicant Details
-                      <span className="text-destructive ml-1">*</span>
-                    </div>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", coApplicantOpen && "transform rotate-180")} />
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Co-applicant Name */}
-                    <div className="space-y-2">
-                      <Label htmlFor="co_applicant_name" className="text-sm font-medium">
-                        Full Name <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="co_applicant_name"
-                        value={formData.co_applicant_name}
-                        onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
-                        placeholder="Co-applicant's full name"
-                        className={errors.co_applicant_name ? 'border-destructive' : ''}
-                      />
-                      {errors.co_applicant_name && (
-                        <p className="text-sm text-destructive">{errors.co_applicant_name}</p>
-                      )}
-                    </div>
-
-                    {/* Co-applicant Relationship */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Relationship <span className="text-destructive">*</span>
-                      </Label>
-                      <Select
-                        value={formData.co_applicant_relationship}
-                        onValueChange={(value) => {
-                          setFormData(prev => ({ ...prev, co_applicant_relationship: value }));
-                          if (errors.co_applicant_relationship) {
-                            setErrors(prev => ({ ...prev, co_applicant_relationship: undefined }));
-                          }
-                        }}
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+                <div className="p-6 space-y-8">
+                  <AnimatePresence mode="wait">
+                    {activeSection === 'student' && (
+                      <motion.div
+                        key="student"
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        className="space-y-6"
                       >
-                        <SelectTrigger className={errors.co_applicant_relationship ? 'border-destructive' : ''}>
-                          <SelectValue placeholder="Select relationship" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="parent">Parent</SelectItem>
-                          <SelectItem value="spouse">Spouse</SelectItem>
-                          <SelectItem value="sibling">Sibling</SelectItem>
-                          <SelectItem value="guardian">Guardian</SelectItem>
-                          <SelectItem value="relative">Relative</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.co_applicant_relationship && (
-                        <p className="text-sm text-destructive">{errors.co_applicant_relationship}</p>
-                      )}
-                    </div>
+                        {/* Student Information */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <InputField
+                            id="student_name"
+                            label="Full Name"
+                            value={formData.student_name}
+                            onChange={(value: string) => handleInputChange('student_name', value)}
+                            placeholder="Enter student's full name"
+                            required
+                            error={errors.student_name}
+                            icon={User}
+                          />
 
-                    {/* Co-applicant Salary */}
-                    <div className="space-y-2">
-                      <Label htmlFor="co_applicant_salary" className="text-sm font-medium">
-                        Annual Salary (₹) <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="co_applicant_salary"
-                        type="number"
-                        value={formData.co_applicant_salary}
-                        onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
-                        placeholder="Annual salary in rupees"
-                        min="0"
-                        className={errors.co_applicant_salary ? 'border-destructive' : ''}
-                      />
-                      {errors.co_applicant_salary && (
-                        <p className="text-sm text-destructive">{errors.co_applicant_salary}</p>
-                      )}
-                    </div>
+                          <InputField
+                            id="student_phone"
+                            label="Mobile Number"
+                            value={formData.student_phone}
+                            onChange={(value: string) => handleInputChange('student_phone', value)}
+                            placeholder="10-digit number or +Country Code"
+                            required
+                            error={errors.student_phone}
+                            icon={Phone}
+                          />
 
-                    {/* Co-applicant PIN Code */}
-                    <div className="space-y-2">
-                      <Label htmlFor="co_applicant_pin_code" className="text-sm font-medium">
-                        PIN Code <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="co_applicant_pin_code"
-                        value={formData.co_applicant_pin_code}
-                        onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value)}
-                        placeholder="6-digit PIN code"
-                        maxLength={6}
-                        className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
-                      />
-                      {errors.co_applicant_pin_code && (
-                        <p className="text-sm text-destructive">{errors.co_applicant_pin_code}</p>
-                      )}
-                    </div>
+                          <InputField
+                            id="student_email"
+                            label="Email Address"
+                            type="email"
+                            value={formData.student_email}
+                            onChange={(value: string) => handleInputChange('student_email', value)}
+                            placeholder="student@example.com"
+                            error={errors.student_email}
+                            icon={Mail}
+                          />
+
+                          <InputField
+                            id="student_pin_code"
+                            label="PIN Code"
+                            value={formData.student_pin_code}
+                            onChange={(value: string) => handleInputChange('student_pin_code', value)}
+                            placeholder="6-digit PIN code"
+                            maxLength={6}
+                            required
+                            error={errors.student_pin_code}
+                            icon={MapPin}
+                          />
+                        </div>
+
+                        {/* Test Scores Section */}
+                        <div className="space-y-4">
+                          <motion.button
+                            type="button"
+                            onClick={() => setShowTestScores(!showTestScores)}
+                            className="flex items-center justify-between w-full p-4 bg-muted/20 rounded-xl hover:bg-muted/30 transition-all duration-200"
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                          >
+                            <div className="flex items-center">
+                              <Trophy className="h-5 w-5 mr-3 text-primary" />
+                              <span className="font-medium">Test Scores</span>
+                              <span className="text-sm text-muted-foreground ml-2">(Optional)</span>
+                            </div>
+                            <motion.div
+                              animate={{ rotate: showTestScores ? 180 : 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </motion.div>
+                          </motion.button>
+
+                          <AnimatePresence>
+                            {showTestScores && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-muted/10 rounded-xl">
+                                  <InputField
+                                    id="gmat_score"
+                                    label="GMAT Score"
+                                    type="number"
+                                    value={formData.gmat_score}
+                                    onChange={(value: string) => handleInputChange('gmat_score', value)}
+                                    placeholder="200-800"
+                                    min="200"
+                                    max="800"
+                                    error={errors.gmat_score}
+                                  />
+
+                                  <InputField
+                                    id="gre_score"
+                                    label="GRE Score"
+                                    type="number"
+                                    value={formData.gre_score}
+                                    onChange={(value: string) => handleInputChange('gre_score', value)}
+                                    placeholder="260-340"
+                                    min="260"
+                                    max="340"
+                                    error={errors.gre_score}
+                                  />
+
+                                  <InputField
+                                    id="toefl_score"
+                                    label="TOEFL Score"
+                                    type="number"
+                                    value={formData.toefl_score}
+                                    onChange={(value: string) => handleInputChange('toefl_score', value)}
+                                    placeholder="0-120"
+                                    min="0"
+                                    max="120"
+                                    error={errors.toefl_score}
+                                  />
+
+                                  <InputField
+                                    id="pte_score"
+                                    label="PTE Score"
+                                    type="number"
+                                    value={formData.pte_score}
+                                    onChange={(value: string) => handleInputChange('pte_score', value)}
+                                    placeholder="10-90"
+                                    min="10"
+                                    max="90"
+                                    error={errors.pte_score}
+                                  />
+
+                                  <InputField
+                                    id="ielts_score"
+                                    label="IELTS Score"
+                                    type="number"
+                                    value={formData.ielts_score}
+                                    onChange={(value: string) => handleInputChange('ielts_score', value)}
+                                    placeholder="0-9"
+                                    min="0"
+                                    max="9"
+                                    step="0.5"
+                                    error={errors.ielts_score}
+                                  />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Co-applicant Details */}
+                        <div className="space-y-4">
+                          <div className="flex items-center p-4 bg-muted/20 rounded-xl">
+                            <Users className="h-5 w-5 mr-3 text-primary" />
+                            <span className="font-medium">Co-applicant Details</span>
+                            <span className="text-destructive ml-1">*</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <InputField
+                              id="co_applicant_name"
+                              label="Full Name"
+                              value={formData.co_applicant_name}
+                              onChange={(value: string) => handleInputChange('co_applicant_name', value)}
+                              placeholder="Co-applicant's full name"
+                              required
+                              error={errors.co_applicant_name}
+                              icon={User}
+                            />
+
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-muted-foreground">
+                                Relationship <span className="text-destructive">*</span>
+                              </Label>
+                              <Select
+                                value={formData.co_applicant_relationship}
+                                onValueChange={(value) => {
+                                  setFormData(prev => ({ ...prev, co_applicant_relationship: value }));
+                                  if (errors.co_applicant_relationship) {
+                                    setErrors(prev => ({ ...prev, co_applicant_relationship: undefined }));
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className={cn(
+                                  "border-0 bg-muted/30 backdrop-blur-sm transition-all duration-200",
+                                  "focus:bg-background/50 focus:ring-2 focus:ring-primary/20",
+                                  "hover:bg-background/30",
+                                  errors.co_applicant_relationship && "border-destructive focus:ring-destructive/20"
+                                )}>
+                                  <SelectValue placeholder="Select relationship" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background/95 backdrop-blur-xl border-0">
+                                  <SelectItem value="parent">Parent</SelectItem>
+                                  <SelectItem value="spouse">Spouse</SelectItem>
+                                  <SelectItem value="sibling">Sibling</SelectItem>
+                                  <SelectItem value="guardian">Guardian</SelectItem>
+                                  <SelectItem value="relative">Relative</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <AnimatePresence>
+                                {errors.co_applicant_relationship && (
+                                  <motion.p 
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="text-sm text-destructive"
+                                  >
+                                    {errors.co_applicant_relationship}
+                                  </motion.p>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <InputField
+                              id="co_applicant_salary"
+                              label="Annual Salary (₹)"
+                              type="number"
+                              value={formData.co_applicant_salary}
+                              onChange={(value: string) => handleInputChange('co_applicant_salary', value)}
+                              placeholder="Annual salary in rupees"
+                              min="0"
+                              required
+                              error={errors.co_applicant_salary}
+                              icon={DollarSign}
+                            />
+
+                            <InputField
+                              id="co_applicant_pin_code"
+                              label="PIN Code"
+                              value={formData.co_applicant_pin_code}
+                              onChange={(value: string) => handleInputChange('co_applicant_pin_code', value)}
+                              placeholder="6-digit PIN code"
+                              maxLength={6}
+                              required
+                              error={errors.co_applicant_pin_code}
+                              icon={MapPin}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeSection === 'case' && (
+                      <motion.div
+                        key="case"
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        className="space-y-6"
+                      >
+                        {/* Study Destination */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            Study Destination <span className="text-destructive">*</span>
+                          </Label>
+                          <Select
+                            value={formData.country}
+                            onValueChange={(value) => {
+                              setFormData(prev => ({ ...prev, country: value }));
+                              if (errors.country) {
+                                setErrors(prev => ({ ...prev, country: undefined }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "border-0 bg-muted/30 backdrop-blur-sm transition-all duration-200",
+                              "focus:bg-background/50 focus:ring-2 focus:ring-primary/20",
+                              "hover:bg-background/30",
+                              errors.country && "border-destructive focus:ring-destructive/20"
+                            )}>
+                              <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                              <SelectValue placeholder="Select destination country" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background/95 backdrop-blur-xl border-0">
+                              {countries.map((country) => (
+                                <SelectItem key={country} value={country}>
+                                  {country}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <AnimatePresence>
+                            {errors.country && (
+                              <motion.p 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="text-sm text-destructive"
+                              >
+                                {errors.country}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Universities */}
+                        <UniversitySelector
+                          country={formData.country}
+                          universities={formData.universities}
+                          onChange={(universities) => {
+                            setFormData(prev => ({ ...prev, universities }));
+                            if (errors.universities) {
+                              setErrors(prev => ({ ...prev, universities: undefined }));
+                            }
+                          }}
+                          error={errors.universities}
+                        />
+
+                        {/* Intake Month */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            Intake Month & Year <span className="text-destructive">*</span>
+                          </Label>
+                          <MonthYearPicker
+                            value={formData.intake_month}
+                            onChange={(value) => {
+                              setFormData(prev => ({ ...prev, intake_month: value }));
+                              if (errors.intake_month) {
+                                setErrors(prev => ({ ...prev, intake_month: undefined }));
+                              }
+                            }}
+                            placeholder="Select intake month and year"
+                            error={!!errors.intake_month}
+                          />
+                          <AnimatePresence>
+                            {errors.intake_month && (
+                              <motion.p 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="text-sm text-destructive"
+                              >
+                                {errors.intake_month}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Loan Type */}
+                        <div className="space-y-4">
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            Loan Type <span className="text-destructive">*</span>
+                          </Label>
+                          <RadioGroup
+                            value={formData.loan_type}
+                            onValueChange={(value: 'secured' | 'unsecured') => {
+                              setFormData(prev => ({ ...prev, loan_type: value }));
+                              if (errors.loan_type) {
+                                setErrors(prev => ({ ...prev, loan_type: undefined }));
+                              }
+                            }}
+                            className="grid grid-cols-2 gap-4"
+                          >
+                            <motion.div 
+                              whileHover={{ scale: 1.02 }}
+                              className={cn(
+                                "flex items-center space-x-3 p-4 rounded-xl border transition-all duration-200",
+                                formData.loan_type === 'secured' 
+                                  ? "bg-primary/10 border-primary/30" 
+                                  : "bg-muted/20 border-transparent hover:bg-muted/30"
+                              )}
+                            >
+                              <RadioGroupItem value="secured" id="secured" />
+                              <Label htmlFor="secured" className="font-medium cursor-pointer">Secured Loan</Label>
+                            </motion.div>
+                            <motion.div 
+                              whileHover={{ scale: 1.02 }}
+                              className={cn(
+                                "flex items-center space-x-3 p-4 rounded-xl border transition-all duration-200",
+                                formData.loan_type === 'unsecured' 
+                                  ? "bg-primary/10 border-primary/30" 
+                                  : "bg-muted/20 border-transparent hover:bg-muted/30"
+                              )}
+                            >
+                              <RadioGroupItem value="unsecured" id="unsecured" />
+                              <Label htmlFor="unsecured" className="font-medium cursor-pointer">Unsecured Loan</Label>
+                            </motion.div>
+                          </RadioGroup>
+                          <AnimatePresence>
+                            {errors.loan_type && (
+                              <motion.p 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="text-sm text-destructive"
+                              >
+                                {errors.loan_type}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Requested Amount */}
+                        <InputField
+                          id="amount_requested"
+                          label="Requested Amount (₹)"
+                          type="number"
+                          value={formData.amount_requested}
+                          onChange={(value: string) => handleInputChange('amount_requested', value)}
+                          placeholder="Enter loan amount in rupees"
+                          min="1"
+                          step="1000"
+                          required
+                          error={errors.amount_requested}
+                          icon={DollarSign}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-between items-center p-6 border-t border-border/50 bg-muted/10 backdrop-blur-sm">
+                  <div className="text-sm text-muted-foreground">
+                    Step {activeSection === 'student' ? '1' : '2'} of 2
                   </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-gradient-primary hover:bg-primary-hover min-w-24"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Lead'
-              )}
-            </Button>
-          </div>
-        </form>
+                  
+                  <div className="flex space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      disabled={loading}
+                      className="border-0 bg-muted/30 hover:bg-muted/50 backdrop-blur-sm"
+                    >
+                      Cancel
+                    </Button>
+                    
+                    {activeSection === 'student' ? (
+                      <Button
+                        type="button"
+                        onClick={() => setActiveSection('case')}
+                        className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        Next: Case Details
+                      </Button>
+                    ) : (
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          type="submit"
+                          disabled={loading}
+                          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200 min-w-32"
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            'Create Lead'
+                          )}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
