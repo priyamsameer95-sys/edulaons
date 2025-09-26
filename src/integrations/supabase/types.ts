@@ -73,26 +73,26 @@ export type Database = {
       lead_universities: {
         Row: {
           created_at: string
+          Global_uni_Rank: string
           id: string
-          lead_id: string
           university_id: string
         }
         Insert: {
           created_at?: string
+          Global_uni_Rank: string
           id?: string
-          lead_id: string
           university_id: string
         }
         Update: {
           created_at?: string
+          Global_uni_Rank?: string
           id?: string
-          lead_id?: string
           university_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "lead_universities_lead_id_fkey"
-            columns: ["lead_id"]
+            foreignKeyName: "lead_universities_Global_uni_Rank_fkey"
+            columns: ["Global_uni_Rank"]
             isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
