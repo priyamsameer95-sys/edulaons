@@ -1,107 +1,100 @@
 import { supabase } from "@/integrations/supabase/client";
+import { parseUniversityData, parseCourseData, importUniversities, importCourses, type UniversityData, type CourseData } from "@/utils/dataImport";
+import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
+
+// Load and parse the university Excel data
+async function loadUniversityData(): Promise<UniversityData[]> {
+  try {
+    console.log('Loading university data from Excel file...');
+    
+    // Fetch the Excel file
+    const response = await fetch('/src/data/University_Level_data-2.xlsx');
+    const arrayBuffer = await response.arrayBuffer();
+    
+    // Parse Excel file
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to array of arrays
+    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+    
+    console.log(`Loaded ${rawData.length - 1} universities from Excel file`);
+    return parseUniversityData(rawData);
+  } catch (error) {
+    console.error('Error loading university data from Excel:', error);
+    console.log('Falling back to sample data...');
+    
+    // Fallback to sample data including Canadian universities
+    const sampleData = [
+      ['Rank', 'Score', 'Link', 'Name', 'Location'],
+      ['1', '100.0', 'https://www.topuniversities.com/universities/massachusetts-institute-technology-mit', 'Massachusetts Institute of Technology (MIT)', 'Cambridge, United States'],
+      ['2', '97.2', 'https://www.topuniversities.com/universities/university-cambridge', 'University of Cambridge', 'Cambridge, United Kingdom'],
+      ['3', '96.7', 'https://www.topuniversities.com/universities/eth-zurich', 'ETH Zurich', 'Zurich, Switzerland'],
+      ['4', '93.9', 'https://www.topuniversities.com/universities/university-toronto', 'University of Toronto', 'Toronto, Canada'],
+      ['5', '93.7', 'https://www.topuniversities.com/universities/university-british-columbia', 'University of British Columbia', 'Vancouver, Canada'],
+      ['6', '93.2', 'https://www.topuniversities.com/universities/mcgill-university', 'McGill University', 'Montreal, Canada'],
+      ['7', '91.8', 'https://www.topuniversities.com/universities/university-montreal', 'Université de Montréal', 'Montreal, Canada'],
+      ['8', '90.5', 'https://www.topuniversities.com/universities/university-waterloo', 'University of Waterloo', 'Waterloo, Canada'],
+      ['9', '89.2', 'https://www.topuniversities.com/universities/university-alberta', 'University of Alberta', 'Edmonton, Canada'],
+      ['10', '88.7', 'https://www.topuniversities.com/universities/university-calgary', 'University of Calgary', 'Calgary, Canada'],
+      ['11', '87.3', 'https://www.topuniversities.com/universities/queens-university-kingston', 'Queen\'s University at Kingston', 'Kingston, Canada'],
+      ['12', '86.9', 'https://www.topuniversities.com/universities/university-ottawa', 'University of Ottawa', 'Ottawa, Canada'],
+      ['13', '85.1', 'https://www.topuniversities.com/universities/dalhousie-university', 'Dalhousie University', 'Halifax, Canada'],
+      ['14', '84.7', 'https://www.topuniversities.com/universities/university-western-ontario', 'Western University', 'London, Canada'],
+      ['15', '83.2', 'https://www.topuniversities.com/universities/simon-fraser-university', 'Simon Fraser University', 'Burnaby, Canada'],
+    ];
+    
+    return parseUniversityData(sampleData);
+  }
+}
+
+// Load and parse the course CSV data
+async function loadCourseData(): Promise<CourseData[]> {
+  try {
+    console.log('Loading course data from CSV file...');
+    
+    // Fetch the CSV file
+    const response = await fetch('/src/data/Program_level_combined_output-2.csv');
+    const csvText = await response.text();
+    
+    // Parse CSV
+    const result = Papa.parse(csvText, {
+      skipEmptyLines: true,
+      header: false
+    });
+    
+    console.log(`Loaded ${result.data.length - 1} courses from CSV file`);
+    return parseCourseData(result.data as string[][]);
+  } catch (error) {
+    console.error('Error loading course data from CSV:', error);
+    console.log('Falling back to sample data...');
+    
+    // Fallback to sample data including Canadian courses
+    const sampleData = [
+      ['University', '', 'Degree', 'Stream', 'Program Name', 'Study Level', 'Course Intensity', 'Study Mode', 'Duration', 'Tuition Fees', 'Starting Month'],
+      ['University of Toronto', '', 'Bachelor', 'Engineering and Technology', 'Computer Science', 'Bachelors', 'Full Time', 'On Campus', '48 Months', '58160 CAD', 'Sep'],
+      ['University of British Columbia', '', 'Master', 'Business and Management', 'Master of Business Administration', 'Masters', 'Full Time', 'On Campus', '20 Months', '65000 CAD', 'Sep'],
+      ['McGill University', '', 'Bachelor', 'Medicine and Health', 'Bachelor of Medicine', 'Bachelors', 'Full Time', 'On Campus', '48 Months', '25000 CAD', 'Sep'],
+      ['University of Toronto', '', 'Master', 'Engineering and Technology', 'Master of Engineering', 'Masters', 'Full Time', 'On Campus', '16 Months', '45000 CAD', 'Sep'],
+      ['University of British Columbia', '', 'Bachelor', 'Natural Sciences', 'Bachelor of Science', 'Bachelors', 'Full Time', 'On Campus', '48 Months', '40000 CAD', 'Sep'],
+      ['McGill University', '', 'Master', 'Business and Management', 'MBA', 'Masters', 'Full Time', 'On Campus', '20 Months', '55000 CAD', 'Sep'],
+      ['University of Waterloo', '', 'Bachelor', 'Engineering and Technology', 'Software Engineering', 'Bachelors', 'Full Time', 'On Campus', '48 Months', '35000 CAD', 'Sep'],
+      ['Queen\'s University at Kingston', '', 'Master', 'Business and Management', 'Master of Management', 'Masters', 'Full Time', 'On Campus', '12 Months', '50000 CAD', 'Sep'],
+    ];
+    
+    return parseCourseData(sampleData);
+  }
+}
 
 // University data import script
 export async function importUniversityData() {
   console.log('Starting university data import...');
   
-  // Sample data based on the uploaded Excel file structure
-  const universityData = [
-    { 
-      name: 'Massachusetts Institute of Technology (MIT)', 
-      country: 'United States', 
-      city: 'Cambridge', 
-      global_rank: 1, 
-      score: 100.0, 
-      url: 'https://www.topuniversities.com/universities/massachusetts-institute-technology-mit' 
-    },
-    { 
-      name: 'Imperial College London', 
-      country: 'United Kingdom', 
-      city: 'London', 
-      global_rank: 2, 
-      score: 99.4, 
-      url: 'https://www.topuniversities.com/universities/imperial-college-london' 
-    },
-    { 
-      name: 'Stanford University', 
-      country: 'United States', 
-      city: 'Stanford', 
-      global_rank: 3, 
-      score: 98.9, 
-      url: 'https://www.topuniversities.com/universities/stanford-university' 
-    },
-    { 
-      name: 'University of Oxford', 
-      country: 'United Kingdom', 
-      city: 'Oxford', 
-      global_rank: 4, 
-      score: 97.9, 
-      url: 'https://www.topuniversities.com/universities/university-oxford' 
-    },
-    { 
-      name: 'Harvard University', 
-      country: 'United States', 
-      city: 'Cambridge', 
-      global_rank: 5, 
-      score: 97.7, 
-      url: 'https://www.topuniversities.com/universities/harvard-university' 
-    },
-    { 
-      name: 'University of Cambridge', 
-      country: 'United Kingdom', 
-      city: 'Cambridge', 
-      global_rank: 6, 
-      score: 97.2, 
-      url: 'https://www.topuniversities.com/universities/university-cambridge' 
-    },
-    { 
-      name: 'ETH Zurich', 
-      country: 'Switzerland', 
-      city: 'Zürich', 
-      global_rank: 7, 
-      score: 96.7, 
-      url: 'https://www.topuniversities.com/universities/eth-zurich' 
-    },
-    { 
-      name: 'National University of Singapore (NUS)', 
-      country: 'Singapore', 
-      city: 'Singapore', 
-      global_rank: 8, 
-      score: 95.9, 
-      url: 'https://www.topuniversities.com/universities/national-university-singapore-nus' 
-    },
-    { 
-      name: 'UCL', 
-      country: 'United Kingdom', 
-      city: 'London', 
-      global_rank: 9, 
-      score: 95.8, 
-      url: 'https://www.topuniversities.com/universities/ucl' 
-    },
-    { 
-      name: 'California Institute of Technology (Caltech)', 
-      country: 'United States', 
-      city: 'Pasadena', 
-      global_rank: 10, 
-      score: 94.3, 
-      url: 'https://www.topuniversities.com/universities/california-institute-technology-caltech' 
-    },
-    // Add more universities here from the Excel data...
-  ];
-
   try {
-    const { data, error } = await supabase
-      .from('universities')
-      .insert(universityData)
-      .select();
-
-    if (error) {
-      console.error('Error importing universities:', error);
-      throw error;
-    }
-
-    console.log(`Successfully imported ${data?.length} universities`);
-    return data;
+    const universityData = await loadUniversityData();
+    return await importUniversities(universityData);
   } catch (error) {
     console.error('Failed to import university data:', error);
     throw error;
@@ -111,100 +104,10 @@ export async function importUniversityData() {
 // Course data import script  
 export async function importCourseData() {
   console.log('Starting course data import...');
-
-  // First, get all universities to create name-to-id mapping
-  const { data: universities, error: univError } = await supabase
-    .from('universities')
-    .select('id, name');
-
-  if (univError) {
-    console.error('Error fetching universities:', univError);
-    throw univError;
-  }
-
-  const universityMap = new Map<string, string>();
-  universities?.forEach(univ => {
-    universityMap.set(univ.name, univ.id);
-  });
-
-  // Sample course data based on the CSV structure
-  const courseData = [
-    {
-      university_name: 'Massachusetts Institute of Technology (MIT)',
-      degree: 'MBA',
-      stream_name: 'Others',
-      program_name: 'Executive MBA',
-      study_level: 'MBA',
-      course_intensity: 'Full Time',
-      study_mode: 'On Campus',
-      program_duration: '20 Months',
-      tuition_fees: null,
-      starting_month: null
-    },
-    {
-      university_name: 'Imperial College London',
-      degree: 'Bachelor',
-      stream_name: 'Business and Management',
-      program_name: 'BSc Economics, Finance and Data Science',
-      study_level: 'Bachelors',
-      course_intensity: 'Full Time',
-      study_mode: 'On Campus',
-      program_duration: '36 Months',
-      tuition_fees: '40700 GBP',
-      starting_month: 'Oct'
-    },
-    {
-      university_name: 'Imperial College London',
-      degree: 'Bachelor',
-      stream_name: 'Engineering and Technology',
-      program_name: 'BEng Computing',
-      study_level: 'Bachelors',
-      course_intensity: 'Full Time',
-      study_mode: 'On Campus',
-      program_duration: '36 Months',
-      tuition_fees: '43300 GBP',
-      starting_month: 'Oct'
-    },
-    // Add more courses from the CSV data...
-  ];
-
-  // Prepare courses with university IDs
-  const coursesWithIds = courseData
-    .map(course => {
-      const universityId = universityMap.get(course.university_name);
-      if (!universityId) {
-        console.warn(`University not found: ${course.university_name}`);
-        return null;
-      }
-
-      return {
-        university_id: universityId,
-        degree: course.degree,
-        stream_name: course.stream_name,
-        program_name: course.program_name,
-        study_level: course.study_level,
-        course_intensity: course.course_intensity,
-        study_mode: course.study_mode,
-        program_duration: course.program_duration,
-        tuition_fees: course.tuition_fees,
-        starting_month: course.starting_month,
-      };
-    })
-    .filter(Boolean) as any[];
-
+  
   try {
-    const { data, error } = await supabase
-      .from('courses')
-      .insert(coursesWithIds)
-      .select();
-
-    if (error) {
-      console.error('Error importing courses:', error);
-      throw error;
-    }
-
-    console.log(`Successfully imported ${data?.length} courses`);
-    return data;
+    const courseData = await loadCourseData();
+    return await importCourses(courseData);
   } catch (error) {
     console.error('Failed to import course data:', error);
     throw error;
