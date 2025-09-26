@@ -1,28 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  User, 
-  Building2, 
-  MapPin, 
-  Calendar, 
-  BadgeIndianRupee,
-  FileCheck,
-  Download,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertCircle,
-  ExternalLink
-} from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import {
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertCircle,
+  Download,
+  FileText,
+  Calendar,
+  User,
+  MapPin,
+  CreditCard,
+  GraduationCap,
+  Building,
+  Phone,
+  Mail,
+  Upload,
+  Eye
+} from "lucide-react";
 import { Lead } from "@/types/lead";
+import { useDocumentTypes } from "@/hooks/useDocumentTypes";
+import { useLeadDocuments } from "@/hooks/useLeadDocuments";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -30,110 +37,70 @@ interface LeadDetailSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface ChecklistItem {
-  id: string;
-  name: string;
-  required: boolean;
-  status: 'uploaded' | 'verified' | 'rejected' | 'expired' | 'pending';
-  uploaded_at?: string;
-}
-
-interface Document {
-  id: string;
-  name: string;
-  versions: number;
-  latest_status: 'uploaded' | 'verified' | 'rejected';
-  uploaded_at: string;
-}
-
-interface TimelineEvent {
-  id: string;
-  action: string;
-  actor_role: string;
-  message: string;
-  created_at: string;
-}
-
 export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
+  
+  // Real data from Supabase
+  const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
+  const { documents, loading: documentsLoading, getDownloadUrl } = useLeadDocuments(lead?.id);
 
   if (!lead) return null;
 
-  // Mock data - replace with actual Supabase queries
-  const mockChecklist: ChecklistItem[] = [
-    { id: '1', name: 'Passport Copy', required: true, status: 'verified', uploaded_at: '2024-01-15' },
-    { id: '2', name: 'Academic Transcripts', required: true, status: 'uploaded', uploaded_at: '2024-01-14' },
-    { id: '3', name: 'Income Proof', required: true, status: 'pending' },
-    { id: '4', name: 'Bank Statements', required: true, status: 'rejected', uploaded_at: '2024-01-13' },
-    { id: '5', name: 'Collateral Documents', required: false, status: 'verified', uploaded_at: '2024-01-12' }
-  ];
-
-  const mockDocuments: Document[] = [
-    { id: '1', name: 'Passport Copy', versions: 2, latest_status: 'verified', uploaded_at: '2024-01-15' },
-    { id: '2', name: 'Academic Transcripts', versions: 1, latest_status: 'uploaded', uploaded_at: '2024-01-14' },
-    { id: '4', name: 'Bank Statements', versions: 3, latest_status: 'rejected', uploaded_at: '2024-01-13' }
-  ];
-
-  const mockTimeline: TimelineEvent[] = [
-    { id: '1', action: 'case_created', actor_role: 'partner', message: 'New lead created', created_at: '2024-01-15T10:30:00Z' },
-    { id: '2', action: 'document_uploaded', actor_role: 'student', message: 'Passport copy uploaded', created_at: '2024-01-15T14:20:00Z' },
-    { id: '3', action: 'document_verified', actor_role: 'ops_team', message: 'Passport copy verified', created_at: '2024-01-15T16:45:00Z' }
-  ];
-
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'uploaded': return 'text-success';
       case 'verified': return 'text-success';
-      case 'uploaded': return 'text-warning';
       case 'rejected': return 'text-destructive';
-      case 'expired': return 'text-muted-foreground';
+      case 'pending': return 'text-warning';
       default: return 'text-muted-foreground';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'uploaded': return CheckCircle;
       case 'verified': return CheckCircle;
-      case 'uploaded': return Clock;
       case 'rejected': return XCircle;
-      case 'expired': return AlertCircle;
+      case 'pending': return Clock;
       default: return Clock;
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'uploaded': return 'bg-success text-success-foreground';
       case 'verified': return 'bg-success text-success-foreground';
-      case 'uploaded': return 'bg-warning text-warning-foreground';
       case 'rejected': return 'bg-destructive text-destructive-foreground';
-      case 'expired': return 'bg-muted text-muted-foreground';
+      case 'pending': return 'bg-warning text-warning-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
   };
 
-  const handleDownloadDoc = async (docId: string, docName: string) => {
+  const handleDownloadDoc = async (documentId: string, docName: string) => {
     try {
-      // Mock API call to edge function
-      // const response = await fetch('/api/get-signed-download', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ case_id: lead.case_id, doc_id: docId })
-      // });
-      
-      toast({
-        title: "Download Started",
-        description: `Downloading ${docName}...`,
-      });
-
-      // Mock download - in real implementation, open the signed URL
-      setTimeout(() => {
+      const document = documents.find(doc => doc.id === documentId);
+      if (!document) {
         toast({
-          title: "Download Complete",
-          description: `${docName} has been downloaded successfully.`,
+          title: "Download Failed",
+          description: "Document not found.",
+          variant: "destructive",
         });
-      }, 2000);
+        return;
+      }
 
+      const url = await getDownloadUrl(document.file_path);
+      if (url) {
+        window.open(url, '_blank');
+        toast({
+          title: "Download Started",
+          description: `Downloading ${docName}...`,
+        });
+      } else {
+        throw new Error('Failed to get download URL');
+      }
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: "Download Failed",
         description: "Unable to download document. Please try again.",
@@ -142,256 +109,366 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
     }
   };
 
-  const requiredDocs = mockChecklist.filter(item => item.required);
-  const completedRequired = requiredDocs.filter(item => item.status === 'verified').length;
-  const progressPercentage = (completedRequired / requiredDocs.length) * 100;
+  // Create real checklist from document types and uploaded documents
+  const checklist = documentTypes.map(docType => {
+    const uploadedDoc = documents.find(doc => doc.document_type_id === docType.id);
+    return {
+      id: docType.id,
+      name: docType.name,
+      required: docType.required,
+      status: uploadedDoc ? 'uploaded' : 'pending',
+      uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'yyyy-MM-dd') : undefined
+    };
+  });
+
+  const requiredDocs = checklist.filter(item => item.required);
+  const completedRequired = requiredDocs.filter(item => item.status === 'uploaded').length;
+  const progressPercentage = requiredDocs.length > 0 ? (completedRequired / requiredDocs.length) * 100 : 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="pb-6">
-          <SheetTitle className="text-xl">
-            Case Details - {lead.case_id}
+      <SheetContent className="sm:max-w-2xl overflow-y-auto">
+        <SheetHeader className="space-y-2 pb-4 border-b">
+          <SheetTitle className="text-xl font-semibold">
+            Lead Details - {lead.case_id}
           </SheetTitle>
         </SheetHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="checklist">Checklist</TabsTrigger>
-            <TabsTrigger value="docs">Docs</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          </TabsList>
+        <div className="py-4 space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="checklist">Checklist</TabsTrigger>
+              <TabsTrigger value="docs">Docs</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-gradient-card border-0 shadow-sm">
-                <CardContent className="pt-4">
-                  <div className="flex items-center space-x-3">
-                    <User className="h-8 w-8 text-primary" />
+            <TabsContent value="overview" className="space-y-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      Student Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Student</p>
                       <p className="font-semibold">{lead.student_name}</p>
-                      <p className="text-sm text-muted-foreground">{lead.student_phone}</p>
+                      <div className="flex items-center text-sm text-muted-foreground mt-1">
+                        <Phone className="h-3 w-3 mr-1" />
+                        {lead.student_phone}
+                      </div>
+                      {lead.student_email && (
+                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                          <Mail className="h-3 w-3 mr-1" />
+                          {lead.student_email}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-gradient-card border-0 shadow-sm">
-                <CardContent className="pt-4">
-                  <div className="flex items-center space-x-3">
-                    <BadgeIndianRupee className="h-8 w-8 text-success" />
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Loan Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Amount</p>
-                      <p className="font-semibold">₹{((lead.amount_requested || lead.loan_amount) / 100000).toFixed(1)}L</p>
-                      <Badge className={cn("mt-1 capitalize", lead.loan_type === 'secured' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground')}>
-                        {lead.loan_type}
-                      </Badge>
+                      <p className="font-semibold">₹{lead.loan_amount.toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{lead.loan_type} loan</p>
+                      <p className="text-sm text-muted-foreground">Lender: {lead.lender}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-gradient-card border-0 shadow-sm">
-                <CardContent className="pt-4">
-                  <div className="flex items-center space-x-3">
-                    <Building2 className="h-8 w-8 text-accent-foreground" />
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      Study Destination
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Lender</p>
-                      <p className="font-semibold">{lead.lender}</p>
-                      <p className="text-sm text-muted-foreground">KAM: John Smith</p>
+                      <p className="font-semibold">{lead.study_destination}</p>
+                      {lead.intake_month && (
+                        <p className="text-sm text-muted-foreground">
+                          Intake: {lead.intake_month}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-gradient-card border-0 shadow-sm">
-                <CardContent className="pt-4">
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="h-8 w-8 text-warning" />
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                      <Building className="h-4 w-4 mr-2" />
+                      Co-Applicant
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Destination</p>
-                      <p className="font-semibold">{lead.country || lead.study_destination}</p>
-                      <p className="text-sm text-muted-foreground">{lead.universities?.[0] || lead.primary_university || lead.study_destination}</p>
+                      <p className="font-semibold">{lead.co_applicant_name}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{lead.co_applicant_relationship}</p>
+                      <p className="text-sm text-muted-foreground">₹{lead.co_applicant_salary.toLocaleString()}/year</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-            {/* Status and Progress */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Application Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Current Status</span>
-                  <div className="flex flex-col gap-1 items-end">
-                    <Badge className={cn("capitalize", 
-                      // Success States
-                      lead.status === 'sanctioned' || lead.status === 'disbursed' || lead.status === 'login_confirmed' ? 'bg-success text-success-foreground' :
-                      // In Progress States  
-                      lead.status === 'qualified' || lead.status === 'docs_verified' || lead.status === 'applied' ? 'bg-primary text-primary-foreground' :
-                      // Pending States
-                      lead.status === 'new' || lead.status === 'docs_pending' || lead.status === 'future_intake' || lead.status === 'intake_deferred' ? 'bg-warning text-warning-foreground' :
-                      // Negative States
-                      lead.status === 'rejected' || lead.status === 'lost_to_competitor' || lead.status === 'sanctioned_declined' || lead.status === 'login_rejected' ? 'bg-destructive text-destructive-foreground' :
-                      // Neutral/Other States
-                      'bg-secondary text-secondary-foreground'
-                    )}>
-                      {lead.status.replace(/_/g, ' ')}
+              {/* Application Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    Application Status
+                    <Badge variant="outline" className="capitalize">
+                      {lead.status.replace('_', ' ')}
                     </Badge>
-                    {lead.sub_status && (
-                      <Badge variant="outline" className="text-xs">
-                        {lead.sub_status.replace(/_/g, ' ')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Documents Status</span>
+                      <Badge variant="outline" className={getStatusBadge(lead.documents_status)}>
+                        {lead.documents_status}
                       </Badge>
-                    )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progress</span>
+                        <span>{Math.round(progressPercentage)}%</span>
+                      </div>
+                      <Progress value={progressPercentage} className="w-full h-2" />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Application Progress</span>
-                    <span>{Math.round(progressPercentage)}%</span>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="checklist" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Document Verification Progress</CardTitle>
+                    <Badge variant="outline" className="bg-background">
+                      {completedRequired}/{requiredDocs.length} Required
+                    </Badge>
                   </div>
-                  <Progress value={progressPercentage} className="h-2" />
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span>Created</span>
-                  <span>{format(new Date(lead.created_at), 'dd MMM yyyy, HH:mm')}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span>Intake</span>
-                  <span>{lead.intake_month || 'TBD'}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="checklist" className="space-y-4">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Document Checklist</span>
-                  <Badge variant="outline">
-                    {completedRequired}/{requiredDocs.length} Required
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mockChecklist.map((item) => {
-                  const StatusIcon = getStatusIcon(item.status);
-                  return (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                      <div className="flex items-center space-x-3">
-                        <StatusIcon className={cn("h-5 w-5", getStatusColor(item.status))} />
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            {item.required && (
-                              <Badge variant="outline" className="text-xs">Required</Badge>
-                            )}
-                            <Badge className={cn("text-xs capitalize", getStatusBadge(item.status))}>
-                              {item.status}
+                  <Progress value={progressPercentage} className="w-full h-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {Math.round(progressPercentage)}% of required documents uploaded
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {documentTypesLoading ? (
+                    <div className="text-center py-8">
+                      <Clock className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">Loading document requirements...</p>
+                    </div>
+                  ) : (
+                    checklist.map((item) => {
+                      const StatusIcon = getStatusIcon(item.status);
+                      const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
+                      return (
+                        <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                          <div className="flex items-center space-x-3">
+                            <StatusIcon className={`h-5 w-5 ${getStatusColor(item.status)}`} />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{item.name}</span>
+                                {item.required && (
+                                  <Badge variant="destructive" className="text-xs px-1.5 py-0">Required</Badge>
+                                )}
+                              </div>
+                              {item.uploaded_at && (
+                                <p className="text-sm text-muted-foreground">
+                                  Uploaded: {format(new Date(item.uploaded_at), 'MMM dd, yyyy')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className={getStatusBadge(item.status)}>
+                              {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
                             </Badge>
+                            {uploadedDoc && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownloadDoc(uploadedDoc.id, item.name)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  
+                  {/* Upload Button - TODO: Add upload functionality */}
+                  <div className="pt-4 border-t">
+                    <Button variant="outline" className="w-full" disabled>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Documents (Coming Soon)
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="docs" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <FileText className="h-5 w-5 mr-2" />
+                    Uploaded Documents
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {documentsLoading ? (
+                    <div className="text-center py-8">
+                      <Clock className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">Loading documents...</p>
+                    </div>
+                  ) : documents.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">No documents uploaded yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {documents.map((doc) => {
+                        const docType = documentTypes.find(type => type.id === doc.document_type_id);
+                        return (
+                          <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{docType?.name || 'Document'}</span>
+                                  <Badge variant="secondary" className="text-xs">v{doc.version}</Badge>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <CheckCircle className="h-4 w-4 text-success" />
+                                  <span className="text-sm text-success">Uploaded</span>
+                                  <span className="text-muted-foreground text-sm">•</span>
+                              <span className="text-sm text-muted-foreground">
+                                {format(new Date(doc.uploaded_at), 'MMM dd, yyyy')}
+                              </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {doc.original_filename} • {(doc.file_size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadDoc(doc.id, doc.original_filename)}
+                              className="flex items-center gap-2"
+                            >
+                              <Download className="h-4 w-4" />
+                              Download
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="timeline" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    Activity Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Lead creation event */}
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                        <div className="w-px h-12 bg-border ml-0.5 mt-1"></div>
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">Lead created</p>
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(lead.created_at), 'MMM dd, HH:mm')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">partner</Badge>
+                          <span className="text-xs text-muted-foreground">case created</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Document upload events */}
+                    {documents.map((doc, index) => {
+                      const docType = documentTypes.find(type => type.id === doc.document_type_id);
+                      return (
+                        <div key={doc.id} className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-2 h-2 bg-success rounded-full mt-2"></div>
+                            {index < documents.length - 1 && (
+                              <div className="w-px h-12 bg-border ml-0.5 mt-1"></div>
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{docType?.name || 'Document'} uploaded</p>
+                            <span className="text-sm text-muted-foreground">
+                              {format(new Date(doc.uploaded_at), 'MMM dd, HH:mm')}
+                            </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">student</Badge>
+                              <span className="text-xs text-muted-foreground">document uploaded</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* If no documents, show current status */}
+                    {documents.length === 0 && (
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-2 h-2 bg-warning rounded-full mt-2"></div>
+                        </div>
+                        <div className="flex-1 pb-4">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium">Awaiting document upload</p>
+                            <span className="text-sm text-muted-foreground">Current</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">system</Badge>
+                            <span className="text-xs text-muted-foreground">documents pending</span>
                           </div>
                         </div>
                       </div>
-                      {item.uploaded_at && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(item.uploaded_at), 'dd MMM')}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="docs" className="space-y-4">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileCheck className="h-5 w-5 mr-2" />
-                  Available Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mockDocuments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileCheck className="h-8 w-8 mx-auto mb-2" />
-                    <p>No documents available for download</p>
+                    )}
                   </div>
-                ) : (
-                  mockDocuments.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex-1">
-                        <p className="font-medium">{doc.name}</p>
-                        <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
-                          <span>{doc.versions} version{doc.versions !== 1 ? 's' : ''}</span>
-                          <Badge className={cn("text-xs capitalize", getStatusBadge(doc.latest_status))}>
-                            {doc.latest_status}
-                          </Badge>
-                          <span>{format(new Date(doc.uploaded_at), 'dd MMM yyyy')}</span>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownloadDoc(doc.id, doc.name)}
-                        className="ml-4"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="timeline" className="space-y-4">
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle>Activity Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockTimeline.map((event, index) => (
-                    <div key={event.id} className="flex space-x-4">
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                          <ExternalLink className="h-4 w-4 text-primary-foreground" />
-                        </div>
-                        {index < mockTimeline.length - 1 && (
-                          <div className="w-px h-8 bg-border mt-2"></div>
-                        )}
-                      </div>
-                      <div className="flex-1 pb-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium">{event.message}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {event.actor_role.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(event.created_at), 'dd MMM yyyy, HH:mm')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </SheetContent>
     </Sheet>
   );

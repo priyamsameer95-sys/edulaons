@@ -101,7 +101,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
           setLeads(current => [newLead, ...current]);
           toast({
             title: "New Lead Created",
-            description: `Lead ${payload.new.case_id} has been added`,
+            description: `Lead ${newLead.case_id} has been added`,
           });
         }
       )
@@ -117,7 +117,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
           const updatedLead = mapDbLeadToLead(payload.new as DbLead);
           setLeads(current => 
             current.map(lead => 
-              lead.id === payload.new.id ? updatedLead : lead
+              lead.id === updatedLead.id ? updatedLead : lead
             )
           );
         }
@@ -128,6 +128,9 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
       supabase.removeChannel(channel);
     };
   }, [toast]);
+
+  // Debug: Log current leads state
+  console.log('Current leads in state:', leads.length);
 
   const getStatusColor = (status: string) => {
     switch (status) {
