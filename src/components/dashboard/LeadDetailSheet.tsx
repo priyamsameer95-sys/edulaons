@@ -22,38 +22,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-interface Lead {
-  case_id: string;
-  student_name: string;
-  student_phone: string;
-  student_email?: string;
-  student_pin_code: string;
-  country: string;
-  universities: string[];
-  primary_university: string;
-  intake_month: string; // "YYYY-MM" format
-  loan_type: 'secured' | 'unsecured';
-  amount_requested: number;
-  status: string;
-  sub_status?: string;
-  lender: string;
-  docs_verified: number;
-  docs_required: number;
-  updated_at: string;
-  created_at: string;
-  // Test scores (optional)
-  gmat_score?: number;
-  gre_score?: number;
-  toefl_score?: number;
-  pte_score?: number;
-  ielts_score?: number;
-  // Co-applicant details
-  co_applicant_name?: string;
-  co_applicant_salary?: number;
-  co_applicant_relationship?: string;
-  co_applicant_pin_code?: string;
-}
+import { Lead } from "@/types/lead";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -216,7 +185,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     <BadgeIndianRupee className="h-8 w-8 text-success" />
                     <div>
                       <p className="text-sm text-muted-foreground">Amount</p>
-                      <p className="font-semibold">₹{(lead.amount_requested / 100000).toFixed(1)}L</p>
+                      <p className="font-semibold">₹{((lead.amount_requested || lead.loan_amount) / 100000).toFixed(1)}L</p>
                       <Badge className={cn("mt-1 capitalize", lead.loan_type === 'secured' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground')}>
                         {lead.loan_type}
                       </Badge>
@@ -244,8 +213,8 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     <MapPin className="h-8 w-8 text-warning" />
                     <div>
                       <p className="text-sm text-muted-foreground">Destination</p>
-                      <p className="font-semibold">{lead.country}</p>
-                      <p className="text-sm text-muted-foreground">{lead.universities[0] || lead.primary_university}</p>
+                      <p className="font-semibold">{lead.country || lead.study_destination}</p>
+                      <p className="text-sm text-muted-foreground">{lead.universities?.[0] || lead.primary_university || lead.study_destination}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -298,7 +267,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
 
                 <div className="flex items-center justify-between text-sm">
                   <span>Intake</span>
-                  <span>Jan 2026</span>
+                  <span>{lead.intake_month || 'TBD'}</span>
                 </div>
               </CardContent>
             </Card>

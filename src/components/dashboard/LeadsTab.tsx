@@ -27,38 +27,9 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LeadDetailSheet } from "./LeadDetailSheet";
 import { EmptyState } from "@/components/ui/empty-state";
-
-interface Lead {
-  case_id: string;
-  student_name: string;
-  student_phone: string;
-  student_email?: string;
-  student_pin_code: string;
-  country: string;
-  universities: string[];
-  primary_university: string;
-  intake_month: string; // "YYYY-MM" format
-  loan_type: 'secured' | 'unsecured';
-  amount_requested: number;
-  status: string;
-  sub_status?: string;
-  lender: string;
-  docs_verified: number;
-  docs_required: number;
-  updated_at: string;
-  created_at: string;
-  // Test scores (optional)
-  gmat_score?: number;
-  gre_score?: number;
-  toefl_score?: number;
-  pte_score?: number;
-  ielts_score?: number;
-  // Co-applicant details
-  co_applicant_name?: string;
-  co_applicant_salary?: number;
-  co_applicant_relationship?: string;
-  co_applicant_pin_code?: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Lead, DbLead, mapDbLeadToLead } from "@/types/lead";
 
 interface LeadsTabProps {
   onNewLead?: () => void;
@@ -69,6 +40,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { toast } = useToast();
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,16 +48,86 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [loanTypeFilter, setLoanTypeFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
-  // TODO: Replace with Supabase queries
-  useEffect(() => {
-    // Simulate initial load
-    const timer = setTimeout(() => {
-      setLeads([]); // Start with empty data
-      setLoading(false);
-    }, 500);
+  // Fetch leads from Supabase
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    return () => clearTimeout(timer);
-  }, []);
+      if (error) {
+        console.error('Error fetching leads:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch leads",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Map database leads to display leads
+      const mappedLeads = (data as DbLead[] || []).map(mapDbLeadToLead);
+      setLeads(mappedLeads);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to fetch leads",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+
+    // Set up real-time subscription for new leads
+    const channel = supabase
+      .channel('leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'leads'
+        },
+        (payload) => {
+          console.log('New lead created:', payload.new);
+          const newLead = mapDbLeadToLead(payload.new as DbLead);
+          setLeads(current => [newLead, ...current]);
+          toast({
+            title: "New Lead Created",
+            description: `Lead ${payload.new.case_id} has been added`,
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE', 
+          schema: 'public',
+          table: 'leads'
+        },
+        (payload) => {
+          console.log('Lead updated:', payload.new);
+          const updatedLead = mapDbLeadToLead(payload.new as DbLead);
+          setLeads(current => 
+            current.map(lead => 
+              lead.id === payload.new.id ? updatedLead : lead
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -127,16 +169,16 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
       'bg-secondary text-secondary-foreground';
   };
 
-  const getDocsProgress = (verified: number, required: number) => {
-    if (required === 0) return { icon: Clock, color: "text-muted-foreground" };
-    const percentage = (verified / required) * 100;
-    
-    if (percentage === 100) {
-      return { icon: CheckCircle, color: "text-success" };
-    } else if (percentage > 50) {
-      return { icon: FileCheck, color: "text-warning" };
-    } else {
-      return { icon: FileWarning, color: "text-destructive" };
+  const getDocsProgress = (documentsStatus: string) => {
+    switch (documentsStatus) {
+      case 'verified':
+        return { icon: CheckCircle, color: "text-success" };
+      case 'pending':
+        return { icon: Clock, color: "text-warning" };
+      case 'rejected':
+        return { icon: XCircle, color: "text-destructive" };
+      default:
+        return { icon: FileWarning, color: "text-muted-foreground" };
     }
   };
 
@@ -367,7 +409,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                 </TableHeader>
                 <TableBody>
                   {leads.map((lead) => {
-                    const docsProgress = getDocsProgress(lead.docs_verified, lead.docs_required);
+                    const docsProgress = getDocsProgress(lead.documents_status);
                     const IconComponent = docsProgress.icon;
                     
                     return (
@@ -381,31 +423,24 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                         </TableCell>
                         <TableCell>{lead.lender}</TableCell>
                         <TableCell>
-                          <Badge className={cn("capitalize", getLoanTypeBadge(lead.loan_type))}>
+                          <Badge className={cn("capitalize", getLoanTypeBadge(lead.loan_type.toLowerCase()))}>
                             {lead.loan_type}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <Badge className={cn("capitalize", getStatusColor(lead.status))}>
-                              {lead.status.replace(/_/g, ' ')}
-                            </Badge>
-                            {lead.sub_status && (
-                              <Badge variant="outline" className="text-xs">
-                                {lead.sub_status.replace(/_/g, ' ')}
-                              </Badge>
-                            )}
-                          </div>
+                          <Badge className={cn("capitalize", getStatusColor(lead.status))}>
+                            {lead.status.replace(/_/g, ' ')}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <IconComponent className={cn("h-4 w-4", docsProgress.color)} />
-                            <span className="text-sm">
-                              {lead.docs_verified}/{lead.docs_required}
+                            <span className="text-sm capitalize">
+                              {lead.documents_status}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>₹{(lead.amount_requested / 100000).toFixed(1)}L</TableCell>
+                        <TableCell>₹{(lead.loan_amount / 100000).toFixed(1)}L</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(lead.created_at), 'dd MMM yyyy')}
                         </TableCell>

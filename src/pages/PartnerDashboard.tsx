@@ -7,12 +7,15 @@ import { Plus, FileBarChart, Users, CheckCircle, BadgeIndianRupee } from "lucide
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
 import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 const PartnerDashboard = () => {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("leads");
   const [kpisLoading, setKpisLoading] = useState(true);
+  const { toast } = useToast();
 
-  // TODO: Replace with actual Supabase queries to calculate KPIs
+  // KPI state with real data from Supabase
   const [kpis, setKpis] = useState({
     totalLeads: 0,
     inPipeline: 0,
@@ -20,23 +23,85 @@ const PartnerDashboard = () => {
     disbursed: 0
   });
 
-  // Simulate KPI loading - replace with real data fetching
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // In real app, calculate these from partner_cases_overview
+  // Fetch real KPI data from Supabase
+  const fetchKPIs = async () => {
+    try {
+      setKpisLoading(true);
+      
+      // Get total leads count
+      const { count: totalCount, error: totalError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true });
+
+      if (totalError) throw totalError;
+
+      // Get in pipeline count (new, qualified, docs_pending, docs_verified, applied)
+      const { count: pipelineCount, error: pipelineError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['new', 'qualified', 'docs_pending', 'docs_verified', 'applied']);
+
+      if (pipelineError) throw pipelineError;
+
+      // Get sanctioned count
+      const { count: sanctionedCount, error: sanctionedError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'sanctioned');
+
+      if (sanctionedError) throw sanctionedError;
+
+      // Get disbursed count
+      const { count: disbursedCount, error: disbursedError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'disbursed');
+
+      if (disbursedError) throw disbursedError;
+
       setKpis({
-        totalLeads: 0,
-        // count(*) from partner_cases_overview
-        inPipeline: 0,
-        // count where status in ('new','qualified','docs_pending','docs_verified','applied')
-        sanctioned: 0,
-        // count where status='sanctioned'
-        disbursed: 0 // count where status='disbursed'
+        totalLeads: totalCount || 0,
+        inPipeline: pipelineCount || 0,
+        sanctioned: sanctionedCount || 0,
+        disbursed: disbursedCount || 0
       });
+
+    } catch (error) {
+      console.error('Error fetching KPIs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch dashboard metrics",
+        variant: "destructive",
+      });
+    } finally {
       setKpisLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    fetchKPIs();
+
+    // Set up real-time subscription to update KPIs when leads change
+    const channel = supabase
+      .channel('kpi-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads'
+        },
+        () => {
+          // Refresh KPIs when any lead changes
+          fetchKPIs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card shadow-sm">
@@ -138,10 +203,15 @@ const PartnerDashboard = () => {
       </div>
 
       {/* New Lead Modal */}
-      <NewLeadModal open={newLeadOpen} onOpenChange={setNewLeadOpen} onSuccess={() => {
-      // Refresh data and focus new lead
-      setActiveTab("leads");
-    }} />
+      <NewLeadModal 
+        open={newLeadOpen} 
+        onOpenChange={setNewLeadOpen} 
+        onSuccess={() => {
+          // Refresh data and focus new lead
+          setActiveTab("leads");
+          fetchKPIs(); // Refresh KPIs after successful lead creation
+        }} 
+      />
 
       {/* Floating Action Button - Mobile */}
       <Button onClick={() => setNewLeadOpen(true)} className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full bg-gradient-primary hover:bg-primary-hover shadow-lg" size="icon">
