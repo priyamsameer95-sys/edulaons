@@ -7,8 +7,6 @@ import PartnerDashboard from "./pages/PartnerDashboard";
 import NotFound from "./pages/NotFound";
 
 // Import data import script for development
-import "./scripts/importData";
-import "./scripts/runImport";
 import "./scripts/directImport";
 
 const queryClient = new QueryClient();

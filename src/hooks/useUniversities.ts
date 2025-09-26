@@ -40,7 +40,7 @@ export const useUniversities = (country: string) => {
         let query = supabase
           .from('universities')
           .select('*')
-          .order('rank', { ascending: true, nullsFirst: false });
+          .order('global_rank', { ascending: true, nullsFirst: false });
 
         if (country) {
           query = query.eq('country', country);
@@ -52,14 +52,13 @@ export const useUniversities = (country: string) => {
           console.error('Error fetching universities:', error);
           setUniversities([]);
         } else {
-          // Transform to match existing interface
           const transformedData: University[] = (data || []).map((uni: any) => ({
             id: uni.id,
             name: uni.name,
             country: uni.country,
             city: uni.city,
-            qs_rank: uni.rank,
-            popular: uni.rank ? uni.rank <= 100 : false, // Top 100 are popular
+            qs_rank: uni.global_rank,
+            popular: uni.global_rank ? uni.global_rank <= 100 : false, // Top 100 are popular
           }));
           
           setUniversities(transformedData);
