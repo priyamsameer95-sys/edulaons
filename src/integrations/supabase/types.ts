@@ -70,6 +70,120 @@ export type Database = {
           },
         ]
       }
+      document_types: {
+        Row: {
+          accepted_formats: string[] | null
+          category: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          max_file_size_image: number | null
+          max_file_size_pdf: number | null
+          name: string
+          required: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_formats?: string[] | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          max_file_size_image?: number | null
+          max_file_size_pdf?: number | null
+          name: string
+          required?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_formats?: string[] | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          max_file_size_image?: number | null
+          max_file_size_pdf?: number | null
+          name?: string
+          required?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lead_documents: {
+        Row: {
+          created_at: string | null
+          document_type_id: string
+          file_path: string
+          file_size: number
+          id: string
+          lead_id: string
+          mime_type: string
+          original_filename: string
+          stored_filename: string
+          updated_at: string | null
+          upload_status: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+          verification_notes: string | null
+          verified_at: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type_id: string
+          file_path: string
+          file_size: number
+          id?: string
+          lead_id: string
+          mime_type: string
+          original_filename: string
+          stored_filename: string
+          updated_at?: string | null
+          upload_status?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type_id?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          lead_id?: string
+          mime_type?: string
+          original_filename?: string
+          stored_filename?: string
+          updated_at?: string | null
+          upload_status?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_universities: {
         Row: {
           created_at: string
