@@ -12,6 +12,7 @@ import { CalendarIcon, User, GraduationCap, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { UniversityCombobox } from "@/components/ui/university-combobox";
 
 interface NewLeadModalProps {
   open: boolean;
@@ -317,15 +318,15 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
                 {/* University */}
                 <div className="space-y-2">
-                  <Label htmlFor="university" className="text-sm font-medium">
+                  <Label className="text-sm font-medium">
                     University <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="university"
+                  <UniversityCombobox
+                    country={formData.country}
                     value={formData.university}
-                    onChange={(e) => handleInputChange('university', e.target.value)}
-                    placeholder="Enter university name"
-                    className={errors.university ? 'border-destructive' : ''}
+                    onChange={(value) => handleInputChange('university', value)}
+                    placeholder="Search or type university name"
+                    error={errors.university}
                   />
                   {errors.university && (
                     <p className="text-sm text-destructive">{errors.university}</p>
