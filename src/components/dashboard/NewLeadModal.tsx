@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { UniversitySelector } from "@/components/ui/university-selector";
 import { MonthYearPicker } from "@/components/ui/month-year-picker";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewLeadModalProps {
   open: boolean;
@@ -85,7 +86,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     co_applicant_pin_code: ''
   });
   const [testScoresOpen, setTestScoresOpen] = useState(false);
-  const [coApplicantOpen, setCoApplicantOpen] = useState(false);
+  const [coApplicantOpen, setCoApplicantOpen] = useState(true); // Open by default since mandatory
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const { toast } = useToast();
@@ -201,35 +202,28 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
     }
 
-    // Co-applicant validation (if any field is filled, others become required)
-    const hasCoApplicantData = formData.co_applicant_name.trim() || 
-                              formData.co_applicant_salary.trim() || 
-                              formData.co_applicant_relationship || 
-                              formData.co_applicant_pin_code.trim();
+    // Co-applicant validation (mandatory for all loans)
+    if (!formData.co_applicant_name.trim()) {
+      newErrors.co_applicant_name = 'Co-applicant name is required';
+    }
+    
+    if (!formData.co_applicant_salary.trim()) {
+      newErrors.co_applicant_salary = 'Co-applicant salary is required';
+    } else {
+      const salary = parseFloat(formData.co_applicant_salary);
+      if (isNaN(salary) || salary <= 0) {
+        newErrors.co_applicant_salary = 'Please enter a valid salary amount';
+      }
+    }
 
-    if (hasCoApplicantData) {
-      if (!formData.co_applicant_name.trim()) {
-        newErrors.co_applicant_name = 'Co-applicant name is required';
-      }
-      
-      if (!formData.co_applicant_salary.trim()) {
-        newErrors.co_applicant_salary = 'Co-applicant salary is required';
-      } else {
-        const salary = parseFloat(formData.co_applicant_salary);
-        if (isNaN(salary) || salary <= 0) {
-          newErrors.co_applicant_salary = 'Please enter a valid salary amount';
-        }
-      }
+    if (!formData.co_applicant_relationship) {
+      newErrors.co_applicant_relationship = 'Please select relationship';
+    }
 
-      if (!formData.co_applicant_relationship) {
-        newErrors.co_applicant_relationship = 'Please select relationship';
-      }
-
-      if (!formData.co_applicant_pin_code.trim()) {
-        newErrors.co_applicant_pin_code = 'Co-applicant PIN code is required';
-      } else if (!pinRegex.test(formData.co_applicant_pin_code.trim())) {
-        newErrors.co_applicant_pin_code = 'Please enter a valid 6-digit PIN code';
-      }
+    if (!formData.co_applicant_pin_code.trim()) {
+      newErrors.co_applicant_pin_code = 'Co-applicant PIN code is required';
+    } else if (!pinRegex.test(formData.co_applicant_pin_code.trim())) {
+      newErrors.co_applicant_pin_code = 'Please enter a valid 6-digit PIN code';
     }
 
     setErrors(newErrors);
@@ -251,37 +245,69 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     setLoading(true);
 
     try {
-      // Mock API call - replace with actual RPC call
-      // const { data, error } = await supabase.rpc('partner_create_lead', {
-      //   p_student_name: formData.student_name.trim(),
-      //   p_student_phone: formData.student_phone.trim(),
-      //   p_student_email: formData.student_email.trim() || null,
-      //   p_student_pin_code: formData.student_pin_code.trim(),
-      //   p_country: formData.country,
-      //   p_universities: formData.universities.filter(u => u.trim()),
-      //   p_intake_month: formData.intake_month,
-      //   p_loan_type: formData.loan_type,
-      //   p_amount_req: parseFloat(formData.amount_requested),
-      //   p_gmat_score: formData.gmat_score ? parseInt(formData.gmat_score) : null,
-      //   p_gre_score: formData.gre_score ? parseInt(formData.gre_score) : null,
-      //   p_toefl_score: formData.toefl_score ? parseInt(formData.toefl_score) : null,
-      //   p_pte_score: formData.pte_score ? parseInt(formData.pte_score) : null,
-      //   p_ielts_score: formData.ielts_score ? parseFloat(formData.ielts_score) : null,
-      //   p_co_applicant_name: formData.co_applicant_name.trim() || null,
-      //   p_co_applicant_salary: formData.co_applicant_salary ? parseFloat(formData.co_applicant_salary) : null,
-      //   p_co_applicant_relationship: formData.co_applicant_relationship || null,
-      //   p_co_applicant_pin_code: formData.co_applicant_pin_code.trim() || null
-      // });
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Mock successful response
-      const mockCaseId = `EDU-2024-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-
+      // Generate unique case ID
+      const caseId = `EDU-${Date.now()}`;
+      
+      // Parse intake month and year
+      const [intakeYear, intakeMonth] = formData.intake_month ? formData.intake_month.split('-').map(Number) : [null, null];
+      
+      // Prepare lead data for Supabase
+      const leadData = {
+        case_id: caseId,
+        student_name: formData.student_name.trim(),
+        student_email: formData.student_email.trim() || '',
+        student_phone: formData.student_phone.trim(),
+        lender: 'Default Lender', // You may want to add a lender field
+        loan_type: formData.loan_type === 'secured' ? 'Secured' : 'Unsecured',
+        loan_amount: parseFloat(formData.amount_requested),
+        study_destination: formData.country,
+        intake_month: intakeMonth,
+        intake_year: intakeYear,
+        co_applicant_name: formData.co_applicant_name.trim(),
+        co_applicant_salary: parseFloat(formData.co_applicant_salary),
+        co_applicant_relationship: formData.co_applicant_relationship,
+        co_applicant_pin: formData.co_applicant_pin_code.trim(),
+      };
+      
+      // Insert lead into Supabase
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert(leadData)
+        .select()
+        .single();
+        
+      if (leadError) {
+        console.error('Lead creation error:', leadError);
+        throw leadError;
+      }
+      
+      // Insert university selections if available
+      if (formData.universities.length > 0 && formData.universities[0].trim()) {
+        // First, try to find universities by name
+        const { data: universities, error: univError } = await supabase
+          .from('universities')
+          .select('id, name')
+          .in('name', formData.universities.filter(u => u.trim()));
+          
+        if (!univError && universities && universities.length > 0) {
+          const leadUniversities = universities.map(uni => ({
+            lead_id: lead.id,
+            university_id: uni.id
+          }));
+          
+          const { error: junctionError } = await supabase
+            .from('lead_universities')
+            .insert(leadUniversities);
+            
+          if (junctionError) {
+            console.error('University junction error:', junctionError);
+          }
+        }
+      }
+      
       toast({
         title: "Lead Created Successfully",
-        description: `New lead created • Case ${mockCaseId}`,
+        description: `New lead created • Case ${caseId}`,
       });
 
       // Reset form
@@ -312,6 +338,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       onSuccess();
 
     } catch (error) {
+      console.error('Error creating lead:', error);
       toast({
         title: "Error Creating Lead",
         description: "Unable to create new lead. Please try again.",
@@ -676,7 +703,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     <div className="flex items-center">
                       <Users className="h-5 w-5 mr-2 text-primary" />
                       Co-applicant Details
-                      <span className="text-sm text-muted-foreground font-normal ml-2">(Optional)</span>
+                      <span className="text-destructive ml-1">*</span>
                     </div>
                     <ChevronDown className={cn("h-4 w-4 transition-transform", coApplicantOpen && "transform rotate-180")} />
                   </CardTitle>
@@ -688,7 +715,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     {/* Co-applicant Name */}
                     <div className="space-y-2">
                       <Label htmlFor="co_applicant_name" className="text-sm font-medium">
-                        Full Name
+                        Full Name <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="co_applicant_name"
@@ -705,7 +732,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     {/* Co-applicant Relationship */}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">
-                        Relationship
+                        Relationship <span className="text-destructive">*</span>
                       </Label>
                       <Select
                         value={formData.co_applicant_relationship}
@@ -736,7 +763,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     {/* Co-applicant Salary */}
                     <div className="space-y-2">
                       <Label htmlFor="co_applicant_salary" className="text-sm font-medium">
-                        Annual Salary (₹)
+                        Annual Salary (₹) <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="co_applicant_salary"
@@ -755,7 +782,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     {/* Co-applicant PIN Code */}
                     <div className="space-y-2">
                       <Label htmlFor="co_applicant_pin_code" className="text-sm font-medium">
-                        PIN Code
+                        PIN Code <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="co_applicant_pin_code"

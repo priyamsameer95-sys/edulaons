@@ -14,7 +14,209 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          course_intensity: string | null
+          created_at: string
+          degree: string
+          id: string
+          program_duration: string | null
+          program_name: string
+          starting_month: string | null
+          stream_name: string
+          study_level: string
+          study_mode: string | null
+          tuition_fees: string | null
+          university_id: string
+          updated_at: string
+        }
+        Insert: {
+          course_intensity?: string | null
+          created_at?: string
+          degree: string
+          id?: string
+          program_duration?: string | null
+          program_name: string
+          starting_month?: string | null
+          stream_name: string
+          study_level: string
+          study_mode?: string | null
+          tuition_fees?: string | null
+          university_id: string
+          updated_at?: string
+        }
+        Update: {
+          course_intensity?: string | null
+          created_at?: string
+          degree?: string
+          id?: string
+          program_duration?: string | null
+          program_name?: string
+          starting_month?: string | null
+          stream_name?: string
+          study_level?: string
+          study_mode?: string | null
+          tuition_fees?: string | null
+          university_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_universities: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          university_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          university_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          university_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_universities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_universities_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          case_id: string
+          co_applicant_name: string
+          co_applicant_pin: string
+          co_applicant_relationship: string
+          co_applicant_salary: number
+          created_at: string
+          documents_status: string
+          id: string
+          intake_month: number | null
+          intake_year: number | null
+          lender: string
+          loan_amount: number
+          loan_type: string
+          status: string
+          student_dob: string | null
+          student_email: string
+          student_name: string
+          student_phone: string
+          study_destination: string
+          test_score: string | null
+          test_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          co_applicant_name: string
+          co_applicant_pin: string
+          co_applicant_relationship: string
+          co_applicant_salary: number
+          created_at?: string
+          documents_status?: string
+          id?: string
+          intake_month?: number | null
+          intake_year?: number | null
+          lender: string
+          loan_amount: number
+          loan_type: string
+          status?: string
+          student_dob?: string | null
+          student_email: string
+          student_name: string
+          student_phone: string
+          study_destination: string
+          test_score?: string | null
+          test_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          co_applicant_name?: string
+          co_applicant_pin?: string
+          co_applicant_relationship?: string
+          co_applicant_salary?: number
+          created_at?: string
+          documents_status?: string
+          id?: string
+          intake_month?: number | null
+          intake_year?: number | null
+          lender?: string
+          loan_amount?: number
+          loan_type?: string
+          status?: string
+          student_dob?: string | null
+          student_email?: string
+          student_name?: string
+          student_phone?: string
+          study_destination?: string
+          test_score?: string | null
+          test_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      universities: {
+        Row: {
+          city: string
+          country: string
+          created_at: string
+          global_rank: number | null
+          id: string
+          name: string
+          score: number | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          city: string
+          country: string
+          created_at?: string
+          global_rank?: number | null
+          id?: string
+          name: string
+          score?: number | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string
+          global_rank?: number | null
+          id?: string
+          name?: string
+          score?: number | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
