@@ -6,13 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, User, GraduationCap, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CalendarIcon, User, GraduationCap, Loader2, Trophy, Users, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { UniversityCombobox } from "@/components/ui/university-combobox";
+import { UniversitySelector } from "@/components/ui/university-selector";
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
 
 interface NewLeadModalProps {
   open: boolean;
@@ -24,22 +23,44 @@ interface FormData {
   student_name: string;
   student_phone: string;
   student_email: string;
+  student_pin_code: string;
   country: string;
-  university: string;
-  intake: Date | undefined;
+  universities: string[];
+  intake_month: string; // "YYYY-MM" format
   loan_type: 'secured' | 'unsecured' | '';
   amount_requested: string;
+  // Test scores (optional)
+  gmat_score: string;
+  gre_score: string;
+  toefl_score: string;
+  pte_score: string;
+  ielts_score: string;
+  // Co-applicant details
+  co_applicant_name: string;
+  co_applicant_salary: string;
+  co_applicant_relationship: string;
+  co_applicant_pin_code: string;
 }
 
 interface FormErrors {
   student_name?: string;
   student_phone?: string;
   student_email?: string;
+  student_pin_code?: string;
   country?: string;
-  university?: string;
-  intake?: string;
+  universities?: string;
+  intake_month?: string;
   loan_type?: string;
   amount_requested?: string;
+  gmat_score?: string;
+  gre_score?: string;
+  toefl_score?: string;
+  pte_score?: string;
+  ielts_score?: string;
+  co_applicant_name?: string;
+  co_applicant_salary?: string;
+  co_applicant_relationship?: string;
+  co_applicant_pin_code?: string;
 }
 
 export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProps) => {
@@ -47,12 +68,24 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     student_name: '',
     student_phone: '',
     student_email: '',
+    student_pin_code: '',
     country: '',
-    university: '',
-    intake: undefined,
+    universities: [''],
+    intake_month: '',
     loan_type: '',
-    amount_requested: ''
+    amount_requested: '',
+    gmat_score: '',
+    gre_score: '',
+    toefl_score: '',
+    pte_score: '',
+    ielts_score: '',
+    co_applicant_name: '',
+    co_applicant_salary: '',
+    co_applicant_relationship: '',
+    co_applicant_pin_code: ''
   });
+  const [testScoresOpen, setTestScoresOpen] = useState(false);
+  const [coApplicantOpen, setCoApplicantOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const { toast } = useToast();
@@ -96,19 +129,27 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
     }
 
+    // Student PIN code validation
+    const pinRegex = /^\d{6}$/;
+    if (!formData.student_pin_code.trim()) {
+      newErrors.student_pin_code = 'PIN code is required';
+    } else if (!pinRegex.test(formData.student_pin_code.trim())) {
+      newErrors.student_pin_code = 'Please enter a valid 6-digit PIN code';
+    }
+
     // Country validation
     if (!formData.country) {
       newErrors.country = 'Please select a country';
     }
 
-    // University validation
-    if (!formData.university.trim()) {
-      newErrors.university = 'University name is required';
+    // Universities validation
+    if (formData.universities.length === 0 || !formData.universities[0].trim()) {
+      newErrors.universities = 'At least one university is required';
     }
 
     // Intake validation
-    if (!formData.intake) {
-      newErrors.intake = 'Please select an intake date';
+    if (!formData.intake_month) {
+      newErrors.intake_month = 'Please select an intake month and year';
     }
 
     // Loan type validation
@@ -122,6 +163,73 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       newErrors.amount_requested = 'Loan amount is required';
     } else if (isNaN(amount) || amount <= 0) {
       newErrors.amount_requested = 'Please enter a valid amount greater than 0';
+    }
+
+    // Test scores validation (optional but must be in valid ranges)
+    if (formData.gmat_score.trim()) {
+      const gmat = parseInt(formData.gmat_score);
+      if (isNaN(gmat) || gmat < 200 || gmat > 800) {
+        newErrors.gmat_score = 'GMAT score must be between 200-800';
+      }
+    }
+
+    if (formData.gre_score.trim()) {
+      const gre = parseInt(formData.gre_score);
+      if (isNaN(gre) || gre < 260 || gre > 340) {
+        newErrors.gre_score = 'GRE score must be between 260-340';
+      }
+    }
+
+    if (formData.toefl_score.trim()) {
+      const toefl = parseInt(formData.toefl_score);
+      if (isNaN(toefl) || toefl < 0 || toefl > 120) {
+        newErrors.toefl_score = 'TOEFL score must be between 0-120';
+      }
+    }
+
+    if (formData.pte_score.trim()) {
+      const pte = parseInt(formData.pte_score);
+      if (isNaN(pte) || pte < 10 || pte > 90) {
+        newErrors.pte_score = 'PTE score must be between 10-90';
+      }
+    }
+
+    if (formData.ielts_score.trim()) {
+      const ielts = parseFloat(formData.ielts_score);
+      if (isNaN(ielts) || ielts < 0 || ielts > 9) {
+        newErrors.ielts_score = 'IELTS score must be between 0-9';
+      }
+    }
+
+    // Co-applicant validation (if any field is filled, others become required)
+    const hasCoApplicantData = formData.co_applicant_name.trim() || 
+                              formData.co_applicant_salary.trim() || 
+                              formData.co_applicant_relationship || 
+                              formData.co_applicant_pin_code.trim();
+
+    if (hasCoApplicantData) {
+      if (!formData.co_applicant_name.trim()) {
+        newErrors.co_applicant_name = 'Co-applicant name is required';
+      }
+      
+      if (!formData.co_applicant_salary.trim()) {
+        newErrors.co_applicant_salary = 'Co-applicant salary is required';
+      } else {
+        const salary = parseFloat(formData.co_applicant_salary);
+        if (isNaN(salary) || salary <= 0) {
+          newErrors.co_applicant_salary = 'Please enter a valid salary amount';
+        }
+      }
+
+      if (!formData.co_applicant_relationship) {
+        newErrors.co_applicant_relationship = 'Please select relationship';
+      }
+
+      if (!formData.co_applicant_pin_code.trim()) {
+        newErrors.co_applicant_pin_code = 'Co-applicant PIN code is required';
+      } else if (!pinRegex.test(formData.co_applicant_pin_code.trim())) {
+        newErrors.co_applicant_pin_code = 'Please enter a valid 6-digit PIN code';
+      }
     }
 
     setErrors(newErrors);
@@ -143,19 +251,26 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     setLoading(true);
 
     try {
-      // Format intake as ISO string (YYYY-MM format)
-      const intakeISO = formData.intake ? format(formData.intake, 'yyyy-MM') : '';
-
       // Mock API call - replace with actual RPC call
       // const { data, error } = await supabase.rpc('partner_create_lead', {
       //   p_student_name: formData.student_name.trim(),
       //   p_student_phone: formData.student_phone.trim(),
       //   p_student_email: formData.student_email.trim() || null,
+      //   p_student_pin_code: formData.student_pin_code.trim(),
       //   p_country: formData.country,
-      //   p_university: formData.university.trim(),
-      //   p_intake: intakeISO,
+      //   p_universities: formData.universities.filter(u => u.trim()),
+      //   p_intake_month: formData.intake_month,
       //   p_loan_type: formData.loan_type,
-      //   p_amount_req: parseFloat(formData.amount_requested)
+      //   p_amount_req: parseFloat(formData.amount_requested),
+      //   p_gmat_score: formData.gmat_score ? parseInt(formData.gmat_score) : null,
+      //   p_gre_score: formData.gre_score ? parseInt(formData.gre_score) : null,
+      //   p_toefl_score: formData.toefl_score ? parseInt(formData.toefl_score) : null,
+      //   p_pte_score: formData.pte_score ? parseInt(formData.pte_score) : null,
+      //   p_ielts_score: formData.ielts_score ? parseFloat(formData.ielts_score) : null,
+      //   p_co_applicant_name: formData.co_applicant_name.trim() || null,
+      //   p_co_applicant_salary: formData.co_applicant_salary ? parseFloat(formData.co_applicant_salary) : null,
+      //   p_co_applicant_relationship: formData.co_applicant_relationship || null,
+      //   p_co_applicant_pin_code: formData.co_applicant_pin_code.trim() || null
       // });
 
       // Simulate API delay
@@ -174,11 +289,21 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         student_name: '',
         student_phone: '',
         student_email: '',
+        student_pin_code: '',
         country: '',
-        university: '',
-        intake: undefined,
+        universities: [''],
+        intake_month: '',
         loan_type: '',
-        amount_requested: ''
+        amount_requested: '',
+        gmat_score: '',
+        gre_score: '',
+        toefl_score: '',
+        pte_score: '',
+        ielts_score: '',
+        co_applicant_name: '',
+        co_applicant_salary: '',
+        co_applicant_relationship: '',
+        co_applicant_pin_code: ''
       });
       setErrors({});
 
@@ -273,104 +398,221 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   <p className="text-sm text-destructive">{errors.student_email}</p>
                 )}
               </div>
+
+              {/* Student PIN Code */}
+              <div className="space-y-2">
+                <Label htmlFor="student_pin_code" className="text-sm font-medium">
+                  PIN Code <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="student_pin_code"
+                  value={formData.student_pin_code}
+                  onChange={(e) => handleInputChange('student_pin_code', e.target.value)}
+                  placeholder="6-digit PIN code"
+                  maxLength={6}
+                  className={errors.student_pin_code ? 'border-destructive' : ''}
+                />
+                {errors.student_pin_code && (
+                  <p className="text-sm text-destructive">{errors.student_pin_code}</p>
+                )}
+              </div>
             </CardContent>
           </Card>
+
+          {/* Test Scores Section */}
+          <Collapsible open={testScoresOpen} onOpenChange={setTestScoresOpen}>
+            <Card className="border-muted">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Trophy className="h-5 w-5 mr-2 text-primary" />
+                      Test Scores
+                      <span className="text-sm text-muted-foreground font-normal ml-2">(Optional)</span>
+                    </div>
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", testScoresOpen && "transform rotate-180")} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* GMAT Score */}
+                    <div className="space-y-2">
+                      <Label htmlFor="gmat_score" className="text-sm font-medium">
+                        GMAT Score <span className="text-muted-foreground">(200-800)</span>
+                      </Label>
+                      <Input
+                        id="gmat_score"
+                        type="number"
+                        value={formData.gmat_score}
+                        onChange={(e) => handleInputChange('gmat_score', e.target.value)}
+                        placeholder="e.g., 650"
+                        min="200"
+                        max="800"
+                        className={errors.gmat_score ? 'border-destructive' : ''}
+                      />
+                      {errors.gmat_score && (
+                        <p className="text-sm text-destructive">{errors.gmat_score}</p>
+                      )}
+                    </div>
+
+                    {/* GRE Score */}
+                    <div className="space-y-2">
+                      <Label htmlFor="gre_score" className="text-sm font-medium">
+                        GRE Score <span className="text-muted-foreground">(260-340)</span>
+                      </Label>
+                      <Input
+                        id="gre_score"
+                        type="number"
+                        value={formData.gre_score}
+                        onChange={(e) => handleInputChange('gre_score', e.target.value)}
+                        placeholder="e.g., 310"
+                        min="260"
+                        max="340"
+                        className={errors.gre_score ? 'border-destructive' : ''}
+                      />
+                      {errors.gre_score && (
+                        <p className="text-sm text-destructive">{errors.gre_score}</p>
+                      )}
+                    </div>
+
+                    {/* TOEFL Score */}
+                    <div className="space-y-2">
+                      <Label htmlFor="toefl_score" className="text-sm font-medium">
+                        TOEFL Score <span className="text-muted-foreground">(0-120)</span>
+                      </Label>
+                      <Input
+                        id="toefl_score"
+                        type="number"
+                        value={formData.toefl_score}
+                        onChange={(e) => handleInputChange('toefl_score', e.target.value)}
+                        placeholder="e.g., 90"
+                        min="0"
+                        max="120"
+                        className={errors.toefl_score ? 'border-destructive' : ''}
+                      />
+                      {errors.toefl_score && (
+                        <p className="text-sm text-destructive">{errors.toefl_score}</p>
+                      )}
+                    </div>
+
+                    {/* PTE Score */}
+                    <div className="space-y-2">
+                      <Label htmlFor="pte_score" className="text-sm font-medium">
+                        PTE Score <span className="text-muted-foreground">(10-90)</span>
+                      </Label>
+                      <Input
+                        id="pte_score"
+                        type="number"
+                        value={formData.pte_score}
+                        onChange={(e) => handleInputChange('pte_score', e.target.value)}
+                        placeholder="e.g., 65"
+                        min="10"
+                        max="90"
+                        className={errors.pte_score ? 'border-destructive' : ''}
+                      />
+                      {errors.pte_score && (
+                        <p className="text-sm text-destructive">{errors.pte_score}</p>
+                      )}
+                    </div>
+
+                    {/* IELTS Score */}
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="ielts_score" className="text-sm font-medium">
+                        IELTS Score <span className="text-muted-foreground">(0-9, with 0.5 increments)</span>
+                      </Label>
+                      <Input
+                        id="ielts_score"
+                        type="number"
+                        value={formData.ielts_score}
+                        onChange={(e) => handleInputChange('ielts_score', e.target.value)}
+                        placeholder="e.g., 6.5"
+                        min="0"
+                        max="9"
+                        step="0.5"
+                        className={errors.ielts_score ? 'border-destructive' : ''}
+                      />
+                      {errors.ielts_score && (
+                        <p className="text-sm text-destructive">{errors.ielts_score}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Case Information Section */}
           <Card className="border-muted">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center">
                 <GraduationCap className="h-5 w-5 mr-2 text-primary" />
-                Case Details
+                Study Destination & Program
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Country */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Country <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.country}
-                    onValueChange={(value) => {
-                      setFormData(prev => ({ ...prev, country: value }));
-                      if (errors.country) {
-                        setErrors(prev => ({ ...prev, country: undefined }));
-                      }
-                    }}
-                  >
-                    <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
-                      <SelectValue placeholder="Select destination country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.country && (
-                    <p className="text-sm text-destructive">{errors.country}</p>
-                  )}
-                </div>
-
-                {/* University */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    University <span className="text-destructive">*</span>
-                  </Label>
-                  <UniversityCombobox
-                    country={formData.country}
-                    value={formData.university}
-                    onChange={(value) => handleInputChange('university', value)}
-                    placeholder="Search or type university name"
-                    error={errors.university}
-                  />
-                  {errors.university && (
-                    <p className="text-sm text-destructive">{errors.university}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Intake Date */}
+              {/* Country */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  Intake <span className="text-destructive">*</span>
+                  Country <span className="text-destructive">*</span>
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.intake && "text-muted-foreground",
-                        errors.intake && "border-destructive"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.intake ? format(formData.intake, "MMM yyyy") : "Select intake month"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.intake}
-                      onSelect={(date) => {
-                        setFormData(prev => ({ ...prev, intake: date }));
-                        if (errors.intake) {
-                          setErrors(prev => ({ ...prev, intake: undefined }));
-                        }
-                      }}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-                {errors.intake && (
-                  <p className="text-sm text-destructive">{errors.intake}</p>
+                <Select
+                  value={formData.country}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, country: value }));
+                    if (errors.country) {
+                      setErrors(prev => ({ ...prev, country: undefined }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select destination country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.country && (
+                  <p className="text-sm text-destructive">{errors.country}</p>
+                )}
+              </div>
+
+              {/* Universities */}
+              <UniversitySelector
+                country={formData.country}
+                universities={formData.universities}
+                onChange={(universities) => {
+                  setFormData(prev => ({ ...prev, universities }));
+                  if (errors.universities) {
+                    setErrors(prev => ({ ...prev, universities: undefined }));
+                  }
+                }}
+                error={errors.universities}
+              />
+
+              {/* Intake Month */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Intake Month & Year <span className="text-destructive">*</span>
+                </Label>
+                <MonthYearPicker
+                  value={formData.intake_month}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, intake_month: value }));
+                    if (errors.intake_month) {
+                      setErrors(prev => ({ ...prev, intake_month: undefined }));
+                    }
+                  }}
+                  placeholder="Select intake month and year"
+                  error={!!errors.intake_month}
+                />
+                {errors.intake_month && (
+                  <p className="text-sm text-destructive">{errors.intake_month}</p>
                 )}
               </div>
 
@@ -424,6 +666,114 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
               </div>
             </CardContent>
           </Card>
+
+          {/* Co-applicant Section */}
+          <Collapsible open={coApplicantOpen} onOpenChange={setCoApplicantOpen}>
+            <Card className="border-muted">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-primary" />
+                      Co-applicant Details
+                      <span className="text-sm text-muted-foreground font-normal ml-2">(Optional)</span>
+                    </div>
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", coApplicantOpen && "transform rotate-180")} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Co-applicant Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="co_applicant_name" className="text-sm font-medium">
+                        Full Name
+                      </Label>
+                      <Input
+                        id="co_applicant_name"
+                        value={formData.co_applicant_name}
+                        onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
+                        placeholder="Co-applicant's full name"
+                        className={errors.co_applicant_name ? 'border-destructive' : ''}
+                      />
+                      {errors.co_applicant_name && (
+                        <p className="text-sm text-destructive">{errors.co_applicant_name}</p>
+                      )}
+                    </div>
+
+                    {/* Co-applicant Relationship */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        Relationship
+                      </Label>
+                      <Select
+                        value={formData.co_applicant_relationship}
+                        onValueChange={(value) => {
+                          setFormData(prev => ({ ...prev, co_applicant_relationship: value }));
+                          if (errors.co_applicant_relationship) {
+                            setErrors(prev => ({ ...prev, co_applicant_relationship: undefined }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className={errors.co_applicant_relationship ? 'border-destructive' : ''}>
+                          <SelectValue placeholder="Select relationship" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="parent">Parent</SelectItem>
+                          <SelectItem value="spouse">Spouse</SelectItem>
+                          <SelectItem value="sibling">Sibling</SelectItem>
+                          <SelectItem value="guardian">Guardian</SelectItem>
+                          <SelectItem value="relative">Relative</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.co_applicant_relationship && (
+                        <p className="text-sm text-destructive">{errors.co_applicant_relationship}</p>
+                      )}
+                    </div>
+
+                    {/* Co-applicant Salary */}
+                    <div className="space-y-2">
+                      <Label htmlFor="co_applicant_salary" className="text-sm font-medium">
+                        Annual Salary (₹)
+                      </Label>
+                      <Input
+                        id="co_applicant_salary"
+                        type="number"
+                        value={formData.co_applicant_salary}
+                        onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
+                        placeholder="Annual salary in rupees"
+                        min="0"
+                        className={errors.co_applicant_salary ? 'border-destructive' : ''}
+                      />
+                      {errors.co_applicant_salary && (
+                        <p className="text-sm text-destructive">{errors.co_applicant_salary}</p>
+                      )}
+                    </div>
+
+                    {/* Co-applicant PIN Code */}
+                    <div className="space-y-2">
+                      <Label htmlFor="co_applicant_pin_code" className="text-sm font-medium">
+                        PIN Code
+                      </Label>
+                      <Input
+                        id="co_applicant_pin_code"
+                        value={formData.co_applicant_pin_code}
+                        onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value)}
+                        placeholder="6-digit PIN code"
+                        maxLength={6}
+                        className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
+                      />
+                      {errors.co_applicant_pin_code && (
+                        <p className="text-sm text-destructive">{errors.co_applicant_pin_code}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Form Actions */}
           <div className="flex justify-end space-x-3 pt-4 border-t">

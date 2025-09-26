@@ -26,17 +26,33 @@ import { useToast } from "@/hooks/use-toast";
 interface Lead {
   case_id: string;
   student_name: string;
-  student_phone_masked: string;
-  lender_name: string;
+  student_phone: string;
+  student_email?: string;
+  student_pin_code: string;
+  country: string;
+  universities: string[];
+  primary_university: string;
+  intake_month: string; // "YYYY-MM" format
   loan_type: 'secured' | 'unsecured';
+  amount_requested: number;
   status: string;
   sub_status?: string;
-  amount_requested: number;
-  docs_verified_count: number;
-  required_docs_count: number;
+  lender: string;
+  docs_verified: number;
+  docs_required: number;
+  updated_at: string;
   created_at: string;
-  country: string;
-  university: string;
+  // Test scores (optional)
+  gmat_score?: number;
+  gre_score?: number;
+  toefl_score?: number;
+  pte_score?: number;
+  ielts_score?: number;
+  // Co-applicant details
+  co_applicant_name?: string;
+  co_applicant_salary?: number;
+  co_applicant_relationship?: string;
+  co_applicant_pin_code?: string;
 }
 
 interface LeadDetailSheetProps {
@@ -188,7 +204,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     <div>
                       <p className="text-sm text-muted-foreground">Student</p>
                       <p className="font-semibold">{lead.student_name}</p>
-                      <p className="text-sm text-muted-foreground">{lead.student_phone_masked}</p>
+                      <p className="text-sm text-muted-foreground">{lead.student_phone}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -215,7 +231,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     <Building2 className="h-8 w-8 text-accent-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Lender</p>
-                      <p className="font-semibold">{lead.lender_name}</p>
+                      <p className="font-semibold">{lead.lender}</p>
                       <p className="text-sm text-muted-foreground">KAM: John Smith</p>
                     </div>
                   </div>
@@ -229,7 +245,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     <div>
                       <p className="text-sm text-muted-foreground">Destination</p>
                       <p className="font-semibold">{lead.country}</p>
-                      <p className="text-sm text-muted-foreground">{lead.university}</p>
+                      <p className="text-sm text-muted-foreground">{lead.universities[0] || lead.primary_university}</p>
                     </div>
                   </div>
                 </CardContent>

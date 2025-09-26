@@ -31,17 +31,33 @@ import { EmptyState } from "@/components/ui/empty-state";
 interface Lead {
   case_id: string;
   student_name: string;
-  student_phone_masked: string;
-  lender_name: string;
+  student_phone: string;
+  student_email?: string;
+  student_pin_code: string;
+  country: string;
+  universities: string[];
+  primary_university: string;
+  intake_month: string; // "YYYY-MM" format
   loan_type: 'secured' | 'unsecured';
+  amount_requested: number;
   status: string;
   sub_status?: string;
-  amount_requested: number;
-  docs_verified_count: number;
-  required_docs_count: number;
+  lender: string;
+  docs_verified: number;
+  docs_required: number;
+  updated_at: string;
   created_at: string;
-  country: string;
-  university: string;
+  // Test scores (optional)
+  gmat_score?: number;
+  gre_score?: number;
+  toefl_score?: number;
+  pte_score?: number;
+  ielts_score?: number;
+  // Co-applicant details
+  co_applicant_name?: string;
+  co_applicant_salary?: number;
+  co_applicant_relationship?: string;
+  co_applicant_pin_code?: string;
 }
 
 interface LeadsTabProps {
@@ -351,7 +367,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                 </TableHeader>
                 <TableBody>
                   {leads.map((lead) => {
-                    const docsProgress = getDocsProgress(lead.docs_verified_count, lead.required_docs_count);
+                    const docsProgress = getDocsProgress(lead.docs_verified, lead.docs_required);
                     const IconComponent = docsProgress.icon;
                     
                     return (
@@ -360,10 +376,10 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                         <TableCell>
                           <div>
                             <div className="font-medium">{lead.student_name}</div>
-                            <div className="text-sm text-muted-foreground">{lead.student_phone_masked}</div>
+                            <div className="text-sm text-muted-foreground">{lead.student_phone}</div>
                           </div>
                         </TableCell>
-                        <TableCell>{lead.lender_name}</TableCell>
+                        <TableCell>{lead.lender}</TableCell>
                         <TableCell>
                           <Badge className={cn("capitalize", getLoanTypeBadge(lead.loan_type))}>
                             {lead.loan_type}
@@ -385,7 +401,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                           <div className="flex items-center space-x-2">
                             <IconComponent className={cn("h-4 w-4", docsProgress.color)} />
                             <span className="text-sm">
-                              {lead.docs_verified_count}/{lead.required_docs_count}
+                              {lead.docs_verified}/{lead.docs_required}
                             </span>
                           </div>
                         </TableCell>
