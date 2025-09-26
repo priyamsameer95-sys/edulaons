@@ -26,17 +26,6 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
   const [uploading, setUploading] = useState<string[]>([]);
 
-  // Track when upload starts to show uploading state
-  const handleUploadStart = (documentTypeId: string) => {
-    setUploading(prev => [...prev, documentTypeId]);
-    
-    // Add to uploaded docs with uploading status
-    setUploadedDocs(prev => [
-      ...prev.filter(doc => doc.documentTypeId !== documentTypeId),
-      { documentTypeId, file: new File([], 'temp'), status: 'uploading' }
-    ]);
-  };
-
   const getDocumentStatus = (documentTypeId: string) => {
     const doc = uploadedDocs.find(d => d.documentTypeId === documentTypeId);
     if (!doc) return null;
