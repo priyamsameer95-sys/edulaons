@@ -26,80 +26,15 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
   const [uploading, setUploading] = useState<string[]>([]);
 
-  const handleFileUpload = async (files: File[], documentTypeId: string) => {
-    if (!leadId) {
-      toast({
-        title: "Error",
-        description: "Lead must be created first before uploading documents",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const file = files[0]; // Take first file only
-    if (!file) return;
-
-    // Add to uploading state
+  // Track when upload starts to show uploading state
+  const handleUploadStart = (documentTypeId: string) => {
     setUploading(prev => [...prev, documentTypeId]);
     
     // Add to uploaded docs with uploading status
     setUploadedDocs(prev => [
       ...prev.filter(doc => doc.documentTypeId !== documentTypeId),
-      { documentTypeId, file, status: 'uploading' }
+      { documentTypeId, file: new File([], 'temp'), status: 'uploading' }
     ]);
-
-    try {
-      // Upload via Supabase edge function
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('leadId', leadId);
-      formData.append('documentTypeId', documentTypeId);
-
-      const { data, error } = await supabase.functions.invoke('upload-document', {
-        body: formData,
-      });
-
-      if (error) throw error;
-
-      // Update status to uploaded
-      setUploadedDocs(prev => 
-        prev.map(doc => 
-          doc.documentTypeId === documentTypeId 
-            ? { ...doc, status: 'uploaded' as const }
-            : doc
-        )
-      );
-
-      toast({
-        title: "Document Uploaded",
-        description: `${file.name} has been uploaded successfully`,
-      });
-
-      // Notify parent component
-      const totalRequired = documentTypes.filter(dt => dt.required).length;
-      const totalUploaded = uploadedDocs.filter(doc => doc.status === 'uploaded').length + 1;
-      onDocumentsChange?.(totalUploaded, totalRequired);
-
-    } catch (error) {
-      console.error('Upload error:', error);
-      
-      // Update status to error
-      setUploadedDocs(prev => 
-        prev.map(doc => 
-          doc.documentTypeId === documentTypeId 
-            ? { ...doc, status: 'error' as const }
-            : doc
-        )
-      );
-
-      toast({
-        title: "Upload Failed",
-        description: "Failed to upload document. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(prev => prev.filter(id => id !== documentTypeId));
-    }
   };
 
   const getDocumentStatus = (documentTypeId: string) => {
@@ -184,9 +119,44 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
               
               {status !== 'uploaded' && (
                 <DocumentUpload
-                  onFilesSelected={(files) => handleFileUpload(files, docType.id)}
-                  accept={docType.accepted_formats.join(',')}
-                  maxSizeKB={docType.max_file_size_pdf / 1024}
+                  leadId={leadId}
+                  documentType={docType}
+                  onUploadSuccess={(document) => {
+                    // Update uploaded docs state
+                    setUploadedDocs(prev => 
+                      prev.map(doc => 
+                        doc.documentTypeId === docType.id 
+                          ? { ...doc, status: 'uploaded' as const }
+                          : doc
+                      )
+                    );
+                    
+                    toast({
+                      title: "Document Uploaded",
+                      description: `${docType.name} has been uploaded successfully`,
+                    });
+
+                    // Notify parent component
+                    const totalRequired = documentTypes.filter(dt => dt.required).length;
+                    const totalUploaded = uploadedDocs.filter(doc => doc.status === 'uploaded').length + 1;
+                    onDocumentsChange?.(totalUploaded, totalRequired);
+                  }}
+                  onUploadError={(error) => {
+                    // Update status to error
+                    setUploadedDocs(prev => 
+                      prev.map(doc => 
+                        doc.documentTypeId === docType.id 
+                          ? { ...doc, status: 'error' as const }
+                          : doc
+                      )
+                    );
+
+                    toast({
+                      title: "Upload Failed",
+                      description: error || "Failed to upload document. Please try again.",
+                      variant: "destructive",
+                    });
+                  }}
                   disabled={isUploading || !leadId}
                   className="h-24"
                 />
