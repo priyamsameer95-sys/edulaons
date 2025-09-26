@@ -8,7 +8,7 @@ async function loadUniversityData(): Promise<UniversityData[]> {
     console.log('Loading university data from CSV file...');
     
     // Fetch the CSV file
-    const response = await fetch('/src/data/University_Level_data.csv');
+    const response = await fetch('/src/data/University_Level_data-2.csv');
     const csvText = await response.text();
     
     // Parse CSV
@@ -53,7 +53,7 @@ async function loadCourseData(): Promise<CourseData[]> {
     console.log('Loading course data from CSV file...');
     
     // Fetch the CSV file
-    const response = await fetch('/src/data/Program_level_combined_output-3.csv');
+    const response = await fetch('/src/data/Program_level_combined_output-4.csv');
     const csvText = await response.text();
     
     // Parse CSV
