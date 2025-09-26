@@ -22,7 +22,7 @@ export interface CourseData {
   starting_month?: string;
 }
 
-// Parse university data from the Excel format
+// Parse university data from the CSV format: Global_Rank,score,name,city,country
 export function parseUniversityData(rawData: string[][]): UniversityData[] {
   const universities: UniversityData[] = [];
   
@@ -30,20 +30,22 @@ export function parseUniversityData(rawData: string[][]): UniversityData[] {
   for (let i = 1; i < rawData.length; i++) {
     const row = rawData[i];
     if (row.length >= 5) {
-      const [rankStr, scoreStr, url, name, location] = row;
+      const [rankStr, scoreStr, name, city, country] = row;
       
-      // Parse location "City, Country"
-      const locationParts = location.split(', ');
-      const city = locationParts[0] || '';
-      const country = locationParts.slice(1).join(', ') || '';
+      // Handle rank ranges like "711-720" or "1001-1200" - take the first number
+      let globalRank: number | undefined;
+      if (rankStr && rankStr.trim()) {
+        const rankMatch = rankStr.trim().match(/^\d+/);
+        globalRank = rankMatch ? parseInt(rankMatch[0]) : undefined;
+      }
       
       universities.push({
-        name: name.trim(),
-        country: country.trim(),
-        city: city.trim(),
-        global_rank: rankStr ? parseInt(rankStr.replace(/[^0-9]/g, '')) : undefined,
-        score: scoreStr ? parseFloat(scoreStr) : undefined,
-        url: url || undefined,
+        name: name?.trim() || '',
+        country: country?.trim() || '',
+        city: city?.trim() || '',
+        global_rank: globalRank,
+        score: scoreStr && scoreStr.trim() ? parseFloat(scoreStr.trim()) : undefined,
+        url: undefined, // URL not provided in new CSV format
       });
     }
   }
@@ -74,10 +76,13 @@ export function parseCourseData(rawData: string[][]): CourseData[] {
       ] = row;
       
       if (university_name && degree && stream_name && program_name && study_level) {
+        // Clean stream_name by removing count numbers like "(1)" at the end
+        const cleanStreamName = stream_name.replace(/\s*\(\d+\)\s*$/, '').trim();
+        
         courses.push({
           university_name: university_name.trim(),
           degree: degree.trim(),
-          stream_name: stream_name.replace(/<br\/>.*$/, '').trim(), // Remove HTML and count
+          stream_name: cleanStreamName,
           program_name: program_name.trim(),
           study_level: study_level.trim(),
           course_intensity: course_intensity?.trim(),

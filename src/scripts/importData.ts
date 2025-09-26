@@ -1,27 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { parseUniversityData, parseCourseData, importUniversities, importCourses, type UniversityData, type CourseData } from "@/utils/dataImport";
-import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 
-// Load and parse the university Excel data
+// Load and parse the university CSV data
 async function loadUniversityData(): Promise<UniversityData[]> {
   try {
-    console.log('Loading university data from Excel file...');
+    console.log('Loading university data from CSV file...');
     
-    // Fetch the Excel file
-    const response = await fetch('/src/data/University_Level_data-2.xlsx');
-    const arrayBuffer = await response.arrayBuffer();
+    // Fetch the CSV file
+    const response = await fetch('/src/data/University_Level_data.csv');
+    const csvText = await response.text();
     
-    // Parse Excel file
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
+    // Parse CSV
+    const result = Papa.parse(csvText, {
+      skipEmptyLines: true,
+      header: false
+    });
     
-    // Convert to array of arrays
-    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-    
-    console.log(`Loaded ${rawData.length - 1} universities from Excel file`);
-    return parseUniversityData(rawData);
+    console.log(`Loaded ${result.data.length - 1} universities from CSV file`);
+    return parseUniversityData(result.data as string[][]);
   } catch (error) {
     console.error('Error loading university data from Excel:', error);
     console.log('Falling back to sample data...');
@@ -56,7 +53,7 @@ async function loadCourseData(): Promise<CourseData[]> {
     console.log('Loading course data from CSV file...');
     
     // Fetch the CSV file
-    const response = await fetch('/src/data/Program_level_combined_output-2.csv');
+    const response = await fetch('/src/data/Program_level_combined_output-3.csv');
     const csvText = await response.text();
     
     // Parse CSV
