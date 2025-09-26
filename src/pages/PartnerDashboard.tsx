@@ -62,11 +62,11 @@ const PartnerDashboard = () => {
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
-            <TabsTrigger value="leads" className="flex items-center gap-2 bg-violet-300 hover:bg-violet-200">
+            <TabsTrigger value="leads" className="flex items-center gap-2 bg-green-50">
               <Users className="h-4 w-4" />
               Leads
             </TabsTrigger>
-            <TabsTrigger value="payouts" className="flex items-center gap-2 bg-emerald-100">
+            <TabsTrigger value="payouts" className="flex items-center gap-2 bg-emerald-100 rounded-sm font-bold">
               <BadgeIndianRupee className="h-4 w-4" />
               Payouts
             </TabsTrigger>
