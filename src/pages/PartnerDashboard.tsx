@@ -7,7 +7,6 @@ import { Plus, FileBarChart, Users, CheckCircle, BadgeIndianRupee } from "lucide
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
 import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
-
 const PartnerDashboard = () => {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("leads");
@@ -26,34 +25,31 @@ const PartnerDashboard = () => {
     const timer = setTimeout(() => {
       // In real app, calculate these from partner_cases_overview
       setKpis({
-        totalLeads: 0,  // count(*) from partner_cases_overview
-        inPipeline: 0,  // count where status in ('new','qualified','docs_pending','docs_verified','applied')
-        sanctioned: 0,  // count where status='sanctioned'
-        disbursed: 0    // count where status='disbursed'
+        totalLeads: 0,
+        // count(*) from partner_cases_overview
+        inPipeline: 0,
+        // count where status in ('new','qualified','docs_pending','docs_verified','applied')
+        sanctioned: 0,
+        // count where status='sanctioned'
+        disbursed: 0 // count where status='disbursed'
       });
       setKpisLoading(false);
     }, 600);
-
     return () => clearTimeout(timer);
   }, []);
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Partner Dashboard</h1>
+              <h1 className="text-2xl font-bold text-sky-700">Cashkaro - Partner Dashboard</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Manage your education loan leads and track payouts
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              <Button
-                onClick={() => setNewLeadOpen(true)}
-                className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground shadow-md"
-              >
+              <Button onClick={() => setNewLeadOpen(true)} className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground shadow-md">
                 <Plus className="h-4 w-4 mr-2" />
                 New Lead
               </Button>
@@ -66,11 +62,11 @@ const PartnerDashboard = () => {
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
-            <TabsTrigger value="leads" className="flex items-center gap-2">
+            <TabsTrigger value="leads" className="flex items-center gap-2 bg-violet-300 hover:bg-violet-200">
               <Users className="h-4 w-4" />
               Leads
             </TabsTrigger>
-            <TabsTrigger value="payouts" className="flex items-center gap-2">
+            <TabsTrigger value="payouts" className="flex items-center gap-2 bg-emerald-100">
               <BadgeIndianRupee className="h-4 w-4" />
               Payouts
             </TabsTrigger>
@@ -87,11 +83,7 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>
-                  )}
+                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>}
                   <p className="text-xs text-muted-foreground mt-1">All-time leads created</p>
                 </CardContent>
               </Card>
@@ -104,11 +96,7 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>
-                  )}
+                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Active processing</p>
                 </CardContent>
               </Card>
@@ -121,11 +109,7 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>
-                  )}
+                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Approved loans</p>
                 </CardContent>
               </Card>
@@ -138,11 +122,7 @@ const PartnerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? (
-                    <Skeleton className="h-8 w-16 mb-1" />
-                  ) : (
-                    <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>
-                  )}
+                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Funds released</p>
                 </CardContent>
               </Card>
@@ -158,25 +138,15 @@ const PartnerDashboard = () => {
       </div>
 
       {/* New Lead Modal */}
-      <NewLeadModal 
-        open={newLeadOpen} 
-        onOpenChange={setNewLeadOpen}
-        onSuccess={() => {
-          // Refresh data and focus new lead
-          setActiveTab("leads");
-        }}
-      />
+      <NewLeadModal open={newLeadOpen} onOpenChange={setNewLeadOpen} onSuccess={() => {
+      // Refresh data and focus new lead
+      setActiveTab("leads");
+    }} />
 
       {/* Floating Action Button - Mobile */}
-      <Button
-        onClick={() => setNewLeadOpen(true)}
-        className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full bg-gradient-primary hover:bg-primary-hover shadow-lg"
-        size="icon"
-      >
+      <Button onClick={() => setNewLeadOpen(true)} className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full bg-gradient-primary hover:bg-primary-hover shadow-lg" size="icon">
         <Plus className="h-6 w-6" />
       </Button>
-    </div>
-  );
+    </div>;
 };
-
 export default PartnerDashboard;
