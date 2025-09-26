@@ -40,16 +40,16 @@ const PartnerDashboard = () => {
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-sky-700">Cashkaro - Partner Dashboard</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-primary">Cashkaro</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Manage your education loan leads and track payouts
+                Partner Dashboard - Manage leads and track payouts
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              <Button onClick={() => setNewLeadOpen(true)} className="bg-gradient-primary hover:bg-primary-hover text-primary-foreground shadow-md">
+              <Button onClick={() => setNewLeadOpen(true)} size="lg" className="shadow-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 New Lead
               </Button>
@@ -59,69 +59,73 @@ const PartnerDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
-            <TabsTrigger value="leads" className="flex items-center gap-2 bg-green-50">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mb-6 sm:mb-8 h-12">
+            <TabsTrigger value="leads" className="flex items-center gap-2 text-sm font-medium">
               <Users className="h-4 w-4" />
-              Leads
+              <span className="hidden sm:inline">Leads</span>
             </TabsTrigger>
-            <TabsTrigger value="payouts" className="flex items-center gap-2 bg-emerald-100 rounded-sm font-bold">
+            <TabsTrigger value="payouts" className="flex items-center gap-2 text-sm font-medium">
               <BadgeIndianRupee className="h-4 w-4" />
-              Payouts
+              <span className="hidden sm:inline">Payouts</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="leads" className="space-y-6">
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-card border-0 shadow-md">
-                <CardHeader className="pb-2">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <Card className="border shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <FileBarChart className="h-4 w-4 mr-2" />
-                    Total Leads
+                    <FileBarChart className="h-4 w-4 mr-2 text-primary" />
+                    <span className="hidden sm:inline">Total Leads</span>
+                    <span className="sm:hidden">Total</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>}
-                  <p className="text-xs text-muted-foreground mt-1">All-time leads created</p>
+                  <p className="text-xs text-muted-foreground mt-1">All-time created</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card border-0 shadow-md">
-                <CardHeader className="pb-2">
+              <Card className="border shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    In Pipeline
+                    <Users className="h-4 w-4 mr-2 text-warning" />
+                    <span className="hidden sm:inline">In Pipeline</span>
+                    <span className="sm:hidden">Pipeline</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Active processing</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card border-0 shadow-md">
-                <CardHeader className="pb-2">
+              <Card className="border shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Sanctioned
+                    <CheckCircle className="h-4 w-4 mr-2 text-primary" />
+                    <span className="hidden sm:inline">Sanctioned</span>
+                    <span className="sm:hidden">Approved</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Approved loans</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-card border-0 shadow-md">
-                <CardHeader className="pb-2">
+              <Card className="border shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <BadgeIndianRupee className="h-4 w-4 mr-2" />
-                    Disbursed
+                    <BadgeIndianRupee className="h-4 w-4 mr-2 text-success" />
+                    <span className="hidden sm:inline">Disbursed</span>
+                    <span className="sm:hidden">Released</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Funds released</p>
                 </CardContent>
@@ -144,7 +148,11 @@ const PartnerDashboard = () => {
     }} />
 
       {/* Floating Action Button - Mobile */}
-      <Button onClick={() => setNewLeadOpen(true)} className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full bg-gradient-primary hover:bg-primary-hover shadow-lg" size="icon">
+      <Button 
+        onClick={() => setNewLeadOpen(true)} 
+        className="fixed bottom-6 right-6 sm:hidden h-14 w-14 rounded-full shadow-xl hover:shadow-2xl z-50" 
+        size="icon"
+      >
         <Plus className="h-6 w-6" />
       </Button>
     </div>;

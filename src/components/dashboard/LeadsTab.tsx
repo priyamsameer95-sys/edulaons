@@ -148,15 +148,15 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card className="border-0 shadow-md">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center">
-            <Filter className="h-5 w-5 mr-2" />
+          <CardTitle className="text-lg flex items-center text-foreground">
+            <Filter className="h-5 w-5 mr-2 text-primary" />
             Filters
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {/* Search */}
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
@@ -295,9 +295,9 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
 
       {/* Data Table or Empty State */}
       {loading ? (
-        <Card className="border-0 shadow-md">
+        <Card className="border shadow-lg">
           <CardHeader>
-            <CardTitle>Leads Overview</CardTitle>
+            <CardTitle className="text-foreground">Leads Overview</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -345,9 +345,9 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
           } : undefined}
         />
       ) : (
-        <Card className="border-0 shadow-md">
+        <Card className="border shadow-lg">
           <CardHeader>
-            <CardTitle>Leads Overview</CardTitle>
+            <CardTitle className="text-foreground">Leads Overview</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
