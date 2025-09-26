@@ -39,8 +39,8 @@ export const useUniversities = (country: string) => {
       try {
         let query = supabase
           .from('universities')
-          .select('id, name, country, city, global_rank, score')
-          .order('global_rank', { ascending: true, nullsFirst: false });
+          .select('*')
+          .order('rank', { ascending: true, nullsFirst: false });
 
         if (country) {
           query = query.eq('country', country);
@@ -53,13 +53,13 @@ export const useUniversities = (country: string) => {
           setUniversities([]);
         } else {
           // Transform to match existing interface
-          const transformedData: University[] = (data || []).map(uni => ({
+          const transformedData: University[] = (data || []).map((uni: any) => ({
             id: uni.id,
             name: uni.name,
             country: uni.country,
             city: uni.city,
-            qs_rank: uni.global_rank,
-            popular: uni.global_rank ? uni.global_rank <= 100 : false, // Top 100 are popular
+            qs_rank: uni.rank,
+            popular: uni.rank ? uni.rank <= 100 : false, // Top 100 are popular
           }));
           
           setUniversities(transformedData);
