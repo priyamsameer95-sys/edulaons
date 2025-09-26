@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CalendarIcon, User, GraduationCap, Loader2, Trophy, Users, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, convertNumberToWords } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { UniversitySelector } from "@/components/ui/university-selector";
 import { MonthYearPicker } from "@/components/ui/month-year-picker";
@@ -89,6 +89,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
   const [coApplicantOpen, setCoApplicantOpen] = useState(true); // Open by default since mandatory
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [amountInWords, setAmountInWords] = useState<string>('');
   const { toast } = useToast();
 
   const countries = [
@@ -156,14 +157,6 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     // Loan type validation
     if (!formData.loan_type) {
       newErrors.loan_type = 'Please select a loan type';
-    }
-
-    // Amount validation
-    const amount = parseFloat(formData.amount_requested);
-    if (!formData.amount_requested.trim()) {
-      newErrors.amount_requested = 'Loan amount is required';
-    } else if (isNaN(amount) || amount <= 0) {
-      newErrors.amount_requested = 'Please enter a valid amount greater than 0';
     }
 
     // Test scores validation (optional but must be in valid ranges)
@@ -351,6 +344,17 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Update amount in words for amount_requested field
+    if (field === 'amount_requested') {
+      const numericAmount = parseFloat(value);
+      if (!isNaN(numericAmount) && numericAmount > 0) {
+        setAmountInWords(convertNumberToWords(numericAmount));
+      } else {
+        setAmountInWords('');
+      }
+    }
+    
     // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field as keyof FormErrors]: undefined }));
@@ -675,7 +679,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
               {/* Requested Amount */}
               <div className="space-y-2">
                 <Label htmlFor="amount_requested" className="text-sm font-medium">
-                  Requested Amount (₹) <span className="text-destructive">*</span>
+                  Requested Amount (₹)
                 </Label>
                 <Input
                   id="amount_requested"
@@ -683,12 +687,12 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   value={formData.amount_requested}
                   onChange={(e) => handleInputChange('amount_requested', e.target.value)}
                   placeholder="Enter loan amount in rupees"
-                  min="1"
                   step="1000"
-                  className={errors.amount_requested ? 'border-destructive' : ''}
                 />
-                {errors.amount_requested && (
-                  <p className="text-sm text-destructive">{errors.amount_requested}</p>
+                {amountInWords && (
+                  <p className="text-sm text-muted-foreground">
+                    ₹ {amountInWords}
+                  </p>
                 )}
               </div>
             </CardContent>
