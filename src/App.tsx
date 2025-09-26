@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PartnerDashboard from "./pages/PartnerDashboard";
 import NotFound from "./pages/NotFound";
 
+// Import comprehensive university data import script
+import "./scripts/importData";
+
 const queryClient = new QueryClient();
 
 const App = () => (
