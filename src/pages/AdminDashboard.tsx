@@ -392,8 +392,7 @@ const AdminDashboard = () => {
   };
 
   const handleStatusUpdated = () => {
-    fetchRecentLeads(); // Refresh recent activity data
-    // Also refresh any other relevant data if needed
+    fetchRecentLeads();
   };
 
   // Convert Lead to RefactoredLead format for AdminLeadActions
