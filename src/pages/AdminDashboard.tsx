@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -37,6 +37,7 @@ interface Lead {
   case_id: string;
   status: string;
   loan_amount: number;
+  study_destination: string;
   created_at: string;
   students: {
     name: string;
@@ -227,6 +228,7 @@ const AdminDashboard = () => {
           case_id,
           status,
           loan_amount,
+          study_destination,
           created_at,
           students (
             name,
@@ -453,103 +455,178 @@ const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Top Partner Card */}
-            <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
+          <div className="space-y-6">
+            {/* Compact Overview Cards - Full Width */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* Top Partner Card - Compact */}
+              <Card className="hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
                     <Trophy className="h-4 w-4 text-warning" />
                     Top Partner
                   </CardTitle>
-                  <CardDescription>Highest lead volume</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {topPartner ? (
-                  <div className="space-y-3">
-                    <div className="text-2xl font-bold text-foreground">{topPartner.name}</div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Total Leads</span>
-                      <span className="font-semibold">{topPartner.total_leads}</span>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {topPartner ? (
+                    <div className="space-y-2">
+                      <div className="text-lg font-bold text-foreground">{topPartner.name}</div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Leads:</span>
+                        <span className="font-semibold">{topPartner.total_leads}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Share:</span>
+                        <Badge variant="secondary" className="text-xs">{topPartner.percentage}%</Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Market Share</span>
-                      <Badge variant="secondary">{topPartner.percentage}%</Badge>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground">No data available</div>
-                )}
-              </CardContent>
-            </Card>
+                  ) : (
+                    <div className="text-muted-foreground text-sm">No data available</div>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* Pipeline vs Sanctioned Card */}
-            <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
+              {/* Pipeline Overview */}
+              <Card className="hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
                     <BarChart3 className="h-4 w-4 text-primary" />
-                    Loan Pipeline
+                    Pipeline
                   </CardTitle>
-                  <CardDescription>Pipeline vs sanctioned</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Pipeline</span>
-                    <span className="font-semibold">{formatCurrency(loanComparison.pipeline)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Sanctioned</span>
-                    <span className="font-semibold text-success">{formatCurrency(loanComparison.sanctioned)}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className="bg-success h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${loanComparison.conversionRate}%` }}
-                    />
-                  </div>
-                  <div className="text-center">
-                    <Badge variant="outline">{loanComparison.conversionRate}% conversion</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity Card (Compressed) */}
-            <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <Clock className="h-4 w-4 text-accent-foreground" />
-                    Recent Activity
-                  </CardTitle>
-                  <CardDescription>Latest submissions</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recentLeads.slice(0, 4).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{lead.students?.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {lead.partners?.name}
-                        </p>
-                      </div>
-                      <div className="text-right ml-2">
-                        <Badge variant="outline" className={`text-xs ${getStatusColor(lead.status)}`}>
-                          {lead.status === 'in_progress' ? 'Progress' : lead.status}
-                        </Badge>
-                        <p className="text-xs font-medium mt-1">
-                          {formatCurrency(Number(lead.loan_amount))}
-                        </p>
-                      </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div className="text-lg font-bold text-foreground">
+                      {formatCurrency(loanComparison.pipeline)}
                     </div>
-                  ))}
+                    <div className="w-full bg-muted rounded-full h-1.5">
+                      <div 
+                        className="bg-primary h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${Math.min(100, (loanComparison.pipeline / (loanComparison.pipeline || 1)) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Total in pipeline</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Sanctioned Overview */}
+              <Card className="hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <CheckCircle className="h-4 w-4 text-success" />
+                    Sanctioned
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div className="text-lg font-bold text-success">
+                      {formatCurrency(loanComparison.sanctioned)}
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5">
+                      <div 
+                        className="bg-success h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${loanComparison.conversionRate}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{loanComparison.conversionRate}% conversion</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card className="hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <TrendingUp className="h-4 w-4 text-accent-foreground" />
+                    Quick Stats
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Active:</span>
+                      <span className="font-semibold">{kpis.inPipeline}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Partners:</span>
+                      <span className="font-semibold">{kpis.totalPartners}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total:</span>
+                      <span className="font-semibold">{kpis.totalLeads}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activity - Full Width Table Style */}
+            <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-accent-foreground" />
+                      Recent Activity
+                    </CardTitle>
+                    <CardDescription>Latest lead submissions across all partners</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {recentLeads.length} active leads
+                  </Badge>
                 </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {recentLeads.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent activity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-0">
+                    {/* Header */}
+                    <div className="grid grid-cols-12 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
+                      <div className="col-span-3">Student</div>
+                      <div className="col-span-2">Partner</div>
+                      <div className="col-span-2">Destination</div>
+                      <div className="col-span-2">Loan Amount</div>
+                      <div className="col-span-2">Status</div>
+                      <div className="col-span-1">Date</div>
+                    </div>
+                    {/* Data Rows */}
+                    {recentLeads.slice(0, 8).map((lead) => (
+                      <div key={lead.id} className="grid grid-cols-12 gap-4 py-3 border-b border-border/50 hover:bg-muted/30 transition-colors rounded">
+                        <div className="col-span-3">
+                          <p className="font-medium text-sm truncate">{lead.students?.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{lead.students?.email}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge variant="outline" className="text-xs">
+                            {lead.partners?.name}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-sm">{lead.study_destination}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="font-semibold text-sm">
+                            {formatCurrency(Number(lead.loan_amount))}
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge variant="outline" className={`text-xs ${getStatusColor(lead.status)}`}>
+                            {lead.status === 'in_progress' ? 'Progress' : lead.status}
+                          </Badge>
+                        </div>
+                        <div className="col-span-1">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(lead.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
