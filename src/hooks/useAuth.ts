@@ -24,16 +24,10 @@ export function useAuth() {
         .from('app_users')
         .select('*')
         .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle to avoid errors when no data found
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching app user:', error);
-        return null;
-      }
-
-      // If no app_users record exists, handle gracefully
-      if (!data) {
-        console.log('No app_users record found for user:', userId);
         return null;
       }
 
@@ -47,12 +41,12 @@ export function useAuth() {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch app user data
+          // Fetch app user data without async callback to avoid deadlock
           setTimeout(async () => {
             const appUserData = await fetchAppUser(session.user.id);
             setAppUser(appUserData);
@@ -85,81 +79,6 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Handle hardcoded admin login
-      if (email === 'priyam.sameer@cashkaro.com' && password === '8238452277') {
-        // Try to sign in, if user doesn't exist in auth, create it
-        let authResult = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        // If user doesn't exist in auth, create it
-        if (authResult.error && authResult.error.message.includes('Invalid login credentials')) {
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/admin`
-            }
-          });
-
-          if (signUpError) {
-            toast({
-              title: "Admin Setup Failed",
-              description: signUpError.message,
-              variant: "destructive",
-            });
-            return { error: { message: signUpError.message } };
-          }
-
-          // Now sign in with the created account
-          authResult = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-        }
-
-        if (authResult.error) {
-          toast({
-            title: "Admin Login Failed",
-            description: authResult.error.message,
-            variant: "destructive",
-          });
-          return { error: { message: authResult.error.message } };
-        }
-
-        // Ensure app_users entry exists for admin
-        if (authResult.data.user) {
-          const { error: updateError } = await supabase
-            .from('app_users')
-            .upsert({
-              id: authResult.data.user.id,
-              email: authResult.data.user.email,
-              role: 'super_admin',
-              partner_id: null,
-              is_active: true
-            });
-
-          if (updateError) {
-            console.error('Error updating app_users for admin:', updateError);
-          } else {
-            // Immediately fetch and set the appUser to trigger redirection
-            const adminUser = await fetchAppUser(authResult.data.user.id);
-            if (adminUser) {
-              setAppUser(adminUser);
-            }
-          }
-
-          toast({
-            title: "Admin Access Granted",
-            description: "Welcome to the admin dashboard!",
-          });
-        }
-
-        return { error: null };
-      }
-
-      // Regular user login
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,

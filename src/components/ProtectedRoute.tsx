@@ -5,10 +5,9 @@ import { Loader2 } from 'lucide-react';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'partner' | 'admin' | 'super_admin';
-  partnerId?: string;
 }
 
-const ProtectedRoute = ({ children, requiredRole, partnerId }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, appUser, loading } = useAuth();
 
   if (loading) {
@@ -52,13 +51,6 @@ const ProtectedRoute = ({ children, requiredRole, partnerId }: ProtectedRoutePro
     if (!hasRequiredRole()) {
       return <Navigate to="/unauthorized" replace />;
     }
-  }
-
-  // Check partner access for partner routes
-  if (partnerId && appUser.role === 'partner') {
-    // For partner users, ensure they can only access their own partner dashboard
-    // This would require fetching partner data to match partner_code to partner_id
-    // For now, we'll allow access and handle this in the component
   }
 
   return <>{children}</>;

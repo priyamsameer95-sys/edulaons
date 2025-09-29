@@ -8,6 +8,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import DashboardRouter from "./components/DashboardRouter";
 
 // Import comprehensive university data import script
 import "./scripts/importData";
@@ -21,8 +22,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Redirect root to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Redirect root to dashboard router */}
+          <Route path="/" element={<DashboardRouter />} />
           
           {/* Authentication */}
           <Route path="/login" element={<Login />} />
