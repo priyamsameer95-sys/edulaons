@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Link2, QrCode, Copy, CheckCircle } from 'lucide-react';
+import { Building2, Link2, QrCode, Copy, CheckCircle, Eye, EyeOff, TestTube } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CreatePartnerModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface CreatePartnerModalProps {
 interface PartnerForm {
   name: string;
   email: string;
+  password: string;
   phone: string;
   address: string;
   partnerCode: string;
@@ -29,13 +31,31 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
   const [formData, setFormData] = useState<PartnerForm>({
     name: '',
     email: '',
+    password: '',
     phone: '',
     address: '',
     partnerCode: '',
   });
   const [loading, setLoading] = useState(false);
-  const [createdPartner, setCreatedPartner] = useState<{ code: string; url: string } | null>(null);
+  const [createdPartner, setCreatedPartner] = useState<{ 
+    code: string; 
+    url: string; 
+    email: string; 
+    password: string; 
+    name: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [testingLogin, setTestingLogin] = useState(false);
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData(prev => ({ ...prev, password }));
+  };
 
   const generatePartnerCode = () => {
     const code = formData.name
@@ -47,10 +67,10 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.partnerCode) {
+    if (!formData.name || !formData.email || !formData.password || !formData.partnerCode) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields including password",
         variant: "destructive",
       });
       return;
@@ -58,50 +78,40 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
 
     setLoading(true);
     try {
-      // Check if partner code already exists
-      const { data: existingPartner } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('partner_code', formData.partnerCode)
-        .single();
-
-      if (existingPartner) {
-        toast({
-          title: "Partner Code Exists",
-          description: "Please choose a different partner code",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Create partner
-      const { data: partner, error: partnerError } = await supabase
-        .from('partners')
-        .insert({
+      // Call the edge function to create partner with auth
+      const { data, error } = await supabase.functions.invoke('create-partner-with-auth', {
+        body: {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone || null,
-          address: formData.address || null,
-          partner_code: formData.partnerCode,
-          is_active: true,
-        })
-        .select()
-        .single();
+          password: formData.password,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          partnerCode: formData.partnerCode,
+        }
+      });
 
-      if (partnerError) throw partnerError;
+      if (error) {
+        throw new Error(error.message || 'Failed to create partner');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       // Generate shareable URL
-      const partnerUrl = `${window.location.origin}/partner/${formData.partnerCode}`;
+      const partnerUrl = data.partner.dashboard_url;
       
       setCreatedPartner({
         code: formData.partnerCode,
-        url: partnerUrl
+        url: partnerUrl,
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
       });
 
       toast({
         title: "Partner Created Successfully",
-        description: `${formData.name} has been added with code: ${formData.partnerCode}`,
+        description: `${formData.name} has been created with login credentials`,
       });
 
       onPartnerCreated();
@@ -109,11 +119,47 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       console.error('Error creating partner:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create partner",
+        description: error.message || "Failed to create partner with credentials",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testLogin = async () => {
+    if (!createdPartner) return;
+    
+    setTestingLogin(true);
+    try {
+      // Test login with the created credentials
+      const { error } = await supabase.auth.signInWithPassword({
+        email: createdPartner.email,
+        password: createdPartner.password,
+      });
+
+      if (error) {
+        toast({
+          title: "Login Test Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login Test Successful",
+          description: "Partner credentials are working correctly",
+        });
+        // Sign out after test
+        await supabase.auth.signOut();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login Test Error", 
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingLogin(false);
     }
   };
 
@@ -124,7 +170,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       setTimeout(() => setCopied(false), 2000);
       toast({
         title: "Copied!",
-        description: "Link copied to clipboard",
+        description: "Content copied to clipboard",
       });
     } catch (error) {
       toast({
@@ -139,12 +185,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     setFormData({
       name: '',
       email: '',
+      password: '',
       phone: '',
       address: '',
       partnerCode: '',
     });
     setCreatedPartner(null);
     setCopied(false);
+    setShowPassword(false);
   };
 
   const handleClose = () => {
@@ -155,43 +203,88 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
   if (createdPartner) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-success" />
               Partner Created Successfully!
             </DialogTitle>
             <DialogDescription>
-              Share this link with the partner to access their dashboard
+              Partner account created with login credentials
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="partner-url" className="text-sm font-medium">
-                Dashboard URL:
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Input
-                id="partner-url"
-                value={createdPartner.url}
-                readOnly
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => copyToClipboard(createdPartner.url)}
-                className="px-3"
-              >
-                {copied ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
+            {/* Dashboard URL */}
+            <div>
+              <Label className="text-sm font-medium">Dashboard URL:</Label>
+              <div className="flex items-center space-x-2 mt-1">
+                <Input value={createdPartner.url} readOnly className="flex-1" />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => copyToClipboard(createdPartner.url)}
+                  className="px-3"
+                >
                   <Copy className="h-4 w-4" />
-                )}
-              </Button>
+                </Button>
+              </div>
             </div>
+
+            <Separator />
+
+            {/* Login Credentials */}
+            <Alert>
+              <Building2 className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p className="font-medium">Login Credentials:</p>
+                  <div className="grid gap-2">
+                    <div>
+                      <Label className="text-xs">Email:</Label>
+                      <div className="flex items-center gap-2">
+                        <code className="text-sm bg-muted px-2 py-1 rounded">{createdPartner.email}</code>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(createdPartner.email)}
+                          className="h-6 px-2"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Password:</Label>
+                      <div className="flex items-center gap-2">
+                        <code className="text-sm bg-muted px-2 py-1 rounded flex-1">
+                          {showPassword ? createdPartner.password : '••••••••••••'}
+                        </code>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="h-6 px-2"
+                        >
+                          {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(createdPartner.password)}
+                          className="h-6 px-2"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
 
             <Separator />
 
@@ -199,26 +292,33 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
               <Badge variant="outline" className="text-sm">
                 Partner Code: {createdPartner.code}
               </Badge>
-              <p className="text-xs text-muted-foreground">
-                The partner can use this code to access their dedicated dashboard
-              </p>
             </div>
           </div>
 
           <DialogFooter className="sm:justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                resetForm();
-                setCreatedPartner(null);
-              }}
-            >
-              Create Another
-            </Button>
-            <Button onClick={handleClose}>
-              Done
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={testLogin}
+                disabled={testingLogin}
+                className="gap-1"
+              >
+                <TestTube className="h-4 w-4" />
+                {testingLogin ? 'Testing...' : 'Test Login'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  resetForm();
+                  setCreatedPartner(null);
+                }}
+              >
+                Create Another
+              </Button>
+            </div>
+            <Button onClick={handleClose}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -234,7 +334,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
             Create New Partner
           </DialogTitle>
           <DialogDescription>
-            Add a new partner organization with their own dashboard access
+            Add a new partner organization with login credentials and dashboard access
           </DialogDescription>
         </DialogHeader>
 
@@ -261,6 +361,38 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
                 placeholder="partner@example.com"
                 required
               />
+            </div>
+
+            <div>
+              <Label htmlFor="password">Login Password *</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter secure password"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generatePassword}
+                >
+                  Generate
+                </Button>
+              </div>
             </div>
 
             <div>
@@ -309,12 +441,19 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
             </div>
           </div>
 
+          <Alert>
+            <Building2 className="h-4 w-4" />
+            <AlertDescription>
+              This will create a partner account with login credentials that can access their dedicated dashboard.
+            </AlertDescription>
+          </Alert>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Partner'}
+              {loading ? 'Creating Partner...' : 'Create Partner with Login'}
             </Button>
           </DialogFooter>
         </form>
