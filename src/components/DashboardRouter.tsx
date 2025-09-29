@@ -40,7 +40,17 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     fetchPartnerCode();
   }, [appUser, partnerCode]);
 
+  // Debug logging to track routing issues
+  console.log('DashboardRouter Debug:', {
+    loading,
+    fetchingPartnerCode,
+    user: !!user,
+    appUser: appUser ? { role: appUser.role, partner_id: appUser.partner_id, is_active: appUser.is_active } : null,
+    partnerCode
+  });
+
   if (loading || fetchingPartnerCode) {
+    console.log('DashboardRouter: Showing loading state');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -49,10 +59,12 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
   }
 
   if (!user || !appUser) {
+    console.log('DashboardRouter: No user or appUser, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
   if (!appUser.is_active) {
+    console.log('DashboardRouter: User is inactive, showing inactive message');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -65,23 +77,26 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
 
   // Route based on user role
   if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+    console.log('DashboardRouter: Admin/Super Admin detected, redirecting to /admin');
     return <Navigate to="/admin" replace />;
   }
 
-  if (appUser.role === 'partner' && partnerCode) {
-    return <Navigate to={`/partner/${partnerCode}`} replace />;
-  }
-
-  // If we have a partner but no code yet, show loading
-  if (appUser.role === 'partner' && !partnerCode) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+  if (appUser.role === 'partner') {
+    if (partnerCode) {
+      console.log('DashboardRouter: Partner with code, redirecting to partner dashboard:', partnerCode);
+      return <Navigate to={`/partner/${partnerCode}`} replace />;
+    } else {
+      console.log('DashboardRouter: Partner without code, showing loading');
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
   }
 
   // Fallback to login if no valid route found
+  console.log('DashboardRouter: No valid route found, fallback to login');
   return <Navigate to="/login" replace />;
 };
 
