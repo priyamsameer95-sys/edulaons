@@ -50,14 +50,29 @@ serve(async (req) => {
       );
     }
 
-    // Validate file size - use 10MB as per new requirements
-    const isPdf = file.type === 'application/pdf';
-    const maxSize = 10 * 1024 * 1024; // 10MB for all files as per requirements
+    // Validate file size based on document type requirements
+    const maxSizeFromType = file.type === 'application/pdf' 
+      ? documentType.max_file_size_pdf 
+      : documentType.max_file_size_image;
     
-    if (file.size > maxSize) {
+    if (file.size > maxSizeFromType) {
       return new Response(
         JSON.stringify({ 
-          error: `File too large. Maximum size: ${(maxSize / (1024 * 1024)).toFixed(1)}MB` 
+          error: `File too large. Maximum size for ${file.type === 'application/pdf' ? 'PDF' : 'image'} files: ${(maxSizeFromType / (1024 * 1024)).toFixed(1)}MB` 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Validate file format
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !documentType.accepted_formats.includes(fileExtension)) {
+      return new Response(
+        JSON.stringify({ 
+          error: `Unsupported file format. Accepted formats: ${documentType.accepted_formats.join(', ')}` 
         }),
         { 
           status: 400,
@@ -90,7 +105,6 @@ serve(async (req) => {
     }
 
     // Generate filename with new folder structure: /checklists/{leadId}/{documentTypeId}/{filename}
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const storedFilename = file.name;
     const filePath = `checklists/${leadId}/${documentTypeId}/${storedFilename}`;
 
