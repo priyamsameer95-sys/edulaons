@@ -197,98 +197,180 @@ export function DocumentUpload({
   };
 
   return (
-    <div className={cn('space-y-4', className)}>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium">{documentType.name}</h4>
-          {documentType.required && (
-            <Badge variant="secondary" className="text-xs">Required</Badge>
-          )}
+    <div className={cn('space-y-6', className)}>
+      {/* Document Type Info */}
+      <div className="mb-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="space-y-2">
+            <div className="text-sm text-muted-foreground">Clear copy of {documentType.name.toLowerCase()}</div>
+            <div className="text-sm text-muted-foreground">
+              Max size: {formatFileSize(documentType.max_file_size_pdf)} (PDF), {formatFileSize(documentType.max_file_size_image)} (Images)
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground">{documentType.description}</p>
-        <p className="text-xs text-muted-foreground">
-          Max size: {(documentType.max_file_size_pdf / (1024 * 1024)).toFixed(1)}MB (PDF), {' '}
-          {(documentType.max_file_size_image / (1024 * 1024)).toFixed(1)}MB (Images)
-        </p>
       </div>
 
+      {/* Upload Area */}
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
-          'hover:border-primary/50 hover:bg-accent/5',
-          isDragActive && 'border-primary bg-accent/10',
-          disabled && 'opacity-50 cursor-not-allowed',
-          'border-border'
+          "relative group",
+          "border-2 border-dashed rounded-2xl transition-all duration-300",
+          "bg-card/50 backdrop-blur-sm",
+          "hover:bg-card/70 hover:border-primary/40",
+          isDragActive 
+            ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" 
+            : "border-border/30",
+          disabled && "opacity-50 cursor-not-allowed pointer-events-none",
         )}
       >
         <input {...getInputProps()} />
-        <div className="flex flex-col items-center gap-2">
-          <Upload className="h-8 w-8 text-muted-foreground" />
-          <div className="text-sm">
-            {isDragActive ? (
-              <p className="text-primary">Drop the file here...</p>
-            ) : (
-              <div>
-                <p className="font-medium">Click to upload or drag and drop</p>
-                <p className="text-muted-foreground text-xs mt-1">
-                  {documentType.accepted_formats.map(f => f.toUpperCase()).join(', ')}
-                </p>
-              </div>
+        
+        <div className="p-8 text-center">
+          <div className="mb-6">
+            <div className={cn(
+              "inline-flex items-center justify-center w-16 h-16 rounded-2xl transition-all duration-300",
+              isDragActive 
+                ? "bg-primary/20 text-primary" 
+                : "bg-muted/40 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+            )}>
+              <Upload className="h-8 w-8" />
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                {isDragActive ? "Drop your files here" : "Click to upload or drag and drop"}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {documentType.accepted_formats.join(", ").toUpperCase()}
+              </p>
+            </div>
+            
+            {!isDragActive && (
+              <button
+                type="button"
+                className={cn(
+                  "inline-flex items-center gap-2 px-6 py-3 rounded-xl",
+                  "text-sm font-medium transition-all duration-200",
+                  "bg-primary text-primary-foreground",
+                  "hover:bg-primary/90 hover:shadow-lg",
+                  "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                  disabled && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={disabled}
+              >
+                <Upload className="h-4 w-4" />
+                Select Files
+              </button>
             )}
           </div>
         </div>
       </div>
 
+      {/* Upload Queue */}
       {uploadedFiles.length > 0 && (
-        <div className="space-y-3">
-          {uploadedFiles.map((uploadedFile) => (
-            <div
-              key={uploadedFile.id}
-              className="flex items-center gap-3 p-3 border rounded-lg bg-card"
-            >
-              <div className="flex-shrink-0">
-                {uploadedFile.file.type.startsWith('image/') ? (
-                  <Image className="h-5 w-5 text-blue-500" />
-                ) : (
-                  <File className="h-5 w-5 text-red-500" />
+        <div className="space-y-4 mt-6">
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold text-foreground">Upload Progress</h4>
+            <Badge variant="outline" className="px-2 py-1">
+              {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''}
+            </Badge>
+          </div>
+          
+          <div className="space-y-3">
+            {uploadedFiles.map((file) => (
+              <div
+                key={file.id}
+                className={cn(
+                  "p-4 rounded-xl border transition-all duration-200",
+                  "bg-card/50 backdrop-blur-sm",
+                  file.status === 'completed' && "border-success/30 bg-success/5",
+                  file.status === 'error' && "border-destructive/30 bg-destructive/5",
+                  file.status === 'uploading' && "border-primary/30 bg-primary/5"
                 )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{uploadedFile.file.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatFileSize(uploadedFile.file.size)}
-                </p>
-                
-                {uploadedFile.status === 'uploading' && (
-                  <Progress value={uploadedFile.progress} className="mt-2 h-1" />
-                )}
-                
-                {uploadedFile.status === 'error' && (
-                  <p className="text-xs text-destructive mt-1">{uploadedFile.error}</p>
-                )}
-              </div>
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "p-2 rounded-lg",
+                      file.status === 'completed' && "bg-success/20",
+                      file.status === 'error' && "bg-destructive/20",
+                      file.status === 'uploading' && "bg-primary/20"
+                    )}>
+                      {file.file.type.startsWith('image/') ? (
+                        <Image className={cn(
+                          "h-4 w-4",
+                          file.status === 'completed' && "text-success",
+                          file.status === 'error' && "text-destructive",
+                          file.status === 'uploading' && "text-primary"
+                        )} />
+                      ) : (
+                        <File className={cn(
+                          "h-4 w-4",
+                          file.status === 'completed' && "text-success",
+                          file.status === 'error' && "text-destructive",
+                          file.status === 'uploading' && "text-primary"
+                        )} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground truncate max-w-48">
+                        {file.file.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {formatFileSize(file.file.size)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {file.status === 'completed' && (
+                      <div className="p-1 rounded-full bg-success/20">
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      </div>
+                    )}
+                    {file.status === 'error' && (
+                      <div className="p-1 rounded-full bg-destructive/20">
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      </div>
+                    )}
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFile(file.id)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
 
-              <div className="flex-shrink-0 flex items-center gap-2">
-                {uploadedFile.status === 'completed' && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                {/* Progress Bar */}
+                {file.status === 'uploading' && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Uploading...</span>
+                      <span className="text-primary font-medium">{file.progress}%</span>
+                    </div>
+                    <Progress 
+                      value={file.progress} 
+                      className="h-2 bg-muted/30"
+                    />
+                  </div>
                 )}
-                {uploadedFile.status === 'error' && (
-                  <AlertCircle className="h-4 w-4 text-destructive" />
+
+                {/* Error Message */}
+                {file.status === 'error' && file.error && (
+                  <div className="mt-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <p className="text-sm text-destructive">{file.error}</p>
+                  </div>
                 )}
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeFile(uploadedFile.id)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
