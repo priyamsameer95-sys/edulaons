@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DocumentUpload } from "@/components/ui/document-upload";
+import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,7 +155,7 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
                   
                   {/* Upload Area or Status */}
                   {status !== 'uploaded' && (
-                    <DocumentUpload
+                    <EnhancedDocumentUpload
                       leadId={leadId}
                       documentType={docType}
                       onUploadSuccess={(document) => {
@@ -167,8 +168,8 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
                         );
                         
                         toast({
-                          title: "Document Uploaded",
-                          description: `${docType.name} has been uploaded successfully`,
+                          title: "✅ Document Uploaded Successfully",
+                          description: `${docType.name} has been uploaded and is ready for review`,
                         });
 
                         const totalRequired = documentTypes.filter(dt => dt.required).length;
@@ -185,8 +186,8 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
                         );
 
                         toast({
-                          title: "Upload Failed",
-                          description: error || "Failed to upload document. Please try again.",
+                          title: "❌ Upload Failed",
+                          description: error || "Something went wrong. Please try uploading again.",
                           variant: "destructive",
                         });
                       }}
@@ -196,14 +197,14 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
                   
                   {/* Success State */}
                   {status === 'uploaded' && (
-                    <div className="p-6 rounded-xl border-2 border-success/20 bg-success/5 backdrop-blur-sm">
+                    <div className="p-6 rounded-xl border-2 border-success/30 bg-gradient-to-r from-success/10 to-success/5 backdrop-blur-sm shadow-lg">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-full bg-success/20">
+                        <div className="p-3 rounded-full bg-success/20 shadow-sm">
                           <Check className="h-6 w-6 text-success" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-semibold text-success">Document uploaded successfully</h4>
-                          <p className="text-sm text-success/80 mt-1">Your document has been processed and is ready for review</p>
+                          <h4 className="text-lg font-semibold text-success">Document verified and ready!</h4>
+                          <p className="text-sm text-success/90 mt-1">Your {docType.name.toLowerCase()} has been successfully uploaded and processed</p>
                         </div>
                       </div>
                     </div>
@@ -211,14 +212,14 @@ export const DocumentUploadSection = ({ leadId, onDocumentsChange }: DocumentUpl
                   
                   {/* Error State */}
                   {status === 'error' && (
-                    <div className="p-6 rounded-xl border-2 border-destructive/20 bg-destructive/5 backdrop-blur-sm">
+                    <div className="p-6 rounded-xl border-2 border-destructive/30 bg-gradient-to-r from-destructive/10 to-destructive/5 backdrop-blur-sm shadow-lg">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-full bg-destructive/20">
+                        <div className="p-3 rounded-full bg-destructive/20 shadow-sm">
                           <AlertCircle className="h-6 w-6 text-destructive" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-semibold text-destructive">Upload failed</h4>
-                          <p className="text-sm text-destructive/80 mt-1">Please try uploading your document again</p>
+                          <h4 className="text-lg font-semibold text-destructive">Upload needs attention</h4>
+                          <p className="text-sm text-destructive/90 mt-1">Please try uploading your {docType.name.toLowerCase()} again or contact support if the issue persists</p>
                         </div>
                       </div>
                     </div>

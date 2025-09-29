@@ -14,6 +14,8 @@ import { UniversitySelector } from "@/components/ui/university-selector";
 import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { DocumentUploadSection } from "@/components/dashboard/DocumentUploadSection";
+import { useFormValidation, FieldConfig } from "@/hooks/useFormValidation";
+import { transformBackendError } from "@/utils/errorMessages";
 
 interface NewLeadModalProps {
   open: boolean;
@@ -44,33 +46,73 @@ interface FormData {
   co_applicant_pin_code: string;
 }
 
-interface FormErrors {
-  student_name?: string;
-  student_phone?: string;
-  student_email?: string;
-  student_pin_code?: string;
-  country?: string;
-  universities?: string;
-  intake_month?: string;
-  loan_type?: string;
-  amount_requested?: string;
-  gmat_score?: string;
-  gre_score?: string;
-  toefl_score?: string;
-  pte_score?: string;
-  ielts_score?: string;
-  co_applicant_name?: string;
-  co_applicant_salary?: string;
-  co_applicant_relationship?: string;
-  co_applicant_pin_code?: string;
-}
+const leadFormConfig: FieldConfig = {
+  student_name: { required: true, minLength: 2, maxLength: 100 },
+  student_phone: { 
+    required: true, 
+    pattern: /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/
+  },
+  student_email: { 
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  },
+  student_pin_code: { 
+    required: true, 
+    pattern: /^\d{6}$/
+  },
+  country: { required: true },
+  universities: { required: true },
+  intake_month: { required: true },
+  loan_type: { required: true },
+  amount_requested: { 
+    required: true,
+    min: 100000,
+    max: 20000000,
+    custom: (value: string) => {
+      const num = parseFloat(value);
+      if (isNaN(num)) return 'Please enter a valid amount in numbers only';
+      if (num < 100000) return 'Minimum loan amount is ₹1 lakh';
+      if (num > 20000000) return 'Maximum loan amount is ₹2 crores';
+      return null;
+    }
+  },
+  gmat_score: { min: 200, max: 800 },
+  gre_score: { min: 260, max: 340 },
+  toefl_score: { min: 0, max: 120 },
+  pte_score: { min: 10, max: 90 },
+  ielts_score: { 
+    min: 0, 
+    max: 9,
+    custom: (value: string) => {
+      if (!value.trim()) return null;
+      const num = parseFloat(value);
+      if (isNaN(num)) return 'IELTS score should be a number (e.g., 7.5)';
+      return null;
+    }
+  },
+  co_applicant_name: { required: true, minLength: 2, maxLength: 100 },
+  co_applicant_salary: { 
+    required: true,
+    min: 1,
+    custom: (value: string) => {
+      const num = parseFloat(value);
+      if (isNaN(num)) return 'Please enter salary in numbers only (e.g., 50000)';
+      if (num <= 0) return 'Salary must be greater than zero';
+      return null;
+    }
+  },
+  co_applicant_relationship: { required: true },
+  co_applicant_pin_code: { 
+    required: true, 
+    pattern: /^\d{6}$/
+  },
+};
 
 export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProps) => {
   // Two-phase state: 'form' for lead creation, 'documents' for document upload
   const [phase, setPhase] = useState<'form' | 'documents'>('form');
   const [createdLead, setCreatedLead] = useState<any>(null);
   
-  const [formData, setFormData] = useState<FormData>({
+  const initialFormData: FormData = {
     student_name: '',
     student_phone: '',
     student_email: '',
@@ -89,11 +131,23 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     co_applicant_salary: '',
     co_applicant_relationship: '',
     co_applicant_pin_code: ''
-  });
+  };
+
+  const {
+    formData,
+    errors,
+    hasErrors,
+    isValid,
+    updateField,
+    validateForm,
+    getFieldProps,
+    resetForm,
+    setFields
+  } = useFormValidation(initialFormData, leadFormConfig);
+
   const [testScoresOpen, setTestScoresOpen] = useState(false);
-  const [coApplicantOpen, setCoApplicantOpen] = useState(true); // Open by default since mandatory
+  const [coApplicantOpen, setCoApplicantOpen] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
   const [amountInWords, setAmountInWords] = useState<string>('');
   const [documentsUploaded, setDocumentsUploaded] = useState(0);
   const [documentsRequired, setDocumentsRequired] = useState(0);
@@ -112,131 +166,28 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     'New Zealand'
   ];
 
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    // Student name validation
-    if (!formData.student_name.trim()) {
-      newErrors.student_name = 'Full name is required';
-    } else if (formData.student_name.trim().length < 2) {
-      newErrors.student_name = 'Name must be at least 2 characters';
-    }
-
-    // Phone validation (Indian 10-digit or E.164 format)
-    const phoneRegex = /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/;
-    if (!formData.student_phone.trim()) {
-      newErrors.student_phone = 'Mobile number is required';
-    } else if (!phoneRegex.test(formData.student_phone.replace(/\s/g, ''))) {
-      newErrors.student_phone = 'Please enter a valid mobile number';
-    }
-
-    // Email validation (optional but must be valid if provided)
-    if (formData.student_email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.student_email)) {
-        newErrors.student_email = 'Please enter a valid email address';
-      }
-    }
-
-    // Student PIN code validation
-    const pinRegex = /^\d{6}$/;
-    if (!formData.student_pin_code.trim()) {
-      newErrors.student_pin_code = 'PIN code is required';
-    } else if (!pinRegex.test(formData.student_pin_code.trim())) {
-      newErrors.student_pin_code = 'Please enter a valid 6-digit PIN code';
-    }
-
-    // Country validation
-    if (!formData.country) {
-      newErrors.country = 'Please select a country';
-    }
-
-    // Universities validation
+  // Handle universities validation separately since it's an array
+  const validateUniversities = (): boolean => {
     if (formData.universities.length === 0 || !formData.universities[0].trim()) {
-      newErrors.universities = 'At least one university is required';
+      return false;
     }
-
-    // Intake validation
-    if (!formData.intake_month) {
-      newErrors.intake_month = 'Please select an intake month and year';
-    }
-
-    // Loan type validation
-    if (!formData.loan_type) {
-      newErrors.loan_type = 'Please select a loan type';
-    }
-
-    // Test scores validation (optional but must be in valid ranges)
-    if (formData.gmat_score.trim()) {
-      const gmat = parseInt(formData.gmat_score);
-      if (isNaN(gmat) || gmat < 200 || gmat > 800) {
-        newErrors.gmat_score = 'GMAT score must be between 200-800';
-      }
-    }
-
-    if (formData.gre_score.trim()) {
-      const gre = parseInt(formData.gre_score);
-      if (isNaN(gre) || gre < 260 || gre > 340) {
-        newErrors.gre_score = 'GRE score must be between 260-340';
-      }
-    }
-
-    if (formData.toefl_score.trim()) {
-      const toefl = parseInt(formData.toefl_score);
-      if (isNaN(toefl) || toefl < 0 || toefl > 120) {
-        newErrors.toefl_score = 'TOEFL score must be between 0-120';
-      }
-    }
-
-    if (formData.pte_score.trim()) {
-      const pte = parseInt(formData.pte_score);
-      if (isNaN(pte) || pte < 10 || pte > 90) {
-        newErrors.pte_score = 'PTE score must be between 10-90';
-      }
-    }
-
-    if (formData.ielts_score.trim()) {
-      const ielts = parseFloat(formData.ielts_score);
-      if (isNaN(ielts) || ielts < 0 || ielts > 9) {
-        newErrors.ielts_score = 'IELTS score must be between 0-9';
-      }
-    }
-
-    // Co-applicant validation (mandatory for all loans)
-    if (!formData.co_applicant_name.trim()) {
-      newErrors.co_applicant_name = 'Co-applicant name is required';
-    }
-    
-    if (!formData.co_applicant_salary.trim()) {
-      newErrors.co_applicant_salary = 'Co-applicant salary is required';
-    } else {
-      const salary = parseFloat(formData.co_applicant_salary);
-      if (isNaN(salary) || salary <= 0) {
-        newErrors.co_applicant_salary = 'Please enter a valid salary amount';
-      }
-    }
-
-    if (!formData.co_applicant_relationship) {
-      newErrors.co_applicant_relationship = 'Please select relationship';
-    }
-
-    if (!formData.co_applicant_pin_code.trim()) {
-      newErrors.co_applicant_pin_code = 'Co-applicant PIN code is required';
-    } else if (!pinRegex.test(formData.co_applicant_pin_code.trim())) {
-      newErrors.co_applicant_pin_code = 'Please enter a valid 6-digit PIN code';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    const isFormValid = validateForm() && validateUniversities();
+    
+    if (!isFormValid) {
+      const errorCount = Object.keys(errors).filter(key => errors[key]).length;
+      const universitiesError = !validateUniversities();
+      
       toast({
-        title: "Validation Error",
-        description: "Please fix the errors in the form before submitting.",
+        title: "Please complete all required fields",
+        description: universitiesError 
+          ? "Please select at least one university to continue"
+          : `Please fix ${errorCount} field${errorCount > 1 ? 's' : ''} marked in red`,
         variant: "destructive",
       });
       return;
@@ -316,9 +267,10 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
     } catch (error) {
       console.error('Error creating lead:', error);
+      const userFriendlyError = transformBackendError(error);
       toast({
-        title: "Error Creating Lead",
-        description: "Unable to create new lead. Please try again.",
+        title: "Unable to Create Application",
+        description: userFriendlyError,
         variant: "destructive",
       });
     } finally {
@@ -327,7 +279,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    updateField(field, value);
     
     // Update amount in words for amount_requested field
     if (field === 'amount_requested') {
@@ -339,9 +291,9 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
     }
     
-    // Clear error when user starts typing
-    if (errors[field as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [field as keyof FormErrors]: undefined }));
+    // Handle universities array separately
+    if (field === 'universities') {
+      setFields({ universities: [value] });
     }
   };
 
@@ -349,29 +301,10 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     // Reset everything and close modal
     setPhase('form');
     setCreatedLead(null);
-    setFormData({
-      student_name: '',
-      student_phone: '',
-      student_email: '',
-      student_pin_code: '',
-      country: '',
-      universities: [''],
-      intake_month: '',
-      loan_type: '',
-      amount_requested: '',
-      gmat_score: '',
-      gre_score: '',
-      toefl_score: '',
-      pte_score: '',
-      ielts_score: '',
-      co_applicant_name: '',
-      co_applicant_salary: '',
-      co_applicant_relationship: '',
-      co_applicant_pin_code: ''
-    });
-    setErrors({});
+    resetForm();
     setDocumentsUploaded(0);
     setDocumentsRequired(0);
+    setAmountInWords('');
     onOpenChange(false);
     onSuccess();
   };
@@ -390,29 +323,10 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         // Reset state when dialog closes
         setPhase('form');
         setCreatedLead(null);
-        setFormData({
-          student_name: '',
-          student_phone: '',
-          student_email: '',
-          student_pin_code: '',
-          country: '',
-          universities: [''],
-          intake_month: '',
-          loan_type: '',
-          amount_requested: '',
-          gmat_score: '',
-          gre_score: '',
-          toefl_score: '',
-          pte_score: '',
-          ielts_score: '',
-          co_applicant_name: '',
-          co_applicant_salary: '',
-          co_applicant_relationship: '',
-          co_applicant_pin_code: ''
-        });
-        setErrors({});
+        resetForm();
         setDocumentsUploaded(0);
         setDocumentsRequired(0);
+        setAmountInWords('');
       }
       onOpenChange(newOpen);
     }}>
@@ -446,13 +360,16 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   </Label>
                   <Input
                     id="student_name"
-                    value={formData.student_name}
+                    {...getFieldProps('student_name')}
                     onChange={(e) => handleInputChange('student_name', e.target.value)}
-                    placeholder="Enter student's full name"
-                    className={errors.student_name ? 'border-destructive' : ''}
+                    placeholder="e.g., John Smith"
+                    className={errors.student_name ? 'border-destructive focus:border-destructive' : ''}
                   />
                   {errors.student_name && (
-                    <p className="text-sm text-destructive">{errors.student_name}</p>
+                    <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                      <span>💡</span>
+                      {errors.student_name}
+                    </p>
                   )}
                 </div>
 
@@ -649,13 +566,10 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   <Label className="text-sm font-medium">
                     Country <span className="text-destructive">*</span>
                   </Label>
-                  <Select
+                   <Select
                     value={formData.country}
                     onValueChange={(value) => {
-                      setFormData(prev => ({ ...prev, country: value }));
-                      if (errors.country) {
-                        setErrors(prev => ({ ...prev, country: undefined }));
-                      }
+                      handleInputChange('country', value);
                     }}
                   >
                     <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
@@ -679,10 +593,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   country={formData.country}
                   universities={formData.universities}
                   onChange={(universities) => {
-                    setFormData(prev => ({ ...prev, universities }));
-                    if (errors.universities) {
-                      setErrors(prev => ({ ...prev, universities: undefined }));
-                    }
+                    setFields({ universities });
                   }}
                   error={errors.universities}
                 />
@@ -695,10 +606,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   <MonthYearPicker
                     value={formData.intake_month}
                     onChange={(value) => {
-                      setFormData(prev => ({ ...prev, intake_month: value }));
-                      if (errors.intake_month) {
-                        setErrors(prev => ({ ...prev, intake_month: undefined }));
-                      }
+                      handleInputChange('intake_month', value);
                     }}
                     placeholder="Select intake month and year"
                     error={!!errors.intake_month}
@@ -716,10 +624,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   <RadioGroup
                     value={formData.loan_type}
                     onValueChange={(value: 'secured' | 'unsecured') => {
-                      setFormData(prev => ({ ...prev, loan_type: value }));
-                      if (errors.loan_type) {
-                        setErrors(prev => ({ ...prev, loan_type: undefined }));
-                      }
+                      handleInputChange('loan_type', value);
                     }}
                     className="flex space-x-6"
                   >
@@ -802,10 +707,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                         <Select
                           value={formData.co_applicant_relationship}
                           onValueChange={(value) => {
-                            setFormData(prev => ({ ...prev, co_applicant_relationship: value }));
-                            if (errors.co_applicant_relationship) {
-                              setErrors(prev => ({ ...prev, co_applicant_relationship: undefined }));
-                            }
+                            handleInputChange('co_applicant_relationship', value);
                           }}
                         >
                           <SelectTrigger className={errors.co_applicant_relationship ? 'border-destructive' : ''}>
