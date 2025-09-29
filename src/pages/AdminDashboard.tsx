@@ -395,6 +395,50 @@ const AdminDashboard = () => {
     fetchRecentLeads();
   };
 
+  // Convert Lead to RefactoredLead format for AdminLeadActions
+  const convertToRefactoredLead = (lead: Lead) => ({
+    id: lead.id,
+    case_id: lead.case_id,
+    student_id: lead.id, // Using lead id as fallback
+    co_applicant_id: lead.id, // Using lead id as fallback
+    partner_id: lead.partners?.name || null,
+    lender_id: lead.lenders?.name || '',
+    loan_amount: Number(lead.loan_amount),
+    loan_type: lead.loan_type as 'secured' | 'unsecured',
+    study_destination: lead.study_destination as any,
+    intake_month: null, // Not available in current Lead interface
+    intake_year: null, // Not available in current Lead interface
+    status: lead.status as any,
+    documents_status: lead.documents_status as any,
+    created_at: lead.created_at,
+    updated_at: lead.updated_at,
+    student: {
+      id: lead.id,
+      name: lead.students?.name || '',
+      email: lead.students?.email || '',
+      phone: '',
+      date_of_birth: null,
+      nationality: null,
+      street_address: null,
+      city: null,
+      state: null,
+      country: null,
+      postal_code: null,
+      created_at: lead.created_at,
+      updated_at: lead.updated_at,
+    },
+    partner: lead.partners ? {
+      id: lead.id,
+      name: lead.partners.name,
+      email: '',
+      phone: null,
+      address: null,
+      is_active: true,
+      created_at: lead.created_at,
+      updated_at: lead.updated_at,
+    } : undefined,
+  });
+
   if (loading) {
     return (
       <div className="p-6 space-y-6">
@@ -624,17 +668,18 @@ const AdminDashboard = () => {
                   <div className="space-y-0">
                     {/* Header */}
                     <div className="grid grid-cols-12 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
-                      <div className="col-span-3">Student</div>
+                      <div className="col-span-2">Student</div>
                       <div className="col-span-2">Partner</div>
-                      <div className="col-span-2">Destination</div>
+                      <div className="col-span-1">Destination</div>
                       <div className="col-span-2">Loan Amount</div>
-                      <div className="col-span-2">Status</div>
+                      <div className="col-span-1">Status</div>
                       <div className="col-span-1">Date</div>
+                      <div className="col-span-3">Actions</div>
                     </div>
                     {/* Data Rows */}
                     {recentLeads.slice(0, 8).map((lead) => (
                       <div key={lead.id} className="grid grid-cols-12 gap-4 py-3 border-b border-border/50 hover:bg-muted/30 transition-colors rounded">
-                        <div className="col-span-3">
+                        <div className="col-span-2">
                           <p className="font-medium text-sm truncate">{lead.students?.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{lead.students?.email}</p>
                         </div>
@@ -643,7 +688,7 @@ const AdminDashboard = () => {
                             {lead.partners?.name}
                           </Badge>
                         </div>
-                        <div className="col-span-2">
+                        <div className="col-span-1">
                           <p className="text-sm">{lead.study_destination}</p>
                         </div>
                         <div className="col-span-2">
@@ -651,13 +696,21 @@ const AdminDashboard = () => {
                             {formatCurrency(Number(lead.loan_amount))}
                           </p>
                         </div>
-                        <div className="col-span-2">
+                        <div className="col-span-1">
                           <StatusBadge status={lead.status as LeadStatus} type="lead" className="text-xs" />
                         </div>
                         <div className="col-span-1">
                           <p className="text-xs text-muted-foreground">
                             {new Date(lead.created_at).toLocaleDateString()}
                           </p>
+                        </div>
+                        <div className="col-span-3">
+                          <AdminLeadActions
+                            lead={convertToRefactoredLead(lead)}
+                            documentCount={0}
+                            onViewDetails={(refactoredLead) => handleViewLead(lead)}
+                            onStatusUpdate={(refactoredLead, newStatus) => handleQuickStatusUpdate(lead, newStatus)}
+                          />
                         </div>
                       </div>
                     ))}
