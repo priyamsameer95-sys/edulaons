@@ -241,6 +241,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       <NewLeadModal 
         open={newLeadOpen} 
         onOpenChange={setNewLeadOpen}
+        onSuccess={() => fetchKPIs()}
       />
 
       {/* Floating Action Button - Mobile */}
