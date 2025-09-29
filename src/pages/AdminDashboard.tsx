@@ -469,40 +469,46 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-10 w-24" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-32" />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome back, {appUser?.email} • <Badge variant="secondary">{appUser?.role}</Badge>
-          </p>
-        </div>
-        <Button onClick={signOut} variant="outline" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
-        </Button>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Welcome back, {appUser?.email} • <Badge variant="secondary">{appUser?.role}</Badge>
+              </p>
+            </div>
+            <Button onClick={signOut} variant="outline" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
 
-      {/* Enhanced KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Enhanced KPI Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
@@ -556,18 +562,18 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="partners">Partners</TabsTrigger>
-          <TabsTrigger value="leads">Leads</TabsTrigger>
-        </TabsList>
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="partners">Partners</TabsTrigger>
+              <TabsTrigger value="leads">Leads</TabsTrigger>
+            </TabsList>
 
         <TabsContent value="overview">
           <div className="space-y-6">
             {/* Compact Overview Cards - Full Width */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Top Partner Card - Compact */}
               <Card className="hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-3">
@@ -764,7 +770,7 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   partnerStats.map((partner) => (
-                    <div key={partner.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                    <div key={partner.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200 gap-3">
                       <div className="flex-1">
                         <h3 className="font-semibold text-foreground">{partner.name}</h3>
                         <p className="text-sm text-muted-foreground">
@@ -774,8 +780,8 @@ const AdminDashboard = () => {
                           Last Activity: {partner.recentActivity}
                         </p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
+                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                        <div className="text-left sm:text-right">
                           <div className="text-lg font-bold text-foreground">{partner.totalLeads}</div>
                           <p className="text-xs text-muted-foreground">Total Leads</p>
                         </div>
@@ -783,7 +789,7 @@ const AdminDashboard = () => {
                           variant="outline" 
                           size="sm"
                           onClick={() => window.open(`/partner/${partner.partner_code}`, '_blank')}
-                          className="gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+                          className="gap-1 hover:bg-primary hover:text-primary-foreground transition-colors whitespace-nowrap"
                         >
                           View Dashboard
                         </Button>
@@ -798,13 +804,13 @@ const AdminDashboard = () => {
 
         <TabsContent value="leads">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
                 <CardTitle>Lead Management</CardTitle>
                 <CardDescription>View and search leads across all partners</CardDescription>
               </div>
               <Select value={selectedPartner} onValueChange={setSelectedPartner}>
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="w-full lg:w-48">
                   <SelectValue placeholder="Filter by partner" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border">
@@ -819,7 +825,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Search and Bulk Actions */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col lg:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -895,7 +901,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+          </Tabs>
 
       {/* Create Partner Modal */}
       <CreatePartnerModal 
@@ -938,6 +944,8 @@ const AdminDashboard = () => {
           onStatusUpdated={handleStatusUpdated}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 };
