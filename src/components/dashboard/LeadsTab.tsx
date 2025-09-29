@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 import { 
   CalendarIcon, 
   Search, 
@@ -47,6 +56,10 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [loanTypeFilter, setLoanTypeFilter] = useState<string>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Real-time subscriptions are handled by the useRefactoredLeads hook
 
@@ -89,6 +102,17 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
     });
   }, [leads, searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+  
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
+
   // Check if any filters are active
   const hasActiveFilters = searchQuery || statusFilter !== "all" || loanTypeFilter !== "all" || countryFilter !== "all" || dateRange.from || dateRange.to;
 
@@ -99,6 +123,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
     setLoanTypeFilter("all");
     setCountryFilter("all");
     setDateRange({});
+    setCurrentPage(1);
   };
 
   const getStatusColor = (status: string) => {
@@ -362,11 +387,14 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
           <CardHeader>
             <CardTitle>
               Leads Overview
-              {hasActiveFilters && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  ({filteredLeads.length} of {leads.length} leads)
-                </span>
-              )}
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                {filteredLeads.length > itemsPerPage ? (
+                  <>Showing {startIndex + 1}-{Math.min(endIndex, filteredLeads.length)} of {filteredLeads.length} leads</>
+                ) : (
+                  <>{filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''}</>
+                )}
+                {hasActiveFilters && <> (filtered from {leads.length} total)</>}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -385,7 +413,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLeads.map((lead) => {
+                  {paginatedLeads.map((lead) => {
                     const docsProgress = getDocsProgress(lead.documents_status);
                     const IconComponent = docsProgress.icon;
                     
@@ -437,6 +465,101 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
               </Table>
             </div>
           </CardContent>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {/* Page numbers with ellipsis logic */}
+                  {totalPages <= 7 ? (
+                    // Show all pages if 7 or fewer
+                    Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))
+                  ) : (
+                    // Show pages with ellipsis for more than 7 pages
+                    <>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(1)}
+                          isActive={currentPage === 1}
+                          className="cursor-pointer"
+                        >
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                      
+                      {currentPage > 3 && (
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )}
+                      
+                      {Array.from({ length: 3 }, (_, i) => {
+                        const page = currentPage - 1 + i;
+                        if (page > 1 && page < totalPages) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => setCurrentPage(page)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      }).filter(Boolean)}
+                      
+                      {currentPage < totalPages - 2 && (
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )}
+                      
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(totalPages)}
+                          isActive={currentPage === totalPages}
+                          className="cursor-pointer"
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </Card>
       )}
 
