@@ -37,23 +37,23 @@ export const getDocumentStatusLabel = (status: DocumentStatus): string => {
   return DOCUMENT_STATUS_OPTIONS.find(option => option.value === status)?.label || status;
 };
 
-// Define valid status transitions
+// Define valid status transitions (more flexible for better workflow)
 export const VALID_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  new: ['contacted', 'withdrawn'],
-  contacted: ['in_progress', 'withdrawn'],
-  in_progress: ['document_review', 'withdrawn'],
-  document_review: ['approved', 'rejected', 'in_progress'],
-  approved: ['withdrawn'],
-  rejected: ['in_progress', 'withdrawn'],
-  withdrawn: [], // Terminal state
+  new: ['contacted', 'in_progress', 'document_review', 'rejected', 'withdrawn'],
+  contacted: ['new', 'in_progress', 'document_review', 'rejected', 'withdrawn'],
+  in_progress: ['new', 'contacted', 'document_review', 'approved', 'rejected', 'withdrawn'],
+  document_review: ['new', 'contacted', 'in_progress', 'approved', 'rejected', 'withdrawn'],
+  approved: ['document_review', 'withdrawn'],
+  rejected: ['new', 'contacted', 'in_progress', 'document_review'],
+  withdrawn: ['new', 'contacted', 'in_progress', 'document_review']
 };
 
 export const VALID_DOCUMENT_STATUS_TRANSITIONS: Record<DocumentStatus, DocumentStatus[]> = {
-  pending: ['uploaded'],
-  uploaded: ['verified', 'rejected'],
-  verified: ['resubmission_required'],
-  rejected: ['uploaded', 'resubmission_required'],
-  resubmission_required: ['uploaded'],
+  pending: ['uploaded', 'verified', 'rejected', 'resubmission_required'],
+  uploaded: ['pending', 'verified', 'rejected', 'resubmission_required'],
+  verified: ['pending', 'uploaded', 'rejected', 'resubmission_required'],
+  rejected: ['pending', 'uploaded', 'verified', 'resubmission_required'],
+  resubmission_required: ['pending', 'uploaded', 'verified', 'rejected'],
 };
 
 export const canTransitionToStatus = (currentStatus: LeadStatus, newStatus: LeadStatus): boolean => {

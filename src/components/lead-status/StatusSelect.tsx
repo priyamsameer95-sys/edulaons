@@ -9,6 +9,7 @@ interface StatusSelectProps {
   currentStatus?: LeadStatus | DocumentStatus;
   disabled?: boolean;
   placeholder?: string;
+  isAdmin?: boolean;
 }
 
 export function StatusSelect({ 
@@ -17,18 +18,20 @@ export function StatusSelect({
   type, 
   currentStatus, 
   disabled = false,
-  placeholder = "Select status..."
+  placeholder = "Select status...",
+  isAdmin = false
 }: StatusSelectProps) {
   const options = type === 'lead' ? LEAD_STATUS_OPTIONS : DOCUMENT_STATUS_OPTIONS;
   
-  const filteredOptions = currentStatus 
+  // Admins can see all status options, partners see filtered options
+  const filteredOptions = isAdmin ? options : (currentStatus 
     ? options.filter(option => {
         if (option.value === currentStatus) return true;
         return type === 'lead' 
           ? canTransitionToStatus(currentStatus as LeadStatus, option.value as LeadStatus)
           : canTransitionToDocumentStatus(currentStatus as DocumentStatus, option.value as DocumentStatus);
       })
-    : options;
+    : options);
 
   return (
     <Select 

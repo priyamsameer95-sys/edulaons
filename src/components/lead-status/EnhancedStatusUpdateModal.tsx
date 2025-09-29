@@ -156,6 +156,7 @@ export function EnhancedStatusUpdateModal({
               onChange={(value) => setSelectedStatus(value as LeadStatus)}
               type="lead"
               currentStatus={currentStatus}
+              isAdmin={isAdmin}
             />
           </div>
 
@@ -166,6 +167,7 @@ export function EnhancedStatusUpdateModal({
               onChange={(value) => setSelectedDocumentsStatus(value as DocumentStatus)}
               type="document"
               currentStatus={currentDocumentsStatus}
+              isAdmin={isAdmin}
             />
           </div>
 
