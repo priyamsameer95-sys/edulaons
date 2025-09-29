@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { StatusSelect } from './StatusSelect';
-import { useStatusUpdate } from '@/hooks/useStatusUpdate';
+import { useStatusManager } from '@/hooks/useStatusManager';
 import type { LeadStatus } from '@/utils/statusUtils';
 
 interface BulkStatusUpdateProps {
@@ -23,7 +23,7 @@ export function BulkStatusUpdate({
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus>('new');
   const [reason, setReason] = useState('');
   
-  const { bulkUpdateStatus, loading } = useStatusUpdate();
+  const { bulkUpdateStatus, loading } = useStatusManager();
 
   const handleSubmit = async () => {
     const success = await bulkUpdateStatus(

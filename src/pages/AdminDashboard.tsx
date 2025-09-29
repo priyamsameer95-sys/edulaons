@@ -15,9 +15,10 @@ import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart,
 import CreatePartnerModal from '@/components/admin/CreatePartnerModal';
 import { StatusBadge } from '@/components/lead-status/StatusBadge';
 import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
-import { AdminLeadActions } from '@/components/admin/AdminLeadActions';
+import { EnhancedAdminLeadActions } from '@/components/admin/EnhancedAdminLeadActions';
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
-import { StatusUpdateModal } from '@/components/lead-status/StatusUpdateModal';
+import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStatusUpdateModal';
+import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 
@@ -79,6 +80,7 @@ interface LoanAmountComparison {
 const AdminDashboard = () => {
   const { signOut, appUser } = useAuth();
   const { toast } = useToast();
+  const { bulkUpdateStatus } = useStatusManager();
   const [kpis, setKpis] = useState<AdminKPIs>({
     totalLeads: 0,
     totalPartners: 0,
@@ -386,26 +388,39 @@ const AdminDashboard = () => {
     setShowLeadDetailSheet(true);
   };
 
-  const handleQuickStatusUpdate = (lead: Lead, newStatus: LeadStatus) => {
+  const handleQuickStatusUpdate = (lead: Lead) => {
     setQuickUpdateLead(lead);
     setShowStatusUpdateModal(true);
   };
 
   const handleStatusUpdated = async () => {
-    // Refresh all relevant data after status update
-    await Promise.all([
-      fetchRecentLeads(),
-      fetchAdminKPIs(),
-      fetchPartnerStats(),
-      fetchLoanComparison()
-    ]);
-    setSelectedLeads([]); // Clear selections after update
-    
-    // Show success feedback
-    toast({
-      title: 'Success',
-      description: 'Lead status updated and dashboard refreshed',
-    });
+    try {
+      // Refresh all relevant data after status update
+      await Promise.all([
+        fetchRecentLeads(),
+        fetchAdminKPIs(),
+        fetchPartnerStats(),
+        fetchLoanComparison()
+      ]);
+      
+      // Clear selections and reset states
+      setSelectedLeads([]);
+      setQuickUpdateLead(null);
+      setShowStatusUpdateModal(false);
+      
+      // Show success feedback
+      toast({
+        title: 'Dashboard Updated',
+        description: 'All data has been refreshed successfully',
+      });
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+      toast({
+        title: 'Refresh Error',
+        description: 'Some data may not be up to date',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Convert Lead to RefactoredLead format for AdminLeadActions
@@ -718,11 +733,11 @@ const AdminDashboard = () => {
                           </p>
                         </div>
                         <div className="col-span-3">
-                          <AdminLeadActions
+                          <EnhancedAdminLeadActions
                             lead={convertToRefactoredLead(lead)}
                             documentCount={0}
                             onViewDetails={(refactoredLead) => handleViewLead(lead)}
-                            onStatusUpdate={(refactoredLead, newStatus) => handleQuickStatusUpdate(lead, newStatus)}
+                            onStatusUpdate={(refactoredLead) => handleQuickStatusUpdate(lead)}
                           />
                         </div>
                       </div>
@@ -923,7 +938,7 @@ const AdminDashboard = () => {
 
       {/* Quick Status Update Modal */}
       {quickUpdateLead && (
-        <StatusUpdateModal
+        <EnhancedStatusUpdateModal
           open={showStatusUpdateModal}
           onOpenChange={setShowStatusUpdateModal}
           leadId={quickUpdateLead.id}
