@@ -315,6 +315,65 @@ export type Database = {
           },
         ]
       }
+      lead_status_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          new_documents_status:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
+          new_status: Database["public"]["Enums"]["lead_status_enum"]
+          notes: string | null
+          old_documents_status:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
+          old_status: Database["public"]["Enums"]["lead_status_enum"] | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          new_documents_status?:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
+          new_status: Database["public"]["Enums"]["lead_status_enum"]
+          notes?: string | null
+          old_documents_status?:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
+          old_status?: Database["public"]["Enums"]["lead_status_enum"] | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          new_documents_status?:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
+          new_status?: Database["public"]["Enums"]["lead_status_enum"]
+          notes?: string | null
+          old_documents_status?:
+            | Database["public"]["Enums"]["document_status_enum"]
+            | null
+          old_status?: Database["public"]["Enums"]["lead_status_enum"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_status_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_universities: {
         Row: {
           created_at: string
@@ -439,6 +498,7 @@ export type Database = {
           co_applicant_id: string
           created_at: string
           documents_status: Database["public"]["Enums"]["document_status_enum"]
+          documents_status_updated_at: string | null
           id: string
           intake_month: number | null
           intake_year: number | null
@@ -447,6 +507,7 @@ export type Database = {
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id: string | null
           status: Database["public"]["Enums"]["lead_status_enum"]
+          status_updated_at: string | null
           student_id: string
           study_destination: Database["public"]["Enums"]["study_destination_enum"]
           updated_at: string
@@ -456,6 +517,7 @@ export type Database = {
           co_applicant_id: string
           created_at?: string
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
+          documents_status_updated_at?: string | null
           id?: string
           intake_month?: number | null
           intake_year?: number | null
@@ -464,6 +526,7 @@ export type Database = {
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
+          status_updated_at?: string | null
           student_id: string
           study_destination: Database["public"]["Enums"]["study_destination_enum"]
           updated_at?: string
@@ -473,6 +536,7 @@ export type Database = {
           co_applicant_id?: string
           created_at?: string
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
+          documents_status_updated_at?: string | null
           id?: string
           intake_month?: number | null
           intake_year?: number | null
@@ -481,6 +545,7 @@ export type Database = {
           loan_type?: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
+          status_updated_at?: string | null
           student_id?: string
           study_destination?: Database["public"]["Enums"]["study_destination_enum"]
           updated_at?: string

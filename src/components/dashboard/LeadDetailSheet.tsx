@@ -31,6 +31,11 @@ import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { StandardDocumentUpload } from "./StandardDocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
+import { StatusBadge } from "@/components/lead-status/StatusBadge";
+import { StatusUpdateModal } from "@/components/lead-status/StatusUpdateModal";
+import { StatusHistory } from "@/components/lead-status/StatusHistory";
+import { StatusProgressIndicator } from "@/components/lead-status/StatusProgressIndicator";
+import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
   lead: RefactoredLead | null;
@@ -40,6 +45,7 @@ interface LeadDetailSheetProps {
 
 export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const { toast } = useToast();
   
   // Real data from Supabase
@@ -137,10 +143,11 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
 
         <div className="py-4 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="checklist">Checklist</TabsTrigger>
               <TabsTrigger value="docs">Docs</TabsTrigger>
+              <TabsTrigger value="status">Status</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
 
@@ -228,22 +235,30 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center justify-between">
                     Application Status
-                    <Badge variant="outline" className="capitalize">
-                      {lead.status.replace('_', ' ')}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={lead.status as LeadStatus} type="lead" />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setStatusUpdateModalOpen(true)}
+                      >
+                        Update Status
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Documents Status</span>
-                      <Badge variant="outline" className={getStatusBadge(lead.documents_status)}>
-                        {lead.documents_status}
-                      </Badge>
+                      <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
+                    </div>
+                    <div className="space-y-3">
+                      <StatusProgressIndicator currentStatus={lead.status as LeadStatus} />
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Progress</span>
+                        <span>Document Progress</span>
                         <span>{Math.round(progressPercentage)}%</span>
                       </div>
                       <Progress value={progressPercentage} className="w-full h-2" />
@@ -437,6 +452,10 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
               </Card>
             </TabsContent>
 
+            <TabsContent value="status" className="space-y-4">
+              <StatusHistory leadId={lead.id} />
+            </TabsContent>
+
             <TabsContent value="timeline" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -519,6 +538,19 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
           </Tabs>
         </div>
       </SheetContent>
+
+      {/* Status Update Modal */}
+      <StatusUpdateModal
+        open={statusUpdateModalOpen}
+        onOpenChange={setStatusUpdateModalOpen}
+        leadId={lead.id}
+        currentStatus={lead.status as LeadStatus}
+        currentDocumentsStatus={lead.documents_status as DocumentStatus}
+        onStatusUpdated={() => {
+          setStatusUpdateModalOpen(false);
+          // Optionally refresh the lead data here
+        }}
+      />
     </Sheet>
   );
 };

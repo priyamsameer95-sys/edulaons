@@ -38,6 +38,10 @@ import { LeadDetailSheet } from "./LeadDetailSheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { RefactoredLead } from "@/types/refactored-lead";
+import { StatusBadge } from "@/components/lead-status/StatusBadge";
+import { StatusUpdateModal } from "@/components/lead-status/StatusUpdateModal";
+import { LEAD_STATUS_OPTIONS, DOCUMENT_STATUS_OPTIONS } from "@/utils/statusUtils";
+import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadsTabProps {
   onNewLead?: () => void;
@@ -46,6 +50,8 @@ interface LeadsTabProps {
 export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
+  const [leadToUpdate, setLeadToUpdate] = useState<RefactoredLead | null>(null);
   
   // Use the new refactored leads hook
   const { leads, loading, refetch } = useRefactoredLeads();
@@ -126,38 +132,9 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
     setCurrentPage(1);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      // Success States
-      case 'sanctioned': return 'bg-success text-success-foreground';
-      case 'disbursed': return 'bg-success text-success-foreground';
-      case 'login_confirmed': return 'bg-success text-success-foreground';
-      
-      // In Progress States  
-      case 'qualified': return 'bg-primary text-primary-foreground';
-      case 'docs_verified': return 'bg-primary text-primary-foreground';
-      case 'applied': return 'bg-primary text-primary-foreground';
-      
-      // Pending States
-      case 'new': return 'bg-warning text-warning-foreground';
-      case 'docs_pending': return 'bg-warning text-warning-foreground';
-      case 'future_intake': return 'bg-warning text-warning-foreground';
-      case 'intake_deferred': return 'bg-warning text-warning-foreground';
-      
-      // Negative States
-      case 'rejected': return 'bg-destructive text-destructive-foreground';
-      case 'lost_to_competitor': return 'bg-destructive text-destructive-foreground';
-      case 'sanctioned_declined': return 'bg-destructive text-destructive-foreground';
-      case 'login_rejected': return 'bg-destructive text-destructive-foreground';
-      
-      // Neutral/Other States
-      case 'loan_via_us_other_lender': return 'bg-secondary text-secondary-foreground';
-      case 'self_funding': return 'bg-secondary text-secondary-foreground';
-      case 'duplicate_lead': return 'bg-secondary text-secondary-foreground';
-      case 'relook_reopened': return 'bg-secondary text-secondary-foreground';
-      
-      default: return 'bg-muted text-muted-foreground';
-    }
+  const handleStatusUpdate = (lead: RefactoredLead) => {
+    setLeadToUpdate(lead);
+    setStatusUpdateModalOpen(true);
   };
 
   const getLoanTypeBadge = (type: string) => {
@@ -259,24 +236,11 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
-                  <SelectItem value="docs_pending">Docs Pending</SelectItem>
-                  <SelectItem value="docs_verified">Docs Verified</SelectItem>
-                  <SelectItem value="applied">Applied</SelectItem>
-                  <SelectItem value="sanctioned">Sanctioned</SelectItem>
-                  <SelectItem value="disbursed">Disbursed</SelectItem>
-                  <SelectItem value="login_confirmed">Login Confirmed</SelectItem>
-                  <SelectItem value="login_rejected">Login Rejected</SelectItem>
-                  <SelectItem value="lost_to_competitor">Lost to Competitor</SelectItem>
-                  <SelectItem value="intake_deferred">Intake Deferred</SelectItem>
-                  <SelectItem value="loan_via_us_other_lender">Loan via Us (Other Lender)</SelectItem>
-                  <SelectItem value="future_intake">Future Intake</SelectItem>
-                  <SelectItem value="sanctioned_declined">Sanctioned Declined</SelectItem>
-                  <SelectItem value="self_funding">Self Funding</SelectItem>
-                  <SelectItem value="duplicate_lead">Duplicate Lead</SelectItem>
-                  <SelectItem value="relook_reopened">Relook/Re-opened</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  {LEAD_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -409,7 +373,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                     <TableHead className="font-semibold">Docs</TableHead>
                     <TableHead className="font-semibold">Amount</TableHead>
                     <TableHead className="font-semibold">Updated</TableHead>
-                    <TableHead className="font-semibold">Action</TableHead>
+                    <TableHead className="font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -432,16 +396,11 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn("capitalize", getStatusColor(lead.status))}>
-                            {lead.status.replace(/_/g, ' ')}
-                          </Badge>
+                          <StatusBadge status={lead.status as LeadStatus} type="lead" />
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <IconComponent className={cn("h-4 w-4", docsProgress.color)} />
-                            <span className="text-sm capitalize">
-                              {lead.documents_status}
-                            </span>
+                          <div className="flex items-center gap-2">
+                            <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
                           </div>
                         </TableCell>
                         <TableCell>₹{(lead.loan_amount / 100000).toFixed(1)}L</TableCell>
@@ -449,14 +408,24 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                           {format(new Date(lead.created_at), 'dd MMM yyyy')}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewLead(lead)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewLead(lead)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleStatusUpdate(lead)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <FileCheck className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -569,6 +538,22 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
       />
+
+      {/* Status Update Modal */}
+      {leadToUpdate && (
+        <StatusUpdateModal
+          open={statusUpdateModalOpen}
+          onOpenChange={setStatusUpdateModalOpen}
+          leadId={leadToUpdate.id}
+          currentStatus={leadToUpdate.status as LeadStatus}
+          currentDocumentsStatus={leadToUpdate.documents_status as DocumentStatus}
+          onStatusUpdated={() => {
+            refetch();
+            setStatusUpdateModalOpen(false);
+            setLeadToUpdate(null);
+          }}
+        />
+      )}
     </div>
   );
 };

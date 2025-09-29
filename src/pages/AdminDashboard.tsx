@@ -7,12 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle, FileCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import CreatePartnerModal from '@/components/admin/CreatePartnerModal';
+import { StatusBadge } from '@/components/lead-status/StatusBadge';
+import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -82,6 +86,8 @@ const AdminDashboard = () => {
   const [selectedPartner, setSelectedPartner] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreatePartner, setShowCreatePartner] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
   const [statusData, setStatusData] = useState<Array<{name: string, value: number, color: string}>>([]);
   const [topPartner, setTopPartner] = useState<TopPartnerData | null>(null);
   const [loanComparison, setLoanComparison] = useState<LoanAmountComparison>({
@@ -332,20 +338,19 @@ const AdminDashboard = () => {
     filterLeads(recentLeads);
   }, [searchTerm, recentLeads]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new':
-        return 'bg-primary/10 text-primary border-primary/20';
-      case 'in_progress':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'approved':
-        return 'bg-success/10 text-success border-success/20';
-      case 'rejected':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'disbursed':
-        return 'bg-accent text-accent-foreground border-accent';
-      default:
-        return 'bg-muted text-muted-foreground border-border';
+  const handleSelectLead = (leadId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedLeads([...selectedLeads, leadId]);
+    } else {
+      setSelectedLeads(selectedLeads.filter(id => id !== leadId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedLeads(filteredLeads.map(lead => lead.id));
+    } else {
+      setSelectedLeads([]);
     }
   };
 
@@ -614,9 +619,7 @@ const AdminDashboard = () => {
                           </p>
                         </div>
                         <div className="col-span-2">
-                          <Badge variant="outline" className={`text-xs ${getStatusColor(lead.status)}`}>
-                            {lead.status === 'in_progress' ? 'Progress' : lead.status}
-                          </Badge>
+                          <StatusBadge status={lead.status as LeadStatus} type="lead" className="text-xs" />
                         </div>
                         <div className="col-span-1">
                           <p className="text-xs text-muted-foreground">
@@ -710,16 +713,40 @@ const AdminDashboard = () => {
               </Select>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Simple Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by student name, email, or case ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              {/* Search and Bulk Actions */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by student name, email, or case ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                {selectedLeads.length > 0 && (
+                  <Button
+                    onClick={() => setShowBulkUpdate(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <FileCheck className="h-4 w-4" />
+                    Update Status ({selectedLeads.length})
+                  </Button>
+                )}
               </div>
+
+              {/* Select All Option */}
+              {filteredLeads.length > 0 && (
+                <div className="flex items-center gap-2 p-2 border rounded-lg bg-muted/30">
+                  <Checkbox
+                    checked={selectedLeads.length === filteredLeads.length}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Select all {filteredLeads.length} leads
+                  </span>
+                </div>
+              )}
 
               {/* Results */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -730,7 +757,12 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   filteredLeads.map((lead) => (
-                    <div key={lead.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                    <div key={lead.id} className="flex items-start gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                      <Checkbox
+                        checked={selectedLeads.includes(lead.id)}
+                        onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+                        className="mt-1"
+                      />
                       <div className="flex-1 space-y-1">
                         <h3 className="font-semibold text-foreground">{lead.students?.name}</h3>
                         <p className="text-sm text-muted-foreground">
@@ -743,9 +775,7 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <Badge variant="outline" className={getStatusColor(lead.status)}>
-                          {lead.status.replace('_', ' ')}
-                        </Badge>
+                        <StatusBadge status={lead.status as LeadStatus} type="lead" />
                         <p className="text-sm font-medium text-foreground">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
@@ -769,6 +799,18 @@ const AdminDashboard = () => {
         onPartnerCreated={() => {
           fetchPartnerStats();
           setShowCreatePartner(false);
+        }}
+      />
+
+      {/* Bulk Status Update Modal */}
+      <BulkStatusUpdate
+        open={showBulkUpdate}
+        onOpenChange={setShowBulkUpdate}
+        leadIds={selectedLeads}
+        onStatusUpdated={() => {
+          setSelectedLeads([]);
+          setShowBulkUpdate(false);
+          fetchRecentLeads();
         }}
       />
     </div>
