@@ -611,16 +611,10 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    <div className="text-lg font-bold text-foreground">
-                      {formatCurrency(loanComparison.pipeline)}
+                    <div className="text-2xl font-bold text-primary">
+                      {kpis.inPipeline}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div 
-                        className="bg-primary h-1.5 rounded-full transition-all duration-300" 
-                        style={{ width: `${Math.min(100, (loanComparison.pipeline / (loanComparison.pipeline || 1)) * 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Total in pipeline</p>
+                    <p className="text-xs text-muted-foreground">leads in pipeline</p>
                   </div>
                 </CardContent>
               </Card>
@@ -635,39 +629,41 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    <div className="text-lg font-bold text-success">
-                      {formatCurrency(loanComparison.sanctioned)}
+                    <div className="text-2xl font-bold text-success">
+                      {kpis.sanctioned}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                      <div 
-                        className="bg-success h-1.5 rounded-full transition-all duration-300" 
-                        style={{ width: `${loanComparison.conversionRate}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{loanComparison.conversionRate}% conversion</p>
+                    <p className="text-xs text-muted-foreground">sanctioned leads</p>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Quick Stats */}
+              {/* Lead Status Distribution */}
               <Card className="hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
                     <TrendingUp className="h-4 w-4 text-accent-foreground" />
-                    Quick Stats
+                    Lead Status
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Active:</span>
-                      <span className="font-semibold">{kpis.inPipeline}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Partners:</span>
-                      <span className="font-semibold">{kpis.totalPartners}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
+                    {(() => {
+                      const statusCounts = recentLeads.reduce((acc, lead) => {
+                        acc[lead.status] = (acc[lead.status] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>);
+                      
+                      return Object.entries(statusCounts)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 4)
+                        .map(([status, count]) => (
+                          <div key={status} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground capitalize">{status.replace('_', ' ')}:</span>
+                            <span className="font-semibold">{count}</span>
+                          </div>
+                        ));
+                    })()}
+                    <div className="flex justify-between text-sm border-t border-border/50 pt-2">
                       <span className="text-muted-foreground">Total:</span>
                       <span className="font-semibold">{kpis.totalLeads}</span>
                     </div>
