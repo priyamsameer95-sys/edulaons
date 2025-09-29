@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, FileText, TrendingUp, CheckCircle, DollarSign, LogOut, Settings, Users, IndianRupee, FileBarChart } from "lucide-react";
+import ShareButton from "@/components/ShareButton";
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
 import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
@@ -136,6 +137,14 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
               </p>
             </div>
             <div className="flex gap-2">
+              {partner && (
+                <ShareButton 
+                  shareUrl={`${window.location.origin}/public/partner/${partner.partner_code}`}
+                  title="Partner Page"
+                  description="Share this public page with potential students"
+                  variant="outline"
+                />
+              )}
               {isAdmin() && (
                 <Button 
                   variant="outline"

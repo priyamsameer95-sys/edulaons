@@ -8,7 +8,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
+import PublicPartner from "./pages/public/PublicPartner";
 
 // Import comprehensive university data import script
 import "./scripts/importData";
@@ -27,6 +29,16 @@ const App = () => (
           
           {/* Authentication */}
           <Route path="/login" element={<Login />} />
+          
+          {/* Public Routes - No Authentication Required */}
+          <Route 
+            path="/public/partner/:partnerCode" 
+            element={
+              <PublicRoute>
+                <PublicPartner />
+              </PublicRoute>
+            } 
+          />
           
           {/* Partner Dashboard - Multi-tenant */}
           <Route 
