@@ -255,6 +255,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_lead_documents_lead_new"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lead_documents_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
@@ -632,7 +639,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      migrate_existing_leads: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       document_status_enum:
