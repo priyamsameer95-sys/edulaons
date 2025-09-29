@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,10 +12,38 @@ import { Loader2 } from 'lucide-react';
 const Login = () => {
   const { user, appUser, loading, signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [partnerRedirect, setPartnerRedirect] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+
+  // Fetch partner code for redirection
+  useEffect(() => {
+    const fetchPartnerCode = async () => {
+      if (appUser?.role === 'partner' && appUser.partner_id && !partnerRedirect) {
+        try {
+          const { data: partner, error } = await supabase
+            .from('partners')
+            .select('partner_code')
+            .eq('id', appUser.partner_id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching partner code:', error);
+            setPartnerRedirect('/partner/default'); // Fallback
+          } else if (partner) {
+            setPartnerRedirect(`/partner/${partner.partner_code}`);
+          }
+        } catch (error) {
+          console.error('Error in fetchPartnerCode:', error);
+          setPartnerRedirect('/partner/default'); // Fallback
+        }
+      }
+    };
+
+    fetchPartnerCode();
+  }, [appUser, partnerRedirect]);
 
   // Redirect if already authenticated
   if (user && !loading) {
@@ -33,8 +62,16 @@ const Login = () => {
       if (appUser.role === 'admin' || appUser.role === 'super_admin') {
         return <Navigate to="/admin" replace />;
       } else if (appUser.role === 'partner' && appUser.partner_id) {
-        // Get partner code from database or use default
-        return <Navigate to="/partner/default" replace />;
+        // Wait for partner code to be fetched, then redirect
+        if (partnerRedirect) {
+          return <Navigate to={partnerRedirect} replace />;
+        }
+        // Show loading while fetching partner code
+        return (
+          <div className="flex min-h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        );
       }
     }
   }
