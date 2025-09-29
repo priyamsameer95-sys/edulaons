@@ -711,9 +711,16 @@ const AdminDashboard = () => {
                     </div>
                     {/* Data Rows */}
                     {recentLeads.slice(0, 8).map((lead) => (
-                      <div key={lead.id} className="grid grid-cols-9 gap-4 py-3 border-b border-border/50 hover:bg-muted/30 transition-colors rounded">
+                      <div 
+                        key={lead.id} 
+                        className="grid grid-cols-9 gap-4 py-3 border-b border-border/50 hover:bg-muted/50 transition-colors rounded cursor-pointer group"
+                        onClick={() => {
+                          setSelectedLead(lead);
+                          setShowLeadDetailSheet(true);
+                        }}
+                      >
                         <div className="col-span-2">
-                          <p className="font-medium text-sm truncate">{lead.students?.name}</p>
+                          <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{lead.students?.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{lead.students?.email}</p>
                         </div>
                         <div className="col-span-2">
