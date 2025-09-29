@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { AdminDocumentManager } from "@/components/admin/AdminDocumentManager";
 import { format } from "date-fns";
 import {
   CheckCircle,
@@ -38,15 +40,17 @@ import { StatusProgressIndicator } from "@/components/lead-status/StatusProgress
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
-  lead: RefactoredLead | null;
+  lead: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onLeadUpdated?: () => void;
 }
 
 export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const { toast } = useToast();
+  const { appUser } = useAuth();
   
   // Real data from Supabase
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
@@ -113,10 +117,9 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
 
         <div className="py-4 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="checklist">Checklist</TabsTrigger>
-              <TabsTrigger value="docs">Docs</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
               <TabsTrigger value="status">Status</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
@@ -358,7 +361,86 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
               </Card>
             </TabsContent>
 
-            <TabsContent value="docs" className="space-y-4">
+            <TabsContent value="documents" className="space-y-4">
+              {appUser?.role === 'admin' || appUser?.role === 'super_admin' ? (
+                <AdminDocumentManager leadId={lead.id} />
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Document Checklist</h3>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline">
+                        {completedRequired}/{requiredDocs.length} Complete
+                      </Badge>
+                      <Button
+                        onClick={() => setStatusUpdateModalOpen(true)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Update Status
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-4">
+                    {documentTypesLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : (
+                      checklist.map((item) => {
+                        const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
+                        const docType = documentTypes.find(type => type.id === item.id);
+                        
+                        return (
+                          <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <CheckCircle className={`h-5 w-5 ${item.status === 'uploaded' ? 'text-success' : 'text-muted-foreground'}`} />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium">{item.name}</span>
+                                  {item.required && (
+                                    <Badge variant="outline" className="text-xs">Required</Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {docType?.description || 'Document type'}
+                                </div>
+                                {uploadedDoc && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    File: {uploadedDoc.original_filename}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-3">
+                              <Badge variant="outline" className={item.status === 'uploaded' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}>
+                                {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
+                              </Badge>
+                              
+                              {uploadedDoc && (
+                                <Button
+                                  onClick={() => handleDownloadDoc(uploadedDoc.id, uploadedDoc.original_filename)}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="status" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center">

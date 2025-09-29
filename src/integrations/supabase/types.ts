@@ -238,6 +238,7 @@ export type Database = {
       }
       lead_documents: {
         Row: {
+          admin_notes: string | null
           created_at: string | null
           document_type_id: string
           file_path: string
@@ -252,10 +253,13 @@ export type Database = {
           uploaded_at: string | null
           uploaded_by: string | null
           verification_notes: string | null
+          verification_status: string | null
           verified_at: string | null
+          verified_by: string | null
           version: number | null
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string | null
           document_type_id: string
           file_path: string
@@ -270,10 +274,13 @@ export type Database = {
           uploaded_at?: string | null
           uploaded_by?: string | null
           verification_notes?: string | null
+          verification_status?: string | null
           verified_at?: string | null
+          verified_by?: string | null
           version?: number | null
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string | null
           document_type_id?: string
           file_path?: string
@@ -288,7 +295,9 @@ export type Database = {
           uploaded_at?: string | null
           uploaded_by?: string | null
           verification_notes?: string | null
+          verification_status?: string | null
           verified_at?: string | null
+          verified_by?: string | null
           version?: number | null
         }
         Relationships: [

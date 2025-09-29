@@ -15,6 +15,9 @@ import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart,
 import CreatePartnerModal from '@/components/admin/CreatePartnerModal';
 import { StatusBadge } from '@/components/lead-status/StatusBadge';
 import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
+import { AdminLeadActions } from '@/components/admin/AdminLeadActions';
+import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
+import { StatusUpdateModal } from '@/components/lead-status/StatusUpdateModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 
@@ -40,9 +43,14 @@ interface Lead {
   id: string;
   case_id: string;
   status: string;
+  documents_status: string;
   loan_amount: number;
+  loan_type: string;
   study_destination: string;
   created_at: string;
+  updated_at: string;
+  student_name: string;
+  partner_name: string;
   students: {
     name: string;
     email: string;
@@ -88,6 +96,10 @@ const AdminDashboard = () => {
   const [showCreatePartner, setShowCreatePartner] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showLeadDetailSheet, setShowLeadDetailSheet] = useState(false);
+  const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
+  const [quickUpdateLead, setQuickUpdateLead] = useState<Lead | null>(null);
   const [statusData, setStatusData] = useState<Array<{name: string, value: number, color: string}>>([]);
   const [topPartner, setTopPartner] = useState<TopPartnerData | null>(null);
   const [loanComparison, setLoanComparison] = useState<LoanAmountComparison>({
@@ -233,9 +245,12 @@ const AdminDashboard = () => {
           id,
           case_id,
           status,
+          documents_status,
           loan_amount,
+          loan_type,
           study_destination,
           created_at,
+          updated_at,
           students (
             name,
             email
@@ -256,7 +271,11 @@ const AdminDashboard = () => {
       }
 
       const { data } = await query;
-      const leads = data || [];
+      const leads = (data || []).map(lead => ({
+        ...lead,
+        student_name: lead.students?.name || 'N/A',
+        partner_name: lead.partners?.name || 'N/A'
+      }));
       setRecentLeads(leads);
       
       // Filter leads based on search term
@@ -360,6 +379,20 @@ const AdminDashboard = () => {
       currency: 'INR',
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handleViewLead = (lead: Lead) => {
+    setSelectedLead(lead);
+    setShowLeadDetailSheet(true);
+  };
+
+  const handleQuickStatusUpdate = (lead: Lead, newStatus: LeadStatus) => {
+    setQuickUpdateLead(lead);
+    setShowStatusUpdateModal(true);
+  };
+
+  const handleStatusUpdated = () => {
+    fetchRecentLeads();
   };
 
   if (loading) {
@@ -813,6 +846,26 @@ const AdminDashboard = () => {
           fetchRecentLeads();
         }}
       />
+
+      {/* Lead Detail Sheet */}
+      <LeadDetailSheet
+        open={showLeadDetailSheet}
+        onOpenChange={setShowLeadDetailSheet}
+        lead={selectedLead}
+        onLeadUpdated={handleStatusUpdated}
+      />
+
+      {/* Quick Status Update Modal */}
+      {quickUpdateLead && (
+        <StatusUpdateModal
+          open={showStatusUpdateModal}
+          onOpenChange={setShowStatusUpdateModal}
+          leadId={quickUpdateLead.id}
+          currentStatus={quickUpdateLead.status as LeadStatus}
+          currentDocumentsStatus={quickUpdateLead.documents_status as DocumentStatus}
+          onStatusUpdated={handleStatusUpdated}
+        />
+      )}
     </div>
   );
 };
