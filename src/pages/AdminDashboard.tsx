@@ -5,14 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, BarChart3 } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import EnhancedKPICards from '@/components/admin/EnhancedKPICards';
-import AdminDashboardCharts from '@/components/admin/AdminDashboardCharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import CreatePartnerModal from '@/components/admin/CreatePartnerModal';
-import LeadFilters, { LeadFilters as LeadFiltersType } from '@/components/admin/LeadFilters';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -67,16 +67,9 @@ const AdminDashboard = () => {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showCreatePartner, setShowCreatePartner] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<LeadFiltersType>({
-    search: '',
-    partnerId: 'all',
-    status: 'all',
-    loanAmountMin: '',
-    loanAmountMax: '',
-    dateFrom: undefined,
-    dateTo: undefined,
-  });
+  const [statusData, setStatusData] = useState<Array<{name: string, value: number, color: string}>>([]);
 
   const fetchAdminKPIs = async () => {
     try {
@@ -185,97 +178,85 @@ const AdminDashboard = () => {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(20);
 
       if (selectedPartner !== 'all') {
         query.eq('partner_id', selectedPartner);
       }
 
       const { data } = await query;
-      setRecentLeads(data || []);
-      applyFilters(data || [], activeFilters);
+      const leads = data || [];
+      setRecentLeads(leads);
+      
+      // Filter leads based on search term
+      filterLeads(leads);
+      
+      // Calculate status distribution for chart
+      const statusCounts: Record<string, number> = {};
+      leads.forEach(lead => {
+        statusCounts[lead.status] = (statusCounts[lead.status] || 0) + 1;
+      });
+
+      const chartData = Object.entries(statusCounts).map(([status, count], index) => ({
+        name: status.replace('_', ' ').toUpperCase(),
+        value: count,
+        color: ['#3b82f6', '#f59e0b', '#10b981', '#ef4444'][index] || '#6b7280'
+      }));
+      
+      setStatusData(chartData);
     } catch (error) {
       console.error('Error fetching recent leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch leads data",
+        variant: "destructive",
+      });
     }
   };
 
-  const applyFilters = (leads: Lead[], filters: LeadFiltersType) => {
-    let filtered = [...leads];
-
-    // Search filter
-    if (filters.search.trim()) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(lead => 
-        lead.students?.name.toLowerCase().includes(searchLower) ||
-        lead.students?.email.toLowerCase().includes(searchLower) ||
-        lead.case_id.toLowerCase().includes(searchLower) ||
-        lead.partners?.name.toLowerCase().includes(searchLower)
-      );
+  const filterLeads = (leads: Lead[]) => {
+    if (!searchTerm.trim()) {
+      setFilteredLeads(leads);
+      return;
     }
 
-    // Partner filter
-    if (filters.partnerId !== 'all') {
-      filtered = filtered.filter(lead => 
-        partnerStats.find(p => p.id === filters.partnerId)?.partner_code === lead.partners?.partner_code
-      );
-    }
-
-    // Status filter
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(lead => lead.status === filters.status);
-    }
-
-    // Loan amount filter
-    if (filters.loanAmountMin) {
-      filtered = filtered.filter(lead => Number(lead.loan_amount) >= Number(filters.loanAmountMin));
-    }
-    if (filters.loanAmountMax) {
-      filtered = filtered.filter(lead => Number(lead.loan_amount) <= Number(filters.loanAmountMax));
-    }
-
-    // Date filters
-    if (filters.dateFrom) {
-      filtered = filtered.filter(lead => new Date(lead.created_at) >= filters.dateFrom!);
-    }
-    if (filters.dateTo) {
-      const dateTo = new Date(filters.dateTo);
-      dateTo.setHours(23, 59, 59, 999); // End of day
-      filtered = filtered.filter(lead => new Date(lead.created_at) <= dateTo);
-    }
-
+    const filtered = leads.filter(lead => 
+      lead.students?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.students?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.case_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.partners?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
     setFilteredLeads(filtered);
-  };
-
-  const handleFiltersChange = (newFilters: LeadFiltersType) => {
-    setActiveFilters(newFilters);
-    applyFilters(recentLeads, newFilters);
-  };
-
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (activeFilters.search.trim()) count++;
-    if (activeFilters.partnerId !== 'all') count++;
-    if (activeFilters.status !== 'all') count++;
-    if (activeFilters.loanAmountMin) count++;
-    if (activeFilters.loanAmountMax) count++;
-    if (activeFilters.dateFrom) count++;
-    if (activeFilters.dateTo) count++;
-    return count;
   };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchAdminKPIs(),
-        fetchPartnerStats(),
-        fetchRecentLeads(),
-      ]);
-      setLoading(false);
+      try {
+        await Promise.all([
+          fetchAdminKPIs(),
+          fetchPartnerStats(),
+          fetchRecentLeads(),
+        ]);
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
   }, [selectedPartner]);
+
+  useEffect(() => {
+    filterLeads(recentLeads);
+  }, [searchTerm, recentLeads]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -334,74 +315,139 @@ const AdminDashboard = () => {
         </Button>
       </div>
 
-      {/* Enhanced KPI Cards */}
-      <EnhancedKPICards kpis={kpis} />
+      {/* Simple KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.totalLeads}</div>
+            <p className="text-xs text-muted-foreground mt-1">Across all partners</p>
+          </CardContent>
+        </Card>
 
-      {/* Analytics Charts */}
-      <AdminDashboardCharts />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Partners</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.totalPartners}</div>
+            <p className="text-xs text-muted-foreground mt-1">Partner organizations</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Pipeline</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.inPipeline}</div>
+            <p className="text-xs text-muted-foreground mt-1">New + In Progress</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Loan Value</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(kpis.totalLoanAmount)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Sanctioned: {kpis.sanctioned}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="partners">Partners</TabsTrigger>
-          <TabsTrigger value="leads">Lead Management</TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-gradient-card border-0">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Lead Status Chart - Only Essential Chart */}
+            <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle>Partner Performance</CardTitle>
-                <CardDescription>Top performing partners by lead volume</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Lead Status
+                </CardTitle>
+                <CardDescription>Current lead distribution</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {partnerStats.slice(0, 5).map((partner) => (
-                    <div key={partner.id} className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{partner.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Code: {partner.partner_code}
-                        </p>
+              <CardContent className="h-64">
+                {statusData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      value: { label: "Leads", color: "hsl(var(--primary))" }
+                    }}
+                    className="h-full"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={statusData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                        >
+                          {statusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    No data available
+                  </div>
+                )}
+                {statusData.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {statusData.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-1">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="text-xs">{entry.name}: {entry.value}</span>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">{partner.totalLeads}</div>
-                        <p className="text-xs text-muted-foreground">
-                          Last activity: {partner.recentActivity}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-primary border-0 text-white">
-              <div className="absolute inset-0 bg-black/10 rounded-lg" />
-              <CardHeader className="relative">
-                <CardTitle className="text-white">Recent Activity</CardTitle>
-                <CardDescription className="text-white/80">Latest lead submissions</CardDescription>
+            {/* Recent Activity */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Recent Leads</CardTitle>
+                <CardDescription>Latest submissions across all partners</CardDescription>
               </CardHeader>
-              <CardContent className="relative">
-                <div className="space-y-4">
-                  {recentLeads.slice(0, 5).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+              <CardContent>
+                <div className="space-y-3">
+                  {recentLeads.slice(0, 6).map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <p className="font-medium text-white">{lead.students?.name}</p>
-                        <p className="text-sm text-white/80">
+                        <p className="font-medium">{lead.students?.name}</p>
+                        <p className="text-sm text-muted-foreground">
                           {lead.partners?.name} • {lead.case_id}
                         </p>
                       </div>
                       <div className="text-right">
-                        <Badge variant="outline" className="border-white/30 text-white bg-white/10">
-                          {lead.status}
+                        <Badge className={getStatusColor(lead.status)}>
+                          {lead.status.replace('_', ' ')}
                         </Badge>
-                        <p className="text-sm text-white/80 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
                       </div>
@@ -411,10 +457,6 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <AdminDashboardCharts />
         </TabsContent>
 
         <TabsContent value="partners">
@@ -433,92 +475,100 @@ const AdminDashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {partnerStats.map((partner) => (
-                  <div key={partner.id} className="relative overflow-hidden bg-gradient-card p-6 border-0 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <h3 className="font-semibold text-lg">{partner.name}</h3>
-                        <Badge variant="outline" className="text-xs">
-                          Code: {partner.partner_code}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground">
-                          Last Activity: {partner.recentActivity}
-                        </p>
-                        <div className="flex items-center gap-4 mt-4">
-                          <div>
-                            <div className="text-2xl font-bold text-primary">{partner.totalLeads}</div>
-                            <p className="text-xs text-muted-foreground">Total Leads</p>
-                          </div>
-                          <div>
-                            <div className="text-lg font-bold text-success">{partner.activeLenders}</div>
-                            <p className="text-xs text-muted-foreground">Active Lenders</p>
-                          </div>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(`/partner/${partner.partner_code}`, '_blank')}
-                        className="gap-1"
-                      >
-                        <Building2 className="h-3 w-3" />
-                        View Dashboard
-                      </Button>
-                    </div>
+              <div className="space-y-4">
+                {partnerStats.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No partners found</p>
                   </div>
-                ))}
+                ) : (
+                  partnerStats.map((partner) => (
+                    <div key={partner.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-semibold">{partner.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Code: {partner.partner_code} • Last Activity: {partner.recentActivity}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-lg font-bold">{partner.totalLeads}</div>
+                          <p className="text-xs text-muted-foreground">Total Leads</p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`/partner/${partner.partner_code}`, '_blank')}
+                          className="gap-1"
+                        >
+                          View Dashboard
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="leads" className="space-y-6">
-          <LeadFilters 
-            partners={partnerStats} 
-            onFiltersChange={handleFiltersChange}
-            activeFiltersCount={getActiveFiltersCount()}
-          />
-          
+        <TabsContent value="leads">
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Filtered Results</CardTitle>
-                  <CardDescription>
-                    Showing {filteredLeads.length} of {recentLeads.length} leads
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="text-lg px-3 py-1">
-                  {filteredLeads.length} leads
-                </Badge>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Lead Management</CardTitle>
+                <CardDescription>View and search leads across all partners</CardDescription>
               </div>
+              <Select value={selectedPartner} onValueChange={setSelectedPartner}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by partner" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Partners</SelectItem>
+                  {partnerStats.map((partner) => (
+                    <SelectItem key={partner.id} value={partner.id}>
+                      {partner.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+            <CardContent className="space-y-4">
+              {/* Simple Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by student name, email, or case ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Results */}
+              <div className="space-y-3 max-h-96 overflow-y-auto">
                 {filteredLeads.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No leads match your current filters</p>
-                    <p className="text-sm">Try adjusting your search criteria</p>
+                    <p>{searchTerm ? 'No leads match your search' : 'No leads found'}</p>
                   </div>
                 ) : (
                   filteredLeads.map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="space-y-1">
+                    <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
                         <h3 className="font-semibold">{lead.students?.name}</h3>
                         <p className="text-sm text-muted-foreground">
                           {lead.students?.email} • Case: {lead.case_id}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Partner: {lead.partners?.name} • Lender: {lead.lenders?.name}
+                          Partner: {lead.partners?.name}
                         </p>
                       </div>
-                      <div className="text-right space-y-2">
+                      <div className="text-right">
                         <Badge className={getStatusColor(lead.status)}>
                           {lead.status.replace('_', ' ')}
                         </Badge>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium mt-1">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
                         <p className="text-xs text-muted-foreground">
