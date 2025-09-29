@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -51,6 +51,18 @@ interface Lead {
   };
 }
 
+interface TopPartnerData {
+  name: string;
+  total_leads: number;
+  percentage: number;
+}
+
+interface LoanAmountComparison {
+  pipeline: number;
+  sanctioned: number;
+  conversionRate: number;
+}
+
 const AdminDashboard = () => {
   const { signOut, appUser } = useAuth();
   const { toast } = useToast();
@@ -70,6 +82,12 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreatePartner, setShowCreatePartner] = useState(false);
   const [statusData, setStatusData] = useState<Array<{name: string, value: number, color: string}>>([]);
+  const [topPartner, setTopPartner] = useState<TopPartnerData | null>(null);
+  const [loanComparison, setLoanComparison] = useState<LoanAmountComparison>({
+    pipeline: 0,
+    sanctioned: 0,
+    conversionRate: 0
+  });
 
   const fetchAdminKPIs = async () => {
     try {
@@ -150,8 +168,53 @@ const AdminDashboard = () => {
       })) || [];
 
       setPartnerStats(stats);
+
+      // Calculate top partner
+      if (stats.length > 0) {
+        const topPartnerData = stats.reduce((max, partner) => 
+          partner.totalLeads > max.totalLeads ? partner : max
+        );
+        const totalLeads = stats.reduce((sum, partner) => sum + partner.totalLeads, 0);
+        
+        setTopPartner({
+          name: topPartnerData.name,
+          total_leads: topPartnerData.totalLeads,
+          percentage: totalLeads > 0 ? Math.round((topPartnerData.totalLeads / totalLeads) * 100) : 0
+        });
+      }
     } catch (error) {
       console.error('Error fetching partner stats:', error);
+    }
+  };
+
+  const fetchLoanComparison = async () => {
+    try {
+      const { data: leads } = await supabase
+        .from('leads_new')
+        .select('status, loan_amount');
+
+      let pipelineAmount = 0;
+      let sanctionedAmount = 0;
+
+      leads?.forEach((lead) => {
+        const amount = Number(lead.loan_amount) || 0;
+        if (lead.status === 'new' || lead.status === 'in_progress') {
+          pipelineAmount += amount;
+        } else if (lead.status === 'approved') {
+          sanctionedAmount += amount;
+        }
+      });
+
+      const conversionRate = pipelineAmount > 0 ? 
+        Math.round((sanctionedAmount / (pipelineAmount + sanctionedAmount)) * 100) : 0;
+
+      setLoanComparison({
+        pipeline: pipelineAmount,
+        sanctioned: sanctionedAmount,
+        conversionRate
+      });
+    } catch (error) {
+      console.error('Error fetching loan comparison:', error);
     }
   };
 
@@ -246,6 +309,7 @@ const AdminDashboard = () => {
           fetchAdminKPIs(),
           fetchPartnerStats(),
           fetchRecentLeads(),
+          fetchLoanComparison(),
         ]);
       } catch (error) {
         console.error('Error loading dashboard:', error);
@@ -390,82 +454,96 @@ const AdminDashboard = () => {
 
         <TabsContent value="overview">
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Lead Status Chart - Only Essential Chart */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
-                  Lead Status
-                </CardTitle>
-                <CardDescription>Current lead distribution</CardDescription>
+            {/* Top Partner Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <Trophy className="h-4 w-4 text-warning" />
+                    Top Partner
+                  </CardTitle>
+                  <CardDescription>Highest lead volume</CardDescription>
+                </div>
               </CardHeader>
-              <CardContent className="h-64">
-                {statusData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      value: { label: "Leads", color: "hsl(var(--primary))" }
-                    }}
-                    className="h-full"
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={statusData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          dataKey="value"
-                        >
-                          {statusData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
+              <CardContent>
+                {topPartner ? (
+                  <div className="space-y-3">
+                    <div className="text-2xl font-bold text-foreground">{topPartner.name}</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Total Leads</span>
+                      <span className="font-semibold">{topPartner.total_leads}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Market Share</span>
+                      <Badge variant="secondary">{topPartner.percentage}%</Badge>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    No data available
-                  </div>
-                )}
-                {statusData.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {statusData.map((entry, index) => (
-                      <div key={index} className="flex items-center gap-1">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span className="text-xs">{entry.name}: {entry.value}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <div className="text-muted-foreground">No data available</div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Recent Activity */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Recent Leads</CardTitle>
-                <CardDescription>Latest submissions across all partners</CardDescription>
+            {/* Pipeline vs Sanctioned Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    Loan Pipeline
+                  </CardTitle>
+                  <CardDescription>Pipeline vs sanctioned</CardDescription>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {recentLeads.slice(0, 6).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">{lead.students?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {lead.partners?.name} • {lead.case_id}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Pipeline</span>
+                    <span className="font-semibold">{formatCurrency(loanComparison.pipeline)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Sanctioned</span>
+                    <span className="font-semibold text-success">{formatCurrency(loanComparison.sanctioned)}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="bg-success h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${loanComparison.conversionRate}%` }}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <Badge variant="outline">{loanComparison.conversionRate}% conversion</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Activity Card (Compressed) */}
+            <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <Clock className="h-4 w-4 text-accent-foreground" />
+                    Recent Activity
+                  </CardTitle>
+                  <CardDescription>Latest submissions</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentLeads.slice(0, 4).map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{lead.students?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {lead.partners?.name}
                         </p>
                       </div>
-                      <div className="text-right space-y-1">
-                        <Badge variant="outline" className={getStatusColor(lead.status)}>
-                          {lead.status.replace('_', ' ')}
+                      <div className="text-right ml-2">
+                        <Badge variant="outline" className={`text-xs ${getStatusColor(lead.status)}`}>
+                          {lead.status === 'in_progress' ? 'Progress' : lead.status}
                         </Badge>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-xs font-medium mt-1">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
                       </div>
