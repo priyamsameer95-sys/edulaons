@@ -18,16 +18,22 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchAppUser = async (userId: string) => {
+  const fetchAppUser = async (userId: string): Promise<AppUser | null> => {
     try {
       const { data, error } = await supabase
         .from('app_users')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid errors when no data found
 
       if (error) {
         console.error('Error fetching app user:', error);
+        return null;
+      }
+
+      // If no app_users record exists, handle gracefully
+      if (!data) {
+        console.log('No app_users record found for user:', userId);
         return null;
       }
 
@@ -136,6 +142,12 @@ export function useAuth() {
 
           if (updateError) {
             console.error('Error updating app_users for admin:', updateError);
+          } else {
+            // Immediately fetch and set the appUser to trigger redirection
+            const adminUser = await fetchAppUser(authResult.data.user.id);
+            if (adminUser) {
+              setAppUser(adminUser);
+            }
           }
 
           toast({

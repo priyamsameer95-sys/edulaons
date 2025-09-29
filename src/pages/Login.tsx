@@ -17,12 +17,20 @@ const Login = () => {
   });
 
   // Redirect if already authenticated
-  if (user && appUser && !loading) {
-    if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+  if (user && !loading) {
+    // For the hardcoded admin user, redirect immediately
+    if (user.email === 'priyam.sameer@cashkaro.com') {
       return <Navigate to="/admin" replace />;
-    } else if (appUser.role === 'partner' && appUser.partner_id) {
-      // Get partner code from database or use default
-      return <Navigate to="/partner/default" replace />;
+    }
+    
+    // For other users, wait for appUser to be loaded
+    if (appUser) {
+      if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+        return <Navigate to="/admin" replace />;
+      } else if (appUser.role === 'partner' && appUser.partner_id) {
+        // Get partner code from database or use default
+        return <Navigate to="/partner/default" replace />;
+      }
     }
   }
 

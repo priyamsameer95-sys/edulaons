@@ -691,6 +691,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       migrate_existing_leads: {
         Args: Record<PropertyKey, never>
         Returns: undefined
