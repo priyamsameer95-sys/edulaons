@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_tests: {
+        Row: {
+          certificate_number: string | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          score: string
+          student_id: string
+          test_date: string | null
+          test_type: Database["public"]["Enums"]["test_type_enum"]
+          updated_at: string
+        }
+        Insert: {
+          certificate_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          score: string
+          student_id: string
+          test_date?: string | null
+          test_type: Database["public"]["Enums"]["test_type_enum"]
+          updated_at?: string
+        }
+        Update: {
+          certificate_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          score?: string
+          student_id?: string
+          test_date?: string | null
+          test_type?: Database["public"]["Enums"]["test_type_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_academic_tests_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      co_applicants: {
+        Row: {
+          created_at: string
+          email: string | null
+          employer: string | null
+          id: string
+          name: string
+          occupation: string | null
+          phone: string | null
+          pin_code: string
+          relationship: Database["public"]["Enums"]["relationship_enum"]
+          salary: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          employer?: string | null
+          id?: string
+          name: string
+          occupation?: string | null
+          phone?: string | null
+          pin_code: string
+          relationship: Database["public"]["Enums"]["relationship_enum"]
+          salary: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          employer?: string | null
+          id?: string
+          name?: string
+          occupation?: string | null
+          phone?: string | null
+          pin_code?: string
+          relationship?: Database["public"]["Enums"]["relationship_enum"]
+          salary?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       courses: {
         Row: {
           course_intensity: string | null
@@ -302,6 +388,209 @@ export type Database = {
         }
         Relationships: []
       }
+      leads_new: {
+        Row: {
+          case_id: string
+          co_applicant_id: string
+          created_at: string
+          documents_status: Database["public"]["Enums"]["document_status_enum"]
+          id: string
+          intake_month: number | null
+          intake_year: number | null
+          lender_id: string
+          loan_amount: number
+          loan_type: Database["public"]["Enums"]["loan_type_enum"]
+          partner_id: string | null
+          status: Database["public"]["Enums"]["lead_status_enum"]
+          student_id: string
+          study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          co_applicant_id: string
+          created_at?: string
+          documents_status?: Database["public"]["Enums"]["document_status_enum"]
+          id?: string
+          intake_month?: number | null
+          intake_year?: number | null
+          lender_id: string
+          loan_amount: number
+          loan_type: Database["public"]["Enums"]["loan_type_enum"]
+          partner_id?: string | null
+          status?: Database["public"]["Enums"]["lead_status_enum"]
+          student_id: string
+          study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          co_applicant_id?: string
+          created_at?: string
+          documents_status?: Database["public"]["Enums"]["document_status_enum"]
+          id?: string
+          intake_month?: number | null
+          intake_year?: number | null
+          lender_id?: string
+          loan_amount?: number
+          loan_type?: Database["public"]["Enums"]["loan_type_enum"]
+          partner_id?: string | null
+          status?: Database["public"]["Enums"]["lead_status_enum"]
+          student_id?: string
+          study_destination?: Database["public"]["Enums"]["study_destination_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_leads_co_applicant"
+            columns: ["co_applicant_id"]
+            isOneToOne: false
+            referencedRelation: "co_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_lender"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_partner"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lenders: {
+        Row: {
+          code: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          code: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          code?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string
+          id: string
+          name: string
+          nationality: string | null
+          phone: string
+          postal_code: string | null
+          state: string | null
+          street_address: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email: string
+          id?: string
+          name: string
+          nationality?: string | null
+          phone: string
+          postal_code?: string | null
+          state?: string | null
+          street_address?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string
+          id?: string
+          name?: string
+          nationality?: string | null
+          phone?: string
+          postal_code?: string | null
+          state?: string | null
+          street_address?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       universities: {
         Row: {
           city: string
@@ -346,7 +635,40 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      document_status_enum:
+        | "pending"
+        | "uploaded"
+        | "verified"
+        | "rejected"
+        | "resubmission_required"
+      lead_status_enum:
+        | "new"
+        | "contacted"
+        | "in_progress"
+        | "document_review"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
+      loan_type_enum: "secured" | "unsecured"
+      relationship_enum: "parent" | "spouse" | "sibling" | "guardian" | "other"
+      study_destination_enum:
+        | "Australia"
+        | "Canada"
+        | "Germany"
+        | "Ireland"
+        | "New Zealand"
+        | "UK"
+        | "USA"
+        | "Other"
+      test_type_enum:
+        | "IELTS"
+        | "TOEFL"
+        | "PTE"
+        | "GRE"
+        | "GMAT"
+        | "SAT"
+        | "Other"
+      upload_status_enum: "uploading" | "uploaded" | "failed" | "processing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -473,6 +795,37 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      document_status_enum: [
+        "pending",
+        "uploaded",
+        "verified",
+        "rejected",
+        "resubmission_required",
+      ],
+      lead_status_enum: [
+        "new",
+        "contacted",
+        "in_progress",
+        "document_review",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
+      loan_type_enum: ["secured", "unsecured"],
+      relationship_enum: ["parent", "spouse", "sibling", "guardian", "other"],
+      study_destination_enum: [
+        "Australia",
+        "Canada",
+        "Germany",
+        "Ireland",
+        "New Zealand",
+        "UK",
+        "USA",
+        "Other",
+      ],
+      test_type_enum: ["IELTS", "TOEFL", "PTE", "GRE", "GMAT", "SAT", "Other"],
+      upload_status_enum: ["uploading", "uploaded", "failed", "processing"],
+    },
   },
 } as const
