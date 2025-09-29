@@ -423,7 +423,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Convert Lead to RefactoredLead format for AdminLeadActions
+  // Convert Lead to RefactoredLead format for EnhancedAdminLeadActions
   const convertToRefactoredLead = (lead: Lead) => ({
     id: lead.id,
     case_id: lead.case_id,
