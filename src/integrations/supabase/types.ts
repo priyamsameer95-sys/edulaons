@@ -58,6 +58,44 @@ export type Database = {
           },
         ]
       }
+      app_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          partner_id: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          partner_id?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          partner_id?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       co_applicants: {
         Row: {
           created_at: string
@@ -525,6 +563,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          partner_code: string
           phone: string | null
           updated_at: string
         }
@@ -535,6 +574,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          partner_code: string
           phone?: string | null
           updated_at?: string
         }
@@ -545,6 +585,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          partner_code?: string
           phone?: string | null
           updated_at?: string
         }
@@ -639,6 +680,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_partner: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       migrate_existing_leads: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -649,6 +701,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "partner" | "admin" | "super_admin"
       document_status_enum:
         | "pending"
         | "uploaded"
@@ -810,6 +863,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["partner", "admin", "super_admin"],
       document_status_enum: [
         "pending",
         "uploaded",
