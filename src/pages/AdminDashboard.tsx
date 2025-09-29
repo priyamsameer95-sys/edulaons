@@ -695,18 +695,17 @@ const AdminDashboard = () => {
                 ) : (
                   <div className="space-y-0">
                     {/* Header */}
-                    <div className="grid grid-cols-12 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
+                    <div className="grid grid-cols-9 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
                       <div className="col-span-2">Student</div>
                       <div className="col-span-2">Partner</div>
                       <div className="col-span-1">Destination</div>
                       <div className="col-span-2">Loan Amount</div>
                       <div className="col-span-1">Status</div>
                       <div className="col-span-1">Date</div>
-                      <div className="col-span-3">Actions</div>
                     </div>
                     {/* Data Rows */}
                     {recentLeads.slice(0, 8).map((lead) => (
-                      <div key={lead.id} className="grid grid-cols-12 gap-4 py-3 border-b border-border/50 hover:bg-muted/30 transition-colors rounded">
+                      <div key={lead.id} className="grid grid-cols-9 gap-4 py-3 border-b border-border/50 hover:bg-muted/30 transition-colors rounded">
                         <div className="col-span-2">
                           <p className="font-medium text-sm truncate">{lead.students?.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{lead.students?.email}</p>
@@ -731,14 +730,6 @@ const AdminDashboard = () => {
                           <p className="text-xs text-muted-foreground">
                             {new Date(lead.created_at).toLocaleDateString()}
                           </p>
-                        </div>
-                        <div className="col-span-3">
-                          <EnhancedAdminLeadActions
-                            lead={convertToRefactoredLead(lead)}
-                            documentCount={0}
-                            onViewDetails={(refactoredLead) => handleViewLead(lead)}
-                            onStatusUpdate={(refactoredLead) => handleQuickStatusUpdate(lead)}
-                          />
                         </div>
                       </div>
                     ))}
