@@ -23,6 +23,11 @@ const Login = () => {
       return <Navigate to="/admin" replace />;
     }
     
+    // For the CashKaro partner user, redirect to partner dashboard
+    if (user.email === 'priyam@cashkaro.com') {
+      return <Navigate to="/partner/cashkaro" replace />;
+    }
+    
     // For other users, wait for appUser to be loaded
     if (appUser) {
       if (appUser.role === 'admin' || appUser.role === 'super_admin') {
