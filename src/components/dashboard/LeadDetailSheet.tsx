@@ -29,7 +29,7 @@ import {
 import { Lead } from "@/types/lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
-import { DocumentUploadSection } from "./DocumentUploadSection";
+import { DocumentUploadButton } from "./DocumentUploadButton";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeadDetailSheetProps {
@@ -277,17 +277,24 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     checklist.map((item) => {
                       const StatusIcon = getStatusIcon(item.status);
                       const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
+                      const docType = documentTypes.find(type => type.id === item.id);
+                      
                       return (
-                        <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                          <div className="flex items-center space-x-3">
+                        <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                          <div className="flex items-center space-x-3 flex-1">
                             <StatusIcon className={`h-5 w-5 ${getStatusColor(item.status)}`} />
-                            <div>
-                              <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium">{item.name}</span>
                                 {item.required && (
                                   <Badge variant="destructive" className="text-xs px-1.5 py-0">Required</Badge>
                                 )}
                               </div>
+                              {docType && (
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  {docType.description}
+                                </p>
+                              )}
                               {item.uploaded_at && (
                                 <p className="text-sm text-muted-foreground">
                                   Uploaded: {format(new Date(item.uploaded_at), 'MMM dd, yyyy')}
@@ -295,40 +302,66 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          
+                          <div className="flex items-center space-x-3">
                             <Badge variant="outline" className={getStatusBadge(item.status)}>
                               {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
                             </Badge>
-                            {uploadedDoc && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownloadDoc(uploadedDoc.id, item.name)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            )}
+                            
+                            {/* Action Buttons */}
+                            <div className="flex items-center space-x-2">
+                              {uploadedDoc ? (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDownloadDoc(uploadedDoc.id, item.name)}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    View Document
+                                  </Button>
+                                  <DocumentUploadButton
+                                    leadId={lead.id}
+                                    documentTypeId={item.id}
+                                    documentTypeName={item.name}
+                                    maxFileSize={docType?.max_file_size_pdf || 20971520}
+                                    acceptedFormats={docType?.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png']}
+                                    onUploadSuccess={() => {
+                                      refetchDocuments();
+                                      toast({
+                                        title: "Document Replaced",
+                                        description: `${item.name} has been updated`,
+                                      });
+                                    }}
+                                    variant="ghost"
+                                    size="sm"
+                                  />
+                                </>
+                              ) : (
+                                <DocumentUploadButton
+                                  leadId={lead.id}
+                                  documentTypeId={item.id}
+                                  documentTypeName={item.name}
+                                  maxFileSize={docType?.max_file_size_pdf || 20971520}
+                                  acceptedFormats={docType?.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png']}
+                                  onUploadSuccess={() => {
+                                    refetchDocuments();
+                                    toast({
+                                      title: "Document Uploaded",
+                                      description: `${item.name} uploaded successfully`,
+                                    });
+                                  }}
+                                  variant="default"
+                                  size="sm"
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
                     })
                   )}
-                  
-                  {/* Document Upload Section */}
-                  <div className="pt-4 border-t">
-                    <DocumentUploadSection 
-                      leadId={lead.id}
-                      onDocumentsChange={() => {
-                        // Refetch documents when uploads complete
-                        refetchDocuments();
-                        toast({
-                          title: "Documents Updated",
-                          description: "Document status has been refreshed",
-                        });
-                      }}
-                    />
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
