@@ -6,9 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import EnhancedKPICards from '@/components/admin/EnhancedKPICards';
+import AdminDashboardCharts from '@/components/admin/AdminDashboardCharts';
+import CreatePartnerModal from '@/components/admin/CreatePartnerModal';
+import LeadFilters, { LeadFilters as LeadFiltersType } from '@/components/admin/LeadFilters';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -60,8 +64,19 @@ const AdminDashboard = () => {
   });
   const [partnerStats, setPartnerStats] = useState<PartnerStats[]>([]);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<string>('all');
+  const [showCreatePartner, setShowCreatePartner] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<LeadFiltersType>({
+    search: '',
+    partnerId: 'all',
+    status: 'all',
+    loanAmountMin: '',
+    loanAmountMax: '',
+    dateFrom: undefined,
+    dateTo: undefined,
+  });
 
   const fetchAdminKPIs = async () => {
     try {
@@ -170,7 +185,7 @@ const AdminDashboard = () => {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(50);
 
       if (selectedPartner !== 'all') {
         query.eq('partner_id', selectedPartner);
@@ -178,9 +193,74 @@ const AdminDashboard = () => {
 
       const { data } = await query;
       setRecentLeads(data || []);
+      applyFilters(data || [], activeFilters);
     } catch (error) {
       console.error('Error fetching recent leads:', error);
     }
+  };
+
+  const applyFilters = (leads: Lead[], filters: LeadFiltersType) => {
+    let filtered = [...leads];
+
+    // Search filter
+    if (filters.search.trim()) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(lead => 
+        lead.students?.name.toLowerCase().includes(searchLower) ||
+        lead.students?.email.toLowerCase().includes(searchLower) ||
+        lead.case_id.toLowerCase().includes(searchLower) ||
+        lead.partners?.name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Partner filter
+    if (filters.partnerId !== 'all') {
+      filtered = filtered.filter(lead => 
+        partnerStats.find(p => p.id === filters.partnerId)?.partner_code === lead.partners?.partner_code
+      );
+    }
+
+    // Status filter
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(lead => lead.status === filters.status);
+    }
+
+    // Loan amount filter
+    if (filters.loanAmountMin) {
+      filtered = filtered.filter(lead => Number(lead.loan_amount) >= Number(filters.loanAmountMin));
+    }
+    if (filters.loanAmountMax) {
+      filtered = filtered.filter(lead => Number(lead.loan_amount) <= Number(filters.loanAmountMax));
+    }
+
+    // Date filters
+    if (filters.dateFrom) {
+      filtered = filtered.filter(lead => new Date(lead.created_at) >= filters.dateFrom!);
+    }
+    if (filters.dateTo) {
+      const dateTo = new Date(filters.dateTo);
+      dateTo.setHours(23, 59, 59, 999); // End of day
+      filtered = filtered.filter(lead => new Date(lead.created_at) <= dateTo);
+    }
+
+    setFilteredLeads(filtered);
+  };
+
+  const handleFiltersChange = (newFilters: LeadFiltersType) => {
+    setActiveFilters(newFilters);
+    applyFilters(recentLeads, newFilters);
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (activeFilters.search.trim()) count++;
+    if (activeFilters.partnerId !== 'all') count++;
+    if (activeFilters.status !== 'all') count++;
+    if (activeFilters.loanAmountMin) count++;
+    if (activeFilters.loanAmountMax) count++;
+    if (activeFilters.dateFrom) count++;
+    if (activeFilters.dateTo) count++;
+    return count;
   };
 
   useEffect(() => {
@@ -254,74 +334,27 @@ const AdminDashboard = () => {
         </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalLeads}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all partners
-            </p>
-          </CardContent>
-        </Card>
+      {/* Enhanced KPI Cards */}
+      <EnhancedKPICards kpis={kpis} />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Partners</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalPartners}</div>
-            <p className="text-xs text-muted-foreground">
-              Partner organizations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Pipeline</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.inPipeline}</div>
-            <p className="text-xs text-muted-foreground">
-              New + In Progress leads
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Loan Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(kpis.totalLoanAmount)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Sanctioned: {kpis.sanctioned} • Disbursed: {kpis.disbursed}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Analytics Charts */}
+      <AdminDashboardCharts />
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="leads">Lead Management</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="bg-gradient-card border-0">
               <CardHeader>
                 <CardTitle>Partner Performance</CardTitle>
                 <CardDescription>Top performing partners by lead volume</CardDescription>
@@ -329,7 +362,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   {partnerStats.slice(0, 5).map((partner) => (
-                    <div key={partner.id} className="flex items-center justify-between">
+                    <div key={partner.id} className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
                       <div>
                         <p className="font-medium">{partner.name}</p>
                         <p className="text-sm text-muted-foreground">
@@ -337,8 +370,8 @@ const AdminDashboard = () => {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{partner.totalLeads} leads</p>
-                        <p className="text-sm text-muted-foreground">
+                        <div className="text-2xl font-bold text-primary">{partner.totalLeads}</div>
+                        <p className="text-xs text-muted-foreground">
                           Last activity: {partner.recentActivity}
                         </p>
                       </div>
@@ -348,26 +381,27 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest lead submissions</CardDescription>
+            <Card className="bg-gradient-primary border-0 text-white">
+              <div className="absolute inset-0 bg-black/10 rounded-lg" />
+              <CardHeader className="relative">
+                <CardTitle className="text-white">Recent Activity</CardTitle>
+                <CardDescription className="text-white/80">Latest lead submissions</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
                 <div className="space-y-4">
                   {recentLeads.slice(0, 5).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between">
+                    <div key={lead.id} className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
                       <div>
-                        <p className="font-medium">{lead.students?.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-white">{lead.students?.name}</p>
+                        <p className="text-sm text-white/80">
                           {lead.partners?.name} • {lead.case_id}
                         </p>
                       </div>
                       <div className="text-right">
-                        <Badge className={getStatusColor(lead.status)}>
+                        <Badge variant="outline" className="border-white/30 text-white bg-white/10">
                           {lead.status}
                         </Badge>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-white/80 mt-1">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
                       </div>
@@ -379,28 +413,58 @@ const AdminDashboard = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="analytics">
+          <AdminDashboardCharts />
+        </TabsContent>
+
         <TabsContent value="partners">
           <Card>
-            <CardHeader>
-              <CardTitle>Partner Management</CardTitle>
-              <CardDescription>Manage and monitor partner performance</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Partner Management
+                </CardTitle>
+                <CardDescription>Manage and monitor partner performance</CardDescription>
+              </div>
+              <Button onClick={() => setShowCreatePartner(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Partner
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 {partnerStats.map((partner) => (
-                  <div key={partner.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-semibold">{partner.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Partner Code: {partner.partner_code}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Last Activity: {partner.recentActivity}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">{partner.totalLeads}</p>
-                      <p className="text-sm text-muted-foreground">Total Leads</p>
+                  <div key={partner.id} className="relative overflow-hidden bg-gradient-card p-6 border-0 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">{partner.name}</h3>
+                        <Badge variant="outline" className="text-xs">
+                          Code: {partner.partner_code}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground">
+                          Last Activity: {partner.recentActivity}
+                        </p>
+                        <div className="flex items-center gap-4 mt-4">
+                          <div>
+                            <div className="text-2xl font-bold text-primary">{partner.totalLeads}</div>
+                            <p className="text-xs text-muted-foreground">Total Leads</p>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-success">{partner.activeLenders}</div>
+                            <p className="text-xs text-muted-foreground">Active Lenders</p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.open(`/partner/${partner.partner_code}`, '_blank')}
+                        className="gap-1"
+                      >
+                        <Building2 className="h-3 w-3" />
+                        View Dashboard
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -409,58 +473,76 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="leads">
+        <TabsContent value="leads" className="space-y-6">
+          <LeadFilters 
+            partners={partnerStats} 
+            onFiltersChange={handleFiltersChange}
+            activeFiltersCount={getActiveFiltersCount()}
+          />
+          
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Lead Management</CardTitle>
-                <CardDescription>View and manage leads across all partners</CardDescription>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Filtered Results</CardTitle>
+                  <CardDescription>
+                    Showing {filteredLeads.length} of {recentLeads.length} leads
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-lg px-3 py-1">
+                  {filteredLeads.length} leads
+                </Badge>
               </div>
-              <Select value={selectedPartner} onValueChange={setSelectedPartner}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by partner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Partners</SelectItem>
-                  {partnerStats.map((partner) => (
-                    <SelectItem key={partner.id} value={partner.id}>
-                      {partner.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentLeads.map((lead) => (
-                  <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-semibold">{lead.students?.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {lead.students?.email} • Case: {lead.case_id}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Partner: {lead.partners?.name} • Lender: {lead.lenders?.name}
-                      </p>
-                    </div>
-                    <div className="text-right space-y-2">
-                      <Badge className={getStatusColor(lead.status)}>
-                        {lead.status}
-                      </Badge>
-                      <p className="text-sm font-medium">
-                        {formatCurrency(Number(lead.loan_amount))}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(lead.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {filteredLeads.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No leads match your current filters</p>
+                    <p className="text-sm">Try adjusting your search criteria</p>
                   </div>
-                ))}
+                ) : (
+                  filteredLeads.map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold">{lead.students?.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {lead.students?.email} • Case: {lead.case_id}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Partner: {lead.partners?.name} • Lender: {lead.lenders?.name}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-2">
+                        <Badge className={getStatusColor(lead.status)}>
+                          {lead.status.replace('_', ' ')}
+                        </Badge>
+                        <p className="text-sm font-medium">
+                          {formatCurrency(Number(lead.loan_amount))}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(lead.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Partner Modal */}
+      <CreatePartnerModal 
+        open={showCreatePartner}
+        onOpenChange={setShowCreatePartner}
+        onPartnerCreated={() => {
+          fetchPartnerStats();
+          setShowCreatePartner(false);
+        }}
+      />
     </div>
   );
 };
