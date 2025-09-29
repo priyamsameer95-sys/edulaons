@@ -62,7 +62,7 @@ export function AdminLeadActions({
         {documentCount}
       </Badge>
 
-      {/* Quick Status Update Dropdown */}
+      {/* Combined Actions Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
@@ -70,7 +70,7 @@ export function AdminLeadActions({
             size="sm" 
             className="h-8 px-2 bg-background hover:bg-accent border"
           >
-            <span className="text-xs">Status</span>
+            <span className="text-xs">Actions</span>
             <ChevronDown className="h-3 w-3 ml-1" />
           </Button>
         </DropdownMenuTrigger>
@@ -78,29 +78,25 @@ export function AdminLeadActions({
           align="end" 
           className="w-48 bg-background border shadow-lg z-50"
         >
-          {LEAD_STATUS_OPTIONS.map((option) => (
+          <DropdownMenuItem
+            onClick={() => onViewDetails(lead)}
+            className="flex items-center gap-2 cursor-pointer hover:bg-accent"
+          >
+            <Eye className="h-3 w-3" />
+            <span className="text-sm">View Details</span>
+          </DropdownMenuItem>
+          {LEAD_STATUS_OPTIONS.filter(option => option.value !== lead.status).map((option) => (
             <DropdownMenuItem
               key={option.value}
               onClick={() => onStatusUpdate(lead, option.value as LeadStatus)}
               className="flex items-center gap-2 cursor-pointer hover:bg-accent"
             >
               <div className={`w-2 h-2 rounded-full ${option.color.split(' ')[0]}`} />
-              <span className="text-sm">{option.label}</span>
+              <span className="text-sm">Change to {option.label}</span>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {/* View Details Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onViewDetails(lead)}
-        className="h-8 px-3 bg-background hover:bg-accent border"
-      >
-        <Eye className="h-3 w-3 mr-1" />
-        <span className="text-xs">Details</span>
-      </Button>
     </div>
   );
 }
