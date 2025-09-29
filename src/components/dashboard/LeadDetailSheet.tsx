@@ -54,36 +54,6 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
 
   if (!lead) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'uploaded': return 'text-success';
-      case 'verified': return 'text-success';
-      case 'rejected': return 'text-destructive';
-      case 'pending': return 'text-warning';
-      default: return 'text-muted-foreground';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'uploaded': return CheckCircle;
-      case 'verified': return CheckCircle;
-      case 'rejected': return XCircle;
-      case 'pending': return Clock;
-      default: return Clock;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'uploaded': return 'bg-success text-success-foreground';
-      case 'verified': return 'bg-success text-success-foreground';
-      case 'rejected': return 'bg-destructive text-destructive-foreground';
-      case 'pending': return 'bg-warning text-warning-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
   const handleDownloadDoc = async (documentId: string, docName: string) => {
     try {
       const document = documents.find(doc => doc.id === documentId);
@@ -290,14 +260,13 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     </div>
                   ) : (
                     checklist.map((item) => {
-                      const StatusIcon = getStatusIcon(item.status);
                       const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
                       const docType = documentTypes.find(type => type.id === item.id);
                       
                       return (
                         <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                           <div className="flex items-center space-x-3 flex-1">
-                            <StatusIcon className={`h-5 w-5 ${getStatusColor(item.status)}`} />
+                            <CheckCircle className={`h-5 w-5 ${item.status === 'uploaded' ? 'text-success' : 'text-muted-foreground'}`} />
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium">{item.name}</span>
@@ -319,7 +288,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                           </div>
                           
                           <div className="flex items-center space-x-3">
-                            <Badge variant="outline" className={getStatusBadge(item.status)}>
+                            <Badge variant="outline" className={item.status === 'uploaded' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}>
                               {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
                             </Badge>
                             

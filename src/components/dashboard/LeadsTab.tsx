@@ -25,10 +25,6 @@ import {
   Filter, 
   Eye,
   FileCheck,
-  FileWarning,
-  Clock,
-  CheckCircle,
-  XCircle,
   Users,
   Plus
 } from "lucide-react";
@@ -143,18 +139,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
       'bg-secondary text-secondary-foreground';
   };
 
-  const getDocsProgress = (documentsStatus: string) => {
-    switch (documentsStatus) {
-      case 'verified':
-        return { icon: CheckCircle, color: "text-success" };
-      case 'pending':
-        return { icon: Clock, color: "text-warning" };
-      case 'rejected':
-        return { icon: XCircle, color: "text-destructive" };
-      default:
-        return { icon: FileWarning, color: "text-muted-foreground" };
-    }
-  };
 
   const handleViewLead = (lead: RefactoredLead) => {
     setSelectedLead(lead);
@@ -378,9 +362,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                 </TableHeader>
                 <TableBody>
                   {paginatedLeads.map((lead) => {
-                    const docsProgress = getDocsProgress(lead.documents_status);
-                    const IconComponent = docsProgress.icon;
-                    
                     return (
                       <TableRow key={lead.case_id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{lead.case_id}</TableCell>
