@@ -24,7 +24,7 @@ const Login = () => {
     }
     
     // For the CashKaro partner user, redirect to partner dashboard
-    if (user.email === 'priyam@cashkaro.com') {
+    if (user.email === 'kanika.basra@cashkaro.com') {
       return <Navigate to="/partner/cashkaro" replace />;
     }
     
