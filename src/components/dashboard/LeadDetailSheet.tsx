@@ -46,7 +46,7 @@ interface LeadDetailSheetProps {
   onLeadUpdated?: () => void;
 }
 
-export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetProps) => {
+export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const { toast } = useToast();
@@ -599,7 +599,8 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
         currentDocumentsStatus={lead.documents_status as DocumentStatus}
         onStatusUpdated={() => {
           setStatusUpdateModalOpen(false);
-          // Optionally refresh the lead data here
+          // Call the parent callback to refresh dashboard data
+          onLeadUpdated?.();
         }}
       />
     </Sheet>
