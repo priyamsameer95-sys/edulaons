@@ -33,11 +33,49 @@ Deno.serve(async (req) => {
 
     console.log('Creating partner with code:', partnerCode)
 
-    // Validate required fields
+    // Enhanced input validation
     if (!name || !email || !password || !partnerCode) {
       console.log('Missing required fields')
       return new Response(
         JSON.stringify({ error: 'Missing required fields: name, email, password, and partnerCode are required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      console.log('Invalid email format:', email)
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Validate password strength (minimum 8 characters)
+    if (password.length < 8) {
+      console.log('Password too weak')
+      return new Response(
+        JSON.stringify({ error: 'Password must be at least 8 characters long' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Validate partner code format (alphanumeric only)
+    const partnerCodeRegex = /^[a-z0-9]+$/
+    if (!partnerCodeRegex.test(partnerCode)) {
+      console.log('Invalid partner code format:', partnerCode)
+      return new Response(
+        JSON.stringify({ error: 'Partner code must contain only lowercase letters and numbers' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -50,12 +88,23 @@ Deno.serve(async (req) => {
       .from('partners')
       .select('id')
       .eq('partner_code', partnerCode)
-      .single()
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking existing partner code:', checkError)
+      return new Response(
+        JSON.stringify({ error: 'Database error while checking partner code' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
 
     if (existingPartner) {
-      console.log('Partner code already exists')
+      console.log('Partner code already exists:', partnerCode)
       return new Response(
-        JSON.stringify({ error: 'Partner code already exists' }),
+        JSON.stringify({ error: 'Partner code already exists. Please choose a different code.' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -160,8 +209,11 @@ Deno.serve(async (req) => {
 
     console.log('Successfully created partner with auth')
 
-    // Generate dashboard URL
-    const dashboardUrl = `${req.headers.get('origin') || 'http://localhost:5173'}/partner/${partnerCode}`
+    // Generate dashboard URL - use the current origin or fallback
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://lovableproject.com'
+    const dashboardUrl = `${origin}/partner/${partnerCode}`
+    
+    console.log('Generated dashboard URL:', dashboardUrl)
 
     return new Response(
       JSON.stringify({

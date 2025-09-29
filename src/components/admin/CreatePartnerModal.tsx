@@ -76,6 +76,25 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       return;
     }
 
+    // Additional client-side validation
+    if (formData.password.length < 8) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 8 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/^[a-z0-9]+$/.test(formData.partnerCode)) {
+      toast({
+        title: "Invalid Partner Code",
+        description: "Partner code must contain only lowercase letters and numbers",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Call the edge function to create partner with auth

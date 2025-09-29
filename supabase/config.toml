@@ -35,3 +35,6 @@ port = 54326
 
 [functions.upload-document]
 verify_jwt = false
+
+[functions.create-partner-with-auth]
+verify_jwt = false
