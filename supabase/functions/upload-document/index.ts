@@ -20,8 +20,8 @@ serve(async (req) => {
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const leadId = formData.get('leadId') as string;
-    const documentTypeId = formData.get('documentTypeId') as string;
+    const leadId = formData.get('lead_id') as string;
+    const documentTypeId = formData.get('document_type_id') as string;
 
     if (!file || !leadId || !documentTypeId) {
       return new Response(
@@ -50,9 +50,9 @@ serve(async (req) => {
       );
     }
 
-    // Validate file size
+    // Validate file size - use 10MB as per new requirements
     const isPdf = file.type === 'application/pdf';
-    const maxSize = isPdf ? documentType.max_file_size_pdf : documentType.max_file_size_image;
+    const maxSize = 10 * 1024 * 1024; // 10MB for all files as per requirements
     
     if (file.size > maxSize) {
       return new Response(
@@ -66,10 +66,33 @@ serve(async (req) => {
       );
     }
 
-    // Generate unique filename
+    // Check for duplicate filenames in the same checklist item
+    const { data: existingFiles } = await supabase
+      .from('lead_documents')
+      .select('original_filename')
+      .eq('lead_id', leadId)
+      .eq('document_type_id', documentTypeId);
+      
+    const duplicateExists = existingFiles?.some(doc => 
+      doc.original_filename === file.name
+    );
+    
+    if (duplicateExists) {
+      return new Response(
+        JSON.stringify({ 
+          error: `A file with the name "${file.name}" already exists for this document type` 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Generate filename with new folder structure: /checklists/{leadId}/{documentTypeId}/{filename}
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const storedFilename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
-    const filePath = `${leadId}/${storedFilename}`;
+    const storedFilename = file.name;
+    const filePath = `checklists/${leadId}/${documentTypeId}/${storedFilename}`;
 
     // Upload to storage
     const { data: uploadData, error: uploadError } = await supabase.storage

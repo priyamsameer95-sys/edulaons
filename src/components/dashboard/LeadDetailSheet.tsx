@@ -29,7 +29,7 @@ import {
 import { Lead } from "@/types/lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
-import { DocumentUploadButton } from "./DocumentUploadButton";
+import { StandardDocumentUpload } from "./StandardDocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeadDetailSheetProps {
@@ -321,40 +321,48 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                                     <Eye className="h-4 w-4" />
                                     View Document
                                   </Button>
-                                  <DocumentUploadButton
+                                  <div className="w-48">
+                                    <StandardDocumentUpload
+                                      leadId={lead.id}
+                                      documentTypeId={item.id}
+                                      documentTypeName={item.name}
+                                      maxFileSize={docType?.max_file_size_pdf || 10485760}
+                                      acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                      onUploadSuccess={() => {
+                                        refetchDocuments();
+                                        toast({
+                                          title: "Document Replaced",
+                                          description: `${item.name} has been updated`,
+                                        });
+                                      }}
+                                      existingDocument={true}
+                                      variant="ghost"
+                                      size="sm"
+                                      allowMultiple={false}
+                                    />
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="w-48">
+                                  <StandardDocumentUpload
                                     leadId={lead.id}
                                     documentTypeId={item.id}
                                     documentTypeName={item.name}
-                                    maxFileSize={docType?.max_file_size_pdf || 20971520}
-                                    acceptedFormats={docType?.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png']}
+                                    maxFileSize={docType?.max_file_size_pdf || 10485760}
+                                    acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
                                     onUploadSuccess={() => {
                                       refetchDocuments();
                                       toast({
-                                        title: "Document Replaced",
-                                        description: `${item.name} has been updated`,
+                                        title: "Document Uploaded",
+                                        description: `${item.name} uploaded successfully`,
                                       });
                                     }}
-                                    variant="ghost"
+                                    existingDocument={false}
+                                    variant="default"
                                     size="sm"
+                                    allowMultiple={false}
                                   />
-                                </>
-                              ) : (
-                                <DocumentUploadButton
-                                  leadId={lead.id}
-                                  documentTypeId={item.id}
-                                  documentTypeName={item.name}
-                                  maxFileSize={docType?.max_file_size_pdf || 20971520}
-                                  acceptedFormats={docType?.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png']}
-                                  onUploadSuccess={() => {
-                                    refetchDocuments();
-                                    toast({
-                                      title: "Document Uploaded",
-                                      description: `${item.name} uploaded successfully`,
-                                    });
-                                  }}
-                                  variant="default"
-                                  size="sm"
-                                />
+                                </div>
                               )}
                             </div>
                           </div>
