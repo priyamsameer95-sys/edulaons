@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loanTypeFilter, setLoanTypeFilter] = useState<string>("all");
+  const [countryFilter, setCountryFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   // Fetch leads from Supabase
@@ -129,8 +130,56 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
     };
   }, [toast]);
 
-  // Debug: Log current leads state
-  console.log('Current leads in state:', leads.length);
+  // Filter leads based on current filter criteria
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          lead.student_name.toLowerCase().includes(query) ||
+          lead.student_phone.toLowerCase().includes(query) ||
+          lead.case_id.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      // Status filter
+      if (statusFilter !== "all" && lead.status !== statusFilter) {
+        return false;
+      }
+
+      // Loan type filter
+      if (loanTypeFilter !== "all" && lead.loan_type.toLowerCase() !== loanTypeFilter) {
+        return false;
+      }
+
+      // Country filter
+      if (countryFilter !== "all" && lead.study_destination.toLowerCase() !== countryFilter) {
+        return false;
+      }
+
+      // Date range filter
+      if (dateRange.from || dateRange.to) {
+        const leadDate = new Date(lead.created_at);
+        if (dateRange.from && leadDate < dateRange.from) return false;
+        if (dateRange.to && leadDate > dateRange.to) return false;
+      }
+
+      return true;
+    });
+  }, [leads, searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
+
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || loanTypeFilter !== "all" || countryFilter !== "all" || dateRange.from || dateRange.to;
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setLoanTypeFilter("all");
+    setCountryFilter("all");
+    setDateRange({});
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -306,7 +355,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
             {/* Country Filter */}
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>
-              <Select>
+              <Select value={countryFilter} onValueChange={setCountryFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Countries" />
                 </SelectTrigger>
@@ -320,6 +369,15 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
               </Select>
             </div>
           </div>
+          
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -362,20 +420,34 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
             </div>
           </CardContent>
         </Card>
-      ) : leads.length === 0 ? (
+      ) : filteredLeads.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No leads yet"
-          description="Create your first lead to start managing education loan applications and track their progress through the pipeline."
-          action={onNewLead ? {
-            label: "Create First Lead",
-            onClick: onNewLead
-          } : undefined}
+          title={hasActiveFilters ? "No leads match filters" : "No leads yet"}
+          description={
+            hasActiveFilters 
+              ? "Try adjusting your filters to see more results, or clear all filters to view all leads."
+              : "Create your first lead to start managing education loan applications and track their progress through the pipeline."
+          }
+          action={
+            hasActiveFilters 
+              ? { label: "Clear Filters", onClick: clearFilters }
+              : onNewLead 
+                ? { label: "Create First Lead", onClick: onNewLead }
+                : undefined
+          }
         />
       ) : (
         <Card className="border-0 shadow-md">
           <CardHeader>
-            <CardTitle>Leads Overview</CardTitle>
+            <CardTitle>
+              Leads Overview
+              {hasActiveFilters && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({filteredLeads.length} of {leads.length} leads)
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -393,7 +465,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leads.map((lead) => {
+                  {filteredLeads.map((lead) => {
                     const docsProgress = getDocsProgress(lead.documents_status);
                     const IconComponent = docsProgress.icon;
                     
