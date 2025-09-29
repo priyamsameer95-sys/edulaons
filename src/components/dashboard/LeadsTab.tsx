@@ -201,7 +201,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {/* Search */}
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
@@ -302,21 +302,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
               </Select>
             </div>
 
-            {/* Lender Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="lender">Lender</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Lenders" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Lenders</SelectItem>
-                  <SelectItem value="hdfc">HDFC Bank</SelectItem>
-                  <SelectItem value="icici">ICICI Bank</SelectItem>
-                  <SelectItem value="sbi">SBI</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             {/* Country Filter */}
             <div className="space-y-2">
@@ -351,7 +336,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                   <TableRow className="border-muted">
                     <TableHead className="font-semibold">Case ID</TableHead>
                     <TableHead className="font-semibold">Student</TableHead>
-                    <TableHead className="font-semibold">Lender</TableHead>
                     <TableHead className="font-semibold">Loan Type</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Docs</TableHead>
@@ -365,7 +349,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -401,7 +384,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                   <TableRow className="border-muted">
                     <TableHead className="font-semibold">Case ID</TableHead>
                     <TableHead className="font-semibold">Student</TableHead>
-                    <TableHead className="font-semibold">Lender</TableHead>
                     <TableHead className="font-semibold">Loan Type</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Docs</TableHead>
@@ -424,7 +406,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                             <div className="text-sm text-muted-foreground">{lead.student_phone}</div>
                           </div>
                         </TableCell>
-                        <TableCell>{lead.lender}</TableCell>
                         <TableCell>
                           <Badge className={cn("capitalize", getLoanTypeBadge(lead.loan_type.toLowerCase()))}>
                             {lead.loan_type}
