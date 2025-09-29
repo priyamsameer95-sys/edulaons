@@ -44,9 +44,10 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
   console.log('DashboardRouter Debug:', {
     loading,
     fetchingPartnerCode,
-    user: !!user,
-    appUser: appUser ? { role: appUser.role, partner_id: appUser.partner_id, is_active: appUser.is_active } : null,
-    partnerCode
+    user: user ? { email: user.email, id: user.id } : null,
+    appUser: appUser ? { email: appUser.email, role: appUser.role, partner_id: appUser.partner_id, is_active: appUser.is_active } : null,
+    partnerCode,
+    currentUrl: window.location.href
   });
 
   if (loading || fetchingPartnerCode) {
