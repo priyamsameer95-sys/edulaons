@@ -197,10 +197,18 @@ const AdminDashboard = () => {
         statusCounts[lead.status] = (statusCounts[lead.status] || 0) + 1;
       });
 
-      const chartData = Object.entries(statusCounts).map(([status, count], index) => ({
+      const statusColors = {
+        'new': 'hsl(var(--primary))',
+        'in_progress': 'hsl(var(--warning))',
+        'approved': 'hsl(var(--success))',
+        'rejected': 'hsl(var(--destructive))',
+        'disbursed': 'hsl(var(--accent))'
+      };
+
+      const chartData = Object.entries(statusCounts).map(([status, count]) => ({
         name: status.replace('_', ' ').toUpperCase(),
         value: count,
-        color: ['#3b82f6', '#f59e0b', '#10b981', '#ef4444'][index] || '#6b7280'
+        color: statusColors[status as keyof typeof statusColors] || 'hsl(var(--muted-foreground))'
       }));
       
       setStatusData(chartData);
@@ -261,17 +269,17 @@ const AdminDashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary/10 text-primary border-primary/20';
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning border-warning/20';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/10 text-success border-success/20';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'disbursed':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-accent text-accent-foreground border-accent';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -302,61 +310,71 @@ const AdminDashboard = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {appUser?.email} • Role: {appUser?.role}
+          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome back, {appUser?.email} • <Badge variant="secondary">{appUser?.role}</Badge>
           </p>
         </div>
-        <Button onClick={signOut} variant="outline">
+        <Button onClick={signOut} variant="outline" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
         </Button>
       </div>
 
-      {/* Simple KPI Cards */}
+      {/* Enhanced KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalLeads}</div>
+            <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>
             <p className="text-xs text-muted-foreground mt-1">Across all partners</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Partners</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-success" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalPartners}</div>
+            <div className="text-2xl font-bold text-foreground">{kpis.totalPartners}</div>
             <p className="text-xs text-muted-foreground mt-1">Partner organizations</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">In Pipeline</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-warning" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.inPipeline}</div>
+            <div className="text-2xl font-bold text-foreground">{kpis.inPipeline}</div>
             <p className="text-xs text-muted-foreground mt-1">New + In Progress</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Loan Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-accent-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(kpis.totalLoanAmount)}</div>
+            <div className="text-2xl font-bold text-foreground">{formatCurrency(kpis.totalLoanAmount)}</div>
             <p className="text-xs text-muted-foreground mt-1">Sanctioned: {kpis.sanctioned}</p>
           </CardContent>
         </Card>
@@ -436,18 +454,18 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="space-y-3">
                   {recentLeads.slice(0, 6).map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{lead.students?.name}</p>
+                    <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">{lead.students?.name}</p>
                         <p className="text-sm text-muted-foreground">
                           {lead.partners?.name} • {lead.case_id}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(lead.status)}>
+                      <div className="text-right space-y-1">
+                        <Badge variant="outline" className={getStatusColor(lead.status)}>
                           {lead.status.replace('_', ' ')}
                         </Badge>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm font-medium text-foreground">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
                       </div>
@@ -483,23 +501,26 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   partnerStats.map((partner) => (
-                    <div key={partner.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-semibold">{partner.name}</h3>
+                    <div key={partner.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground">{partner.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Code: {partner.partner_code} • Last Activity: {partner.recentActivity}
+                          Code: <Badge variant="secondary" className="text-xs">{partner.partner_code}</Badge>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Last Activity: {partner.recentActivity}
                         </p>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-lg font-bold">{partner.totalLeads}</div>
+                          <div className="text-lg font-bold text-foreground">{partner.totalLeads}</div>
                           <p className="text-xs text-muted-foreground">Total Leads</p>
                         </div>
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => window.open(`/partner/${partner.partner_code}`, '_blank')}
-                          className="gap-1"
+                          className="gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
                         >
                           View Dashboard
                         </Button>
@@ -514,16 +535,16 @@ const AdminDashboard = () => {
 
         <TabsContent value="leads">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <CardTitle>Lead Management</CardTitle>
                 <CardDescription>View and search leads across all partners</CardDescription>
               </div>
               <Select value={selectedPartner} onValueChange={setSelectedPartner}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by partner" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border border-border">
                   <SelectItem value="all">All Partners</SelectItem>
                   {partnerStats.map((partner) => (
                     <SelectItem key={partner.id} value={partner.id}>
@@ -554,21 +575,23 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   filteredLeads.map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-semibold">{lead.students?.name}</h3>
+                    <div key={lead.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                      <div className="flex-1 space-y-1">
+                        <h3 className="font-semibold text-foreground">{lead.students?.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {lead.students?.email} • Case: {lead.case_id}
+                          {lead.students?.email}
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          Partner: {lead.partners?.name}
-                        </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>Case: {lead.case_id}</span>
+                          <span>•</span>
+                          <span>Partner: {lead.partners?.name}</span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(lead.status)}>
+                      <div className="text-right space-y-2">
+                        <Badge variant="outline" className={getStatusColor(lead.status)}>
                           {lead.status.replace('_', ' ')}
                         </Badge>
-                        <p className="text-sm font-medium mt-1">
+                        <p className="text-sm font-medium text-foreground">
                           {formatCurrency(Number(lead.loan_amount))}
                         </p>
                         <p className="text-xs text-muted-foreground">
