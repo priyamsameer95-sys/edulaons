@@ -79,6 +79,75 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Handle hardcoded admin login
+      if (email === 'priyam.sameer@cashkaro.com' && password === '8238452277') {
+        // Try to sign in, if user doesn't exist in auth, create it
+        let authResult = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        // If user doesn't exist in auth, create it
+        if (authResult.error && authResult.error.message.includes('Invalid login credentials')) {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/admin`
+            }
+          });
+
+          if (signUpError) {
+            toast({
+              title: "Admin Setup Failed",
+              description: signUpError.message,
+              variant: "destructive",
+            });
+            return { error: { message: signUpError.message } };
+          }
+
+          // Now sign in with the created account
+          authResult = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+        }
+
+        if (authResult.error) {
+          toast({
+            title: "Admin Login Failed",
+            description: authResult.error.message,
+            variant: "destructive",
+          });
+          return { error: { message: authResult.error.message } };
+        }
+
+        // Ensure app_users entry exists for admin
+        if (authResult.data.user) {
+          const { error: updateError } = await supabase
+            .from('app_users')
+            .upsert({
+              id: authResult.data.user.id,
+              email: authResult.data.user.email,
+              role: 'super_admin',
+              partner_id: null,
+              is_active: true
+            });
+
+          if (updateError) {
+            console.error('Error updating app_users for admin:', updateError);
+          }
+
+          toast({
+            title: "Admin Access Granted",
+            description: "Welcome to the admin dashboard!",
+          });
+        }
+
+        return { error: null };
+      }
+
+      // Regular user login
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
