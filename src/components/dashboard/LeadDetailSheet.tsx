@@ -26,14 +26,14 @@ import {
   Upload,
   Eye
 } from "lucide-react";
-import { Lead } from "@/types/lead";
+import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { StandardDocumentUpload } from "./StandardDocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeadDetailSheetProps {
-  lead: Lead | null;
+  lead: RefactoredLead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -156,15 +156,15 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div>
-                      <p className="font-semibold">{lead.student_name}</p>
+                      <p className="font-semibold">{lead.student?.name || 'N/A'}</p>
                       <div className="flex items-center text-sm text-muted-foreground mt-1">
                         <Phone className="h-3 w-3 mr-1" />
-                        {lead.student_phone}
+                        {lead.student?.phone || 'N/A'}
                       </div>
-                      {lead.student_email && (
+                      {lead.student?.email && (
                         <div className="flex items-center text-sm text-muted-foreground mt-1">
                           <Mail className="h-3 w-3 mr-1" />
-                          {lead.student_email}
+                          {lead.student?.email}
                         </div>
                       )}
                     </div>
@@ -182,7 +182,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                     <div>
                       <p className="font-semibold">₹{lead.loan_amount.toLocaleString()}</p>
                       <p className="text-sm text-muted-foreground capitalize">{lead.loan_type} loan</p>
-                      <p className="text-sm text-muted-foreground">Lender: {lead.lender}</p>
+                      <p className="text-sm text-muted-foreground">Lender: {lead.lender?.name || 'N/A'}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -215,9 +215,9 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange }: LeadDetailSheetPro
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div>
-                      <p className="font-semibold">{lead.co_applicant_name}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{lead.co_applicant_relationship}</p>
-                      <p className="text-sm text-muted-foreground">₹{lead.co_applicant_salary.toLocaleString()}/year</p>
+                      <p className="font-semibold">{lead.co_applicant?.name || 'N/A'}</p>
+                      <p className="text-sm text-muted-foreground capitalize">{lead.co_applicant?.relationship || 'N/A'}</p>
+                      <p className="text-sm text-muted-foreground">₹{lead.co_applicant?.salary?.toLocaleString() || 'N/A'}/year</p>
                     </div>
                   </CardContent>
                 </Card>

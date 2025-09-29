@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,20 +27,19 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LeadDetailSheet } from "./LeadDetailSheet";
 import { EmptyState } from "@/components/ui/empty-state";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Lead, DbLead, mapDbLeadToLead } from "@/types/lead";
+import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
+import { RefactoredLead } from "@/types/refactored-lead";
 
 interface LeadsTabProps {
   onNewLead?: () => void;
 }
 
 export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { toast } = useToast();
+  
+  // Use the new refactored leads hook
+  const { leads, loading, refetch } = useRefactoredLeads();
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,86 +48,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
-  // Fetch leads from Supabase
-  const fetchLeads = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching leads:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch leads",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Map database leads to display leads
-      const mappedLeads = (data as DbLead[] || []).map(mapDbLeadToLead);
-      setLeads(mappedLeads);
-    } catch (error) {
-      console.error('Error fetching leads:', error);
-      toast({
-        title: "Error", 
-        description: "Failed to fetch leads",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeads();
-
-    // Set up real-time subscription for new leads
-    const channel = supabase
-      .channel('leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'leads'
-        },
-        (payload) => {
-          console.log('New lead created:', payload.new);
-          const newLead = mapDbLeadToLead(payload.new as DbLead);
-          setLeads(current => [newLead, ...current]);
-          toast({
-            title: "New Lead Created",
-            description: `Lead ${newLead.case_id} has been added`,
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE', 
-          schema: 'public',
-          table: 'leads'
-        },
-        (payload) => {
-          console.log('Lead updated:', payload.new);
-          const updatedLead = mapDbLeadToLead(payload.new as DbLead);
-          setLeads(current => 
-            current.map(lead => 
-              lead.id === updatedLead.id ? updatedLead : lead
-            )
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [toast]);
+  // Real-time subscriptions are handled by the useRefactoredLeads hook
 
   // Filter leads based on current filter criteria
   const filteredLeads = useMemo(() => {
@@ -137,8 +57,8 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch = 
-          lead.student_name.toLowerCase().includes(query) ||
-          lead.student_phone.toLowerCase().includes(query) ||
+          (lead.student?.name || '').toLowerCase().includes(query) ||
+          (lead.student?.phone || '').toLowerCase().includes(query) ||
           lead.case_id.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
@@ -234,7 +154,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
     }
   };
 
-  const handleViewLead = (lead: Lead) => {
+  const handleViewLead = (lead: RefactoredLead) => {
     setSelectedLead(lead);
     setSheetOpen(true);
   };
@@ -474,8 +394,8 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                         <TableCell className="font-medium">{lead.case_id}</TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{lead.student_name}</div>
-                            <div className="text-sm text-muted-foreground">{lead.student_phone}</div>
+                            <div className="font-medium">{lead.student?.name || 'N/A'}</div>
+                            <div className="text-sm text-muted-foreground">{lead.student?.phone || 'N/A'}</div>
                           </div>
                         </TableCell>
                         <TableCell>
