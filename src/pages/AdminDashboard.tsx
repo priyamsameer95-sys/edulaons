@@ -392,7 +392,10 @@ const AdminDashboard = () => {
   };
 
   const handleStatusUpdated = () => {
+    // Refresh all relevant data after status update
     fetchRecentLeads();
+    fetchAdminKPIs();
+    setSelectedLeads([]); // Clear selections after update
   };
 
   // Convert Lead to RefactoredLead format for AdminLeadActions

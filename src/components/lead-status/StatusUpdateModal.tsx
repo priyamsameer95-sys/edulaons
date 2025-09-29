@@ -35,7 +35,8 @@ export function StatusUpdateModal({
   const { appUser } = useAuth();
   
   const isAdmin = appUser?.role === 'admin' || appUser?.role === 'super_admin';
-  const notesMinLength = isAdmin ? 150 : 0;
+  const notesMinLength = isAdmin ? 10 : 0;
+  const notesMaxLength = 150;
 
   const handleSubmit = async () => {
     const statusChanged = selectedStatus !== currentStatus;
@@ -47,7 +48,7 @@ export function StatusUpdateModal({
     }
 
     // Validate admin notes requirement
-    if (isAdmin && notes.trim().length < notesMinLength) {
+    if (isAdmin && (notes.trim().length < notesMinLength || notes.trim().length > notesMaxLength)) {
       return; // Form validation will show error
     }
 
@@ -121,23 +122,26 @@ export function StatusUpdateModal({
             <Textarea
               id="notes"
               placeholder={isAdmin 
-                ? "Admin notes are required (minimum 150 characters)..." 
+                ? "Admin notes required (10-150 characters)..." 
                 : "Add any additional notes..."
               }
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
+              maxLength={150}
               className={
-                isAdmin && notes.trim().length < notesMinLength 
+                isAdmin && (notes.trim().length < notesMinLength || notes.trim().length > notesMaxLength) 
                   ? 'border-destructive focus:border-destructive' 
                   : ''
               }
             />
             {isAdmin && (
               <p className={`text-xs ${
-                notes.trim().length < notesMinLength ? 'text-destructive' : 'text-muted-foreground'
+                notes.trim().length < notesMinLength || notes.trim().length > notesMaxLength 
+                  ? 'text-destructive' 
+                  : 'text-muted-foreground'
               }`}>
-                {notes.trim().length}/{notesMinLength} characters minimum required
+                {notes.trim().length}/{notesMaxLength} characters ({notesMinLength} min, {notesMaxLength} max)
               </p>
             )}
           </div>
@@ -149,7 +153,7 @@ export function StatusUpdateModal({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || (isAdmin && notes.trim().length < notesMinLength)}
+            disabled={loading || (isAdmin && (notes.trim().length < notesMinLength || notes.trim().length > notesMaxLength))}
           >
             {loading ? 'Updating...' : 'Update Status'}
           </Button>
