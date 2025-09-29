@@ -391,11 +391,21 @@ const AdminDashboard = () => {
     setShowStatusUpdateModal(true);
   };
 
-  const handleStatusUpdated = () => {
+  const handleStatusUpdated = async () => {
     // Refresh all relevant data after status update
-    fetchRecentLeads();
-    fetchAdminKPIs();
+    await Promise.all([
+      fetchRecentLeads(),
+      fetchAdminKPIs(),
+      fetchPartnerStats(),
+      fetchLoanComparison()
+    ]);
     setSelectedLeads([]); // Clear selections after update
+    
+    // Show success feedback
+    toast({
+      title: 'Success',
+      description: 'Lead status updated and dashboard refreshed',
+    });
   };
 
   // Convert Lead to RefactoredLead format for AdminLeadActions

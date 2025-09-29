@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { StatusSelect } from './StatusSelect';
 import { useStatusUpdate } from '@/hooks/useStatusUpdate';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 
 interface StatusUpdateModalProps {
@@ -33,6 +34,7 @@ export function StatusUpdateModal({
   
   const { updateStatus, loading } = useStatusUpdate();
   const { appUser } = useAuth();
+  const { toast } = useToast();
   
   const isAdmin = appUser?.role === 'admin' || appUser?.role === 'super_admin';
   const notesMinLength = isAdmin ? 10 : 0;
@@ -49,7 +51,12 @@ export function StatusUpdateModal({
 
     // Validate admin notes requirement
     if (isAdmin && (notes.trim().length < notesMinLength || notes.trim().length > notesMaxLength)) {
-      return; // Form validation will show error
+      toast({
+        title: 'Validation Error',
+        description: `Admin notes are required (10-150 characters). Current: ${notes.trim().length} characters.`,
+        variant: 'destructive',
+      });
+      return;
     }
 
     const success = await updateStatus({

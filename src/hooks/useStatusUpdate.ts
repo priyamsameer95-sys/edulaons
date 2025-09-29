@@ -38,21 +38,22 @@ export function useStatusUpdate() {
         return false;
       }
 
-      // If reason or notes provided, update the status history record
-      if (reason || notes) {
-        const { error: historyError } = await supabase
-          .from('lead_status_history')
-          .update({
-            change_reason: reason,
-            notes: notes,
-          })
-          .eq('lead_id', leadId)
-          .order('created_at', { ascending: false })
-          .limit(1);
+      // Create status history record for this change
+      const { error: historyError } = await supabase
+        .from('lead_status_history')
+        .insert({
+          lead_id: leadId,
+          old_status: undefined, // Will be handled by trigger
+          new_status: status,
+          old_documents_status: undefined, // Will be handled by trigger
+          new_documents_status: documentsStatus,
+          change_reason: reason,
+          notes: notes,
+          changed_by: (await supabase.auth.getUser()).data.user?.id
+        });
 
-        if (historyError) {
-          console.error('Error updating status history:', historyError);
-        }
+      if (historyError) {
+        console.error('Error creating status history:', historyError);
       }
 
       toast({
