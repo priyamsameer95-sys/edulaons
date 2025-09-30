@@ -203,39 +203,109 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       // Parse intake month and year
       const [intakeYear, intakeMonth] = formData.intake_month ? formData.intake_month.split('-').map(Number) : [null, null];
       
-      // Prepare lead data for Supabase
-      const leadData = {
-        case_id: caseId,
-        student_name: formData.student_name.trim(),
-        student_email: formData.student_email.trim() || '',
-        student_phone: formData.student_phone.trim(),
-        lender: 'Default Lender', // You may want to add a lender field
-        loan_type: formData.loan_type === 'secured' ? 'Secured' : 'Unsecured',
-        loan_amount: parseFloat(formData.amount_requested),
-        study_destination: formData.country,
-        intake_month: intakeMonth,
-        intake_year: intakeYear,
-        co_applicant_name: formData.co_applicant_name.trim(),
-        co_applicant_salary: parseFloat(formData.co_applicant_salary),
-        co_applicant_relationship: formData.co_applicant_relationship,
-        co_applicant_pin: formData.co_applicant_pin_code.trim(),
-      };
-      
-      // Insert lead into Supabase
+      // Step 1: Create student record
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .insert({
+          name: formData.student_name.trim(),
+          email: formData.student_email.trim() || null,
+          phone: formData.student_phone.trim(),
+          postal_code: formData.student_pin_code.trim(),
+          country: 'India'
+        })
+        .select()
+        .single();
+        
+      if (studentError) {
+        console.error('Student creation error:', studentError);
+        throw new Error('Failed to create student record');
+      }
+
+      // Step 2: Create co-applicant record
+      const { data: coApplicant, error: coApplicantError } = await supabase
+        .from('co_applicants')
+        .insert({
+          name: formData.co_applicant_name.trim(),
+          relationship: formData.co_applicant_relationship as any,
+          salary: parseFloat(formData.co_applicant_salary),
+          pin_code: formData.co_applicant_pin_code.trim()
+        })
+        .select()
+        .single();
+        
+      if (coApplicantError) {
+        console.error('Co-applicant creation error:', coApplicantError);
+        throw new Error('Failed to create co-applicant record');
+      }
+
+      // Step 3: Get current user's partner_id
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: appUser } = await supabase
+        .from('app_users')
+        .select('partner_id')
+        .eq('id', userData.user?.id)
+        .single();
+
+      // Step 4: Get default lender
+      const { data: lender } = await supabase
+        .from('lenders')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (!lender) {
+        throw new Error('No lender configured in system');
+      }
+
+      // Step 5: Create lead in new structure
       const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .insert(leadData)
+        .from('leads_new')
+        .insert({
+          case_id: caseId,
+          student_id: student.id,
+          co_applicant_id: coApplicant.id,
+          partner_id: appUser?.partner_id || null,
+          lender_id: lender.id,
+          loan_amount: parseFloat(formData.amount_requested),
+          loan_type: formData.loan_type as any,
+          study_destination: formData.country as any,
+          intake_month: intakeMonth,
+          intake_year: intakeYear,
+          status: 'new',
+          documents_status: 'pending'
+        })
         .select()
         .single();
         
       if (leadError) {
         console.error('Lead creation error:', leadError);
-        throw leadError;
+        throw new Error('Failed to create lead record');
+      }
+
+      // Step 6: Create academic test records if provided
+      const testScores = [];
+      if (formData.gmat_score) {
+        testScores.push({ student_id: student.id, test_type: 'GMAT', score: formData.gmat_score });
+      }
+      if (formData.gre_score) {
+        testScores.push({ student_id: student.id, test_type: 'GRE', score: formData.gre_score });
+      }
+      if (formData.toefl_score) {
+        testScores.push({ student_id: student.id, test_type: 'TOEFL', score: formData.toefl_score });
+      }
+      if (formData.pte_score) {
+        testScores.push({ student_id: student.id, test_type: 'PTE', score: formData.pte_score });
+      }
+      if (formData.ielts_score) {
+        testScores.push({ student_id: student.id, test_type: 'IELTS', score: formData.ielts_score });
+      }
+
+      if (testScores.length > 0) {
+        await supabase.from('academic_tests').insert(testScores);
       }
       
-      // Insert university selections if available
+      // Step 7: Insert university selections if available
       if (formData.universities.length > 0 && formData.universities[0].trim()) {
-        // First, try to find universities by name
         const { data: universities, error: univError } = await supabase
           .from('universities')
           .select('id, name')
@@ -247,13 +317,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
             university_id: uni.id
           }));
           
-          const { error: junctionError } = await supabase
-            .from('lead_universities')
-            .insert(leadUniversities);
-            
-          if (junctionError) {
-            console.error('University junction error:', junctionError);
-          }
+          await supabase.from('lead_universities').insert(leadUniversities);
         }
       }
       
@@ -266,12 +330,12 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       setCreatedLead(lead);
       setPhase('documents');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating lead:', error);
-      const userFriendlyError = transformBackendError(error);
+      const errorMessage = error.message || transformBackendError(error);
       toast({
         title: "Unable to Create Application",
-        description: userFriendlyError,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
