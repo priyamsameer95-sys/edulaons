@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, TrendingUp, CheckCircle, DollarSign, LogOut, Settings, Users, IndianRupee, BarChart3, TrendingDown, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Plus, FileText, TrendingUp, CheckCircle, DollarSign, LogOut, Settings, Users, IndianRupee, TrendingDown, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
-import { AnalyticsTab } from "@/components/dashboard/AnalyticsTab";
+
 import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -256,14 +256,10 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       {/* Main Content */}
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl mb-8">
+          <TabsList className="grid w-full grid-cols-2 max-w-2xl mb-8">
             <TabsTrigger value="leads" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Leads
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
             </TabsTrigger>
             <TabsTrigger value="payouts" className="flex items-center gap-2">
               <IndianRupee className="h-4 w-4" />
@@ -415,9 +411,6 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-8">
-            <AnalyticsTab kpis={kpis} />
-          </TabsContent>
 
           <TabsContent value="payouts" className="space-y-8">
             <PayoutsTab />
