@@ -96,6 +96,36 @@ export type Database = {
           },
         ]
       }
+      auth_error_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          error_message: string | null
+          error_type: string
+          id: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type: string
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type?: string
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       co_applicants: {
         Row: {
           created_at: string

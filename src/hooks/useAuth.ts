@@ -18,7 +18,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchAppUser = async (userId: string): Promise<AppUser | null> => {
+  const fetchAppUser = async (userId: string, retryCount = 0): Promise<AppUser | null> => {
     try {
       const { data, error } = await supabase
         .from('app_users')
@@ -28,12 +28,62 @@ export function useAuth() {
 
       if (error) {
         console.error('Error fetching app user:', error);
+        
+        // Log authentication error for debugging
+        try {
+          await supabase.from('auth_error_logs').insert({
+            user_id: userId,
+            error_type: 'fetch_app_user_failed',
+            error_message: error.message,
+            context: { retryCount }
+          });
+        } catch (err) {
+          console.error('Failed to log auth error:', err);
+        }
+
+        // Retry once on failure
+        if (retryCount < 1) {
+          console.log('Retrying fetchAppUser...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return fetchAppUser(userId, retryCount + 1);
+        }
+        
         return null;
       }
 
+      if (!data) {
+        console.error('No app_users record found for user:', userId);
+        
+        try {
+          await supabase.from('auth_error_logs').insert({
+            user_id: userId,
+            error_type: 'app_user_not_found',
+            error_message: 'No app_users record found',
+            context: { retryCount }
+          });
+        } catch (err) {
+          console.error('Failed to log auth error:', err);
+        }
+        
+        return null;
+      }
+
+      console.log('Successfully fetched app user:', data);
       return data as AppUser;
     } catch (err) {
       console.error('Error in fetchAppUser:', err);
+      
+      try {
+        await supabase.from('auth_error_logs').insert({
+          user_id: userId,
+          error_type: 'fetch_app_user_exception',
+          error_message: err instanceof Error ? err.message : 'Unknown error',
+          context: { retryCount }
+        });
+      } catch (e) {
+        console.error('Failed to log auth error:', e);
+      }
+      
       return null;
     }
   };
@@ -42,6 +92,8 @@ export function useAuth() {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -49,6 +101,17 @@ export function useAuth() {
           // Fetch app user data without async callback to avoid deadlock
           setTimeout(async () => {
             const appUserData = await fetchAppUser(session.user.id);
+            
+            // If fetchAppUser fails, don't clear the session - keep user logged in
+            if (!appUserData && event !== 'SIGNED_OUT') {
+              console.warn('Failed to fetch app user, keeping session active');
+              toast({
+                title: "Connection Issue",
+                description: "Having trouble loading your profile. Please refresh if this persists.",
+                variant: "destructive",
+              });
+            }
+            
             setAppUser(appUserData);
             setLoading(false);
           }, 0);
@@ -61,11 +124,22 @@ export function useAuth() {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
+      
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         fetchAppUser(session.user.id).then((appUserData) => {
+          if (!appUserData) {
+            console.warn('Failed to fetch app user on initial load');
+            toast({
+              title: "Connection Issue",
+              description: "Having trouble loading your profile. Please refresh if this persists.",
+              variant: "destructive",
+            });
+          }
+          
           setAppUser(appUserData);
           setLoading(false);
         });
@@ -75,7 +149,7 @@ export function useAuth() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signIn = async (email: string, password: string) => {
     try {

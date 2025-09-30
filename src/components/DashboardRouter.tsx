@@ -15,24 +15,36 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
 
   useEffect(() => {
     const fetchPartnerCode = async () => {
-      if (appUser?.role === 'partner' && appUser.partner_id && !partnerCode) {
-        setFetchingPartnerCode(true);
-        try {
-          const { data: partner, error } = await supabase
-            .from('partners')
-            .select('partner_code')
-            .eq('id', appUser.partner_id)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching partner code:', error);
-          } else if (partner) {
-            setPartnerCode(partner.partner_code);
-          }
-        } catch (error) {
-          console.error('Error in fetchPartnerCode:', error);
-        } finally {
+      if (appUser?.role === 'partner') {
+        if (!appUser.partner_id) {
+          console.error('Partner user has no partner_id assigned');
           setFetchingPartnerCode(false);
+          return;
+        }
+        
+        if (!partnerCode) {
+          setFetchingPartnerCode(true);
+          try {
+            const { data: partner, error } = await supabase
+              .from('partners')
+              .select('partner_code')
+              .eq('id', appUser.partner_id)
+              .single();
+            
+            if (error) {
+              console.error('Error fetching partner code:', error);
+              setFetchingPartnerCode(false);
+            } else if (partner) {
+              setPartnerCode(partner.partner_code);
+              setFetchingPartnerCode(false);
+            } else {
+              console.error('No partner found with id:', appUser.partner_id);
+              setFetchingPartnerCode(false);
+            }
+          } catch (error) {
+            console.error('Error in fetchPartnerCode:', error);
+            setFetchingPartnerCode(false);
+          }
         }
       }
     };
@@ -83,14 +95,36 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
   }
 
   if (appUser.role === 'partner') {
+    if (!appUser.partner_id) {
+      console.error('DashboardRouter: Partner has no partner_id');
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive">Configuration Error</h1>
+            <p className="text-muted-foreground">Your partner account is not properly configured. Please contact support.</p>
+          </div>
+        </div>
+      );
+    }
+    
     if (partnerCode) {
       console.log('DashboardRouter: Partner with code, redirecting to partner dashboard:', partnerCode);
       return <Navigate to={`/partner/${partnerCode}`} replace />;
-    } else {
-      console.log('DashboardRouter: Partner without code, showing loading');
+    } else if (fetchingPartnerCode) {
+      console.log('DashboardRouter: Fetching partner code, showing loading');
       return (
         <div className="flex min-h-screen items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    } else {
+      console.error('DashboardRouter: Failed to fetch partner code');
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive">Error Loading Dashboard</h1>
+            <p className="text-muted-foreground">Unable to load your partner dashboard. Please try refreshing.</p>
+          </div>
         </div>
       );
     }
