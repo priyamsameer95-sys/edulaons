@@ -67,6 +67,10 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
         return <Badge className="bg-success text-success-foreground">Verified</Badge>;
       case 'rejected':
         return <Badge className="bg-destructive text-destructive-foreground">Rejected</Badge>;
+      case 'uploaded':
+        return <Badge className="bg-blue-500 text-white">Uploaded</Badge>;
+      case 'resubmission_required':
+        return <Badge className="bg-yellow-500 text-white">Resubmission Required</Badge>;
       default:
         return <Badge variant="outline" className="bg-warning text-warning-foreground">Pending</Badge>;
     }
@@ -162,15 +166,14 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                           <Download className="h-4 w-4" />
                         </Button>
                         
-                        {document.verification_status !== 'verified' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleVerificationAction(document)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVerificationAction(document)}
+                          title="Update Status"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>

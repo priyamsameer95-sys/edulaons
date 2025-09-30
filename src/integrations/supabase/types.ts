@@ -353,7 +353,7 @@ export type Database = {
           uploaded_at: string | null
           uploaded_by: string | null
           verification_notes: string | null
-          verification_status: string | null
+          verification_status: Database["public"]["Enums"]["document_status_enum"]
           verified_at: string | null
           verified_by: string | null
           version: number | null
@@ -374,7 +374,7 @@ export type Database = {
           uploaded_at?: string | null
           uploaded_by?: string | null
           verification_notes?: string | null
-          verification_status?: string | null
+          verification_status?: Database["public"]["Enums"]["document_status_enum"]
           verified_at?: string | null
           verified_by?: string | null
           version?: number | null
@@ -395,7 +395,7 @@ export type Database = {
           uploaded_at?: string | null
           uploaded_by?: string | null
           verification_notes?: string | null
-          verification_status?: string | null
+          verification_status?: Database["public"]["Enums"]["document_status_enum"]
           verified_at?: string | null
           verified_by?: string | null
           version?: number | null

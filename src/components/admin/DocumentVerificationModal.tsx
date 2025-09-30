@@ -10,9 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StatusSelect } from '@/components/lead-status/StatusSelect';
+import type { DocumentStatus } from '@/utils/statusUtils';
 
 interface DocumentVerificationModalProps {
   open: boolean;
@@ -29,9 +30,12 @@ export function DocumentVerificationModal({
 }: DocumentVerificationModalProps) {
   const [loading, setLoading] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<DocumentStatus>(
+    document?.verification_status || 'pending'
+  );
   const { toast } = useToast();
 
-  const handleVerification = async (status: 'verified' | 'rejected') => {
+  const handleVerification = async () => {
     if (!document) return;
 
     try {
@@ -40,9 +44,10 @@ export function DocumentVerificationModal({
       const { error } = await supabase
         .from('lead_documents')
         .update({
-          verification_status: status,
+          verification_status: selectedStatus,
           admin_notes: adminNotes.trim() || null,
-          verified_by: (await supabase.auth.getUser()).data.user?.id
+          verified_by: (await supabase.auth.getUser()).data.user?.id,
+          verified_at: selectedStatus === 'verified' ? new Date().toISOString() : null
         })
         .eq('id', document.id);
 
@@ -58,7 +63,7 @@ export function DocumentVerificationModal({
 
       toast({
         title: 'Success',
-        description: `Document ${status === 'verified' ? 'verified' : 'rejected'} successfully`,
+        description: `Document status updated to ${selectedStatus} successfully`,
       });
 
       onVerificationComplete();
@@ -88,6 +93,21 @@ export function DocumentVerificationModal({
 
         <div className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="status">Document Status</Label>
+            <StatusSelect
+              value={selectedStatus}
+              onChange={(value) => setSelectedStatus(value as DocumentStatus)}
+              type="document"
+              currentStatus={document?.verification_status}
+              disabled={loading}
+              isAdmin={true}
+            />
+            <p className="text-xs text-muted-foreground">
+              Select the appropriate status for this document. Changes will automatically sync to the lead level.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="admin-notes">Admin Notes (Optional)</Label>
             <Textarea
               id="admin-notes"
@@ -112,22 +132,10 @@ export function DocumentVerificationModal({
           </Button>
           
           <Button
-            variant="destructive"
-            onClick={() => handleVerification('rejected')}
+            onClick={handleVerification}
             disabled={loading}
-            className="flex items-center gap-2"
           >
-            <XCircle className="h-4 w-4" />
-            Reject Document
-          </Button>
-          
-          <Button
-            onClick={() => handleVerification('verified')}
-            disabled={loading}
-            className="flex items-center gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            Verify Document
+            Update Status
           </Button>
         </DialogFooter>
       </DialogContent>
