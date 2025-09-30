@@ -148,10 +148,31 @@ serve(async (req) => {
         .from('lead-documents')
         .remove([filePath]);
 
+      // Parse specific database errors and return user-friendly messages
+      let userMessage = 'Failed to save document record';
+      let statusCode = 500;
+      
+      if (dbError.code === '23503') {
+        // Foreign key violation - lead doesn't exist
+        userMessage = 'This lead no longer exists. Please refresh the page and try again.';
+        statusCode = 404;
+      } else if (dbError.code === '23505') {
+        // Unique constraint violation
+        userMessage = 'A document with this name already exists for this lead.';
+        statusCode = 409;
+      } else if (dbError.message) {
+        // Include the actual error message for debugging
+        userMessage = `Database error: ${dbError.message}`;
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Failed to save document record' }),
+        JSON.stringify({ 
+          error: userMessage,
+          code: dbError.code,
+          details: dbError.message 
+        }),
         { 
-          status: 500,
+          status: statusCode,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
@@ -170,10 +191,29 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Upload document error:', error);
+    
+    let userMessage = 'An unexpected error occurred while uploading your file.';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message.includes('network') || error.message.includes('fetch')) {
+        userMessage = 'Network error. Please check your internet connection and try again.';
+        statusCode = 503;
+      } else if (error.message.includes('timeout')) {
+        userMessage = 'Upload timed out. Please try again with a smaller file.';
+        statusCode = 408;
+      } else {
+        userMessage = error.message;
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: userMessage,
+        message: userMessage 
+      }),
       { 
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

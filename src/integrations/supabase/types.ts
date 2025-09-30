@@ -302,6 +302,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_lead_documents_lead_id"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_lead_documents_lead_new"
             columns: ["lead_id"]
             isOneToOne: false
@@ -313,13 +320,6 @@ export type Database = {
             columns: ["document_type_id"]
             isOneToOne: false
             referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_documents_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]

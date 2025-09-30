@@ -191,7 +191,16 @@ export const StandardDocumentUpload = ({
 
       clearInterval(progressInterval);
 
-      if (error) throw error;
+      if (error) {
+        // Extract user-friendly error message from edge function response
+        const errorMessage = error.message || 'Upload failed. Please try again.';
+        throw new Error(errorMessage);
+      }
+
+      // Check if the response contains an error
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
 
       updateFileStatus(uploadFile.id, { 
         status: 'processing', 
@@ -219,10 +228,34 @@ export const StandardDocumentUpload = ({
 
     } catch (error) {
       console.error('Upload error:', error);
+      
+      // Parse and display user-friendly error messages
+      let userFriendlyMessage = 'Upload failed. Please try again.';
+      
+      if (error instanceof Error) {
+        // Use the error message from the edge function
+        userFriendlyMessage = error.message;
+        
+        // Add helpful context for common errors
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          userFriendlyMessage = 'Connection lost. Check your internet and try again.';
+        } else if (error.message.includes('timeout')) {
+          userFriendlyMessage = 'Upload timed out. Try a smaller file or better connection.';
+        } else if (error.message.includes('lead no longer exists')) {
+          userFriendlyMessage = 'This lead was deleted. Please refresh the page.';
+        }
+      }
+      
       updateFileStatus(uploadFile.id, { 
         status: 'error', 
-        error: error instanceof Error ? error.message : 'Upload failed',
+        error: userFriendlyMessage,
         progress: 0
+      });
+      
+      toast({
+        variant: 'destructive',
+        title: 'Upload failed',
+        description: userFriendlyMessage
       });
     }
   };

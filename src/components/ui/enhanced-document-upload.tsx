@@ -108,7 +108,8 @@ export function EnhancedDocumentUpload({
 
       if (error) {
         console.error('Storage upload error:', error);
-        throw new Error(transformBackendError(error));
+        const friendlyMessage = transformBackendError(error);
+        throw new Error(friendlyMessage);
       }
 
       // Final progress update
@@ -141,7 +142,17 @@ export function EnhancedDocumentUpload({
 
         if (dbError) {
           console.error('Database error:', dbError);
-          throw new Error(transformBackendError(dbError));
+          
+          // Parse specific database errors
+          let errorMessage = transformBackendError(dbError);
+          
+          if (dbError.code === '23503') {
+            errorMessage = 'This lead no longer exists. Please refresh the page and try again.';
+          } else if (dbError.code === '23505') {
+            errorMessage = 'A document with this name already exists. Please use a different filename.';
+          }
+          
+          throw new Error(errorMessage);
         }
         documentRecord = docData;
       }
@@ -164,7 +175,25 @@ export function EnhancedDocumentUpload({
       });
 
     } catch (error) {
-      const friendlyErrorMessage = error instanceof Error ? error.message : DOCUMENT_ERROR_MESSAGES.UPLOAD_FAILED;
+      console.error('Upload error:', error);
+      
+      // Parse and display user-friendly error messages
+      let friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.UPLOAD_FAILED;
+      
+      if (error instanceof Error) {
+        friendlyErrorMessage = error.message;
+        
+        // Add helpful context for common errors
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.NETWORK_ERROR;
+        } else if (error.message.includes('timeout')) {
+          friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.TIMEOUT_ERROR;
+        } else if (error.message.includes('lead no longer exists')) {
+          friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.LEAD_NOT_FOUND;
+        } else if (error.message.includes('corrupted') || error.message.includes('damaged')) {
+          friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.FILE_CORRUPTED;
+        }
+      }
       
       setUploadedFiles(prev => prev.map(f => 
         f.id === fileId ? { 
