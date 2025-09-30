@@ -84,6 +84,7 @@ export function MonthYearPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
@@ -148,6 +149,7 @@ export function MonthYearPicker({
           
           <div className="flex justify-end gap-2 pt-2 border-t">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => setOpen(false)}
@@ -155,6 +157,7 @@ export function MonthYearPicker({
               Cancel
             </Button>
             <Button
+              type="button"
               size="sm"
               onClick={handleConfirm}
               disabled={isMonthDisabled(selectedMonth)}
