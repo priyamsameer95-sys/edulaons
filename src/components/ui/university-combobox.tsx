@@ -44,13 +44,12 @@ export function UniversityCombobox({
     setInputValue(value);
   }, [value]);
 
-  // Clear input when country changes, but preserve if user comes back to same country
+  // Clear input when country changes - DON'T call onChange to prevent infinite loop
   React.useEffect(() => {
     if (!country) {
       setInputValue("");
-      onChange("");
     }
-  }, [country, onChange]);
+  }, [country]);
 
   const handleSelect = (selectedValue: string) => {
     setInputValue(selectedValue);

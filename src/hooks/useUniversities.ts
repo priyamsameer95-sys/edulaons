@@ -33,6 +33,9 @@ export const useUniversities = (country: string) => {
   }, [universities, country]);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    let isMounted = true;
+
     async function fetchUniversities() {
       setLoading(true);
       
@@ -48,9 +51,12 @@ export const useUniversities = (country: string) => {
 
         const { data, error } = await query.limit(1000);
 
+        // Check if component unmounted or country changed
+        if (abortController.signal.aborted || !isMounted) return;
+
         if (error) {
           console.error('Error fetching universities:', error);
-          setUniversities([]);
+          if (isMounted) setUniversities([]);
         } else {
           const transformedData: University[] = (data || []).map((uni: any) => ({
             id: uni.id,
@@ -61,17 +67,23 @@ export const useUniversities = (country: string) => {
             popular: uni.global_rank ? uni.global_rank <= 100 : false, // Top 100 are popular
           }));
           
-          setUniversities(transformedData);
+          if (isMounted) setUniversities(transformedData);
         }
       } catch (error) {
+        if (abortController.signal.aborted || !isMounted) return;
         console.error('Error in fetchUniversities:', error);
-        setUniversities([]);
+        if (isMounted) setUniversities([]);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     fetchUniversities();
+
+    return () => {
+      abortController.abort();
+      isMounted = false;
+    };
   }, [country]);
 
   const searchUniversities = (query: string) => {

@@ -20,24 +20,24 @@ export function UniversitySelector({
   error,
   disabled = false,
 }: UniversitySelectorProps) {
-  const addUniversity = () => {
+  const addUniversity = React.useCallback(() => {
     if (universities.length < 5) {
       onChange([...universities, ""]);
     }
-  };
+  }, [universities, onChange]);
 
-  const removeUniversity = (index: number) => {
+  const removeUniversity = React.useCallback((index: number) => {
     if (universities.length > 1) {
       const newUniversities = universities.filter((_, i) => i !== index);
       onChange(newUniversities);
     }
-  };
+  }, [universities, onChange]);
 
-  const updateUniversity = (index: number, value: string) => {
+  const updateUniversity = React.useCallback((index: number, value: string) => {
     const newUniversities = [...universities];
     newUniversities[index] = value;
     onChange(newUniversities);
-  };
+  }, [universities, onChange]);
 
   const canAddMore = universities.length < 5;
   const canRemove = universities.length > 1;

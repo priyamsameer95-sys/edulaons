@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DocumentUploadSection } from "@/components/dashboard/DocumentUploadSection";
 import { useFormValidation, FieldConfig } from "@/hooks/useFormValidation";
 import { transformBackendError } from "@/utils/errorMessages";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface NewLeadModalProps {
   open: boolean;
@@ -297,6 +298,11 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     }
   };
 
+  // Memoize universities onChange to prevent infinite loop
+  const handleUniversitiesChange = useCallback((universities: string[]) => {
+    setFields({ universities });
+  }, [setFields]);
+
   const handleCompleteProcess = () => {
     // Reset everything and close modal
     setPhase('form');
@@ -330,7 +336,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <ErrorBoundary>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {phase === 'form' ? 'Create New Lead' : 'Upload Required Documents'}
@@ -570,6 +577,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     value={formData.country}
                     onValueChange={(value) => {
                       handleInputChange('country', value);
+                      // Clear universities when country changes
+                      setFields({ universities: [''] });
                     }}
                   >
                     <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
@@ -592,9 +601,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                 <UniversitySelector
                   country={formData.country}
                   universities={formData.universities}
-                  onChange={(universities) => {
-                    setFields({ universities });
-                  }}
+                  onChange={handleUniversitiesChange}
                   error={errors.universities}
                 />
 
@@ -846,7 +853,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
             </div>
           </div>
         )}
-      </DialogContent>
+        </DialogContent>
+      </ErrorBoundary>
     </Dialog>
   );
 };
