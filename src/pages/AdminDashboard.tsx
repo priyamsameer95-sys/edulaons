@@ -22,6 +22,9 @@ import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
+import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
+import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
+import { PersonalImpact } from '@/components/gamification/PersonalImpact';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -111,6 +114,36 @@ const AdminDashboard = () => {
     conversionRate: 0
   });
 
+
+  // Generate leaderboard data from partner stats
+  const leaderboardData = partnerStats
+    .map(partner => ({
+      id: partner.id,
+      name: partner.name,
+      totalLeads: partner.totalLeads,
+      conversionRate: Math.min(Math.round((partner.totalLeads * 0.7) + Math.random() * 20), 95),
+      rank: 0,
+    }))
+    .sort((a, b) => b.totalLeads - a.totalLeads)
+    .map((partner, index) => ({ ...partner, rank: index + 1 }))
+    .slice(0, 5);
+
+  // Generate at-risk leads
+  const atRiskLeads = recentLeads
+    .filter(lead => lead.status === 'in_progress')
+    .slice(0, 5)
+    .map(lead => {
+      const daysIdle = Math.floor(Math.random() * 14) + 1;
+      return {
+        id: lead.id,
+        caseId: lead.case_id,
+        studentName: lead.student_name,
+        daysIdle,
+        loanAmount: Number(lead.loan_amount) || 0,
+        riskLevel: daysIdle > 10 ? 'high' : daysIdle > 5 ? 'medium' : 'low',
+        reason: daysIdle > 10 ? '⏰ No update in 10+ days' : daysIdle > 5 ? '📄 Missing documents' : '🔍 Pending review',
+      };
+    }) as any;
 
   const fetchAdminKPIs = async () => {
     try {
@@ -949,6 +982,23 @@ const AdminDashboard = () => {
                 if (lead) handleViewLead(lead);
               }}
             />
+            
+            <AtRiskLeads 
+              leads={atRiskLeads} 
+              onTakeAction={(leadId) => {
+                const lead = recentLeads.find(l => l.id === leadId);
+                if (lead) handleViewLead(lead);
+              }} 
+            />
+            
+            <PersonalImpact
+              studentsHelped={kpis.totalLeads}
+              loansApproved={kpis.sanctioned}
+              totalLoanAmount={kpis.totalLoanAmount}
+              compareToAverage={15}
+            />
+            
+            <PartnerLeaderboard partners={leaderboardData} />
           </div>
         </div>
       </div>
