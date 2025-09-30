@@ -75,13 +75,13 @@ export function useActivityBoard() {
 
       if (statusError) throw statusError;
 
-      // Fetch document activities
+      // Fetch document activities - specify the foreign key relationship
       const { data: docData, error: docError } = await supabase
         .from('lead_documents')
         .select(`
           *,
           document_types(name),
-          leads_new!inner(
+          leads_new!fk_lead_documents_lead_id(
             id,
             case_id,
             status,
