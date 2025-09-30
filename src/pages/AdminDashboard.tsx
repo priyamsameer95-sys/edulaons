@@ -22,8 +22,6 @@ import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 import { GamificationHero } from '@/components/gamification/GamificationHero';
-import { DailyGoalsWidget } from '@/components/gamification/DailyGoalsWidget';
-import { AchievementShowcase } from '@/components/gamification/AchievementShowcase';
 import { useGamification } from '@/hooks/useGamification';
 import { LiveActivityFeed } from '@/components/gamification/LiveActivityFeed';
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
@@ -561,7 +559,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
+        <div className="space-y-10">
           {/* Header with Sign Out */}
           <div className="flex justify-end">
             <Button onClick={signOut} variant="outline" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
@@ -581,82 +579,66 @@ const AdminDashboard = () => {
             totalBadges={gamificationData.totalBadges}
           />
 
-          {/* Daily Goals and Achievements */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <DailyGoalsWidget
-              goals={gamificationData.dailyGoals}
-              totalXP={gamificationData.dailyGoals.reduce((sum, g) => sum + g.xpReward, 0)}
-              earnedXP={gamificationData.dailyGoals.filter(g => g.completed).reduce((sum, g) => sum + g.xpReward, 0)}
-            />
-            <AchievementShowcase achievements={gamificationData.achievements} />
-          </div>
-
           {/* Motivational Message */}
           <MotivationalMessage />
 
           {/* Enhanced KPI Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow duration-200">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <FileText className="h-4 w-4 text-primary" />
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{kpis.totalLeads}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all partners</p>
+            <div className="text-3xl font-bold text-foreground">{kpis.totalLeads}</div>
+            <p className="text-xs text-muted-foreground mt-2">Across all partners</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow duration-200">
+        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Partners</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-success" />
+            <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-success" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{kpis.totalPartners}</div>
-            <p className="text-xs text-muted-foreground mt-1">Partner organizations</p>
+            <div className="text-3xl font-bold text-foreground">{kpis.totalPartners}</div>
+            <p className="text-xs text-muted-foreground mt-2">Partner organizations</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow duration-200">
+        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">In Pipeline</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-warning" />
+            <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-warning" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{kpis.inPipeline}</div>
-            <p className="text-xs text-muted-foreground mt-1">New + In Progress</p>
+            <div className="text-3xl font-bold text-foreground">{kpis.inPipeline}</div>
+            <p className="text-xs text-muted-foreground mt-2">New + In Progress</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow duration-200">
+        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Loan Value</CardTitle>
-            <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-accent-foreground" />
+            <div className="h-12 w-12 rounded-full bg-accent/20 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-accent-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{formatCurrency(kpis.totalLoanAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Sanctioned: {kpis.sanctioned}</p>
+            <div className="text-3xl font-bold text-foreground">{formatCurrency(kpis.totalLoanAmount)}</div>
+            <p className="text-xs text-muted-foreground mt-2">Sanctioned: {kpis.sanctioned}</p>
           </CardContent>
         </Card>
       </div>
 
-          {/* Social Proof & Competition Section */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <LiveActivityFeed activities={activityFeed} />
-            <PartnerLeaderboard partners={leaderboardData} />
-          </div>
-
-          {/* Loss Aversion & Personal Impact Section */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* Critical Actions & Insights - 3 Column Layout */}
+          <div className="grid gap-6 lg:grid-cols-3">
             <AtRiskLeads 
               leads={atRiskLeads} 
               onTakeAction={(leadId) => {
@@ -664,6 +646,7 @@ const AdminDashboard = () => {
                 if (lead) handleViewLead(lead);
               }} 
             />
+            <LiveActivityFeed activities={activityFeed} />
             <PersonalImpact
               studentsHelped={kpis.totalLeads}
               loansApproved={kpis.sanctioned}
@@ -671,6 +654,9 @@ const AdminDashboard = () => {
               compareToAverage={15}
             />
           </div>
+
+          {/* Partner Performance - Full Width */}
+          <PartnerLeaderboard partners={leaderboardData} />
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
