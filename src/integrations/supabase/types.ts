@@ -407,7 +407,7 @@ export type Database = {
             foreignKeyName: "fk_lead_universities_lead_id"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_new"
             referencedColumns: ["id"]
           },
           {

@@ -322,8 +322,11 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       
       toast({
         title: "Lead Created Successfully",
-        description: `New lead created • Case ${caseId}`,
+        description: `Case ${caseId} has been created and is now visible in your leads list.`,
       });
+
+      // Trigger parent refetch immediately
+      onSuccess();
 
       // Store created lead and move to document upload phase
       setCreatedLead(lead);
