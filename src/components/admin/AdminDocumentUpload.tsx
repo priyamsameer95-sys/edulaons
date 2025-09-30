@@ -92,7 +92,7 @@ export function AdminDocumentUpload({
           file_size: selectedFile.size,
           mime_type: selectedFile.type,
           uploaded_by: 'admin',
-          verification_status: 'verified' // Admin uploads are auto-verified
+          verification_status: 'uploaded' // Admin uploads still require review
         });
 
       if (dbError) {
@@ -138,7 +138,7 @@ export function AdminDocumentUpload({
         <DialogHeader>
           <DialogTitle>Upload Document for Student</DialogTitle>
           <DialogDescription>
-            Upload a document on behalf of the student. Admin uploads are automatically verified.
+            Upload a document on behalf of the student. Documents will still require admin verification.
           </DialogDescription>
         </DialogHeader>
 

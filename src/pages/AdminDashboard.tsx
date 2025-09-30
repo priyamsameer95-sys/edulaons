@@ -23,8 +23,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
-import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
+import { AdminActionRequired } from '@/components/gamification/AdminActionRequired';
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
+import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -113,6 +114,9 @@ const AdminDashboard = () => {
     sanctioned: 0,
     conversionRate: 0
   });
+  const [showDocVerificationModal, setShowDocVerificationModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
 
 
   // Generate leaderboard data from partner stats
@@ -128,22 +132,35 @@ const AdminDashboard = () => {
     .map((partner, index) => ({ ...partner, rank: index + 1 }))
     .slice(0, 5);
 
-  // Generate at-risk leads
-  const atRiskLeads = recentLeads
-    .filter(lead => lead.status === 'in_progress')
-    .slice(0, 5)
-    .map(lead => {
-      const daysIdle = Math.floor(Math.random() * 14) + 1;
-      return {
-        id: lead.id,
-        caseId: lead.case_id,
-        studentName: lead.student_name,
-        daysIdle,
-        loanAmount: Number(lead.loan_amount) || 0,
-        riskLevel: daysIdle > 10 ? 'high' : daysIdle > 5 ? 'medium' : 'low',
-        reason: daysIdle > 10 ? '⏰ No update in 10+ days' : daysIdle > 5 ? '📄 Missing documents' : '🔍 Pending review',
-      };
-    }) as any;
+  const handleReviewLead = (leadId: string) => {
+    const lead = recentLeads.find(l => l.id === leadId);
+    if (lead) {
+      handleViewLead(lead);
+    }
+  };
+
+  const handleVerifyDocument = async (documentId: string, leadId: string) => {
+    try {
+      const { data: document } = await supabase
+        .from('lead_documents')
+        .select('*')
+        .eq('id', documentId)
+        .single();
+
+      if (document) {
+        setSelectedDocument(document);
+        setDocumentLeadId(leadId);
+        setShowDocVerificationModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching document:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load document details',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const fetchAdminKPIs = async () => {
     try {
@@ -992,12 +1009,9 @@ const AdminDashboard = () => {
 
           {/* Persistent Sidebar - 30% */}
           <div className="w-full lg:w-[30%] lg:min-w-[350px] space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <AtRiskLeads
-              leads={atRiskLeads} 
-              onTakeAction={(leadId) => {
-                const lead = recentLeads.find(l => l.id === leadId);
-                if (lead) handleViewLead(lead);
-              }} 
+            <AdminActionRequired
+              onReviewLead={handleReviewLead}
+              onVerifyDocument={handleVerifyDocument}
             />
             
             <PersonalImpact
@@ -1051,6 +1065,28 @@ const AdminDashboard = () => {
           currentStatus={quickUpdateLead.status as LeadStatus}
           currentDocumentsStatus={quickUpdateLead.documents_status as DocumentStatus}
           onStatusUpdated={handleStatusUpdated}
+        />
+      )}
+
+      {/* Document Verification Modal */}
+      {selectedDocument && documentLeadId && (
+        <DocumentVerificationModal
+          open={showDocVerificationModal}
+          onOpenChange={setShowDocVerificationModal}
+          document={selectedDocument}
+          onVerificationComplete={async () => {
+            setShowDocVerificationModal(false);
+            setSelectedDocument(null);
+            setDocumentLeadId(null);
+            await Promise.all([
+              fetchRecentLeads(),
+              fetchAdminKPIs(),
+            ]);
+            toast({
+              title: 'Document Updated',
+              description: 'Document verification status has been updated',
+            });
+          }}
         />
       )}
     </div>

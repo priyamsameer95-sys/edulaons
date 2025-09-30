@@ -135,7 +135,8 @@ serve(async (req) => {
         file_path: filePath,
         file_size: file.size,
         mime_type: file.type,
-        upload_status: 'uploaded'
+        upload_status: 'uploaded',
+        verification_status: 'uploaded' // Documents require admin verification
       })
       .select()
       .single();
