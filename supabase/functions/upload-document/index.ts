@@ -25,7 +25,7 @@ serve(async (req) => {
 
     if (!file || !leadId || !documentTypeId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields. Please make sure all information is provided.' }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -42,7 +42,7 @@ serve(async (req) => {
 
     if (docTypeError || !documentType) {
       return new Response(
-        JSON.stringify({ error: 'Invalid document type' }),
+        JSON.stringify({ error: 'Invalid document type selected. Please refresh the page and try again.' }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -58,7 +58,7 @@ serve(async (req) => {
     if (file.size > maxSizeFromType) {
       return new Response(
         JSON.stringify({ 
-          error: `File too large. Maximum size for ${file.type === 'application/pdf' ? 'PDF' : 'image'} files: ${(maxSizeFromType / (1024 * 1024)).toFixed(1)}MB` 
+          error: `File is too large. Maximum size for ${file.type === 'application/pdf' ? 'PDF' : 'image'} files is ${(maxSizeFromType / (1024 * 1024)).toFixed(1)}MB. Try compressing your file first.` 
         }),
         { 
           status: 400,
@@ -72,7 +72,7 @@ serve(async (req) => {
     if (!fileExtension || !documentType.accepted_formats.includes(fileExtension)) {
       return new Response(
         JSON.stringify({ 
-          error: `Unsupported file format. Accepted formats: ${documentType.accepted_formats.join(', ')}` 
+          error: `File format not supported. Please upload: ${documentType.accepted_formats.join(', ').toUpperCase()} files only.` 
         }),
         { 
           status: 400,
@@ -95,10 +95,10 @@ serve(async (req) => {
     if (duplicateExists) {
       return new Response(
         JSON.stringify({ 
-          error: `A file with the name "${file.name}" already exists for this document type` 
+          error: `A file named "${file.name}" already exists. Please rename your file or choose a different one.` 
         }),
         { 
-          status: 400,
+          status: 409,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
@@ -116,7 +116,7 @@ serve(async (req) => {
     if (uploadError) {
       console.error('Storage upload error:', uploadError);
       return new Response(
-        JSON.stringify({ error: 'Failed to upload file' }),
+        JSON.stringify({ error: 'Failed to upload file to storage. Please check your internet connection and try again.' }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -148,26 +148,26 @@ serve(async (req) => {
         .from('lead-documents')
         .remove([filePath]);
 
-      // Parse specific database errors and return user-friendly messages
-      let userMessage = 'Failed to save document record';
+      // Parse PostgreSQL error codes for user-friendly messages
+      let errorMessage = 'Failed to save document record. Please try again.';
       let statusCode = 500;
-      
+
       if (dbError.code === '23503') {
-        // Foreign key violation - lead doesn't exist
-        userMessage = 'This lead no longer exists. Please refresh the page and try again.';
+        // Foreign key violation
+        errorMessage = 'This lead no longer exists. Please refresh the page and try again.';
         statusCode = 404;
       } else if (dbError.code === '23505') {
         // Unique constraint violation
-        userMessage = 'A document with this name already exists for this lead.';
+        errorMessage = 'A document with this name already exists for this lead. Please rename your file.';
         statusCode = 409;
-      } else if (dbError.message) {
-        // Include the actual error message for debugging
-        userMessage = `Database error: ${dbError.message}`;
+      } else if (dbError.message?.includes('permission') || dbError.code === '42501') {
+        errorMessage = 'You don\'t have permission to upload documents for this lead. Please contact support.';
+        statusCode = 403;
       }
 
       return new Response(
         JSON.stringify({ 
-          error: userMessage,
+          error: errorMessage,
           code: dbError.code,
           details: dbError.message 
         }),
@@ -192,28 +192,23 @@ serve(async (req) => {
   } catch (error) {
     console.error('Upload document error:', error);
     
-    let userMessage = 'An unexpected error occurred while uploading your file.';
-    let statusCode = 500;
+    let errorMessage = 'Something went wrong while uploading your document. Please try again.';
     
     if (error instanceof Error) {
       if (error.message.includes('network') || error.message.includes('fetch')) {
-        userMessage = 'Network error. Please check your internet connection and try again.';
-        statusCode = 503;
+        errorMessage = 'Connection lost. Please check your internet and try again.';
       } else if (error.message.includes('timeout')) {
-        userMessage = 'Upload timed out. Please try again with a smaller file.';
-        statusCode = 408;
-      } else {
-        userMessage = error.message;
+        errorMessage = 'Upload is taking too long. Please try with a smaller file or check your connection.';
       }
     }
     
     return new Response(
       JSON.stringify({ 
-        error: userMessage,
-        message: userMessage 
+        error: errorMessage,
+        details: error instanceof Error ? error.message : String(error)
       }),
       { 
-        status: statusCode,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

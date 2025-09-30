@@ -178,16 +178,52 @@ export const StandardDocumentUpload = ({
       formData.append('lead_id', leadId);
       formData.append('document_type_id', documentTypeId);
 
-      // Create progress tracking
+      // Create smooth progress tracking
+      let currentProgress = 5;
       const progressInterval = setInterval(() => {
-        updateFileStatus(uploadFile.id, { 
-          progress: Math.min(uploadFile.progress + Math.random() * 15, 85)
-        });
-      }, 200);
+        if (currentProgress < 85) {
+          currentProgress += Math.random() * 10;
+          updateFileStatus(uploadFile.id, { 
+            progress: Math.min(currentProgress, 85)
+          });
+        }
+      }, 300);
 
       const { data, error } = await supabase.functions.invoke('upload-document', {
         body: formData,
       });
+
+      clearInterval(progressInterval);
+
+      if (error) {
+        // Try to parse error response body for detailed message
+        let errorMessage = 'Upload failed. Please try again.';
+        
+        if (error.message?.includes('non-2xx')) {
+          // Edge function returned an error response
+          try {
+            const errorData = data as any;
+            if (errorData?.error) {
+              errorMessage = errorData.error;
+            }
+          } catch (e) {
+            console.error('Failed to parse error response:', e);
+          }
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          errorMessage = 'Connection lost. Check your internet and try again.';
+        } else if (error.message?.includes('timeout')) {
+          errorMessage = 'Upload is taking too long. Try with a smaller file.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Check if the response indicates an error
+      if (data && typeof data === 'object' && 'error' in data) {
+        throw new Error((data as any).error);
+      }
 
       clearInterval(progressInterval);
 
@@ -429,11 +465,22 @@ export const StandardDocumentUpload = ({
                       {uploadFile.status}
                     </Badge>
                   </div>
-                  {uploadFile.status === 'uploading' && (
-                    <Progress value={uploadFile.progress} className="w-full h-1 mt-2" />
+                   {uploadFile.status === 'uploading' && (
+                    <div className="space-y-1 mt-2">
+                      <Progress value={uploadFile.progress} className="w-full h-2" />
+                      <p className="text-xs text-muted-foreground">{uploadFile.progress}% uploaded</p>
+                    </div>
+                  )}
+                  {uploadFile.status === 'processing' && (
+                    <div className="space-y-1 mt-2">
+                      <Progress value={uploadFile.progress} className="w-full h-2" />
+                      <p className="text-xs text-muted-foreground">Processing document...</p>
+                    </div>
                   )}
                   {uploadFile.error && (
-                    <p className="text-xs text-destructive mt-1">{uploadFile.error}</p>
+                    <div className="mt-2 p-2 rounded bg-destructive/10 border border-destructive/20">
+                      <p className="text-xs text-destructive font-medium">{uploadFile.error}</p>
+                    </div>
                   )}
                 </div>
               </div>

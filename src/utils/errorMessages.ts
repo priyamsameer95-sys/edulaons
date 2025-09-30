@@ -71,13 +71,11 @@ export const DOCUMENT_ERROR_MESSAGES = {
   
   PERMISSION_DENIED: 'You don\'t have permission to upload files here. Please contact support for help',
   
-  FOREIGN_KEY_ERROR: 'This lead was deleted or no longer exists. Please refresh the page.',
+  LEAD_NOT_FOUND: 'This lead no longer exists. Please refresh the page and try again.',
   
-  LEAD_NOT_FOUND: 'This lead no longer exists in the system. Please refresh and try again.',
+  CONNECTION_LOST: 'Connection lost. Please check your internet and try again.',
   
-  EDGE_FUNCTION_ERROR: 'Server error occurred. Please try again or contact support if this persists.',
-  
-  TIMEOUT_ERROR: 'Upload is taking too long. Try a smaller file or check your connection.'
+  TIMEOUT_ERROR: 'Upload is taking too long. Try with a smaller file or check your connection.'
 };
 
 // Backend error message transformation
@@ -89,12 +87,8 @@ export const transformBackendError = (error: string | Error): string => {
     return 'This information already exists in our system. Please check and try again';
   }
   
-  if (errorMessage.includes('foreign key') || errorMessage.includes('lead no longer exists')) {
-    return 'This lead was deleted or no longer exists. Please refresh the page and try again.';
-  }
-  
-  if (errorMessage.includes('23503')) {
-    return 'This lead no longer exists. Please refresh the page.';
+  if (errorMessage.includes('foreign key')) {
+    return 'Some required information is missing. Please fill all required fields';
   }
   
   if (errorMessage.includes('connection')) {
