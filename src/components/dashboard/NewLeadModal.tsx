@@ -50,7 +50,21 @@ interface FormData {
 }
 
 const leadFormConfig: FieldConfig = {
-  student_name: { required: true, minLength: 2, maxLength: 100 },
+  student_name: { 
+    required: true, 
+    minLength: 2, 
+    maxLength: 100,
+    custom: (value: string) => {
+      const trimmedValue = value.trim();
+      if (trimmedValue.startsWith('/') || trimmedValue.includes('login')) {
+        return 'Please enter a valid student name (not a URL or system path)';
+      }
+      if (!/^[a-zA-Z\s.'-]+$/.test(trimmedValue)) {
+        return 'Student name can only contain letters, spaces, dots, hyphens, and apostrophes';
+      }
+      return null;
+    }
+  },
   student_phone: { 
     required: true, 
     pattern: /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/

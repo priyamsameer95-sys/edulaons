@@ -69,7 +69,10 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
 
   // Filter leads based on current filter criteria
   const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
+    console.log('🔍 DEBUG: Total leads from DB:', leads.length, leads.map(l => ({ case_id: l.case_id, student_name: l.student?.name })));
+    console.log('🔍 DEBUG: Active filters:', { searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange });
+    
+    const filtered = leads.filter((lead) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -77,33 +80,49 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
           (lead.student?.name || '').toLowerCase().includes(query) ||
           (lead.student?.phone || '').toLowerCase().includes(query) ||
           lead.case_id.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
+        if (!matchesSearch) {
+          console.log('❌ Filtered out by search:', lead.case_id, lead.student?.name);
+          return false;
+        }
       }
 
       // Status filter
       if (statusFilter !== "all" && lead.status !== statusFilter) {
+        console.log('❌ Filtered out by status:', lead.case_id, 'Expected:', statusFilter, 'Got:', lead.status);
         return false;
       }
 
       // Loan type filter
       if (loanTypeFilter !== "all" && lead.loan_type.toLowerCase() !== loanTypeFilter) {
+        console.log('❌ Filtered out by loan type:', lead.case_id, 'Expected:', loanTypeFilter, 'Got:', lead.loan_type);
         return false;
       }
 
       // Country filter
       if (countryFilter !== "all" && lead.study_destination.toLowerCase() !== countryFilter) {
+        console.log('❌ Filtered out by country:', lead.case_id, 'Expected:', countryFilter, 'Got:', lead.study_destination);
         return false;
       }
 
       // Date range filter
       if (dateRange.from || dateRange.to) {
         const leadDate = new Date(lead.created_at);
-        if (dateRange.from && leadDate < dateRange.from) return false;
-        if (dateRange.to && leadDate > dateRange.to) return false;
+        if (dateRange.from && leadDate < dateRange.from) {
+          console.log('❌ Filtered out by date (from):', lead.case_id);
+          return false;
+        }
+        if (dateRange.to && leadDate > dateRange.to) {
+          console.log('❌ Filtered out by date (to):', lead.case_id);
+          return false;
+        }
       }
 
+      console.log('✅ Lead passed all filters:', lead.case_id, lead.student?.name);
       return true;
     });
+    
+    console.log('📊 DEBUG: Filtered leads count:', filtered.length, 'out of', leads.length);
+    return filtered;
   }, [leads, searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
 
   // Pagination calculations
