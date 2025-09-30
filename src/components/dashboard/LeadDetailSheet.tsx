@@ -50,7 +50,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const { toast } = useToast();
-  const { appUser } = useAuth();
+  const { appUser, isAdmin } = useAuth();
   
   // Real data from Supabase
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
@@ -210,13 +210,15 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                     Application Status
                     <div className="flex items-center gap-2">
                       <StatusBadge status={lead.status as LeadStatus} type="lead" />
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setStatusUpdateModalOpen(true)}
-                      >
-                        Update Status
-                      </Button>
+                      {isAdmin() && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setStatusUpdateModalOpen(true)}
+                        >
+                          Update Status
+                        </Button>
+                      )}
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -362,7 +364,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-4">
-              {appUser?.role === 'admin' || appUser?.role === 'super_admin' ? (
+              {isAdmin() ? (
                 <AdminDocumentManager leadId={lead.id} />
               ) : (
                 <>
@@ -372,13 +374,15 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                       <Badge variant="outline">
                         {completedRequired}/{requiredDocs.length} Complete
                       </Badge>
-                      <Button
-                        onClick={() => setStatusUpdateModalOpen(true)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Update Status
-                      </Button>
+                      {isAdmin() && (
+                        <Button
+                          onClick={() => setStatusUpdateModalOpen(true)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Update Status
+                        </Button>
+                      )}
                     </div>
                   </div>
                   

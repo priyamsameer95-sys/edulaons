@@ -38,6 +38,7 @@ import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
 import { LEAD_STATUS_OPTIONS, DOCUMENT_STATUS_OPTIONS } from "@/utils/statusUtils";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LeadsTabProps {
   onNewLead?: () => void;
@@ -51,6 +52,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   
   // Use the new refactored leads hook
   const { leads, loading, refetch } = useRefactoredLeads();
+  const { isAdmin } = useAuth();
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -398,14 +400,16 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleStatusUpdate(lead)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <FileCheck className="h-4 w-4" />
-                            </Button>
+                            {isAdmin() && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleStatusUpdate(lead)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <FileCheck className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
