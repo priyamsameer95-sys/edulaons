@@ -118,7 +118,13 @@ export function useActivityBoard() {
         const lead = status.leads_new;
         if (!lead) return;
 
-        const isRegression = 
+        // Skip if status didn't actually change
+        if (status.old_status === status.new_status) return;
+        
+        // Skip if both old and new status are null/undefined
+        if (!status.old_status && !status.new_status) return;
+
+        const isRegression =
           (status.old_status === 'approved' && status.new_status !== 'approved') ||
           (status.old_status === 'in_progress' && status.new_status === 'new');
 
