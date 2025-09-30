@@ -42,6 +42,8 @@ interface FormData {
   ielts_score: string;
   // Co-applicant details
   co_applicant_name: string;
+  co_applicant_email: string;
+  co_applicant_phone: string;
   co_applicant_salary: string;
   co_applicant_relationship: string;
   co_applicant_pin_code: string;
@@ -90,6 +92,13 @@ const leadFormConfig: FieldConfig = {
     }
   },
   co_applicant_name: { required: true, minLength: 2, maxLength: 100 },
+  co_applicant_email: { 
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  },
+  co_applicant_phone: { 
+    required: true, 
+    pattern: /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/
+  },
   co_applicant_salary: { 
     required: true,
     min: 1,
@@ -128,6 +137,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     pte_score: '',
     ielts_score: '',
     co_applicant_name: '',
+    co_applicant_email: '',
+    co_applicant_phone: '',
     co_applicant_salary: '',
     co_applicant_relationship: '',
     co_applicant_pin_code: ''
@@ -225,6 +236,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         .from('co_applicants')
         .insert({
           name: formData.co_applicant_name.trim(),
+          email: formData.co_applicant_email.trim() || null,
+          phone: formData.co_applicant_phone.trim(),
           relationship: formData.co_applicant_relationship as any,
           salary: parseFloat(formData.co_applicant_salary),
           pin_code: formData.co_applicant_pin_code.trim()
@@ -796,6 +809,41 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                         )}
                       </div>
 
+                      {/* Co-applicant Email */}
+                      <div className="space-y-2">
+                        <Label htmlFor="co_applicant_email" className="text-sm font-medium">
+                          Email Address <span className="text-muted-foreground">(Optional)</span>
+                        </Label>
+                        <Input
+                          id="co_applicant_email"
+                          type="email"
+                          value={formData.co_applicant_email}
+                          onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
+                          placeholder="email@example.com"
+                          className={errors.co_applicant_email ? 'border-destructive' : ''}
+                        />
+                        {errors.co_applicant_email && (
+                          <p className="text-sm text-destructive">{errors.co_applicant_email}</p>
+                        )}
+                      </div>
+
+                      {/* Co-applicant Phone */}
+                      <div className="space-y-2">
+                        <Label htmlFor="co_applicant_phone" className="text-sm font-medium">
+                          Phone Number <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="co_applicant_phone"
+                          value={formData.co_applicant_phone}
+                          onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
+                          placeholder="10-digit phone number"
+                          className={errors.co_applicant_phone ? 'border-destructive' : ''}
+                        />
+                        {errors.co_applicant_phone && (
+                          <p className="text-sm text-destructive">{errors.co_applicant_phone}</p>
+                        )}
+                      </div>
+
                       {/* Co-applicant Relationship */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">
@@ -907,6 +955,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
             
             <DocumentUploadSection 
               leadId={createdLead?.id}
+              loanType={formData.loan_type as 'secured' | 'unsecured'}
               onDocumentsChange={(uploaded, required) => {
                 setDocumentsUploaded(uploaded);
                 setDocumentsRequired(required);
