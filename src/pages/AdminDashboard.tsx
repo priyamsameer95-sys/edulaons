@@ -21,7 +21,7 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
-import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
+
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
@@ -992,22 +992,7 @@ const AdminDashboard = () => {
 
           {/* Persistent Sidebar - 30% */}
           <div className="w-full lg:w-[30%] lg:min-w-[350px] space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <AdminActivityBoard
-              onViewLead={(leadId) => {
-                const lead = recentLeads.find(l => l.id === leadId);
-                if (lead) handleViewLead(lead);
-              }}
-              onUpdateStatus={(leadId) => {
-                const lead = recentLeads.find(l => l.id === leadId);
-                if (lead) handleQuickStatusUpdate(lead);
-              }}
-              onVerifyDocument={(documentId, leadId) => {
-                const lead = recentLeads.find(l => l.id === leadId);
-                if (lead) handleViewLead(lead);
-              }}
-            />
-            
-            <AtRiskLeads 
+            <AtRiskLeads
               leads={atRiskLeads} 
               onTakeAction={(leadId) => {
                 const lead = recentLeads.find(l => l.id === leadId);
