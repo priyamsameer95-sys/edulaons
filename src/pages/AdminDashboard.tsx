@@ -21,14 +21,6 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
-import { GamificationHero } from '@/components/gamification/GamificationHero';
-import { useGamification } from '@/hooks/useGamification';
-import { LiveActivityFeed } from '@/components/gamification/LiveActivityFeed';
-import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
-import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
-import { PersonalImpact } from '@/components/gamification/PersonalImpact';
-import { CelebrationConfetti } from '@/components/gamification/CelebrationConfetti';
-import { MotivationalMessage } from '@/components/gamification/MotivationalMessage';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -118,54 +110,6 @@ const AdminDashboard = () => {
     conversionRate: 0
   });
 
-  // Gamification data
-  const gamificationData = useGamification(kpis);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationAchievement, setCelebrationAchievement] = useState<any>(null);
-
-  // Generate activity feed data
-  const activityFeed = recentLeads.slice(0, 10).map((lead, index) => ({
-    id: lead.id,
-    type: lead.status === 'approved' ? 'approval' : lead.status === 'in_progress' ? 'document' : 'alert',
-    message: lead.status === 'approved' 
-      ? `Lead #${lead.case_id.slice(0, 8)} approved for ${lead.student_name}`
-      : lead.status === 'in_progress'
-      ? `Document uploaded for lead #${lead.case_id.slice(0, 8)}`
-      : `New lead #${lead.case_id.slice(0, 8)} created`,
-    timestamp: lead.updated_at || lead.created_at,
-    partner: lead.partner_name,
-    leadId: lead.id,
-  })) as any;
-
-  // Generate leaderboard data from partner stats
-  const leaderboardData = partnerStats
-    .map(partner => ({
-      id: partner.id,
-      name: partner.name,
-      totalLeads: partner.totalLeads,
-      conversionRate: Math.min(Math.round((partner.totalLeads * 0.7) + Math.random() * 20), 95),
-      rank: 0,
-    }))
-    .sort((a, b) => b.totalLeads - a.totalLeads)
-    .map((partner, index) => ({ ...partner, rank: index + 1 }))
-    .slice(0, 5);
-
-  // Generate at-risk leads
-  const atRiskLeads = recentLeads
-    .filter(lead => lead.status === 'in_progress')
-    .slice(0, 5)
-    .map(lead => {
-      const daysIdle = Math.floor(Math.random() * 14) + 1;
-      return {
-        id: lead.id,
-        caseId: lead.case_id,
-        studentName: lead.student_name,
-        daysIdle,
-        loanAmount: Number(lead.loan_amount) || 0,
-        riskLevel: daysIdle > 10 ? 'high' : daysIdle > 5 ? 'medium' : 'low',
-        reason: daysIdle > 10 ? '⏰ No update in 10+ days' : daysIdle > 5 ? '📄 Missing documents' : '🔍 Pending review',
-      };
-    }) as any;
 
   const fetchAdminKPIs = async () => {
     try {
@@ -465,18 +409,6 @@ const AdminDashboard = () => {
       setQuickUpdateLead(null);
       setShowStatusUpdateModal(false);
       
-      // Check for milestone achievements and trigger celebration
-      const newKpis = kpis;
-      if (newKpis.sanctioned > 0 && newKpis.sanctioned % 10 === 0) {
-        setCelebrationAchievement({
-          icon: '🎯',
-          title: `${newKpis.sanctioned} Approvals Milestone!`,
-          description: `You've successfully approved ${newKpis.sanctioned} leads. Outstanding work!`,
-          xpReward: 100,
-        });
-        setShowCelebration(true);
-      }
-      
       // Show success feedback
       toast({
         title: 'Dashboard Updated',
@@ -568,21 +500,7 @@ const AdminDashboard = () => {
             </Button>
           </div>
 
-          {/* Gamification Hero Section */}
-          <GamificationHero
-            userName={appUser?.email?.split('@')[0] || 'Admin'}
-            level={gamificationData.level}
-            currentXP={gamificationData.currentXP}
-            xpToNextLevel={gamificationData.xpToNextLevel}
-            streak={gamificationData.streak}
-            unlockedBadges={gamificationData.unlockedBadges}
-            totalBadges={gamificationData.totalBadges}
-          />
-
-          {/* Motivational Message */}
-          <MotivationalMessage />
-
-          {/* Enhanced KPI Cards */}
+          {/* KPI Cards */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -636,27 +554,6 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </div>
-
-          {/* Critical Actions & Insights - 3 Column Layout */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            <AtRiskLeads 
-              leads={atRiskLeads} 
-              onTakeAction={(leadId) => {
-                const lead = recentLeads.find(l => l.id === leadId);
-                if (lead) handleViewLead(lead);
-              }} 
-            />
-            <LiveActivityFeed activities={activityFeed} />
-            <PersonalImpact
-              studentsHelped={kpis.totalLeads}
-              loansApproved={kpis.sanctioned}
-              totalLoanAmount={kpis.totalLoanAmount}
-              compareToAverage={15}
-            />
-          </div>
-
-          {/* Partner Performance - Full Width */}
-          <PartnerLeaderboard partners={leaderboardData} />
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
@@ -1044,12 +941,6 @@ const AdminDashboard = () => {
         />
       )}
 
-      {/* Celebration Confetti Modal */}
-      <CelebrationConfetti
-        show={showCelebration}
-        onClose={() => setShowCelebration(false)}
-        achievement={celebrationAchievement}
-      />
         </div>
       </div>
     </div>
