@@ -34,7 +34,7 @@ import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { StandardDocumentUpload } from "./StandardDocumentUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
-import { StatusUpdateModal } from "@/components/lead-status/StatusUpdateModal";
+import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
 import { StatusHistory } from "@/components/lead-status/StatusHistory";
 import { StatusProgressIndicator } from "@/components/lead-status/StatusProgressIndicator";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
@@ -591,7 +591,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
       </SheetContent>
 
       {/* Status Update Modal */}
-      <StatusUpdateModal
+      <EnhancedStatusUpdateModal
         open={statusUpdateModalOpen}
         onOpenChange={setStatusUpdateModalOpen}
         leadId={lead.id}

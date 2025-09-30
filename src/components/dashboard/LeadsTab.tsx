@@ -35,7 +35,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
-import { StatusUpdateModal } from "@/components/lead-status/StatusUpdateModal";
+import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
 import { LEAD_STATUS_OPTIONS, DOCUMENT_STATUS_OPTIONS } from "@/utils/statusUtils";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
@@ -522,7 +522,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
 
       {/* Status Update Modal */}
       {leadToUpdate && (
-        <StatusUpdateModal
+        <EnhancedStatusUpdateModal
           open={statusUpdateModalOpen}
           onOpenChange={setStatusUpdateModalOpen}
           leadId={leadToUpdate.id}
