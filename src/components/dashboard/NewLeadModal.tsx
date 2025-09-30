@@ -228,11 +228,12 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       const [intakeYear, intakeMonth] = formData.intake_month ? formData.intake_month.split('-').map(Number) : [null, null];
       
       // Step 1: Create student record
+      const studentEmail = formData.student_email.trim();
       const { data: student, error: studentError } = await supabase
         .from('students')
         .insert({
           name: formData.student_name.trim(),
-          email: formData.student_email.trim() || null,
+          email: studentEmail || `${formData.student_phone.trim()}@temp.placeholder`,
           phone: formData.student_phone.trim(),
           postal_code: formData.student_pin_code.trim(),
           country: 'India'
@@ -246,11 +247,12 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
 
       // Step 2: Create co-applicant record
+      const coApplicantEmail = formData.co_applicant_email.trim();
       const { data: coApplicant, error: coApplicantError } = await supabase
         .from('co_applicants')
         .insert({
           name: formData.co_applicant_name.trim(),
-          email: formData.co_applicant_email.trim() || null,
+          email: coApplicantEmail || null,
           phone: formData.co_applicant_phone.trim(),
           relationship: formData.co_applicant_relationship as any,
           salary: parseFloat(formData.co_applicant_salary),
