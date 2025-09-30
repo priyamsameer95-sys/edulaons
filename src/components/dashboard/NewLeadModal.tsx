@@ -228,8 +228,37 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       // Parse intake month and year
       const [intakeYear, intakeMonth] = formData.intake_month ? formData.intake_month.split('-').map(Number) : [null, null];
       
-      // Step 1: Create student record
+      // Step 1: Verify user authentication and permissions
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      console.log('Current auth user:', authUser?.id);
+      
+      const { data: appUserCheck, error: appUserCheckError } = await supabase
+        .from('app_users')
+        .select('id, role, is_active, partner_id')
+        .eq('id', authUser?.id)
+        .single();
+      
+      console.log('App user check:', appUserCheck);
+      
+      if (appUserCheckError) {
+        console.error('Failed to verify user permissions:', appUserCheckError);
+        throw new Error('Unable to verify your permissions. Please try logging out and back in.');
+      }
+      
+      if (!appUserCheck?.is_active) {
+        throw new Error('Your account is inactive. Please contact support.');
+      }
+      
+      // Step 2: Create student record
       const studentEmail = formData.student_email.trim();
+      console.log('Attempting to create student with data:', {
+        name: formData.student_name.trim(),
+        email: studentEmail || `${formData.student_phone.trim()}@temp.placeholder`,
+        phone: formData.student_phone.trim(),
+        postal_code: formData.student_pin_code.trim(),
+        country: 'India'
+      });
+      
       const { data: student, error: studentError } = await supabase
         .from('students')
         .insert({
@@ -248,16 +277,20 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
           code: studentError.code,
           message: studentError.message,
           details: studentError.details,
-          hint: studentError.hint
+          hint: studentError.hint,
+          currentUserRole: appUserCheck?.role,
+          currentUserId: authUser?.id
         });
         
         // If it's an RLS error, provide more helpful message
         if (studentError.message?.includes('row-level security') || studentError.code === '42501') {
-          throw new Error('Permission denied. Please log out and log back in, then try again.');
+          throw new Error(`Permission denied for role ${appUserCheck?.role}. Please refresh the page or log out and back in.`);
         }
         
         throw new Error(studentError.message || 'Failed to create student record');
       }
+      
+      console.log('Student created successfully:', student);
 
       // Step 2: Create co-applicant record
       const coApplicantEmail = formData.co_applicant_email.trim();
