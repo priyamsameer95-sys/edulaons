@@ -538,110 +538,119 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-10">
-          {/* Header with Sign Out */}
-          <div className="flex justify-end">
-            <Button onClick={signOut} variant="outline" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
+      {/* Header */}
+      <div className="border-b bg-card shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Monitor and manage all leads and partners</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowCreatePartner(true)} variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Create Partner
+              </Button>
+              <Button onClick={signOut} variant="outline">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
-
-          {/* Welcome Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Monitor and manage all leads and partners</p>
-          </div>
-
-          {/* Enhanced KPI Cards */}
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{kpis.totalLeads}</div>
-            <p className="text-xs text-muted-foreground mt-2">Across all partners</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Partners</CardTitle>
-            <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-success" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{kpis.totalPartners}</div>
-            <p className="text-xs text-muted-foreground mt-2">Partner organizations</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Pipeline</CardTitle>
-            <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-warning" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{kpis.inPipeline}</div>
-            <p className="text-xs text-muted-foreground mt-2">New + In Progress</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Loan Value</CardTitle>
-            <div className="h-12 w-12 rounded-full bg-accent/20 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-accent-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{formatCurrency(kpis.totalLoanAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-2">Sanctioned: {kpis.sanctioned}</p>
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
-          {/* Critical Actions & Insights - 3 Column Layout */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            <AtRiskLeads 
-              leads={atRiskLeads} 
-              onTakeAction={(leadId) => {
-                const lead = recentLeads.find(l => l.id === leadId);
-                if (lead) handleViewLead(lead);
-              }} 
-            />
-            <LiveActivityFeed activities={activityFeed} />
-            <PersonalImpact
-              studentsHelped={kpis.totalLeads}
-              loansApproved={kpis.sanctioned}
-              totalLoanAmount={kpis.totalLoanAmount}
-              compareToAverage={15}
-            />
-          </div>
+      {/* Main Content with Persistent Sidebar */}
+      <div className="container mx-auto px-6 pt-8 pb-12">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main Content Area - 70% */}
+          <div className="flex-1 lg:w-[70%] space-y-6">
+            {/* Compact Welcome */}
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-lg p-6 border animate-fade-in">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Welcome back, Admin!</h2>
+                  <p className="text-muted-foreground">System Overview & Performance</p>
+                </div>
+              </div>
+            </div>
 
-          {/* Partner Performance - Full Width */}
-          <PartnerLeaderboard partners={leaderboardData} />
+            {/* Compact KPI Cards - Single Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="hover:shadow-lg transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    Total
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{kpis.totalLeads}</div>
+                  <p className="text-xs text-muted-foreground mt-1">All partners</p>
+                </CardContent>
+              </Card>
 
-          {/* Main Content Tabs */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="partners">Partners</TabsTrigger>
-              <TabsTrigger value="leads">Leads</TabsTrigger>
-            </TabsList>
+              <Card className="hover:shadow-lg transition-all border-success/20 bg-success/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Building2 className="h-4 w-4 text-success" />
+                    Partners
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-success">{kpis.totalPartners}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Active</p>
+                </CardContent>
+              </Card>
 
-        <TabsContent value="overview">
-          <div className="space-y-6">
-            {/* Compact Overview Cards - Full Width */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Card className="hover:shadow-lg transition-all border-warning/20 bg-warning/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <TrendingUp className="h-4 w-4 text-warning" />
+                    Pipeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>
+                  <p className="text-xs text-muted-foreground mt-1">In progress</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    Value
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-bold text-primary">{formatCurrency(kpis.totalLoanAmount)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{kpis.sanctioned} sanctioned</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tabs Section */}
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 max-w-md">
+                <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <PieChart className="h-4 w-4" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="partners" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Partners
+                </TabsTrigger>
+                <TabsTrigger value="leads" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Leads
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-6 mt-6">
+                <div className="space-y-6">
+                  {/* Compact Overview Cards - Full Width */}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Top Partner Card - Compact */}
               <Card className="hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="pb-3">
@@ -737,11 +746,11 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            </div>
+                    </Card>
+                  </div>
 
-            {/* Recent Activity - Full Width Table Style */}
-            <Card className="hover:shadow-md transition-shadow duration-200">
+                  {/* Recent Activity - Full Width Table Style */}
+                  <Card className="hover:shadow-md transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -811,27 +820,23 @@ const AdminDashboard = () => {
                       </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                  )}
+                </CardContent>
+              </Card>
+                </div>
+              </TabsContent>
 
-        <TabsContent value="partners">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Partner Management
-                </CardTitle>
-                <CardDescription>Manage and monitor partner performance</CardDescription>
-              </div>
-              <Button onClick={() => setShowCreatePartner(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Partner
-              </Button>
-            </CardHeader>
+              <TabsContent value="partners" className="space-y-6 mt-6">
+                <Card>
+                  <CardHeader>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Partner Management
+                      </CardTitle>
+                      <CardDescription>Manage and monitor partner performance</CardDescription>
+                    </div>
+                  </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {partnerStats.length === 0 ? (
@@ -868,13 +873,13 @@ const AdminDashboard = () => {
                     </div>
                   ))
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-        <TabsContent value="leads">
-          <Card>
+              <TabsContent value="leads" className="space-y-6 mt-6">
+                <Card>
             <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
                 <CardTitle>Lead Management</CardTitle>
@@ -971,11 +976,34 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Persistent Sidebar - 30% */}
+          <div className="lg:w-[30%] space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <AtRiskLeads 
+              leads={atRiskLeads} 
+              onTakeAction={(leadId) => {
+                const lead = recentLeads.find(l => l.id === leadId);
+                if (lead) handleViewLead(lead);
+              }} 
+            />
+            
+            <PersonalImpact
+              studentsHelped={kpis.totalLeads}
+              loansApproved={kpis.sanctioned}
+              totalLoanAmount={kpis.totalLoanAmount}
+              compareToAverage={15}
+            />
+            
+            <PartnerLeaderboard partners={leaderboardData} />
+          </div>
+        </div>
+      </div>
 
       {/* Create Partner Modal */}
-      <CreatePartnerModal 
+      <CreatePartnerModal
         open={showCreatePartner}
         onOpenChange={setShowCreatePartner}
         onPartnerCreated={() => {
@@ -1015,9 +1043,6 @@ const AdminDashboard = () => {
           onStatusUpdated={handleStatusUpdated}
         />
       )}
-
-        </div>
-      </div>
     </div>
   );
 };
