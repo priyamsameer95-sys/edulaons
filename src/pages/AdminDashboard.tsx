@@ -21,7 +21,7 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
-import { LiveActivityFeed } from '@/components/gamification/LiveActivityFeed';
+import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
@@ -114,20 +114,6 @@ const AdminDashboard = () => {
     conversionRate: 0
   });
 
-
-  // Generate activity feed data
-  const activityFeed = recentLeads.slice(0, 10).map((lead, index) => ({
-    id: lead.id,
-    type: lead.status === 'approved' ? 'approval' : lead.status === 'in_progress' ? 'document' : 'alert',
-    message: lead.status === 'approved' 
-      ? `Lead #${lead.case_id.slice(0, 8)} approved for ${lead.student_name}`
-      : lead.status === 'in_progress'
-      ? `Document uploaded for lead #${lead.case_id.slice(0, 8)}`
-      : `New lead #${lead.case_id.slice(0, 8)} created`,
-    timestamp: lead.updated_at || lead.created_at,
-    partner: lead.partner_name,
-    leadId: lead.id,
-  })) as any;
 
   // Generate leaderboard data from partner stats
   const leaderboardData = partnerStats
@@ -982,6 +968,21 @@ const AdminDashboard = () => {
 
           {/* Persistent Sidebar - 30% */}
           <div className="w-full lg:w-[30%] lg:min-w-[350px] space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <AdminActivityBoard
+              onViewLead={(leadId) => {
+                const lead = recentLeads.find(l => l.id === leadId);
+                if (lead) handleViewLead(lead);
+              }}
+              onUpdateStatus={(leadId) => {
+                const lead = recentLeads.find(l => l.id === leadId);
+                if (lead) handleQuickStatusUpdate(lead);
+              }}
+              onVerifyDocument={(documentId, leadId) => {
+                const lead = recentLeads.find(l => l.id === leadId);
+                if (lead) handleViewLead(lead);
+              }}
+            />
+            
             <AtRiskLeads 
               leads={atRiskLeads} 
               onTakeAction={(leadId) => {
