@@ -561,13 +561,13 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Compact KPI Cards - Single Row */}
+            {/* Strategic KPI Cards - Single Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="hover:shadow-lg transition-all">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <FileText className="h-4 w-4" />
-                    Total
+                    Total Leads
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -580,25 +580,12 @@ const AdminDashboard = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <Building2 className="h-4 w-4 text-success" />
-                    Partners
+                    Active Partners
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-success">{kpis.totalPartners}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Active</p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-all border-warning/20 bg-warning/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4 text-warning" />
-                    Pipeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>
-                  <p className="text-xs text-muted-foreground mt-1">In progress</p>
+                  <p className="text-xs text-muted-foreground mt-1">Contributing</p>
                 </CardContent>
               </Card>
 
@@ -606,12 +593,25 @@ const AdminDashboard = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <DollarSign className="h-4 w-4 text-primary" />
-                    Value
+                    Pipeline Value
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg font-bold text-primary">{formatCurrency(kpis.totalLoanAmount)}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{kpis.sanctioned} sanctioned</p>
+                  <div className="text-lg font-bold text-primary">{formatCurrency(loanComparison.pipeline)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{kpis.inPipeline} leads</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all border-accent/20 bg-accent/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <TrendingUp className="h-4 w-4 text-accent-foreground" />
+                    Conversion Rate
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-accent-foreground">{loanComparison.conversionRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-1">{kpis.sanctioned} approved</p>
                 </CardContent>
               </Card>
             </div>
@@ -635,103 +635,127 @@ const AdminDashboard = () => {
 
               <TabsContent value="overview" className="space-y-6 mt-6">
                 <div className="space-y-6">
-                  {/* Compact Overview Cards - Full Width */}
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Top Partner Card - Compact */}
-              <Card className="hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <Trophy className="h-4 w-4 text-warning" />
-                    Top Partner
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {topPartner ? (
-                    <div className="space-y-2">
-                      <div className="text-lg font-bold text-foreground">{topPartner.name}</div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Leads:</span>
-                        <span className="font-semibold">{topPartner.total_leads}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Share:</span>
-                        <Badge variant="secondary" className="text-xs">{topPartner.percentage}%</Badge>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground text-sm">No data available</div>
-                  )}
-                </CardContent>
-              </Card>
+                  {/* Actionable Insights Cards */}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Lead Pipeline Breakdown */}
+                    <Card className="hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                          <BarChart3 className="h-4 w-4 text-primary" />
+                          Pipeline Breakdown
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          {(() => {
+                            const statusCounts = recentLeads.reduce((acc, lead) => {
+                              acc[lead.status] = (acc[lead.status] || 0) + 1;
+                              return acc;
+                            }, {} as Record<string, number>);
+                            
+                            const statusOrder = ['new', 'in_progress', 'approved', 'rejected'];
+                            const statusLabels: Record<string, string> = {
+                              new: 'New',
+                              in_progress: 'In Progress',
+                              approved: 'Approved',
+                              rejected: 'Rejected'
+                            };
+                            
+                            return statusOrder.map((status) => {
+                              const count = statusCounts[status] || 0;
+                              const percentage = kpis.totalLeads > 0 ? Math.round((count / kpis.totalLeads) * 100) : 0;
+                              
+                              return (
+                                <div key={status}>
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-muted-foreground">{statusLabels[status]}</span>
+                                    <span className="font-medium">{count} ({percentage}%)</span>
+                                  </div>
+                                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full transition-all ${
+                                        status === 'new' ? 'bg-primary' :
+                                        status === 'in_progress' ? 'bg-warning' :
+                                        status === 'approved' ? 'bg-success' :
+                                        'bg-destructive'
+                                      }`}
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-              {/* Pipeline Overview */}
-              <Card className="hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    Pipeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold text-primary">
-                      {kpis.inPipeline}
-                    </div>
-                    <p className="text-xs text-muted-foreground">leads in pipeline</p>
-                  </div>
-                </CardContent>
-              </Card>
+                    {/* Partner Performance Summary */}
+                    <Card className="hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                          <Trophy className="h-4 w-4 text-warning" />
+                          Top Performers
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          {partnerStats
+                            .sort((a, b) => b.totalLeads - a.totalLeads)
+                            .slice(0, 3)
+                            .map((partner, index) => (
+                              <div key={partner.id} className="flex items-center justify-between py-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={index === 0 ? "default" : "secondary"} className="w-5 h-5 flex items-center justify-center p-0 text-xs">
+                                    {index + 1}
+                                  </Badge>
+                                  <span className="text-sm font-medium truncate">{partner.name}</span>
+                                </div>
+                                <span className="text-sm font-bold">{partner.totalLeads}</span>
+                              </div>
+                            ))}
+                          {partnerStats.length === 0 && (
+                            <p className="text-xs text-muted-foreground">No partner data</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-              {/* Sanctioned Overview */}
-              <Card className="hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <CheckCircle className="h-4 w-4 text-success" />
-                    Sanctioned
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold text-success">
-                      {kpis.sanctioned}
-                    </div>
-                    <p className="text-xs text-muted-foreground">sanctioned leads</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Lead Status Distribution */}
-              <Card className="hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <TrendingUp className="h-4 w-4 text-accent-foreground" />
-                    Lead Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    {(() => {
-                      const statusCounts = recentLeads.reduce((acc, lead) => {
-                        acc[lead.status] = (acc[lead.status] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>);
-                      
-                      return Object.entries(statusCounts)
-                        .sort(([,a], [,b]) => b - a)
-                        .slice(0, 4)
-                        .map(([status, count]) => (
-                          <div key={status} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground capitalize">{status.replace('_', ' ')}:</span>
-                            <span className="font-semibold">{count}</span>
+                    {/* Document Status Overview */}
+                    <Card className="hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                          <FileCheck className="h-4 w-4 text-accent-foreground" />
+                          Document Status
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          {(() => {
+                            const docCounts = recentLeads.reduce((acc, lead) => {
+                              acc[lead.documents_status] = (acc[lead.documents_status] || 0) + 1;
+                              return acc;
+                            }, {} as Record<string, number>);
+                            
+                            const docStatuses = [
+                              { key: 'pending', label: 'Pending', color: 'text-warning' },
+                              { key: 'verified', label: 'Verified', color: 'text-success' },
+                              { key: 'rejected', label: 'Rejected', color: 'text-destructive' },
+                            ];
+                            
+                            return docStatuses.map(({ key, label, color }) => (
+                              <div key={key} className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">{label}:</span>
+                                <span className={`font-semibold ${color}`}>{docCounts[key] || 0}</span>
+                              </div>
+                            ));
+                          })()}
+                          <div className="flex justify-between text-sm border-t border-border/50 pt-2">
+                            <span className="text-muted-foreground">Total:</span>
+                            <span className="font-semibold">{recentLeads.length}</span>
                           </div>
-                        ));
-                    })()}
-                    <div className="flex justify-between text-sm border-t border-border/50 pt-2">
-                      <span className="text-muted-foreground">Total:</span>
-                      <span className="font-semibold">{kpis.totalLeads}</span>
-                    </div>
-                  </div>
-                </CardContent>
+                        </div>
+                      </CardContent>
                     </Card>
                   </div>
 
