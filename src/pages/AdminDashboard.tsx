@@ -21,14 +21,10 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
-import { GamificationHero } from '@/components/gamification/GamificationHero';
-import { useGamification } from '@/hooks/useGamification';
 import { LiveActivityFeed } from '@/components/gamification/LiveActivityFeed';
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
-import { CelebrationConfetti } from '@/components/gamification/CelebrationConfetti';
-import { MotivationalMessage } from '@/components/gamification/MotivationalMessage';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -118,10 +114,6 @@ const AdminDashboard = () => {
     conversionRate: 0
   });
 
-  // Gamification data
-  const gamificationData = useGamification(kpis);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationAchievement, setCelebrationAchievement] = useState<any>(null);
 
   // Generate activity feed data
   const activityFeed = recentLeads.slice(0, 10).map((lead, index) => ({
@@ -465,18 +457,6 @@ const AdminDashboard = () => {
       setQuickUpdateLead(null);
       setShowStatusUpdateModal(false);
       
-      // Check for milestone achievements and trigger celebration
-      const newKpis = kpis;
-      if (newKpis.sanctioned > 0 && newKpis.sanctioned % 10 === 0) {
-        setCelebrationAchievement({
-          icon: '🎯',
-          title: `${newKpis.sanctioned} Approvals Milestone!`,
-          description: `You've successfully approved ${newKpis.sanctioned} leads. Outstanding work!`,
-          xpReward: 100,
-        });
-        setShowCelebration(true);
-      }
-      
       // Show success feedback
       toast({
         title: 'Dashboard Updated',
@@ -568,19 +548,11 @@ const AdminDashboard = () => {
             </Button>
           </div>
 
-          {/* Gamification Hero Section */}
-          <GamificationHero
-            userName={appUser?.email?.split('@')[0] || 'Admin'}
-            level={gamificationData.level}
-            currentXP={gamificationData.currentXP}
-            xpToNextLevel={gamificationData.xpToNextLevel}
-            streak={gamificationData.streak}
-            unlockedBadges={gamificationData.unlockedBadges}
-            totalBadges={gamificationData.totalBadges}
-          />
-
-          {/* Motivational Message */}
-          <MotivationalMessage />
+          {/* Welcome Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <p className="text-muted-foreground mt-2">Monitor and manage all leads and partners</p>
+          </div>
 
           {/* Enhanced KPI Cards */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -1044,12 +1016,6 @@ const AdminDashboard = () => {
         />
       )}
 
-      {/* Celebration Confetti Modal */}
-      <CelebrationConfetti
-        show={showCelebration}
-        onClose={() => setShowCelebration(false)}
-        achievement={celebrationAchievement}
-      />
         </div>
       </div>
     </div>
