@@ -429,13 +429,6 @@ export type Database = {
             referencedRelation: "leads_new"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "lead_documents_document_type_id_fkey"
-            columns: ["document_type_id"]
-            isOneToOne: false
-            referencedRelation: "document_types"
-            referencedColumns: ["id"]
-          },
         ]
       }
       lead_status_history: {
