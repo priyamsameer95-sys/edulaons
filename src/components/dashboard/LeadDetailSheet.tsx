@@ -420,19 +420,58 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                               </div>
                             </div>
                             
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2">
                               <Badge variant="outline" className={item.status === 'uploaded' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}>
                                 {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
                               </Badge>
                               
-                              {uploadedDoc && (
-                                <Button
-                                  onClick={() => handleDownloadDoc(uploadedDoc.id, uploadedDoc.original_filename)}
-                                  variant="outline"
+                              {uploadedDoc ? (
+                                <>
+                                  <Button
+                                    onClick={() => handleDownloadDoc(uploadedDoc.id, uploadedDoc.original_filename)}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <StandardDocumentUpload
+                                    leadId={lead.id}
+                                    documentTypeId={item.id}
+                                    documentTypeName={item.name}
+                                    maxFileSize={docType?.max_file_size_pdf || 10485760}
+                                    acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                    onUploadSuccess={() => {
+                                      refetchDocuments();
+                                      toast({
+                                        title: "Document Replaced",
+                                        description: `${item.name} has been updated`,
+                                      });
+                                    }}
+                                    existingDocument={true}
+                                    variant="ghost"
+                                    size="sm"
+                                    allowMultiple={false}
+                                  />
+                                </>
+                              ) : (
+                                <StandardDocumentUpload
+                                  leadId={lead.id}
+                                  documentTypeId={item.id}
+                                  documentTypeName={item.name}
+                                  maxFileSize={docType?.max_file_size_pdf || 10485760}
+                                  acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                  onUploadSuccess={() => {
+                                    refetchDocuments();
+                                    toast({
+                                      title: "Document Uploaded",
+                                      description: `${item.name} uploaded successfully`,
+                                    });
+                                  }}
+                                  existingDocument={false}
+                                  variant="default"
                                   size="sm"
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
+                                  allowMultiple={false}
+                                />
                               )}
                             </div>
                           </div>
