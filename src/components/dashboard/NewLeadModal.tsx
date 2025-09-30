@@ -203,11 +203,15 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 [NewLeadModal] Starting lead creation process...');
+    
     const isFormValid = validateForm() && validateUniversities();
     
     if (!isFormValid) {
       const errorCount = Object.keys(errors).filter(key => errors[key]).length;
       const universitiesError = !validateUniversities();
+      
+      console.log('❌ [NewLeadModal] Form validation failed:', { errorCount, universitiesError, errors });
       
       toast({
         title: "Please complete all required fields",
@@ -224,161 +228,231 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     try {
       // Generate unique case ID
       const caseId = `EDU-${Date.now()}`;
+      console.log('📋 [NewLeadModal] Generated case ID:', caseId);
       
       // Parse intake month and year
       const [intakeYear, intakeMonth] = formData.intake_month ? formData.intake_month.split('-').map(Number) : [null, null];
+      console.log('📅 [NewLeadModal] Parsed intake:', { intakeYear, intakeMonth });
       
-      // Step 1: Verify user authentication and permissions
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      console.log('Current auth user:', authUser?.id);
+      // Step 1: Comprehensive authentication verification
+      console.log('🔐 [NewLeadModal] Step 1: Verifying authentication...');
       
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        console.error('❌ [NewLeadModal] Authentication failed:', authError);
+        throw new Error('You are not logged in. Please refresh the page and log in again.');
+      }
+      
+      console.log('✅ [NewLeadModal] Auth user verified:', authUser.id);
+      
+      // Verify session is still valid
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('❌ [NewLeadModal] Session validation failed:', sessionError);
+        throw new Error('Your session has expired. Please log in again.');
+      }
+      
+      console.log('✅ [NewLeadModal] Session validated');
+      
+      // Get app user data with detailed error handling
       const { data: appUserCheck, error: appUserCheckError } = await supabase
         .from('app_users')
         .select('id, role, is_active, partner_id')
-        .eq('id', authUser?.id)
-        .single();
+        .eq('id', authUser.id)
+        .maybeSingle();
       
-      console.log('App user check:', appUserCheck);
+      console.log('🔍 [NewLeadModal] App user check result:', { 
+        data: appUserCheck, 
+        error: appUserCheckError 
+      });
       
       if (appUserCheckError) {
-        console.error('Failed to verify user permissions:', appUserCheckError);
-        throw new Error('Unable to verify your permissions. Please try logging out and back in.');
+        console.error('❌ [NewLeadModal] Failed to verify user permissions:', appUserCheckError);
+        throw new Error(`Database error: ${appUserCheckError.message}. Please refresh and try again.`);
       }
       
-      if (!appUserCheck?.is_active) {
+      if (!appUserCheck) {
+        console.error('❌ [NewLeadModal] No app user record found');
+        throw new Error('Your account is not properly configured. Please contact support.');
+      }
+      
+      if (!appUserCheck.is_active) {
+        console.error('❌ [NewLeadModal] User account is inactive');
         throw new Error('Your account is inactive. Please contact support.');
       }
       
+      console.log('✅ [NewLeadModal] User permissions verified:', {
+        role: appUserCheck.role,
+        partnerId: appUserCheck.partner_id,
+        isActive: appUserCheck.is_active
+      });
+      
       // Step 2: Create student record
+      console.log('👨‍🎓 [NewLeadModal] Step 2: Creating student record...');
+      
       const studentEmail = formData.student_email.trim();
-      console.log('Attempting to create student with data:', {
+      const studentData = {
         name: formData.student_name.trim(),
         email: studentEmail || `${formData.student_phone.trim()}@temp.placeholder`,
         phone: formData.student_phone.trim(),
         postal_code: formData.student_pin_code.trim(),
         country: 'India'
-      });
+      };
+      
+      console.log('📝 [NewLeadModal] Student data to insert:', studentData);
       
       const { data: student, error: studentError } = await supabase
         .from('students')
-        .insert({
-          name: formData.student_name.trim(),
-          email: studentEmail || `${formData.student_phone.trim()}@temp.placeholder`,
-          phone: formData.student_phone.trim(),
-          postal_code: formData.student_pin_code.trim(),
-          country: 'India'
-        })
+        .insert(studentData)
         .select()
         .single();
         
       if (studentError) {
-        console.error('Student creation error details:', {
+        console.error('❌ [NewLeadModal] Student creation failed:', {
           error: studentError,
           code: studentError.code,
           message: studentError.message,
           details: studentError.details,
           hint: studentError.hint,
           currentUserRole: appUserCheck?.role,
-          currentUserId: authUser?.id
+          currentUserId: authUser?.id,
+          sessionValid: !!session
         });
         
-        // If it's an RLS error, provide more helpful message
+        // Provide specific error messages based on error type
         if (studentError.message?.includes('row-level security') || studentError.code === '42501') {
-          throw new Error(`Permission denied for role ${appUserCheck?.role}. Please refresh the page or log out and back in.`);
+          throw new Error(`Access denied: Your ${appUserCheck?.role} role doesn't have permission to create students. Please contact your administrator.`);
         }
         
-        throw new Error(studentError.message || 'Failed to create student record');
+        if (studentError.code === '23505') {
+          throw new Error('A student with this email or phone already exists. Please check your details.');
+        }
+        
+        if (studentError.message?.includes('authentication')) {
+          throw new Error('Authentication failed. Please log out and log back in.');
+        }
+        
+        throw new Error(`Failed to create student record: ${studentError.message}`);
       }
       
-      console.log('Student created successfully:', student);
+      console.log('✅ [NewLeadModal] Student created successfully:', student.id);
 
-      // Step 2: Create co-applicant record
+      // Step 3: Create co-applicant record
+      console.log('👥 [NewLeadModal] Step 3: Creating co-applicant record...');
+      
       const coApplicantEmail = formData.co_applicant_email.trim();
+      const coApplicantData = {
+        name: formData.co_applicant_name.trim(),
+        email: coApplicantEmail || null,
+        phone: formData.co_applicant_phone.trim(),
+        relationship: formData.co_applicant_relationship as any,
+        salary: parseFloat(formData.co_applicant_salary),
+        pin_code: formData.co_applicant_pin_code.trim()
+      };
+      
+      console.log('📝 [NewLeadModal] Co-applicant data to insert:', coApplicantData);
+      
       const { data: coApplicant, error: coApplicantError } = await supabase
         .from('co_applicants')
-        .insert({
-          name: formData.co_applicant_name.trim(),
-          email: coApplicantEmail || null,
-          phone: formData.co_applicant_phone.trim(),
-          relationship: formData.co_applicant_relationship as any,
-          salary: parseFloat(formData.co_applicant_salary),
-          pin_code: formData.co_applicant_pin_code.trim()
-        })
+        .insert(coApplicantData)
         .select()
         .single();
         
       if (coApplicantError) {
-        console.error('Co-applicant creation error:', coApplicantError);
-        throw new Error('Failed to create co-applicant record');
+        console.error('❌ [NewLeadModal] Co-applicant creation failed:', coApplicantError);
+        
+        if (coApplicantError.message?.includes('row-level security') || coApplicantError.code === '42501') {
+          throw new Error(`Access denied: Your ${appUserCheck?.role} role doesn't have permission to create co-applicants.`);
+        }
+        
+        throw new Error(`Failed to create co-applicant record: ${coApplicantError.message}`);
       }
-
-      // Step 3: Get current user's partner_id (CRITICAL for security)
-      const { data: userData } = await supabase.auth.getUser();
       
-      if (!userData.user) {
-        throw new Error('You must be logged in to create leads');
-      }
+      console.log('✅ [NewLeadModal] Co-applicant created successfully:', coApplicant.id);
 
-      const { data: appUser, error: appUserError } = await supabase
-        .from('app_users')
-        .select('partner_id, role')
-        .eq('id', userData.user.id)
-        .single();
-
-      if (appUserError) {
-        console.error('Failed to fetch user data:', appUserError);
-        throw new Error('Unable to verify your account. Please try logging in again.');
-      }
-
+      // Step 4: Validate partner association (CRITICAL for security)
+      console.log('🔐 [NewLeadModal] Step 4: Validating partner association...');
+      
       // For partners, partner_id is REQUIRED for security
-      if (appUser.role === 'partner' && !appUser.partner_id) {
-        throw new Error('Your account is not associated with a partner. Please contact support.');
+      if (appUserCheck.role === 'partner') {
+        if (!appUserCheck.partner_id) {
+          console.error('❌ [NewLeadModal] Partner user has no partner_id');
+          throw new Error('Your account is not associated with a partner organization. Please contact support.');
+        }
+        console.log('✅ [NewLeadModal] Partner validation passed:', appUserCheck.partner_id);
+      } else {
+        console.log('✅ [NewLeadModal] Admin/Super Admin user - no partner validation needed');
       }
 
-      // Step 4: Get default lender
-      const { data: lender } = await supabase
+      // Step 5: Get default lender
+      console.log('🏦 [NewLeadModal] Step 5: Getting default lender...');
+      
+      const { data: lender, error: lenderError } = await supabase
         .from('lenders')
-        .select('id')
+        .select('id, name')
         .limit(1)
         .single();
 
-      if (!lender) {
-        throw new Error('No lender configured in system');
+      if (lenderError || !lender) {
+        console.error('❌ [NewLeadModal] Failed to get lender:', lenderError);
+        throw new Error('No lender configured in system. Please contact support.');
       }
+      
+      console.log('✅ [NewLeadModal] Default lender found:', lender.name);
 
-      // Step 5: Create lead in new structure
+      // Step 6: Create lead in new structure
+      console.log('📋 [NewLeadModal] Step 6: Creating lead record...');
+      
+      const leadData = {
+        case_id: caseId,
+        student_id: student.id,
+        co_applicant_id: coApplicant.id,
+        partner_id: appUserCheck.partner_id, // CRITICAL: This is enforced by RLS
+        lender_id: lender.id,
+        loan_amount: parseFloat(formData.amount_requested),
+        loan_type: formData.loan_type as any,
+        study_destination: formData.country as any,
+        intake_month: intakeMonth,
+        intake_year: intakeYear,
+        status: 'new' as const,
+        documents_status: 'pending' as const
+      };
+      
+      console.log('📝 [NewLeadModal] Lead data to insert:', leadData);
+      
       // SECURITY: RLS policies will enforce that partner_id matches the authenticated user's partner_id
       const { data: lead, error: leadError } = await supabase
         .from('leads_new')
-        .insert({
-          case_id: caseId,
-          student_id: student.id,
-          co_applicant_id: coApplicant.id,
-          partner_id: appUser.partner_id, // CRITICAL: This is enforced by RLS
-          lender_id: lender.id,
-          loan_amount: parseFloat(formData.amount_requested),
-          loan_type: formData.loan_type as any,
-          study_destination: formData.country as any,
-          intake_month: intakeMonth,
-          intake_year: intakeYear,
-          status: 'new',
-          documents_status: 'pending'
-        })
+        .insert([leadData])
         .select()
         .single();
         
       if (leadError) {
-        console.error('Lead creation error:', leadError);
+        console.error('❌ [NewLeadModal] Lead creation failed:', {
+          error: leadError,
+          code: leadError.code,
+          message: leadError.message,
+          details: leadError.details,
+          leadData,
+          userRole: appUserCheck.role,
+          partnerId: appUserCheck.partner_id
+        });
         
-        // Provide user-friendly error messages
-        if (leadError.code === '42501') {
-          throw new Error('You do not have permission to create leads. Please contact support.');
+        // Provide specific error messages based on error type
+        if (leadError.code === '42501' || leadError.message?.includes('row-level security')) {
+          throw new Error(`Access denied: Your ${appUserCheck.role} role cannot create leads for partner ${appUserCheck.partner_id}. Please contact support.`);
         } else if (leadError.message?.includes('policy')) {
-          throw new Error('Security check failed. Please ensure you are logged in correctly.');
+          throw new Error('Security validation failed. Please ensure you are properly authenticated.');
+        } else if (leadError.code === '23505') {
+          throw new Error('A lead with this case ID already exists. Please try again.');
         }
         
-        throw new Error('Failed to create lead. Please try again or contact support.');
+        throw new Error(`Failed to create lead: ${leadError.message}`);
       }
+      
+      console.log('✅ [NewLeadModal] Lead created successfully:', lead.id);
 
       // Step 6: Create academic test records if provided
       const testScores = [];
@@ -432,9 +506,35 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       setPhase('documents');
 
     } catch (error: any) {
-      console.error('Error creating lead:', error);
-      handleDatabaseError(error, {
-        description: error.message
+      console.error('💥 [NewLeadModal] Lead creation process failed:', {
+        error: error.message,
+        stack: error.stack,
+        formData: {
+          student_name: formData.student_name,
+          loan_amount: formData.amount_requested,
+          loan_type: formData.loan_type,
+          country: formData.country
+        }
+      });
+      
+      // Enhanced error handling with specific user guidance
+      let errorTitle = 'Failed to Create Application';
+      let errorDescription = error.message;
+      
+      if (error.message?.includes('Authentication') || error.message?.includes('session')) {
+        errorTitle = 'Session Expired';
+        errorDescription = 'Please refresh the page and log in again.';
+      } else if (error.message?.includes('Permission') || error.message?.includes('Access denied')) {
+        errorTitle = 'Access Denied';
+        errorDescription = `${error.message} If this persists, please contact your administrator.`;
+      } else if (error.message?.includes('inactive')) {
+        errorTitle = 'Account Issue';
+        errorDescription = error.message;
+      }
+      
+      handleError(error, {
+        title: errorTitle,
+        description: errorDescription
       });
     } finally {
       setLoading(false);

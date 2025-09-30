@@ -20,6 +20,8 @@ export function useAuth() {
 
   const fetchAppUser = async (userId: string, retryCount = 0): Promise<AppUser | null> => {
     try {
+      console.log(`🔍 [useAuth] Fetching app user for ID: ${userId} (attempt ${retryCount + 1})`);
+      
       const { data, error } = await supabase
         .from('app_users')
         .select('*')
@@ -27,7 +29,7 @@ export function useAuth() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching app user:', error);
+        console.error('❌ [useAuth] Error fetching app user:', error);
         
         // Log authentication error for debugging
         try {
@@ -35,16 +37,17 @@ export function useAuth() {
             user_id: userId,
             error_type: 'fetch_app_user_failed',
             error_message: error.message,
-            context: { retryCount }
+            context: { retryCount, errorCode: error.code, errorDetails: error.details }
           });
         } catch (err) {
           console.error('Failed to log auth error:', err);
         }
 
-        // Retry once on failure
-        if (retryCount < 1) {
-          console.log('Retrying fetchAppUser...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        // Retry up to 3 times with exponential backoff
+        if (retryCount < 2) {
+          const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+          console.log(`🔄 [useAuth] Retrying fetchAppUser in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
           return fetchAppUser(userId, retryCount + 1);
         }
         
@@ -52,7 +55,7 @@ export function useAuth() {
       }
 
       if (!data) {
-        console.error('No app_users record found for user:', userId);
+        console.error('❌ [useAuth] No app_users record found for user:', userId);
         
         try {
           await supabase.from('auth_error_logs').insert({
@@ -68,17 +71,23 @@ export function useAuth() {
         return null;
       }
 
-      console.log('Successfully fetched app user:', data);
+      console.log('✅ [useAuth] Successfully fetched app user:', {
+        id: data.id,
+        role: data.role,
+        partner_id: data.partner_id,
+        is_active: data.is_active
+      });
+      
       return data as AppUser;
     } catch (err) {
-      console.error('Error in fetchAppUser:', err);
+      console.error('💥 [useAuth] Exception in fetchAppUser:', err);
       
       try {
         await supabase.from('auth_error_logs').insert({
           user_id: userId,
           error_type: 'fetch_app_user_exception',
           error_message: err instanceof Error ? err.message : 'Unknown error',
-          context: { retryCount }
+          context: { retryCount, stack: err instanceof Error ? err.stack : undefined }
         });
       } catch (e) {
         console.error('Failed to log auth error:', e);
@@ -220,6 +229,17 @@ export function useAuth() {
     return appUser?.role === 'partner';
   };
 
+  // Debug helpers for troubleshooting
+  const getAuthDebugInfo = () => ({
+    hasUser: !!user,
+    hasSession: !!session,
+    hasAppUser: !!appUser,
+    userRole: appUser?.role,
+    partnerId: appUser?.partner_id,
+    isActive: appUser?.is_active,
+    loading
+  });
+
   return {
     user,
     session,
@@ -231,5 +251,6 @@ export function useAuth() {
     isAdmin,
     isPartner,
     refetchAppUser: () => user ? fetchAppUser(user.id) : null,
+    getAuthDebugInfo, // For debugging
   };
 }
