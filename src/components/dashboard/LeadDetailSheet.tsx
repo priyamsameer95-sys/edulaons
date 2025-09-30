@@ -193,11 +193,55 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                       Co-Applicant
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
+                  <CardContent className="space-y-3">
                     <div>
-                      <p className="font-semibold">{lead.co_applicant?.name || 'N/A'}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{lead.co_applicant?.relationship || 'N/A'}</p>
-                      <p className="text-sm text-muted-foreground">₹{lead.co_applicant?.salary?.toLocaleString() || 'N/A'}/year</p>
+                      <p className="font-semibold">{lead.co_applicant?.name || 'Not provided'}</p>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {lead.co_applicant?.relationship || 'Not specified'}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Phone:</span>
+                        <span className="font-medium">
+                          {lead.co_applicant?.phone || 'Not provided'}
+                        </span>
+                      </div>
+                      {lead.co_applicant?.email && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Email:</span>
+                          <a 
+                            href={`mailto:${lead.co_applicant.email}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {lead.co_applicant.email}
+                          </a>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Salary:</span>
+                        <span className="font-medium">
+                          ₹{lead.co_applicant?.salary?.toLocaleString() || 'Not provided'}/year
+                        </span>
+                      </div>
+                      {lead.co_applicant?.employer && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Employer:</span>
+                          <span className="font-medium">{lead.co_applicant.employer}</span>
+                        </div>
+                      )}
+                      {lead.co_applicant?.occupation && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Occupation:</span>
+                          <span className="font-medium">{lead.co_applicant.occupation}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">PIN Code:</span>
+                        <span className="font-medium">
+                          {lead.co_applicant?.pin_code || 'Not provided'}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

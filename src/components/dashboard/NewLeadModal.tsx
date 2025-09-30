@@ -47,6 +47,8 @@ interface FormData {
   co_applicant_salary: string;
   co_applicant_relationship: string;
   co_applicant_pin_code: string;
+  co_applicant_employer: string;
+  co_applicant_occupation: string;
 }
 
 const leadFormConfig: FieldConfig = {
@@ -128,6 +130,14 @@ const leadFormConfig: FieldConfig = {
     required: true, 
     pattern: /^\d{6}$/
   },
+  co_applicant_employer: { 
+    minLength: 2, 
+    maxLength: 100 
+  },
+  co_applicant_occupation: { 
+    minLength: 2, 
+    maxLength: 100 
+  },
 };
 
 export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProps) => {
@@ -155,7 +165,9 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     co_applicant_phone: '',
     co_applicant_salary: '',
     co_applicant_relationship: '',
-    co_applicant_pin_code: ''
+    co_applicant_pin_code: '',
+    co_applicant_employer: '',
+    co_applicant_occupation: ''
   };
 
   const {
@@ -254,7 +266,9 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
           phone: formData.co_applicant_phone.trim(),
           relationship: formData.co_applicant_relationship as any,
           salary: parseFloat(formData.co_applicant_salary),
-          pin_code: formData.co_applicant_pin_code.trim()
+          pin_code: formData.co_applicant_pin_code.trim(),
+          employer: formData.co_applicant_employer.trim() || null,
+          occupation: formData.co_applicant_occupation.trim() || null
         })
         .select()
         .single();
@@ -920,6 +934,40 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                         />
                         {errors.co_applicant_pin_code && (
                           <p className="text-sm text-destructive">{errors.co_applicant_pin_code}</p>
+                        )}
+                      </div>
+
+                      {/* Co-applicant Employer */}
+                      <div className="space-y-2">
+                        <Label htmlFor="co_applicant_employer" className="text-sm font-medium">
+                          Employer <span className="text-muted-foreground">(Optional)</span>
+                        </Label>
+                        <Input
+                          id="co_applicant_employer"
+                          value={formData.co_applicant_employer}
+                          onChange={(e) => handleInputChange('co_applicant_employer', e.target.value)}
+                          placeholder="Company/organization name"
+                          className={errors.co_applicant_employer ? 'border-destructive' : ''}
+                        />
+                        {errors.co_applicant_employer && (
+                          <p className="text-sm text-destructive">{errors.co_applicant_employer}</p>
+                        )}
+                      </div>
+
+                      {/* Co-applicant Occupation */}
+                      <div className="space-y-2">
+                        <Label htmlFor="co_applicant_occupation" className="text-sm font-medium">
+                          Occupation <span className="text-muted-foreground">(Optional)</span>
+                        </Label>
+                        <Input
+                          id="co_applicant_occupation"
+                          value={formData.co_applicant_occupation}
+                          onChange={(e) => handleInputChange('co_applicant_occupation', e.target.value)}
+                          placeholder="Job title/role"
+                          className={errors.co_applicant_occupation ? 'border-destructive' : ''}
+                        />
+                        {errors.co_applicant_occupation && (
+                          <p className="text-sm text-destructive">{errors.co_applicant_occupation}</p>
                         )}
                       </div>
                     </div>
