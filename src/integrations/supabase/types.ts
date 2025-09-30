@@ -409,13 +409,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_lead_documents_lead"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_new"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_lead_documents_lead_id"
             columns: ["lead_id"]
             isOneToOne: false
@@ -424,6 +417,13 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_lead_documents_lead_new"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_documents_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_new"
@@ -689,35 +689,35 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_leads_co_applicant"
+            foreignKeyName: "leads_new_co_applicant_id_fkey"
             columns: ["co_applicant_id"]
             isOneToOne: false
             referencedRelation: "co_applicants"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_lender"
+            foreignKeyName: "leads_new_lender_id_fkey"
             columns: ["lender_id"]
             isOneToOne: false
             referencedRelation: "lenders"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_partner"
+            foreignKeyName: "leads_new_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partner_statistics"
             referencedColumns: ["partner_id"]
           },
           {
-            foreignKeyName: "fk_leads_partner"
+            foreignKeyName: "leads_new_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_student"
+            foreignKeyName: "leads_new_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
