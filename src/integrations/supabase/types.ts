@@ -91,6 +91,27 @@ export type Database = {
             foreignKeyName: "app_users_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
+            referencedRelation: "partner_statistics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "app_users_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_app_users_partner"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_statistics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fk_app_users_partner"
+            columns: ["partner_id"]
+            isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
@@ -217,6 +238,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "courses_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_courses_university"
             columns: ["university_id"]
             isOneToOne: false
             referencedRelation: "universities"
@@ -374,6 +402,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_lead_documents_document_type"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lead_documents_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_lead_documents_lead_id"
             columns: ["lead_id"]
             isOneToOne: false
@@ -447,6 +489,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_lead_status_history_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lead_status_history_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
@@ -476,10 +525,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_lead_universities_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_lead_universities_lead_id"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lead_universities_university"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
             referencedColumns: ["id"]
           },
           {
@@ -645,6 +708,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "lenders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_partner"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_statistics"
+            referencedColumns: ["partner_id"]
           },
           {
             foreignKeyName: "fk_leads_partner"
@@ -823,9 +893,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      partner_statistics: {
+        Row: {
+          active_lenders: number | null
+          approved_leads: number | null
+          approved_loan_amount: number | null
+          in_progress_leads: number | null
+          last_lead_date: string | null
+          new_leads: number | null
+          partner_code: string | null
+          partner_id: string | null
+          partner_name: string | null
+          rejected_leads: number | null
+          total_leads: number | null
+          total_loan_amount: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_partner_lead_stats: {
+        Args: { _partner_id: string }
+        Returns: {
+          approved_leads: number
+          approved_loan_amount: number
+          in_progress_leads: number
+          new_leads: number
+          rejected_leads: number
+          total_leads: number
+          total_loan_amount: number
+        }[]
+      }
       get_user_partner: {
         Args: { _user_id: string }
         Returns: string
@@ -846,6 +944,10 @@ export type Database = {
         Returns: undefined
       }
       migrate_existing_leads_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_partner_statistics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
