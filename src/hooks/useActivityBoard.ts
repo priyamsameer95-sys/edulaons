@@ -65,8 +65,8 @@ export function useActivityBoard() {
             documents_status,
             updated_at,
             partner_id,
-            partners(name),
-            students(name)
+            partners!leads_new_partner_id_fkey(name),
+            students!leads_new_student_id_fkey(name)
           )
         `)
         .gte('created_at', sevenDaysAgo.toISOString())
@@ -103,8 +103,8 @@ export function useActivityBoard() {
         .from('leads_new')
         .select(`
           *,
-          partners(name),
-          students(name)
+          partners!leads_new_partner_id_fkey(name),
+          students!leads_new_student_id_fkey(name)
         `)
         .gte('updated_at', sevenDaysAgo.toISOString())
         .order('updated_at', { ascending: false });

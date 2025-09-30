@@ -51,8 +51,8 @@ export function useAdminActionItems() {
           case_id,
           loan_amount,
           created_at,
-          students (name),
-          partners (name)
+          students!leads_new_student_id_fkey (name),
+          partners!leads_new_partner_id_fkey (name)
         `)
         .eq('status', 'new')
         .order('created_at', { ascending: true });
@@ -95,7 +95,7 @@ export function useAdminActionItems() {
           uploaded_by,
           leads_new!fk_lead_documents_lead_id (
             case_id,
-            students (name)
+            students!leads_new_student_id_fkey (name)
           ),
           document_types (name)
         `)

@@ -223,7 +223,7 @@ const AdminDashboard = () => {
           id,
           name,
           partner_code,
-          leads_new!partner_id (
+          leads_new!leads_new_partner_id_fkey (
             id,
             status,
             created_at
@@ -306,15 +306,15 @@ const AdminDashboard = () => {
           study_destination,
           created_at,
           updated_at,
-          students (
+          students!leads_new_student_id_fkey (
             name,
             email
           ),
-          partners (
+          partners!leads_new_partner_id_fkey (
             name,
             partner_code
           ),
-          lenders (
+          lenders!leads_new_lender_id_fkey (
             name
           )
         `)

@@ -16,7 +16,7 @@ export function useRefactoredLeads() {
         .from('leads_new')
         .select(`
           *,
-          students (
+          students!leads_new_student_id_fkey (
             id,
             name,
             email,
@@ -31,7 +31,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          co_applicants (
+          co_applicants!leads_new_co_applicant_id_fkey (
             id,
             name,
             relationship,
@@ -44,7 +44,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          partners (
+          partners!leads_new_partner_id_fkey (
             id,
             name,
             email,
@@ -54,7 +54,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          lenders (
+          lenders!leads_new_lender_id_fkey (
             id,
             name,
             code,
