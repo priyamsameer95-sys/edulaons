@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 export interface AppUser {
   id: string;
@@ -16,7 +16,7 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { handleError, handleSuccess } = useErrorHandler();
 
   const fetchAppUser = async (userId: string, retryCount = 0): Promise<AppUser | null> => {
     try {
@@ -105,10 +105,9 @@ export function useAuth() {
             // If fetchAppUser fails, don't clear the session - keep user logged in
             if (!appUserData && event !== 'SIGNED_OUT') {
               console.warn('Failed to fetch app user, keeping session active');
-              toast({
-                title: "Connection Issue",
-                description: "Having trouble loading your profile. Please refresh if this persists.",
-                variant: "destructive",
+              handleError(new Error('Failed to load profile'), {
+                title: 'Connection Issue',
+                description: 'Having trouble loading your profile. Please refresh if this persists.'
               });
             }
             
@@ -133,10 +132,9 @@ export function useAuth() {
         fetchAppUser(session.user.id).then((appUserData) => {
           if (!appUserData) {
             console.warn('Failed to fetch app user on initial load');
-            toast({
-              title: "Connection Issue",
-              description: "Having trouble loading your profile. Please refresh if this persists.",
-              variant: "destructive",
+            handleError(new Error('Failed to verify account'), {
+              title: 'Connection Issue',
+              description: 'Having trouble loading your profile. Please refresh if this persists.'
             });
           }
           
@@ -149,7 +147,7 @@ export function useAuth() {
     });
 
     return () => subscription.unsubscribe();
-  }, [toast]);
+  }, [handleError, handleSuccess]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -159,28 +157,16 @@ export function useAuth() {
       });
 
       if (error) {
-        toast({
-          title: "Login Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        handleError(error, { title: 'Login Failed' });
         return { error };
       }
 
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
+      handleSuccess('Welcome back!', 'You have successfully logged in.');
 
       return { error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      return { error: { message: errorMessage } };
+      handleError(err, { title: 'Login Failed' });
+      return { error: { message: err instanceof Error ? err.message : 'Unknown error' } };
     }
   };
 
@@ -197,28 +183,16 @@ export function useAuth() {
       });
 
       if (error) {
-        toast({
-          title: "Sign Up Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        handleError(error, { title: 'Sign Up Failed' });
         return { error };
       }
 
-      toast({
-        title: "Check your email",
-        description: "Please check your email to confirm your account.",
-      });
+      handleSuccess('Check your email', 'Please check your email to confirm your account.');
 
       return { error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      toast({
-        title: "Sign Up Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      return { error: { message: errorMessage } };
+      handleError(err, { title: 'Sign Up Failed' });
+      return { error: { message: err instanceof Error ? err.message : 'Unknown error' } };
     }
   };
 
@@ -227,25 +201,14 @@ export function useAuth() {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        toast({
-          title: "Sign Out Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        handleError(error, { title: 'Sign Out Failed' });
         return;
       }
 
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
-      });
+      handleSuccess('Signed out', 'You have been successfully signed out.');
     } catch (err) {
       console.error('Sign out error:', err);
-      toast({
-        title: "Sign Out Failed",
-        description: "An error occurred while signing out.",
-        variant: "destructive",
-      });
+      handleError(err, { title: 'Sign Out Failed', description: 'An error occurred while signing out.' });
     }
   };
 

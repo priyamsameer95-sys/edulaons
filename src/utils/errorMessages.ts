@@ -78,57 +78,174 @@ export const DOCUMENT_ERROR_MESSAGES = {
   TIMEOUT_ERROR: 'Upload is taking too long. Try with a smaller file or check your connection.'
 };
 
+// Authentication error messages
+export const AUTH_ERROR_MESSAGES = {
+  INVALID_CREDENTIALS: 'The email or password you entered is incorrect. Please try again',
+  USER_NOT_FOUND: 'No account found with this email. Please check your email or sign up',
+  EMAIL_NOT_CONFIRMED: 'Please verify your email address. Check your inbox for the confirmation link',
+  TOO_MANY_REQUESTS: 'Too many login attempts. Please wait a few minutes and try again',
+  WEAK_PASSWORD: 'Password must be at least 8 characters with letters and numbers',
+  EMAIL_ALREADY_EXISTS: 'An account with this email already exists. Try logging in instead',
+  SESSION_EXPIRED: 'Your session has expired. Please log in again to continue',
+  INVALID_TOKEN: 'Your login link has expired. Please request a new one',
+  NETWORK_ERROR: 'Unable to connect to authentication servers. Check your internet connection',
+  ACCOUNT_DISABLED: 'This account has been disabled. Please contact support for help',
+  UNKNOWN_AUTH_ERROR: 'Unable to log you in right now. Please try again or contact support'
+};
+
+// Database error messages
+export const DATABASE_ERROR_MESSAGES = {
+  DUPLICATE_ENTRY: 'This record already exists in the system. Please check and try again',
+  FOREIGN_KEY_VIOLATION: 'Unable to complete this action due to related data. Please contact support',
+  NOT_FOUND: 'The requested information could not be found. It may have been deleted',
+  CONSTRAINT_VIOLATION: 'This action would violate data rules. Please check your information',
+  CONNECTION_ERROR: 'Unable to connect to the database. Please check your internet and try again',
+  TIMEOUT: 'The operation is taking too long. Please try again',
+  PERMISSION_DENIED: 'You don\'t have permission to access this data. Contact support if this is wrong',
+  RLS_POLICY_VIOLATION: 'Security check failed. Please ensure you\'re logged in with the correct account',
+  INVALID_INPUT: 'Some information you entered is invalid. Please check all fields',
+  TRANSACTION_FAILED: 'Unable to complete the operation. Please try again',
+  UNKNOWN_DB_ERROR: 'A database error occurred. Please try again or contact support'
+};
+
+// API/Network error messages
+export const NETWORK_ERROR_MESSAGES = {
+  NO_INTERNET: 'No internet connection detected. Please check your network and try again',
+  TIMEOUT: 'The request timed out. Please check your connection and try again',
+  SERVER_ERROR: 'Our servers are experiencing issues. Please try again in a few moments',
+  SERVICE_UNAVAILABLE: 'Service temporarily unavailable. We\'re working to fix this',
+  BAD_REQUEST: 'Invalid request. Please check your information and try again',
+  NOT_FOUND: 'The requested resource was not found. It may have been moved or deleted',
+  RATE_LIMIT: 'Too many requests. Please wait a moment and try again',
+  CORS_ERROR: 'Unable to complete request due to security restrictions',
+  UNKNOWN_NETWORK_ERROR: 'Network error occurred. Please check your connection and try again'
+};
+
 // Backend error message transformation
-export const transformBackendError = (error: string | Error): string => {
-  const errorMessage = typeof error === 'string' ? error : error.message;
+export const transformBackendError = (error: string | Error | any): string => {
+  const errorMessage = typeof error === 'string' ? error : error?.message || '';
+  const errorCode = error?.code || '';
   
-  // Database errors
-  if (errorMessage.includes('duplicate key')) {
-    return 'This information already exists in our system. Please check and try again';
+  // Authentication errors
+  if (errorMessage.includes('Invalid login credentials') || errorCode === 'invalid_credentials') {
+    return AUTH_ERROR_MESSAGES.INVALID_CREDENTIALS;
   }
   
-  if (errorMessage.includes('foreign key')) {
-    return 'Some required information is missing. Please fill all required fields';
+  if (errorMessage.includes('User not found') || errorCode === 'user_not_found') {
+    return AUTH_ERROR_MESSAGES.USER_NOT_FOUND;
   }
   
-  if (errorMessage.includes('connection')) {
-    return 'Unable to connect to our servers. Please check your internet and try again';
+  if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+    return AUTH_ERROR_MESSAGES.EMAIL_NOT_CONFIRMED;
   }
   
-  if (errorMessage.includes('timeout')) {
-    return 'Request is taking too long. Please try again in a moment';
+  if (errorMessage.includes('too many requests') || errorCode === '429') {
+    return AUTH_ERROR_MESSAGES.TOO_MANY_REQUESTS;
+  }
+  
+  if (errorMessage.includes('weak password') || errorMessage.includes('password requirements')) {
+    return AUTH_ERROR_MESSAGES.WEAK_PASSWORD;
+  }
+  
+  if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+    return AUTH_ERROR_MESSAGES.EMAIL_ALREADY_EXISTS;
+  }
+  
+  if (errorMessage.includes('session') && errorMessage.includes('expired')) {
+    return AUTH_ERROR_MESSAGES.SESSION_EXPIRED;
+  }
+  
+  if (errorMessage.includes('invalid token') || errorMessage.includes('token expired')) {
+    return AUTH_ERROR_MESSAGES.INVALID_TOKEN;
+  }
+  
+  // Database-specific errors
+  if (errorMessage.includes('duplicate key') || errorCode === '23505') {
+    return DATABASE_ERROR_MESSAGES.DUPLICATE_ENTRY;
+  }
+  
+  if (errorMessage.includes('foreign key') || errorCode === '23503') {
+    return DATABASE_ERROR_MESSAGES.FOREIGN_KEY_VIOLATION;
+  }
+  
+  if (errorMessage.includes('violates row-level security') || errorMessage.includes('RLS')) {
+    return DATABASE_ERROR_MESSAGES.RLS_POLICY_VIOLATION;
+  }
+  
+  if (errorMessage.includes('not found') && !errorMessage.includes('User')) {
+    return DATABASE_ERROR_MESSAGES.NOT_FOUND;
+  }
+  
+  if (errorMessage.includes('constraint') || errorCode === '23514') {
+    return DATABASE_ERROR_MESSAGES.CONSTRAINT_VIOLATION;
+  }
+  
+  if (errorMessage.includes('permission denied') || errorCode === '42501') {
+    return DATABASE_ERROR_MESSAGES.PERMISSION_DENIED;
+  }
+  
+  // Network/Connection errors
+  if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+    return NETWORK_ERROR_MESSAGES.NO_INTERNET;
+  }
+  
+  if (errorMessage.includes('timeout') || errorCode === 'ETIMEDOUT') {
+    return NETWORK_ERROR_MESSAGES.TIMEOUT;
+  }
+  
+  if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
+    return NETWORK_ERROR_MESSAGES.SERVER_ERROR;
+  }
+  
+  if (errorMessage.includes('503') || errorMessage.includes('Service Unavailable')) {
+    return NETWORK_ERROR_MESSAGES.SERVICE_UNAVAILABLE;
+  }
+  
+  if (errorMessage.includes('400') || errorMessage.includes('Bad Request')) {
+    return NETWORK_ERROR_MESSAGES.BAD_REQUEST;
+  }
+  
+  if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+    return NETWORK_ERROR_MESSAGES.NOT_FOUND;
+  }
+  
+  if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+    return NETWORK_ERROR_MESSAGES.RATE_LIMIT;
+  }
+  
+  if (errorMessage.includes('CORS')) {
+    return NETWORK_ERROR_MESSAGES.CORS_ERROR;
   }
   
   // Storage errors
-  if (errorMessage.includes('storage')) {
-    return 'Problem saving your file. Please try uploading again';
-  }
-  
-  // Permission errors
-  if (errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
-    return 'You don\'t have permission to perform this action. Please contact support';
-  }
-  
-  // Validation errors
-  if (errorMessage.includes('validation')) {
-    return 'Please check your information and make sure all required fields are filled correctly';
-  }
-  
-  // Network/API errors
-  if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-    return 'Network connection problem. Please check your internet and try again';
+  if (errorMessage.includes('storage') || errorMessage.includes('bucket')) {
+    return DOCUMENT_ERROR_MESSAGES.UPLOAD_FAILED;
   }
   
   // File-specific errors
-  if (errorMessage.includes('file size')) {
-    return 'Your file is too large. Please choose a smaller file or compress it';
+  if (errorMessage.includes('file size') || errorMessage.includes('too large')) {
+    return 'File is too large. Please compress it or choose a smaller file';
   }
   
   if (errorMessage.includes('file type') || errorMessage.includes('format')) {
-    return 'File format not supported. Please choose a PDF or image file (JPG, PNG)';
+    return 'File format not supported. Please use PDF, JPG, or PNG files';
   }
   
-  // Generic fallback
+  if (errorMessage.includes('corrupted') || errorMessage.includes('invalid file')) {
+    return DOCUMENT_ERROR_MESSAGES.FILE_CORRUPTED;
+  }
+  
+  // Validation errors
+  if (errorMessage.includes('validation') || errorMessage.includes('invalid input')) {
+    return DATABASE_ERROR_MESSAGES.INVALID_INPUT;
+  }
+  
+  // Generic fallback with original message if it's user-friendly
+  if (errorMessage && errorMessage.length < 100 && !errorMessage.includes('Error:')) {
+    return errorMessage;
+  }
+  
+  // Final fallback
   return 'Something went wrong. Please try again or contact support if the problem continues';
 };
 
