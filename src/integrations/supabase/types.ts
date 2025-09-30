@@ -194,6 +194,48 @@ export type Database = {
           },
         ]
       }
+      data_access_logs: {
+        Row: {
+          accessed_at: string | null
+          action: string
+          id: string
+          ip_address: string | null
+          partner_id: string | null
+          record_count: number | null
+          table_name: string
+          user_agent: string | null
+          user_email: string
+          user_id: string | null
+          user_role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          accessed_at?: string | null
+          action: string
+          id?: string
+          ip_address?: string | null
+          partner_id?: string | null
+          record_count?: number | null
+          table_name: string
+          user_agent?: string | null
+          user_email: string
+          user_id?: string | null
+          user_role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          accessed_at?: string | null
+          action?: string
+          id?: string
+          ip_address?: string | null
+          partner_id?: string | null
+          record_count?: number | null
+          table_name?: string
+          user_agent?: string | null
+          user_email?: string
+          user_id?: string | null
+          user_role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       document_types: {
         Row: {
           accepted_formats: string[] | null
