@@ -21,6 +21,10 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
+import { GamificationHero } from '@/components/gamification/GamificationHero';
+import { DailyGoalsWidget } from '@/components/gamification/DailyGoalsWidget';
+import { AchievementShowcase } from '@/components/gamification/AchievementShowcase';
+import { useGamification } from '@/hooks/useGamification';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -109,6 +113,9 @@ const AdminDashboard = () => {
     sanctioned: 0,
     conversionRate: 0
   });
+
+  // Gamification data
+  const gamificationData = useGamification(kpis);
 
   const fetchAdminKPIs = async () => {
     try {
@@ -491,20 +498,33 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Admin Dashboard
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Welcome back, {appUser?.email} • <Badge variant="secondary">{appUser?.role}</Badge>
-              </p>
-            </div>
+          {/* Header with Sign Out */}
+          <div className="flex justify-end">
             <Button onClick={signOut} variant="outline" className="hover:bg-destructive hover:text-destructive-foreground transition-colors">
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>
+          </div>
+
+          {/* Gamification Hero Section */}
+          <GamificationHero
+            userName={appUser?.email?.split('@')[0] || 'Admin'}
+            level={gamificationData.level}
+            currentXP={gamificationData.currentXP}
+            xpToNextLevel={gamificationData.xpToNextLevel}
+            streak={gamificationData.streak}
+            unlockedBadges={gamificationData.unlockedBadges}
+            totalBadges={gamificationData.totalBadges}
+          />
+
+          {/* Daily Goals and Achievements */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DailyGoalsWidget
+              goals={gamificationData.dailyGoals}
+              totalXP={gamificationData.dailyGoals.reduce((sum, g) => sum + g.xpReward, 0)}
+              earnedXP={gamificationData.dailyGoals.filter(g => g.completed).reduce((sum, g) => sum + g.xpReward, 0)}
+            />
+            <AchievementShowcase achievements={gamificationData.achievements} />
           </div>
 
           {/* Enhanced KPI Cards */}
