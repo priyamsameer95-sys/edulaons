@@ -12,6 +12,7 @@ import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { PersonalImpact } from "@/components/gamification/PersonalImpact";
 
 interface Partner {
   id: string;
@@ -42,6 +43,8 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
     totalPartners: 1
   });
 
+  const [totalLoanAmount, setTotalLoanAmount] = useState(0);
+
 
   // Fetch real KPI data from Supabase
   const fetchKPIs = async () => {
@@ -64,8 +67,10 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       if (statusError) throw statusError;
 
       let inPipeline = 0, sanctioned = 0, disbursed = 0;
+      let totalAmount = 0;
 
       leadsByStatus?.forEach((lead) => {
+        totalAmount += Number(lead.loan_amount) || 0;
         switch (lead.status) {
           case 'new':
           case 'in_progress':
@@ -78,6 +83,8 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
             break;
         }
       });
+
+      setTotalLoanAmount(totalAmount);
 
       setKpis({
         totalLeads: totalLeads || 0,
@@ -174,8 +181,20 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       {/* Main Content */}
       <div className="container mx-auto px-6 pt-8 pb-12">
         <div className="space-y-6">
-          {/* KPI Cards - Single Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Impact This Month & KPI Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Personal Impact Card */}
+            <div className="lg:col-span-1">
+              <PersonalImpact 
+                studentsHelped={kpis.totalLeads}
+                loansApproved={kpis.sanctioned}
+                totalLoanAmount={totalLoanAmount}
+                compareToAverage={15}
+              />
+            </div>
+
+            {/* KPI Cards */}
+            <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-2 gap-4 content-start">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -239,6 +258,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
                 )}
               </CardContent>
             </Card>
+            </div>
           </div>
 
           {/* Tabs Section */}

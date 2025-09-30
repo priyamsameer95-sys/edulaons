@@ -21,6 +21,7 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
+import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -109,6 +110,24 @@ const AdminDashboard = () => {
     sanctioned: 0,
     conversionRate: 0
   });
+
+  // Mock at-risk leads data (will be replaced with real data later)
+  const atRiskLeads = recentLeads
+    .filter(lead => {
+      const daysSinceUpdate = Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+      return daysSinceUpdate > 7 && (lead.status === 'new' || lead.status === 'in_progress');
+    })
+    .slice(0, 5)
+    .map(lead => ({
+      id: lead.id,
+      caseId: lead.case_id,
+      studentName: lead.student_name,
+      daysIdle: Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / (1000 * 60 * 60 * 24)),
+      loanAmount: Number(lead.loan_amount),
+      riskLevel: (Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / (1000 * 60 * 60 * 24)) > 14 ? 'high' : 
+                  Math.floor((Date.now() - new Date(lead.updated_at).getTime()) / (1000 * 60 * 60 * 24)) > 10 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+      reason: 'No status update in over a week'
+    }));
 
 
   const fetchAdminKPIs = async () => {
@@ -664,6 +683,17 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* At Risk Leads Section */}
+            {atRiskLeads.length > 0 && (
+              <AtRiskLeads 
+                leads={atRiskLeads} 
+                onTakeAction={(leadId) => {
+                  const lead = recentLeads.find(l => l.id === leadId);
+                  if (lead) handleViewLead(lead);
+                }}
+              />
+            )}
 
             {/* Recent Activity - Full Width Table Style */}
             <Card className="hover:shadow-md transition-shadow duration-200">
