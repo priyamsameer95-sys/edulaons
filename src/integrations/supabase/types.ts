@@ -689,35 +689,35 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_leads_new_co_applicant"
+            foreignKeyName: "fk_leads_co_applicant"
             columns: ["co_applicant_id"]
             isOneToOne: false
             referencedRelation: "co_applicants"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_new_lender"
+            foreignKeyName: "fk_leads_lender"
             columns: ["lender_id"]
             isOneToOne: false
             referencedRelation: "lenders"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_new_partner"
+            foreignKeyName: "fk_leads_partner"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partner_statistics"
             referencedColumns: ["partner_id"]
           },
           {
-            foreignKeyName: "fk_leads_new_partner"
+            foreignKeyName: "fk_leads_partner"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_new_student"
+            foreignKeyName: "fk_leads_student"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
