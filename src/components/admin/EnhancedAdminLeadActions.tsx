@@ -1,8 +1,6 @@
-import { useState } from 'react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Eye, Edit, FileText } from 'lucide-react';
+import { Eye, Edit, FileText } from 'lucide-react';
 import { StatusBadge } from '@/components/lead-status/StatusBadge';
 import type { RefactoredLead } from '@/types/refactored-lead';
 
@@ -19,39 +17,28 @@ export function EnhancedAdminLeadActions({
   onViewDetails,
   onStatusUpdate 
 }: EnhancedAdminLeadActionsProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleViewDetails = () => {
-    setIsOpen(false);
-    onViewDetails(lead);
-  };
-
-  const handleStatusUpdate = () => {
-    setIsOpen(false);
-    onStatusUpdate(lead);
-  };
-
-  const getDocumentBadgeVariant = () => {
-    if (documentCount === 0) return 'destructive';
-    if (documentCount < 3) return 'secondary';
-    return 'default';
+  
+  const getDocumentBadgeColor = () => {
+    if (documentCount === 0) return 'bg-destructive text-destructive-foreground hover:bg-destructive/90';
+    if (documentCount < 3) return 'bg-warning text-warning-foreground hover:bg-warning/90';
+    return 'bg-success text-success-foreground hover:bg-success/90';
   };
 
   const getDocumentIcon = () => {
     if (documentCount === 0) return '📄';
     if (documentCount < 3) return '📋';
-    return '📚';
+    return '✓';
   };
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Document Count Badge */}
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Large Document Count Badge */}
       <Badge 
-        variant={getDocumentBadgeVariant()}
-        className="cursor-pointer hover:opacity-80 transition-opacity"
-        onClick={handleViewDetails}
+        className={`${getDocumentBadgeColor()} cursor-pointer transition-all hover:scale-105 px-3 py-1 text-sm font-semibold`}
+        onClick={() => onViewDetails(lead)}
       >
-        {getDocumentIcon()} {documentCount}
+        <FileText className="h-4 w-4 mr-1" />
+        {getDocumentIcon()} {documentCount} docs
       </Badge>
 
       {/* Status Badges */}
@@ -60,26 +47,27 @@ export function EnhancedAdminLeadActions({
         <StatusBadge status={lead.documents_status} type="document" className="text-xs" />
       </div>
 
-      {/* Actions Dropdown */}
-      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={handleViewDetails} className="cursor-pointer">
-            <Eye className="mr-2 h-4 w-4" />
-            View Details
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleStatusUpdate} className="cursor-pointer">
-            <Edit className="mr-2 h-4 w-4" />
-            Update Status
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Prominent Action Buttons */}
+      <div className="flex gap-1 ml-auto">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onViewDetails(lead)}
+          className="h-8 hover:bg-primary hover:text-primary-foreground transition-colors"
+        >
+          <Eye className="h-3.5 w-3.5 mr-1" />
+          View
+        </Button>
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={() => onStatusUpdate(lead)}
+          className="h-8 bg-primary hover:bg-primary-hover transition-colors"
+        >
+          <Edit className="h-3.5 w-3.5 mr-1" />
+          Update Status
+        </Button>
+      </div>
     </div>
   );
 }

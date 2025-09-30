@@ -10,6 +10,10 @@ interface ActivityItem {
   timestamp: string;
   partner?: string;
   leadId?: string;
+  oldStatus?: string;
+  newStatus?: string;
+  changedBy?: string;
+  details?: string;
 }
 
 interface LiveActivityFeedProps {
@@ -66,10 +70,12 @@ export const LiveActivityFeed = ({ activities }: LiveActivityFeedProps) => {
           <div className="space-y-3">
             {activities.map((activity) => {
               const Icon = activityIcons[activity.type];
+              const isClickable = !!activity.leadId;
+              
               return (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-all group"
+                  className={`flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-all group ${isClickable ? 'cursor-pointer hover:border-primary' : ''}`}
                 >
                   <div className={`p-2 rounded-full ${activityBgColors[activity.type]} group-hover:scale-110 transition-transform`}>
                     <Icon className={`h-4 w-4 ${activityColors[activity.type]}`} />
@@ -79,11 +85,36 @@ export const LiveActivityFeed = ({ activities }: LiveActivityFeedProps) => {
                     <p className="text-sm font-medium leading-relaxed">
                       {activity.message}
                     </p>
-                    {activity.partner && (
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {activity.partner}
-                      </Badge>
+                    
+                    {/* Show status change details */}
+                    {activity.oldStatus && activity.newStatus && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        <span className="font-medium text-destructive">{activity.oldStatus}</span>
+                        {' → '}
+                        <span className="font-medium text-success">{activity.newStatus}</span>
+                      </div>
                     )}
+                    
+                    {/* Show additional details */}
+                    {activity.details && (
+                      <p className="mt-1 text-xs text-muted-foreground italic">
+                        {activity.details}
+                      </p>
+                    )}
+                    
+                    {/* Show who made the change */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {activity.changedBy && (
+                        <Badge variant="outline" className="text-xs">
+                          by {activity.changedBy}
+                        </Badge>
+                      )}
+                      {activity.partner && (
+                        <Badge variant="outline" className="text-xs">
+                          {activity.partner}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
