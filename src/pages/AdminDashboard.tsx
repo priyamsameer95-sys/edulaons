@@ -21,12 +21,10 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
+import { LiveActivityFeed } from '@/components/gamification/LiveActivityFeed';
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AtRiskLeads } from '@/components/gamification/AtRiskLeads';
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
-import { AdminActionBar } from '@/components/admin/AdminActionBar';
-import { EnhancedActivityFeed } from '@/components/admin/EnhancedActivityFeed';
-import { DocumentVerificationQueue } from '@/components/admin/DocumentVerificationQueue';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -115,9 +113,21 @@ const AdminDashboard = () => {
     sanctioned: 0,
     conversionRate: 0
   });
-  const [showVerificationQueue, setShowVerificationQueue] = useState(false);
 
 
+  // Generate activity feed data
+  const activityFeed = recentLeads.slice(0, 10).map((lead, index) => ({
+    id: lead.id,
+    type: lead.status === 'approved' ? 'approval' : lead.status === 'in_progress' ? 'document' : 'alert',
+    message: lead.status === 'approved' 
+      ? `Lead #${lead.case_id.slice(0, 8)} approved for ${lead.student_name}`
+      : lead.status === 'in_progress'
+      ? `Document uploaded for lead #${lead.case_id.slice(0, 8)}`
+      : `New lead #${lead.case_id.slice(0, 8)} created`,
+    timestamp: lead.updated_at || lead.created_at,
+    partner: lead.partner_name,
+    leadId: lead.id,
+  })) as any;
 
   // Generate leaderboard data from partner stats
   const leaderboardData = partnerStats
@@ -620,28 +630,9 @@ const AdminDashboard = () => {
               </Card>
             </div>
 
-            {/* Admin Action Bar */}
-            <AdminActionBar
-              selectedCount={selectedLeads.length}
-              onUpdateStatus={() => setShowBulkUpdate(true)}
-              onViewDocuments={() => {
-                if (selectedLeads.length === 1) {
-                  const lead = recentLeads.find(l => l.id === selectedLeads[0]);
-                  if (lead) handleViewLead(lead);
-                }
-              }}
-              onVerifyDocuments={() => setShowVerificationQueue(true)}
-              onUploadDocument={() => {
-                if (selectedLeads.length === 1) {
-                  const lead = recentLeads.find(l => l.id === selectedLeads[0]);
-                  if (lead) handleViewLead(lead);
-                }
-              }}
-            />
-
             {/* Tabs Section */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+              <TabsList className="grid w-full grid-cols-3 max-w-md">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -653,10 +644,6 @@ const AdminDashboard = () => {
                 <TabsTrigger value="leads" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Leads
-                </TabsTrigger>
-                <TabsTrigger value="documents" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Documents
                 </TabsTrigger>
               </TabsList>
 
@@ -990,17 +977,11 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
               </TabsContent>
-
-              <TabsContent value="documents" className="space-y-6 mt-6">
-                <DocumentVerificationQueue />
-              </TabsContent>
             </Tabs>
           </div>
 
           {/* Persistent Sidebar - 30% */}
           <div className="w-full lg:w-[30%] lg:min-w-[350px] space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <EnhancedActivityFeed />
-            
             <AtRiskLeads 
               leads={atRiskLeads} 
               onTakeAction={(leadId) => {
