@@ -43,7 +43,7 @@ export function useLeadDocuments(leadId?: string) {
         .from('lead_documents')
         .select(`
           *,
-          document_types (
+          document_types!fk_lead_documents_document_type (
             id,
             name,
             category,
