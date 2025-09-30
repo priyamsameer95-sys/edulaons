@@ -363,125 +363,177 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
               </Card>
             </TabsContent>
 
-            <TabsContent value="documents" className="space-y-4">
+            <TabsContent value="documents" className="space-y-6">
               {isAdmin() ? (
                 <AdminDocumentManager leadId={lead.id} />
               ) : (
-                <>
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Document Checklist</h3>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline">
-                        {completedRequired}/{requiredDocs.length} Complete
-                      </Badge>
-                      {isAdmin() && (
-                        <Button
-                          onClick={() => setStatusUpdateModalOpen(true)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Update Status
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid gap-4">
-                    {documentTypesLoading ? (
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-                        ))}
+                <div className="space-y-6">
+                  {/* Progress Card */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">Document Progress</CardTitle>
+                        <Badge variant="outline" className="text-sm px-3 py-1">
+                          {completedRequired}/{requiredDocs.length} Complete
+                        </Badge>
                       </div>
-                    ) : (
-                      checklist.map((item) => {
-                        const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
-                        const docType = documentTypes.find(type => type.id === item.id);
-                        
-                        return (
-                          <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <CheckCircle className={`h-5 w-5 ${item.status === 'uploaded' ? 'text-success' : 'text-muted-foreground'}`} />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium">{item.name}</span>
-                                  {item.required && (
-                                    <Badge variant="outline" className="text-xs">Required</Badge>
-                                  )}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {docType?.description || 'Document type'}
-                                </div>
-                                {uploadedDoc && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    File: {uploadedDoc.original_filename}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="outline" className={item.status === 'uploaded' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}>
-                                {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
-                              </Badge>
-                              
-                              {uploadedDoc ? (
-                                <>
-                                  <Button
-                                    onClick={() => handleDownloadDoc(uploadedDoc.id, uploadedDoc.original_filename)}
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <StandardDocumentUpload
-                                    leadId={lead.id}
-                                    documentTypeId={item.id}
-                                    documentTypeName={item.name}
-                                    maxFileSize={docType?.max_file_size_pdf || 10485760}
-                                    acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
-                                    onUploadSuccess={() => {
-                                      refetchDocuments();
-                                      toast({
-                                        title: "Document Replaced",
-                                        description: `${item.name} has been updated`,
-                                      });
-                                    }}
-                                    existingDocument={true}
-                                    variant="ghost"
-                                    size="sm"
-                                    allowMultiple={false}
-                                  />
-                                </>
-                              ) : (
-                                <StandardDocumentUpload
-                                  leadId={lead.id}
-                                  documentTypeId={item.id}
-                                  documentTypeName={item.name}
-                                  maxFileSize={docType?.max_file_size_pdf || 10485760}
-                                  acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
-                                  onUploadSuccess={() => {
-                                    refetchDocuments();
-                                    toast({
-                                      title: "Document Uploaded",
-                                      description: `${item.name} uploaded successfully`,
-                                    });
-                                  }}
-                                  existingDocument={false}
-                                  variant="default"
-                                  size="sm"
-                                  allowMultiple={false}
-                                />
-                              )}
-                            </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <Progress value={progressPercentage} className="h-3" />
+                        <p className="text-sm text-muted-foreground">
+                          {Math.round(progressPercentage)}% of required documents uploaded
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Document List */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Required Documents</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Upload all required documents to proceed with your application
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {documentTypesLoading ? (
+                          <div className="space-y-4">
+                            {[1, 2, 3].map((i) => (
+                              <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
+                            ))}
                           </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </>
+                        ) : (
+                          checklist.map((item) => {
+                            const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
+                            const docType = documentTypes.find(type => type.id === item.id);
+                            
+                            return (
+                              <div 
+                                key={item.id} 
+                                className="p-5 rounded-lg border bg-card hover:shadow-md transition-all duration-200"
+                              >
+                                <div className="space-y-4">
+                                  {/* Document Info Section */}
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3 flex-1">
+                                      <div className="mt-1">
+                                        <CheckCircle 
+                                          className={`h-6 w-6 ${
+                                            item.status === 'uploaded' 
+                                              ? 'text-success fill-success/20' 
+                                              : 'text-muted-foreground'
+                                          }`} 
+                                        />
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <h4 className="font-semibold text-base">{item.name}</h4>
+                                          {item.required && (
+                                            <Badge variant="destructive" className="text-xs px-2">
+                                              Required
+                                            </Badge>
+                                          )}
+                                          <Badge 
+                                            variant="outline" 
+                                            className={`text-xs px-2 ${
+                                              item.status === 'uploaded' 
+                                                ? 'bg-success/10 text-success border-success/20' 
+                                                : 'bg-muted/50 text-muted-foreground'
+                                            }`}
+                                          >
+                                            {item.status === 'uploaded' ? 'Uploaded' : 'Pending'}
+                                          </Badge>
+                                        </div>
+                                        
+                                        <p className="text-sm text-muted-foreground">
+                                          {docType?.description || 'Document type'}
+                                        </p>
+                                        
+                                        {uploadedDoc && (
+                                          <div className="pt-2 space-y-1">
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                              <FileText className="h-3 w-3" />
+                                              <span className="font-medium">{uploadedDoc.original_filename}</span>
+                                            </div>
+                                            {item.uploaded_at && (
+                                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <Clock className="h-3 w-3" />
+                                                <span>Uploaded on {format(new Date(item.uploaded_at), 'MMM dd, yyyy')}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Action Buttons Section */}
+                                  <div className="flex items-center gap-2 pt-2 border-t">
+                                    {uploadedDoc ? (
+                                      <>
+                                        <Button
+                                          onClick={() => handleDownloadDoc(uploadedDoc.id, uploadedDoc.original_filename)}
+                                          variant="outline"
+                                          size="sm"
+                                          className="flex-1 sm:flex-none"
+                                        >
+                                          <Eye className="h-4 w-4 mr-2" />
+                                          View Document
+                                        </Button>
+                                        <StandardDocumentUpload
+                                          leadId={lead.id}
+                                          documentTypeId={item.id}
+                                          documentTypeName={item.name}
+                                          maxFileSize={docType?.max_file_size_pdf || 10485760}
+                                          acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                          onUploadSuccess={() => {
+                                            refetchDocuments();
+                                            toast({
+                                              title: "Document Replaced",
+                                              description: `${item.name} has been updated`,
+                                            });
+                                          }}
+                                          existingDocument={true}
+                                          variant="ghost"
+                                          size="sm"
+                                          allowMultiple={false}
+                                        />
+                                      </>
+                                    ) : (
+                                      <StandardDocumentUpload
+                                        leadId={lead.id}
+                                        documentTypeId={item.id}
+                                        documentTypeName={item.name}
+                                        maxFileSize={docType?.max_file_size_pdf || 10485760}
+                                        acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                        onUploadSuccess={() => {
+                                          refetchDocuments();
+                                          toast({
+                                            title: "Document Uploaded",
+                                            description: `${item.name} uploaded successfully`,
+                                          });
+                                        }}
+                                        existingDocument={false}
+                                        variant="default"
+                                        size="sm"
+                                        allowMultiple={false}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </TabsContent>
+
 
             <TabsContent value="status" className="space-y-4">
               <Card>
