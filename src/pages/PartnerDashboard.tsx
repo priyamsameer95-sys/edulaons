@@ -8,7 +8,6 @@ import { Plus, FileText, TrendingUp, CheckCircle, DollarSign, LogOut, Settings, 
 import ShareButton from "@/components/ShareButton";
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
-
 import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -233,189 +232,174 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         </div>
       </div>
 
-      {/* Gamification Hero */}
-      <div className="container mx-auto px-6 pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <GamificationHero
-              userName={partner?.name || 'Partner'}
-              level={gamificationData.level}
-              currentXP={gamificationData.currentXP}
-              xpToNextLevel={gamificationData.xpToNextLevel}
-              streak={gamificationData.streak}
-              unlockedBadges={gamificationData.unlockedBadges}
-              totalBadges={gamificationData.totalBadges}
-            />
-          </div>
-          <div>
-            <MotivationalMessage />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-2xl mb-8">
-            <TabsTrigger value="leads" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Leads
-            </TabsTrigger>
-            <TabsTrigger value="payouts" className="flex items-center gap-2">
-              <IndianRupee className="h-4 w-4" />
-              Payouts
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="leads" className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main Content - KPIs and Leads */}
-              <div className="lg:col-span-2 space-y-8">
-                {/* Enhanced KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                        <span className="flex items-center">
-                          <FileText className="h-5 w-5 mr-2" />
-                          Total Leads
-                        </span>
-                        <Badge variant="secondary" className="gap-1">
-                          {trendDirections.totalLeads ? (
-                            <ArrowUpRight className="h-3 w-3 text-success" />
-                          ) : (
-                            <ArrowDownRight className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {trends.totalLeads}
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {kpisLoading ? (
-                        <Skeleton className="h-10 w-20 mb-1" />
-                      ) : (
-                        <>
-                          <div className="text-3xl font-bold">{kpis.totalLeads}</div>
-                          <p className="text-xs text-muted-foreground mt-1">All-time leads created</p>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 relative overflow-hidden border-warning/20 bg-warning/5">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-warning/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                        <span className="flex items-center">
-                          <TrendingUp className="h-5 w-5 mr-2 text-warning" />
-                          In Pipeline
-                        </span>
-                        <Badge variant="secondary" className="gap-1">
-                          <ArrowUpRight className="h-3 w-3 text-success" />
-                          {trends.inPipeline}
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {kpisLoading ? (
-                        <Skeleton className="h-10 w-20 mb-1" />
-                      ) : (
-                        <>
-                          <div className="text-3xl font-bold text-warning">{kpis.inPipeline}</div>
-                          <p className="text-xs text-muted-foreground mt-1">Active processing</p>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 relative overflow-hidden border-primary/20 bg-primary/5">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                        <span className="flex items-center">
-                          <CheckCircle className="h-5 w-5 mr-2 text-primary" />
-                          Sanctioned
-                        </span>
-                        <Badge variant="secondary" className="gap-1">
-                          {trendDirections.sanctioned ? (
-                            <ArrowUpRight className="h-3 w-3 text-success" />
-                          ) : (
-                            <ArrowDownRight className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {trends.sanctioned}
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {kpisLoading ? (
-                        <Skeleton className="h-10 w-20 mb-1" />
-                      ) : (
-                        <>
-                          <div className="text-3xl font-bold text-primary">{kpis.sanctioned}</div>
-                          <p className="text-xs text-muted-foreground mt-1">Approved loans</p>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200 relative overflow-hidden border-success/20 bg-success/5">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-success/10 rounded-full -mr-16 -mt-16" />
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                        <span className="flex items-center">
-                          <DollarSign className="h-5 w-5 mr-2 text-success" />
-                          Disbursed
-                        </span>
-                        <Badge variant="secondary" className="gap-1">
-                          <ArrowUpRight className="h-3 w-3 text-success" />
-                          {trends.disbursed}
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {kpisLoading ? (
-                        <Skeleton className="h-10 w-20 mb-1" />
-                      ) : (
-                        <>
-                          <div className="text-3xl font-bold text-success">{kpis.disbursed}</div>
-                          <p className="text-xs text-muted-foreground mt-1">Funds released</p>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
+      {/* Main Content with Persistent Sidebar */}
+      <div className="container mx-auto px-6 pt-8 pb-12">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Main Content Area - 70% */}
+          <div className="flex-1 lg:w-[70%] space-y-6">
+            {/* Compact Gamification Hero */}
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-lg p-6 border animate-fade-in">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Welcome back, {partner?.name || 'Partner'}!</h2>
+                  <p className="text-muted-foreground">Level {gamificationData.level} • {gamificationData.currentXP}/{gamificationData.xpToNextLevel} XP</p>
                 </div>
-
-                {/* Personal Impact */}
-                <PersonalImpact
-                  studentsHelped={kpis.totalLeads}
-                  loansApproved={kpis.sanctioned}
-                  totalLoanAmount={kpis.sanctioned * 2500000}
-                  compareToAverage={15}
-                />
-
-                {/* Leads Table */}
-                <LeadsTab />
-              </div>
-
-              {/* Sidebar Widgets */}
-              <div className="space-y-6">
-                <DailyGoalsWidget
-                  goals={gamificationData.dailyGoals}
-                  totalXP={gamificationData.xpToNextLevel}
-                  earnedXP={gamificationData.currentXP}
-                />
-                
-                <AchievementShowcase achievements={gamificationData.achievements} />
+                <div className="flex gap-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{gamificationData.streak}</div>
+                    <div className="text-xs text-muted-foreground">Day Streak 🔥</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{gamificationData.unlockedBadges}/{gamificationData.totalBadges}</div>
+                    <div className="text-xs text-muted-foreground">Badges</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </TabsContent>
 
+            {/* Compact KPI Cards - Single Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="hover:shadow-lg transition-all">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    Total
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{kpis.totalLeads}</div>
+                      <Badge variant="secondary" className="mt-1 gap-1 text-xs">
+                        {trendDirections.totalLeads ? (
+                          <ArrowUpRight className="h-3 w-3 text-success" />
+                        ) : (
+                          <ArrowDownRight className="h-3 w-3" />
+                        )}
+                        {trends.totalLeads}
+                      </Badge>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-          <TabsContent value="payouts" className="space-y-8">
-            <PayoutsTab />
-          </TabsContent>
-        </Tabs>
+              <Card className="hover:shadow-lg transition-all border-warning/20 bg-warning/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <TrendingUp className="h-4 w-4 text-warning" />
+                    Pipeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>
+                      <Badge variant="secondary" className="mt-1 gap-1 text-xs">
+                        <ArrowUpRight className="h-3 w-3 text-success" />
+                        {trends.inPipeline}
+                      </Badge>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                    Sanctioned
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>
+                      <Badge variant="secondary" className="mt-1 gap-1 text-xs">
+                        {trendDirections.sanctioned ? (
+                          <ArrowUpRight className="h-3 w-3 text-success" />
+                        ) : (
+                          <ArrowDownRight className="h-3 w-3" />
+                        )}
+                        {trends.sanctioned}
+                      </Badge>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all border-success/20 bg-success/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="h-4 w-4 text-success" />
+                    Disbursed
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {kpisLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>
+                      <Badge variant="secondary" className="mt-1 gap-1 text-xs">
+                        <ArrowUpRight className="h-3 w-3 text-success" />
+                        {trends.disbursed}
+                      </Badge>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tabs Section */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger value="leads" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Leads
+                </TabsTrigger>
+                <TabsTrigger value="payouts" className="flex items-center gap-2">
+                  <IndianRupee className="h-4 w-4" />
+                  Payouts
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="leads" className="space-y-6 mt-6">
+                {/* Leads Table - Main Focus */}
+                <LeadsTab />
+              </TabsContent>
+
+              <TabsContent value="payouts" className="space-y-6 mt-6">
+                <PayoutsTab />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Persistent Sidebar - 30% */}
+          <div className="lg:w-[30%] space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <MotivationalMessage />
+            
+            <DailyGoalsWidget
+              goals={gamificationData.dailyGoals}
+              totalXP={gamificationData.xpToNextLevel}
+              earnedXP={gamificationData.currentXP}
+            />
+            
+            <PersonalImpact
+              studentsHelped={kpis.totalLeads}
+              loansApproved={kpis.sanctioned}
+              totalLoanAmount={kpis.sanctioned * 2500000}
+              compareToAverage={15}
+            />
+            
+            <AchievementShowcase achievements={gamificationData.achievements} />
+          </div>
+        </div>
       </div>
 
       {/* New Lead Modal */}
@@ -433,7 +417,11 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       />
 
       {/* Floating Action Button - Mobile */}
-      <Button onClick={() => setNewLeadOpen(true)} className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full shadow-lg" size="icon">
+      <Button 
+        onClick={() => setNewLeadOpen(true)} 
+        className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full shadow-lg z-50" 
+        size="icon"
+      >
         <Plus className="h-6 w-6" />
       </Button>
     </div>
