@@ -179,6 +179,66 @@ export function useAuth() {
     }
   };
 
+  const ensureValidSession = async () => {
+    try {
+      console.log('🔄 [useAuth] Validating session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ [useAuth] Session validation error:', error);
+        return { valid: false, error };
+      }
+      
+      if (!session) {
+        console.error('❌ [useAuth] No active session found');
+        return { valid: false, error: { message: 'No active session' } };
+      }
+      
+      // Verify the session has a valid user
+      if (!session.user) {
+        console.error('❌ [useAuth] Session exists but no user found');
+        return { valid: false, error: { message: 'Invalid session state' } };
+      }
+      
+      console.log('✅ [useAuth] Session valid:', {
+        userId: session.user.id,
+        email: session.user.email,
+        expiresAt: session.expires_at
+      });
+      
+      return { valid: true, session };
+    } catch (err) {
+      console.error('💥 [useAuth] Exception validating session:', err);
+      return { valid: false, error: { message: err instanceof Error ? err.message : 'Unknown error' } };
+    }
+  };
+
+  const refreshSession = async () => {
+    try {
+      console.log('🔄 [useAuth] Refreshing session...');
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('❌ [useAuth] Session refresh error:', error);
+        return { success: false, error };
+      }
+      
+      if (!session) {
+        console.error('❌ [useAuth] Session refresh returned no session');
+        return { success: false, error: { message: 'Failed to refresh session' } };
+      }
+      
+      console.log('✅ [useAuth] Session refreshed successfully');
+      setSession(session);
+      setUser(session.user);
+      
+      return { success: true, session };
+    } catch (err) {
+      console.error('💥 [useAuth] Exception refreshing session:', err);
+      return { success: false, error: { message: err instanceof Error ? err.message : 'Unknown error' } };
+    }
+  };
+
   const signUp = async (email: string, password: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -252,5 +312,7 @@ export function useAuth() {
     isPartner,
     refetchAppUser: () => user ? fetchAppUser(user.id) : null,
     getAuthDebugInfo, // For debugging
+    ensureValidSession, // Validate current session
+    refreshSession, // Force session refresh
   };
 }

@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { CalendarIcon, User, GraduationCap, Loader2, Trophy, Users, ChevronDown, FileText, ArrowRight } from "lucide-react";
 import { cn, convertNumberToWords } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { UniversitySelector } from "@/components/ui/university-selector";
 import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { supabase } from "@/integrations/supabase/client";
@@ -178,6 +179,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
   const [documentsRequired, setDocumentsRequired] = useState(0);
   const { toast } = useToast();
   const { handleError, handleDatabaseError, handleSuccess } = useErrorHandler();
+  const { ensureValidSession, refreshSession } = useAuth();
 
   const countries = [
     'United States',
@@ -226,6 +228,32 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     setLoading(true);
 
     try {
+      // PRE-FLIGHT CHECK: Validate session before any database operations
+      console.log('🔍 [NewLeadModal] PRE-FLIGHT: Validating session...');
+      const sessionCheck = await ensureValidSession();
+      
+      if (!sessionCheck.valid) {
+        console.error('❌ [NewLeadModal] Session validation failed:', sessionCheck.error);
+        
+        // Try to refresh the session
+        console.log('🔄 [NewLeadModal] Attempting session refresh...');
+        const refreshResult = await refreshSession();
+        
+        if (!refreshResult.success) {
+          throw new Error('Your session has expired. Please log out and log back in to continue.');
+        }
+        
+        console.log('✅ [NewLeadModal] Session refreshed successfully, retrying validation...');
+        
+        // Verify session is now valid
+        const retryCheck = await ensureValidSession();
+        if (!retryCheck.valid) {
+          throw new Error('Unable to establish valid session. Please log out and log back in.');
+        }
+      }
+      
+      console.log('✅ [NewLeadModal] PRE-FLIGHT: Session validated successfully');
+      
       // Generate unique case ID
       const caseId = `EDU-${Date.now()}`;
       console.log('📋 [NewLeadModal] Generated case ID:', caseId);
@@ -323,15 +351,15 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         
         // Provide specific error messages based on error type
         if (studentError.message?.includes('row-level security') || studentError.code === '42501') {
-          throw new Error(`Access denied: Your ${appUserCheck?.role} role doesn't have permission to create students. Please contact your administrator.`);
+          throw new Error(`Session error: Your authentication context is not being recognized by the database. Please log out completely, clear your browser cache, and log back in.`);
         }
         
         if (studentError.code === '23505') {
           throw new Error('A student with this email or phone already exists. Please check your details.');
         }
         
-        if (studentError.message?.includes('authentication')) {
-          throw new Error('Authentication failed. Please log out and log back in.');
+        if (studentError.message?.includes('authentication') || studentError.message?.includes('JWT')) {
+          throw new Error('Authentication session expired. Please log out and log back in.');
         }
         
         throw new Error(`Failed to create student record: ${studentError.message}`);
@@ -364,7 +392,11 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         console.error('❌ [NewLeadModal] Co-applicant creation failed:', coApplicantError);
         
         if (coApplicantError.message?.includes('row-level security') || coApplicantError.code === '42501') {
-          throw new Error(`Access denied: Your ${appUserCheck?.role} role doesn't have permission to create co-applicants.`);
+          throw new Error(`Session error: Your authentication context is not being recognized by the database. Please log out completely, clear your browser cache, and log back in.`);
+        }
+        
+        if (coApplicantError.message?.includes('authentication') || coApplicantError.message?.includes('JWT')) {
+          throw new Error('Authentication session expired. Please log out and log back in.');
         }
         
         throw new Error(`Failed to create co-applicant record: ${coApplicantError.message}`);
