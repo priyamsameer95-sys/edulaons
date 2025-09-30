@@ -539,13 +539,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lead_universities_Global_uni_Rank_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lead_universities_university_id_fkey"
             columns: ["university_id"]
             isOneToOne: false
@@ -553,81 +546,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      leads: {
-        Row: {
-          case_id: string
-          co_applicant_name: string
-          co_applicant_pin: string
-          co_applicant_relationship: string
-          co_applicant_salary: number
-          created_at: string
-          documents_status: string
-          id: string
-          intake_month: number | null
-          intake_year: number | null
-          lender: string
-          loan_amount: number
-          loan_type: string
-          status: string
-          student_dob: string | null
-          student_email: string
-          student_name: string
-          student_phone: string
-          study_destination: string
-          test_score: string | null
-          test_type: string | null
-          updated_at: string
-        }
-        Insert: {
-          case_id: string
-          co_applicant_name: string
-          co_applicant_pin: string
-          co_applicant_relationship: string
-          co_applicant_salary: number
-          created_at?: string
-          documents_status?: string
-          id?: string
-          intake_month?: number | null
-          intake_year?: number | null
-          lender: string
-          loan_amount: number
-          loan_type: string
-          status?: string
-          student_dob?: string | null
-          student_email: string
-          student_name: string
-          student_phone: string
-          study_destination: string
-          test_score?: string | null
-          test_type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          case_id?: string
-          co_applicant_name?: string
-          co_applicant_pin?: string
-          co_applicant_relationship?: string
-          co_applicant_salary?: number
-          created_at?: string
-          documents_status?: string
-          id?: string
-          intake_month?: number | null
-          intake_year?: number | null
-          lender?: string
-          loan_amount?: number
-          loan_type?: string
-          status?: string
-          student_dob?: string | null
-          student_email?: string
-          student_name?: string
-          student_phone?: string
-          study_destination?: string
-          test_score?: string | null
-          test_type?: string | null
-          updated_at?: string
-        }
-        Relationships: []
       }
       leads_new: {
         Row: {
