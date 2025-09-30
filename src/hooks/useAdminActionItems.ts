@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface NewLeadItem {
   id: string;
@@ -30,6 +31,7 @@ export interface AdminActionStats {
 }
 
 export function useAdminActionItems() {
+  const { user, appUser } = useAuth();
   const [newLeads, setNewLeads] = useState<NewLeadItem[]>([]);
   const [documentsAwaiting, setDocumentsAwaiting] = useState<DocumentActionItem[]>([]);
   const [stats, setStats] = useState<AdminActionStats>({
@@ -129,6 +131,20 @@ export function useAdminActionItems() {
   };
 
   const fetchData = async () => {
+    // Check authentication first
+    if (!user || !appUser) {
+      console.log('❌ [useAdminActionItems] No authenticated user:', { user: !!user, appUser: !!appUser });
+      setLoading(false);
+      setError('Authentication required');
+      return;
+    }
+
+    console.log('✅ [useAdminActionItems] Fetching with user:', { 
+      userId: user.id, 
+      role: appUser.role,
+      isActive: appUser.is_active 
+    });
+
     setLoading(true);
     setError(null);
     
@@ -138,6 +154,11 @@ export function useAdminActionItems() {
         fetchDocumentsAwaiting(),
       ]);
 
+      console.log('✅ [useAdminActionItems] Fetched data:', { 
+        leadsCount: leads.length, 
+        docsCount: docs.length 
+      });
+
       const totalPendingValue = leads.reduce((sum, lead) => sum + lead.loan_amount, 0);
 
       setStats({
@@ -146,6 +167,7 @@ export function useAdminActionItems() {
         totalPendingValue,
       });
     } catch (err) {
+      console.error('❌ [useAdminActionItems] Fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch action items');
     } finally {
       setLoading(false);
@@ -153,45 +175,51 @@ export function useAdminActionItems() {
   };
 
   useEffect(() => {
-    fetchData();
+    // Only fetch if user and appUser are available
+    if (user && appUser) {
+      fetchData();
 
-    // Set up real-time subscriptions
-    const leadsChannel = supabase
-      .channel('admin-action-leads')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leads_new',
-          filter: 'status=eq.new',
-        },
-        () => {
-          fetchData();
-        }
-      )
-      .subscribe();
+      // Set up real-time subscriptions
+      const leadsChannel = supabase
+        .channel('admin-action-leads')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'leads_new',
+            filter: 'status=eq.new',
+          },
+          () => {
+            fetchData();
+          }
+        )
+        .subscribe();
 
-    const docsChannel = supabase
-      .channel('admin-action-documents')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lead_documents',
-        },
-        () => {
-          fetchData();
-        }
-      )
-      .subscribe();
+      const docsChannel = supabase
+        .channel('admin-action-documents')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'lead_documents',
+          },
+          () => {
+            fetchData();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(leadsChannel);
-      supabase.removeChannel(docsChannel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(leadsChannel);
+        supabase.removeChannel(docsChannel);
+      };
+    } else {
+      console.log('⏳ [useAdminActionItems] Waiting for authentication...');
+      setLoading(false);
+    }
+  }, [user, appUser]);
 
   return {
     newLeads,
