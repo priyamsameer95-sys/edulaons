@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/useGamification";
 import { GamificationHero } from "@/components/gamification/GamificationHero";
-import { DailyGoalsWidget } from "@/components/gamification/DailyGoalsWidget";
+
 import { PersonalImpact } from "@/components/gamification/PersonalImpact";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
 import { MotivationalMessage } from "@/components/gamification/MotivationalMessage";
@@ -383,12 +383,6 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
           {/* Persistent Sidebar - 30% */}
           <div className="lg:w-[30%] space-y-6 lg:sticky lg:top-6 lg:self-start">
             <MotivationalMessage />
-            
-            <DailyGoalsWidget
-              goals={gamificationData.dailyGoals}
-              totalXP={gamificationData.xpToNextLevel}
-              earnedXP={gamificationData.currentXP}
-            />
             
             <PersonalImpact
               studentsHelped={kpis.totalLeads}
