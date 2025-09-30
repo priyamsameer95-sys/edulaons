@@ -93,7 +93,7 @@ export function useAdminActionItems() {
           verification_status,
           uploaded_at,
           uploaded_by,
-          leads_new!lead_id (
+          leads_new!fk_lead_documents_lead_id (
             case_id,
             students (name)
           ),
@@ -149,10 +149,18 @@ export function useAdminActionItems() {
     setError(null);
     
     try {
-      const [leads, docs] = await Promise.all([
-        fetchNewLeads(),
-        fetchDocumentsAwaiting(),
-      ]);
+      // Fetch leads and documents separately to avoid one failure breaking both
+      const leadsPromise = fetchNewLeads().catch((err): NewLeadItem[] => {
+        console.error('Error fetching leads:', err);
+        return [];
+      });
+      
+      const docsPromise = fetchDocumentsAwaiting().catch((err): DocumentActionItem[] => {
+        console.error('Error fetching documents:', err);
+        return [];
+      });
+
+      const [leads, docs] = await Promise.all([leadsPromise, docsPromise]);
 
       console.log('✅ [useAdminActionItems] Fetched data:', { 
         leadsCount: leads.length, 
