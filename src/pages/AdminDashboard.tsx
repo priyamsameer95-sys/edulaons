@@ -562,9 +562,9 @@ const AdminDashboard = () => {
 
       {/* Main Content with Persistent Sidebar */}
       <div className="container mx-auto px-6 pt-8 pb-12">
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 w-full">
           {/* Main Content Area - 70% */}
-          <div className="flex-1 lg:w-[70%] space-y-6">
+          <div className="flex-1 lg:max-w-[70%] space-y-6">
             {/* Compact Welcome */}
             <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-lg p-6 border animate-fade-in">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -889,7 +889,7 @@ const AdminDashboard = () => {
                 <SelectTrigger className="w-full lg:w-48">
                   <SelectValue placeholder="Filter by partner" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border">
+                <SelectContent>
                   <SelectItem value="all">All Partners</SelectItem>
                   {partnerStats.map((partner) => (
                     <SelectItem key={partner.id} value={partner.id}>
@@ -981,7 +981,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Persistent Sidebar - 30% */}
-          <div className="lg:w-[30%] space-y-6 lg:sticky lg:top-6 lg:self-start">
+          <div className="w-full lg:w-[30%] lg:min-w-[350px] space-y-6 lg:sticky lg:top-6 lg:self-start">
             <AtRiskLeads 
               leads={atRiskLeads} 
               onTakeAction={(leadId) => {
