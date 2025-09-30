@@ -15,7 +15,7 @@ import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { DocumentUploadSection } from "@/components/dashboard/DocumentUploadSection";
 import { useFormValidation, FieldConfig } from "@/hooks/useFormValidation";
-import { transformBackendError } from "@/utils/errorMessages";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface NewLeadModalProps {
@@ -177,6 +177,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
   const [documentsUploaded, setDocumentsUploaded] = useState(0);
   const [documentsRequired, setDocumentsRequired] = useState(0);
   const { toast } = useToast();
+  const { handleError, handleDatabaseError, handleSuccess } = useErrorHandler();
 
   const countries = [
     'United States',
@@ -242,8 +243,20 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         .single();
         
       if (studentError) {
-        console.error('Student creation error:', studentError);
-        throw new Error('Failed to create student record');
+        console.error('Student creation error details:', {
+          error: studentError,
+          code: studentError.code,
+          message: studentError.message,
+          details: studentError.details,
+          hint: studentError.hint
+        });
+        
+        // If it's an RLS error, provide more helpful message
+        if (studentError.message?.includes('row-level security') || studentError.code === '42501') {
+          throw new Error('Permission denied. Please log out and log back in, then try again.');
+        }
+        
+        throw new Error(studentError.message || 'Failed to create student record');
       }
 
       // Step 2: Create co-applicant record
@@ -387,11 +400,8 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
     } catch (error: any) {
       console.error('Error creating lead:', error);
-      const errorMessage = error.message || transformBackendError(error);
-      toast({
-        title: "Unable to Create Application",
-        description: errorMessage,
-        variant: "destructive",
+      handleDatabaseError(error, {
+        description: error.message
       });
     } finally {
       setLoading(false);
