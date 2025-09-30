@@ -61,7 +61,6 @@ const leadFormConfig: FieldConfig = {
     pattern: /^\d{6}$/
   },
   country: { required: true },
-  universities: { required: true },
   intake_month: { required: true },
   loan_type: { required: true },
   amount_requested: { 

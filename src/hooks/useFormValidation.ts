@@ -30,40 +30,43 @@ export function useFormValidation<T extends Record<string, any>>(
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Validate a single field
-  const validateField = useCallback((name: string, value: string): string | null => {
+  const validateField = useCallback((name: string, value: any): string | null => {
     const config = fieldConfig[name];
     if (!config) return null;
 
+    // Convert value to string for validation
+    const stringValue = String(value ?? '');
+
     // Required validation
-    if (config.required && !value.trim()) {
+    if (config.required && !stringValue.trim()) {
       return ERROR_MESSAGES.REQUIRED[name as keyof typeof ERROR_MESSAGES.REQUIRED] || 
              `${name.replace('_', ' ')} is required`;
     }
 
     // Skip other validations if field is empty and not required
-    if (!value.trim() && !config.required) {
+    if (!stringValue.trim() && !config.required) {
       return null;
     }
 
     // Length validation
-    if (config.minLength && value.length < config.minLength) {
+    if (config.minLength && stringValue.length < config.minLength) {
       return ERROR_MESSAGES.FORMAT[name as keyof typeof ERROR_MESSAGES.FORMAT] ||
              `Must be at least ${config.minLength} characters`;
     }
 
-    if (config.maxLength && value.length > config.maxLength) {
+    if (config.maxLength && stringValue.length > config.maxLength) {
       return `Must be no more than ${config.maxLength} characters`;
     }
 
     // Pattern validation
-    if (config.pattern && !config.pattern.test(value)) {
+    if (config.pattern && !config.pattern.test(stringValue)) {
       return ERROR_MESSAGES.FORMAT[name as keyof typeof ERROR_MESSAGES.FORMAT] ||
              'Invalid format';
     }
 
     // Numeric range validation
     if (config.min !== undefined || config.max !== undefined) {
-      const numValue = parseFloat(value);
+      const numValue = parseFloat(stringValue);
       
       if (isNaN(numValue)) {
         return ERROR_MESSAGES.FORMAT[name as keyof typeof ERROR_MESSAGES.FORMAT] ||
@@ -83,7 +86,7 @@ export function useFormValidation<T extends Record<string, any>>(
 
     // Custom validation
     if (config.custom) {
-      return config.custom(value);
+      return config.custom(stringValue);
     }
 
     return null;
