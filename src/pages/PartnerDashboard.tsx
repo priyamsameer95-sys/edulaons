@@ -168,7 +168,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
             <TabsTrigger value="leads" className="flex items-center gap-2">
@@ -181,57 +181,57 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="leads" className="space-y-6">
+          <TabsContent value="leads" className="space-y-8">
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText className="h-5 w-5 mr-2" />
                     Total Leads
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold">{kpis.totalLeads}</div>}
+                  {kpisLoading ? <Skeleton className="h-10 w-20 mb-1" /> : <div className="text-3xl font-bold">{kpis.totalLeads}</div>}
                   <p className="text-xs text-muted-foreground mt-1">All-time leads created</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <TrendingUp className="h-4 w-4 mr-2" />
+                    <TrendingUp className="h-5 w-5 mr-2" />
                     In Pipeline
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-warning">{kpis.inPipeline}</div>}
+                  {kpisLoading ? <Skeleton className="h-10 w-20 mb-1" /> : <div className="text-3xl font-bold text-warning">{kpis.inPipeline}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Active processing</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle className="h-5 w-5 mr-2" />
                     Sanctioned
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-primary">{kpis.sanctioned}</div>}
+                  {kpisLoading ? <Skeleton className="h-10 w-20 mb-1" /> : <div className="text-3xl font-bold text-primary">{kpis.sanctioned}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Approved loans</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-[1.02] transition-all duration-200">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    <DollarSign className="h-4 w-4 mr-2" />
+                    <DollarSign className="h-5 w-5 mr-2" />
                     Disbursed
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {kpisLoading ? <Skeleton className="h-8 w-16 mb-1" /> : <div className="text-2xl font-bold text-success">{kpis.disbursed}</div>}
+                  {kpisLoading ? <Skeleton className="h-10 w-20 mb-1" /> : <div className="text-3xl font-bold text-success">{kpis.disbursed}</div>}
                   <p className="text-xs text-muted-foreground mt-1">Funds released</p>
                 </CardContent>
               </Card>
@@ -240,7 +240,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
             <LeadsTab />
           </TabsContent>
 
-          <TabsContent value="payouts" className="space-y-6">
+          <TabsContent value="payouts" className="space-y-8">
             <PayoutsTab />
           </TabsContent>
         </Tabs>
