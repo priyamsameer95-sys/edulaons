@@ -237,13 +237,28 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         throw new Error('Failed to create co-applicant record');
       }
 
-      // Step 3: Get current user's partner_id
+      // Step 3: Get current user's partner_id (CRITICAL for security)
       const { data: userData } = await supabase.auth.getUser();
-      const { data: appUser } = await supabase
+      
+      if (!userData.user) {
+        throw new Error('You must be logged in to create leads');
+      }
+
+      const { data: appUser, error: appUserError } = await supabase
         .from('app_users')
-        .select('partner_id')
-        .eq('id', userData.user?.id)
+        .select('partner_id, role')
+        .eq('id', userData.user.id)
         .single();
+
+      if (appUserError) {
+        console.error('Failed to fetch user data:', appUserError);
+        throw new Error('Unable to verify your account. Please try logging in again.');
+      }
+
+      // For partners, partner_id is REQUIRED for security
+      if (appUser.role === 'partner' && !appUser.partner_id) {
+        throw new Error('Your account is not associated with a partner. Please contact support.');
+      }
 
       // Step 4: Get default lender
       const { data: lender } = await supabase
@@ -257,13 +272,14 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
 
       // Step 5: Create lead in new structure
+      // SECURITY: RLS policies will enforce that partner_id matches the authenticated user's partner_id
       const { data: lead, error: leadError } = await supabase
         .from('leads_new')
         .insert({
           case_id: caseId,
           student_id: student.id,
           co_applicant_id: coApplicant.id,
-          partner_id: appUser?.partner_id || null,
+          partner_id: appUser.partner_id, // CRITICAL: This is enforced by RLS
           lender_id: lender.id,
           loan_amount: parseFloat(formData.amount_requested),
           loan_type: formData.loan_type as any,
@@ -278,7 +294,15 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         
       if (leadError) {
         console.error('Lead creation error:', leadError);
-        throw new Error('Failed to create lead record');
+        
+        // Provide user-friendly error messages
+        if (leadError.code === '42501') {
+          throw new Error('You do not have permission to create leads. Please contact support.');
+        } else if (leadError.message?.includes('policy')) {
+          throw new Error('Security check failed. Please ensure you are logged in correctly.');
+        }
+        
+        throw new Error('Failed to create lead. Please try again or contact support.');
       }
 
       // Step 6: Create academic test records if provided
