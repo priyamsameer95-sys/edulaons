@@ -169,7 +169,10 @@ export function useFormValidation<T extends Record<string, any>>(
   // Check if form is valid (no errors and all required fields filled)
   const isValid = !hasErrors && Object.keys(fieldConfig)
     .filter(name => fieldConfig[name].required)
-    .every(name => formData[name]?.trim());
+    .every(name => {
+      const value = formData[name];
+      return value != null && String(value).trim() !== '';
+    });
 
   return {
     formData,
