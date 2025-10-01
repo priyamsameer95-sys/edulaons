@@ -73,27 +73,42 @@ export function useActivityBoard() {
           if (!status.created_at) continue;
 
           // Fetch lead info separately
-          const { data: leadData } = await supabase
+          const { data: leadData, error: leadError } = await supabase
             .from('leads_new')
             .select('id, case_id, partner_id, student_id')
             .eq('id', status.lead_id)
-            .single();
+            .maybeSingle();
 
-          if (!leadData) continue;
+          if (leadError) {
+            console.error('❌ Lead fetch error:', leadError, 'for lead_id:', status.lead_id);
+            continue;
+          }
+          if (!leadData) {
+            console.warn('⚠️ No lead data found for lead_id:', status.lead_id);
+            continue;
+          }
 
           // Fetch partner info
-          const { data: partnerData } = await supabase
+          const { data: partnerData, error: partnerError } = await supabase
             .from('partners')
             .select('name')
             .eq('id', leadData.partner_id)
-            .single();
+            .maybeSingle();
+
+          if (partnerError) {
+            console.error('❌ Partner fetch error:', partnerError, 'for partner_id:', leadData.partner_id);
+          }
 
           // Fetch student info
-          const { data: studentData } = await supabase
+          const { data: studentData, error: studentError } = await supabase
             .from('students')
             .select('name')
             .eq('id', leadData.student_id)
-            .single();
+            .maybeSingle();
+
+          if (studentError) {
+            console.error('❌ Student fetch error:', studentError, 'for student_id:', leadData.student_id);
+          }
 
           const priority: ActivityPriority =
             status.new_status === 'rejected' ? 'URGENT' :
@@ -145,18 +160,26 @@ export function useActivityBoard() {
           // Show leads created in last 7 days
           if (daysSinceCreation <= 7) {
             // Fetch partner info
-            const { data: partnerData } = await supabase
+            const { data: partnerData, error: partnerError } = await supabase
               .from('partners')
               .select('name')
               .eq('id', lead.partner_id)
-              .single();
+              .maybeSingle();
+
+            if (partnerError) {
+              console.error('❌ Partner fetch error for lead:', partnerError, 'partner_id:', lead.partner_id);
+            }
 
             // Fetch student info
-            const { data: studentData } = await supabase
+            const { data: studentData, error: studentError } = await supabase
               .from('students')
               .select('name')
               .eq('id', lead.student_id)
-              .single();
+              .maybeSingle();
+
+            if (studentError) {
+              console.error('❌ Student fetch error for lead:', studentError, 'student_id:', lead.student_id);
+            }
 
             allActivities.push({
               id: `new-${lead.id}`,
