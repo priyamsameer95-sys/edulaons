@@ -148,6 +148,12 @@ export function useActivityBoard() {
           return;
         }
 
+        // Validate timestamp
+        if (!status.created_at) {
+          console.warn('[ActivityBoard] Status change missing timestamp:', status.id);
+          return;
+        }
+
         // Validate partner and student data
         const partnerName = lead.partners?.name || 'Unknown Partner';
         const studentName = lead.students?.name || 'Unknown Student';
@@ -196,6 +202,13 @@ export function useActivityBoard() {
           return;
         }
 
+        // Validate timestamp
+        const timestamp = doc.uploaded_at || doc.created_at;
+        if (!timestamp) {
+          console.warn('[ActivityBoard] Document missing timestamp:', doc.id);
+          return;
+        }
+
         // Validate partner and student data
         const partnerName = lead.partners?.name || 'Unknown Partner';
         const studentName = lead.students?.name || 'Unknown Student';
@@ -212,7 +225,7 @@ export function useActivityBoard() {
           id: doc.id,
           priority,
           type: 'document',
-          timestamp: doc.uploaded_at || new Date().toISOString(),
+          timestamp: timestamp,
           leadId: lead.id,
           leadCaseId: lead.case_id || 'N/A',
           partnerId,
@@ -229,14 +242,20 @@ export function useActivityBoard() {
 
       // Process leads for new and stuck activities
       leadsData?.forEach((lead: any) => {
+        // Validate required timestamps
+        if (!lead.created_at || !lead.updated_at) {
+          console.warn('[ActivityBoard] Lead missing timestamps:', lead.id);
+          return;
+        }
+
         // Validate partner and student data
         const partnerName = lead.partners?.name || 'Unknown Partner';
         const studentName = lead.students?.name || 'Unknown Student';
         const partnerId = lead.partner_id || 'unknown';
 
         // Safely parse dates with validation
-        const lastUpdate = lead.updated_at ? new Date(lead.updated_at) : new Date();
-        const createdDate = lead.created_at ? new Date(lead.created_at) : new Date();
+        const lastUpdate = new Date(lead.updated_at);
+        const createdDate = new Date(lead.created_at);
         
         // Validate dates
         if (isNaN(lastUpdate.getTime()) || isNaN(createdDate.getTime())) {

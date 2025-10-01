@@ -72,6 +72,22 @@ const ActivityCard = ({
   const config = priorityConfig[activity.priority];
   const Icon = config.icon;
 
+  // Safely format timestamp with validation
+  const getTimeAgo = () => {
+    try {
+      if (!activity.timestamp) return 'Unknown time';
+      const date = new Date(activity.timestamp);
+      if (isNaN(date.getTime())) {
+        console.warn('[ActivityCard] Invalid timestamp:', activity.timestamp);
+        return 'Unknown time';
+      }
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (err) {
+      console.error('[ActivityCard] Error formatting date:', err);
+      return 'Unknown time';
+    }
+  };
+
   return (
     <Card className={`p-4 border-l-4 ${config.bgColor} hover:shadow-md transition-shadow`}>
       <div className="flex items-start justify-between gap-3">
@@ -86,7 +102,7 @@ const ActivityCard = ({
                 {config.label}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                {getTimeAgo()}
               </span>
             </div>
             
@@ -222,17 +238,20 @@ export function AdminActivityBoard({
     setExpandedPartners(newExpanded);
   };
 
+  // Group activities by partner with proper validation
   const groupedActivities = groupByPartner
     ? activities.reduce((acc, activity) => {
-        // Skip activities without a valid partner ID
         const partnerId = activity.partnerId || 'unknown';
-        if (!partnerId || partnerId === 'unknown') {
-          console.warn('[ActivityBoard] Activity missing partnerId:', activity.id);
+        const partnerName = activity.partnerName || 'Unknown Partner';
+        
+        // Only log warning if we genuinely have an unknown partner
+        if (partnerId === 'unknown' && !activity.partnerName) {
+          console.warn('[ActivityBoard] Activity missing partner info:', activity.id);
         }
         
         if (!acc[partnerId]) {
           acc[partnerId] = {
-            partnerName: activity.partnerName || 'Unknown Partner',
+            partnerName,
             activities: [],
           };
         }
@@ -311,8 +330,15 @@ export function AdminActivityBoard({
               title="No Recent Activity"
               description="There are no recent activities to display. New leads, status changes, and document uploads will appear here."
             />
-          ) : groupByPartner && groupedActivities && Object.keys(groupedActivities).length > 0 ? (
-            Object.entries(groupedActivities).map(([partnerId, group]) => {
+          ) : groupByPartner && groupedActivities ? (
+            Object.keys(groupedActivities).length === 0 ? (
+              <EmptyState
+                icon={CheckCircle2}
+                title="No Grouped Activities"
+                description="Switch to 'View All' to see ungrouped activities."
+              />
+            ) : (
+              Object.entries(groupedActivities).map(([partnerId, group]) => {
               const isExpanded = expandedPartners.has(partnerId);
               const urgentCount = group.activities.filter(a => a.priority === 'URGENT').length;
               const attentionCount = group.activities.filter(a => a.priority === 'ATTENTION').length;
@@ -363,7 +389,7 @@ export function AdminActivityBoard({
                   )}
                 </div>
               );
-            })
+            }))
           ) : (
             activities.map((activity) => (
               <ActivityCard
