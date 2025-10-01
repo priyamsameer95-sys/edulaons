@@ -37,6 +37,7 @@ import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
 import { StatusHistory } from "@/components/lead-status/StatusHistory";
 import { StatusProgressIndicator } from "@/components/lead-status/StatusProgressIndicator";
+import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
@@ -49,6 +50,7 @@ interface LeadDetailSheetProps {
 export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
+  const [lenderAssignmentModalOpen, setLenderAssignmentModalOpen] = useState(false);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
   
@@ -162,7 +164,21 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                     <div>
                       <p className="font-semibold">₹{lead.loan_amount.toLocaleString()}</p>
                       <p className="text-sm text-muted-foreground capitalize">{lead.loan_type} loan</p>
-                      <p className="text-sm text-muted-foreground">Lender: {lead.lender?.name || 'N/A'}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          Lender: {lead.lender?.name || 'N/A'}
+                        </p>
+                        {isAdmin() && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLenderAssignmentModalOpen(true)}
+                            className="h-7 text-xs"
+                          >
+                            Change
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -700,6 +716,21 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
           onLeadUpdated?.();
         }}
       />
+
+      {/* Lender Assignment Modal */}
+      {isAdmin() && lead.lender_id && (
+        <LenderAssignmentModal
+          open={lenderAssignmentModalOpen}
+          onOpenChange={setLenderAssignmentModalOpen}
+          leadId={lead.id}
+          currentLenderId={lead.lender_id}
+          studyDestination={lead.study_destination}
+          loanAmount={lead.loan_amount}
+          onSuccess={() => {
+            onLeadUpdated?.();
+          }}
+        />
+      )}
     </Sheet>
   );
 };
