@@ -108,12 +108,23 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
         }
       });
 
+      // Check for function invocation errors
       if (error) {
+        console.error('Function invocation error:', error);
         throw new Error(error.message || 'Failed to create partner');
       }
 
-      if (data.error) {
-        throw new Error(data.error);
+      // Check for errors in the response data
+      if (!data || data.error) {
+        const errorMessage = data?.error || 'Failed to create partner';
+        console.error('Partner creation error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Validate response structure
+      if (!data.success || !data.partner) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response from server');
       }
 
       // Generate shareable URL
