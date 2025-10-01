@@ -205,30 +205,7 @@ export function AdminActivityBoard({
   const [groupByPartner, setGroupByPartner] = useState(true);
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
 
-  if (loading) {
-    return (
-      <Card className="p-6">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="p-6">
-        <div className="text-center text-destructive">
-          <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-          <p>Error loading activities: {error}</p>
-        </div>
-      </Card>
-    );
-  }
-
+  // ✅ ALL HOOKS MUST BE AT THE TOP - BEFORE ANY RETURNS!
   const togglePartner = useCallback((partnerId: string) => {
     setExpandedPartners(prev => {
       const newExpanded = new Set(prev);
@@ -264,6 +241,31 @@ export function AdminActivityBoard({
       return acc;
     }, {} as Record<string, { partnerName: string; activities: ActivityItem[] }>);
   }, [groupByPartner, activities]);
+
+  // ✅ NOW conditional returns are safe - all hooks have been called
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="text-center text-destructive">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+          <p>Error loading activities: {error}</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="flex flex-col h-full">
