@@ -53,12 +53,12 @@ export function useActivityBoard() {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const todayStart = new Date(now.setHours(0, 0, 0, 0));
 
-      // Fetch status history activities
+      // Fetch status history activities - specify the foreign key relationship
       const { data: statusData, error: statusError } = await supabase
         .from('lead_status_history')
         .select(`
           *,
-          leads_new!inner(
+          leads_new!lead_status_history_lead_id_fkey(
             id,
             case_id,
             status,
