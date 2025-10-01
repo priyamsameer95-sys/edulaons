@@ -12,11 +12,13 @@ export function useRefactoredLeads() {
       setLoading(true);
       setError(null);
 
+      console.log('🔍 [useRefactoredLeads] Starting fetch...');
+
       const { data, error } = await supabase
         .from('leads_new')
         .select(`
           *,
-          students!leads_new_student_id_fkey (
+          students (
             id,
             name,
             email,
@@ -31,7 +33,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          co_applicants!leads_new_co_applicant_id_fkey (
+          co_applicants (
             id,
             name,
             relationship,
@@ -44,7 +46,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          partners!leads_new_partner_id_fkey (
+          partners (
             id,
             name,
             email,
@@ -54,7 +56,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          lenders!leads_new_lender_id_fkey (
+          lenders (
             id,
             name,
             code,
@@ -70,15 +72,18 @@ export function useRefactoredLeads() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching refactored leads:', error);
+        console.error('❌ [useRefactoredLeads] Error fetching leads:', error);
         setError(error.message);
         return;
       }
 
+      console.log('✅ [useRefactoredLeads] Fetched leads:', data?.length || 0);
+
       const mappedLeads = data?.map(mapDbRefactoredLeadToLead) || [];
+      console.log('✅ [useRefactoredLeads] Mapped leads:', mappedLeads.length);
       setLeads(mappedLeads);
     } catch (err) {
-      console.error('Error in fetchLeads:', err);
+      console.error('❌ [useRefactoredLeads] Exception:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
