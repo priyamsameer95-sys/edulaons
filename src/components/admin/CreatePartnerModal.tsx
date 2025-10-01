@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Link2, QrCode, Copy, CheckCircle, Eye, EyeOff, TestTube } from 'lucide-react';
+import { Building2, Link2, QrCode, Copy, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -46,7 +46,6 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [testingLogin, setTestingLogin] = useState(false);
 
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
@@ -143,42 +142,6 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const testLogin = async () => {
-    if (!createdPartner) return;
-    
-    setTestingLogin(true);
-    try {
-      // Test login with the created credentials
-      const { error } = await supabase.auth.signInWithPassword({
-        email: createdPartner.email,
-        password: createdPartner.password,
-      });
-
-      if (error) {
-        toast({
-          title: "Login Test Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Login Test Successful",
-          description: "Partner credentials are working correctly",
-        });
-        // Sign out after test
-        await supabase.auth.signOut();
-      }
-    } catch (error: any) {
-      toast({
-        title: "Login Test Error", 
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setTestingLogin(false);
     }
   };
 
@@ -315,28 +278,16 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
           </div>
 
           <DialogFooter className="sm:justify-between">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={testLogin}
-                disabled={testingLogin}
-                className="gap-1"
-              >
-                <TestTube className="h-4 w-4" />
-                {testingLogin ? 'Testing...' : 'Test Login'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  resetForm();
-                  setCreatedPartner(null);
-                }}
-              >
-                Create Another
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setCreatedPartner(null);
+              }}
+            >
+              Create Another
+            </Button>
             <Button onClick={handleClose}>Done</Button>
           </DialogFooter>
         </DialogContent>
