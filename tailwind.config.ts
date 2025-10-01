@@ -15,11 +15,7 @@ export default {
     extend: {
       colors: {
         border: "hsl(var(--border))",
-        input: {
-          DEFAULT: "hsl(var(--input))",
-          hover: "hsl(var(--input-hover))",
-          focus: "hsl(var(--input-focus))",
-        },
+        input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -27,22 +23,14 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
           hover: "hsl(var(--primary-hover))",
-          active: "hsl(var(--primary-active))",
-          disabled: "hsl(var(--primary-disabled))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
-          hover: "hsl(var(--secondary-hover))",
-          active: "hsl(var(--secondary-active))",
-          disabled: "hsl(var(--secondary-disabled))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
-          hover: "hsl(var(--destructive-hover))",
-          active: "hsl(var(--destructive-active))",
-          disabled: "hsl(var(--destructive-disabled))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -55,19 +43,10 @@ export default {
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
-          hover: "hsl(var(--success-hover))",
-          active: "hsl(var(--success-active))",
         },
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
-          hover: "hsl(var(--warning-hover))",
-          active: "hsl(var(--warning-active))",
-        },
-        link: {
-          DEFAULT: "hsl(var(--link))",
-          hover: "hsl(var(--link-hover))",
-          active: "hsl(var(--link-active))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -94,26 +73,9 @@ export default {
         'gradient-accent': 'var(--gradient-accent)',
       },
       boxShadow: {
-        'none': 'var(--shadow-none)',
-        'xs': 'var(--shadow-xs)',
         'sm': 'var(--shadow-sm)',
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
-        'xl': 'var(--shadow-xl)',
-        'inset': 'var(--shadow-inset)',
-        'button': 'var(--shadow-button-default)',
-        'button-hover': 'var(--shadow-button-hover)',
-        'button-active': 'var(--shadow-button-active)',
-        'card': 'var(--shadow-card-default)',
-        'card-hover': 'var(--shadow-card-hover)',
-      },
-      transitionDuration: {
-        'fast': '150ms',
-        'base': '200ms',
-        'slow': '250ms',
-      },
-      transitionTimingFunction: {
-        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
       borderRadius: {
         lg: "var(--radius)",
