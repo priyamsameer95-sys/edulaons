@@ -17,8 +17,9 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useActivityBoard, ActivityItem, ActivityPriority } from '@/hooks/useActivityBoard';
-import { useState } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '@/utils/logger';
 
 interface AdminActivityBoardProps {
   onViewLead?: (leadId: string) => void;
@@ -78,12 +79,12 @@ const ActivityCard = ({
       if (!activity.timestamp) return 'Unknown time';
       const date = new Date(activity.timestamp);
       if (isNaN(date.getTime())) {
-        console.warn('[ActivityCard] Invalid timestamp:', activity.timestamp);
+        logger.warn('[ActivityCard] Invalid timestamp:', activity.timestamp);
         return 'Unknown time';
       }
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (err) {
-      console.error('[ActivityCard] Error formatting date:', err);
+      logger.error('[ActivityCard] Error formatting date:', err);
       return 'Unknown time';
     }
   };
@@ -228,37 +229,41 @@ export function AdminActivityBoard({
     );
   }
 
-  const togglePartner = (partnerId: string) => {
-    const newExpanded = new Set(expandedPartners);
-    if (newExpanded.has(partnerId)) {
-      newExpanded.delete(partnerId);
-    } else {
-      newExpanded.add(partnerId);
-    }
-    setExpandedPartners(newExpanded);
-  };
+  const togglePartner = useCallback((partnerId: string) => {
+    setExpandedPartners(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(partnerId)) {
+        newExpanded.delete(partnerId);
+      } else {
+        newExpanded.add(partnerId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
-  // Group activities by partner with proper validation
-  const groupedActivities = groupByPartner
-    ? activities.reduce((acc, activity) => {
-        const partnerId = activity.partnerId || 'unknown';
-        const partnerName = activity.partnerName || 'Unknown Partner';
-        
-        // Only log warning if we genuinely have an unknown partner
-        if (partnerId === 'unknown' && !activity.partnerName) {
-          console.warn('[ActivityBoard] Activity missing partner info:', activity.id);
-        }
-        
-        if (!acc[partnerId]) {
-          acc[partnerId] = {
-            partnerName,
-            activities: [],
-          };
-        }
-        acc[partnerId].activities.push(activity);
-        return acc;
-      }, {} as Record<string, { partnerName: string; activities: ActivityItem[] }>)
-    : null;
+  // Group activities by partner with proper validation (memoized)
+  const groupedActivities = useMemo(() => {
+    if (!groupByPartner) return null;
+    
+    return activities.reduce((acc, activity) => {
+      const partnerId = activity.partnerId || 'unknown';
+      const partnerName = activity.partnerName || 'Unknown Partner';
+      
+      // Only log warning if we genuinely have an unknown partner
+      if (partnerId === 'unknown' && !activity.partnerName) {
+        logger.warn('[ActivityBoard] Activity missing partner info:', activity.id);
+      }
+      
+      if (!acc[partnerId]) {
+        acc[partnerId] = {
+          partnerName,
+          activities: [],
+        };
+      }
+      acc[partnerId].activities.push(activity);
+      return acc;
+    }, {} as Record<string, { partnerName: string; activities: ActivityItem[] }>);
+  }, [groupByPartner, activities]);
 
   return (
     <Card className="flex flex-col h-full">

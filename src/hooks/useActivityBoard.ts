@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export type ActivityPriority = 'URGENT' | 'ATTENTION' | 'INFO' | 'SUCCESS';
 export type ActivityType = 'document' | 'status' | 'lead' | 'system';
@@ -44,18 +45,18 @@ export function useActivityBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 [ActivityBoard] Starting optimized fetch with JOINs...');
+      logger.info('[ActivityBoard] Starting optimized fetch with JOINs...');
 
       const allActivities: ActivityItem[] = [];
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       // Fetch status changes WITH joined data in a single query
-      console.log('📊 Fetching status changes with JOINs...');
+      logger.info('[ActivityBoard] Fetching status changes with JOINs...');
       const { data: statusData, error: statusError } = await supabase
         .from('lead_status_history')
         .select(`
@@ -83,9 +84,9 @@ export function useActivityBoard() {
         .limit(100);
 
       if (statusError) {
-        console.error('❌ Status fetch error:', statusError);
+        logger.error('[ActivityBoard] Status fetch error:', statusError);
       } else {
-        console.log('✅ Status data fetched:', statusData?.length || 0);
+        logger.info('[ActivityBoard] Status data fetched:', statusData?.length || 0);
 
         // Process status changes
         for (const status of statusData || []) {
@@ -93,7 +94,7 @@ export function useActivityBoard() {
 
           const lead = status.leads_new as any;
           if (!lead) {
-            console.warn('⚠️ No lead data for status change:', status.id);
+            logger.warn('[ActivityBoard] No lead data for status change:', status.id);
             continue;
           }
 
@@ -122,11 +123,11 @@ export function useActivityBoard() {
             actionType: 'view_lead',
           });
         }
-        console.log('✅ Processed status activities:', allActivities.filter(a => a.type === 'status').length);
+        logger.info('[ActivityBoard] Processed status activities:', allActivities.filter(a => a.type === 'status').length);
       }
 
       // Fetch recent leads WITH joined data in a single query
-      console.log('📋 Fetching recent leads with JOINs...');
+      logger.info('[ActivityBoard] Fetching recent leads with JOINs...');
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -147,9 +148,9 @@ export function useActivityBoard() {
         .limit(50);
 
       if (leadsError) {
-        console.error('❌ Leads fetch error:', leadsError);
+        logger.error('[ActivityBoard] Leads error:', leadsError);
       } else {
-        console.log('✅ Leads data fetched:', leadsData?.length || 0);
+        logger.info('[ActivityBoard] Leads data fetched:', leadsData?.length || 0);
 
         for (const lead of leadsData || []) {
           if (!lead.created_at) continue;
@@ -169,7 +170,7 @@ export function useActivityBoard() {
             actionType: 'view_lead',
           });
         }
-        console.log('✅ Processed lead activities:', allActivities.filter(a => a.type === 'lead').length);
+        logger.info('[ActivityBoard] Processed lead activities:', allActivities.filter(a => a.type === 'lead').length);
       }
 
       // Sort by priority and timestamp
@@ -186,8 +187,8 @@ export function useActivityBoard() {
         return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
       });
 
-      console.log('✅ Total activities:', allActivities.length);
-      console.log('📈 Breakdown:', {
+      logger.info('[ActivityBoard] Total activities:', allActivities.length);
+      logger.info('[ActivityBoard] Breakdown:', {
         URGENT: allActivities.filter(a => a.priority === 'URGENT').length,
         ATTENTION: allActivities.filter(a => a.priority === 'ATTENTION').length,
         INFO: allActivities.filter(a => a.priority === 'INFO').length,
@@ -197,32 +198,35 @@ export function useActivityBoard() {
       setActivities(allActivities);
 
       // Calculate stats
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      setStats({
+      const today = new Date().toDateString();
+      const stats: ActivityBoardStats = {
         urgentCount: allActivities.filter(a => a.priority === 'URGENT').length,
         attentionCount: allActivities.filter(a => a.priority === 'ATTENTION').length,
-        todayActivitiesCount: allActivities.filter(
-          a => new Date(a.timestamp) >= todayStart
+        todayActivitiesCount: allActivities.filter(a => 
+          new Date(a.timestamp).toDateString() === today
         ).length,
-        activePartnersCount: new Set(
-          allActivities.map(a => a.partnerId).filter(id => id && id !== 'unknown')
-        ).size,
-      });
+        activePartnersCount: new Set(allActivities.map(a => a.partnerId)).size,
+      };
 
+      setStats(stats);
     } catch (err) {
-      console.error('❌ Critical error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch activities');
+      logger.error('[ActivityBoard] Exception:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const refetch = useCallback(() => {
+    fetchActivities();
+  }, [fetchActivities]);
 
   useEffect(() => {
     fetchActivities();
+  }, [fetchActivities]);
 
-    // Set up real-time subscriptions
+  // Set up real-time subscription
+  useEffect(() => {
     const statusChannel = supabase
       .channel('activity_board_status')
       .on(
@@ -245,13 +249,18 @@ export function useActivityBoard() {
       supabase.removeChannel(statusChannel);
       supabase.removeChannel(leadsChannel);
     };
-  }, []);
+  }, [fetchActivities]);
 
-  return {
-    activities,
-    stats,
-    loading,
-    error,
-    refetch: fetchActivities,
-  };
+  const memoizedReturn = useMemo(
+    () => ({
+      activities,
+      stats,
+      loading,
+      error,
+      refetch
+    }),
+    [activities, stats, loading, error, refetch]
+  );
+
+  return memoizedReturn;
 }

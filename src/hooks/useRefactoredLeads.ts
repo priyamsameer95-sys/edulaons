@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RefactoredLead, mapDbRefactoredLeadToLead } from '@/types/refactored-lead';
+import { logger } from '@/utils/logger';
 
 export function useRefactoredLeads() {
   const [leads, setLeads] = useState<RefactoredLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 [useRefactoredLeads] Starting fetch...');
+      logger.info('[useRefactoredLeads] Starting fetch...');
 
       const { data, error } = await supabase
         .from('leads_new')
@@ -72,27 +73,27 @@ export function useRefactoredLeads() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ [useRefactoredLeads] Error fetching leads:', error);
+        logger.error('[useRefactoredLeads] Error fetching leads:', error);
         setError(error.message);
         return;
       }
 
-      console.log('✅ [useRefactoredLeads] Fetched leads:', data?.length || 0);
+      logger.info('[useRefactoredLeads] Fetched leads:', data?.length || 0);
 
       const mappedLeads = data?.map(mapDbRefactoredLeadToLead) || [];
-      console.log('✅ [useRefactoredLeads] Mapped leads:', mappedLeads.length);
+      logger.info('[useRefactoredLeads] Mapped leads:', mappedLeads.length);
       setLeads(mappedLeads);
     } catch (err) {
-      console.error('❌ [useRefactoredLeads] Exception:', err);
+      logger.error('[useRefactoredLeads] Exception:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const refetch = () => {
+  const refetch = useCallback(() => {
     fetchLeads();
-  };
+  }, [fetchLeads]);
 
   useEffect(() => {
     fetchLeads();
