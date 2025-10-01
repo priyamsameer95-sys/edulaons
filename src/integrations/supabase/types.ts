@@ -643,6 +643,61 @@ export type Database = {
           },
         ]
       }
+      lender_assignment_history: {
+        Row: {
+          assignment_notes: string | null
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          new_lender_id: string
+          old_lender_id: string | null
+        }
+        Insert: {
+          assignment_notes?: string | null
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          new_lender_id: string
+          old_lender_id?: string | null
+        }
+        Update: {
+          assignment_notes?: string | null
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          new_lender_id?: string
+          old_lender_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_assignment_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_assignment_history_new_lender_id_fkey"
+            columns: ["new_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lender_assignment_history_old_lender_id_fkey"
+            columns: ["old_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lenders: {
         Row: {
           code: string
@@ -801,6 +856,75 @@ export type Database = {
           url?: string | null
         }
         Relationships: []
+      }
+      university_lender_preferences: {
+        Row: {
+          compatibility_score: number | null
+          created_at: string
+          id: string
+          is_preferred: boolean | null
+          lender_id: string
+          max_loan_amount: number | null
+          min_loan_amount: number | null
+          notes: string | null
+          preferred_for_loan_type:
+            | Database["public"]["Enums"]["loan_type_enum"]
+            | null
+          special_requirements: Json | null
+          study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          university_id: string
+          updated_at: string
+        }
+        Insert: {
+          compatibility_score?: number | null
+          created_at?: string
+          id?: string
+          is_preferred?: boolean | null
+          lender_id: string
+          max_loan_amount?: number | null
+          min_loan_amount?: number | null
+          notes?: string | null
+          preferred_for_loan_type?:
+            | Database["public"]["Enums"]["loan_type_enum"]
+            | null
+          special_requirements?: Json | null
+          study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          university_id: string
+          updated_at?: string
+        }
+        Update: {
+          compatibility_score?: number | null
+          created_at?: string
+          id?: string
+          is_preferred?: boolean | null
+          lender_id?: string
+          max_loan_amount?: number | null
+          min_loan_amount?: number | null
+          notes?: string | null
+          preferred_for_loan_type?:
+            | Database["public"]["Enums"]["loan_type_enum"]
+            | null
+          special_requirements?: Json | null
+          study_destination?: Database["public"]["Enums"]["study_destination_enum"]
+          university_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_lender_preferences_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "university_lender_preferences_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

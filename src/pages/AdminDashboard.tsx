@@ -723,10 +723,11 @@ const AdminDashboard = () => {
                 ) : (
                   <div className="space-y-0">
                     {/* Header */}
-                    <div className="grid grid-cols-9 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
+                    <div className="grid grid-cols-10 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
                       <div className="col-span-2">Student</div>
                       <div className="col-span-2">Partner</div>
                       <div className="col-span-1">Destination</div>
+                      <div className="col-span-1">Lender</div>
                       <div className="col-span-2">Loan Amount</div>
                       <div className="col-span-1">Status</div>
                       <div className="col-span-1">Date</div>
@@ -735,7 +736,7 @@ const AdminDashboard = () => {
                     {recentLeads.slice(0, 8).map((lead) => (
                       <div 
                         key={lead.id} 
-                        className="grid grid-cols-9 gap-4 py-3 border-b border-border/50 hover:bg-muted/50 transition-colors rounded cursor-pointer group"
+                        className="grid grid-cols-10 gap-4 py-3 border-b border-border/50 hover:bg-muted/50 transition-colors rounded cursor-pointer group"
                         onClick={() => {
                           setSelectedLead(lead);
                           setShowLeadDetailSheet(true);
@@ -752,6 +753,9 @@ const AdminDashboard = () => {
                         </div>
                         <div className="col-span-1">
                           <p className="text-sm">{lead.study_destination}</p>
+                        </div>
+                        <div className="col-span-1">
+                          <p className="text-xs truncate">{lead.lender?.name || 'N/A'}</p>
                         </div>
                         <div className="col-span-2">
                           <p className="font-semibold text-sm">
@@ -908,6 +912,8 @@ const AdminDashboard = () => {
                           <span>Case: {lead.case_id}</span>
                           <span>•</span>
                           <span>Partner: {lead.partner?.name}</span>
+                          <span>•</span>
+                          <span>Lender: {lead.lender?.name || 'N/A'}</span>
                         </div>
                       </div>
                       <div className="text-right space-y-2">
