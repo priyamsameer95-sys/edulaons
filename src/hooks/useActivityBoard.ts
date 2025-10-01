@@ -65,7 +65,7 @@ export function useActivityBoard() {
           new_status,
           change_reason,
           lead_id,
-          leads_new!inner (
+          leads_new!lead_status_history_lead_id_fkey (
             id,
             case_id,
             partner_id,
