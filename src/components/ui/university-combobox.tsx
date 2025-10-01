@@ -20,8 +20,8 @@ import { useUniversities } from "@/hooks/useUniversities";
 
 interface UniversityComboboxProps {
   country: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: string; // This will be the university ID or name
+  onChange: (value: string, isCustom?: boolean) => void;
   error?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -36,30 +36,52 @@ export function UniversityCombobox({
   disabled = false,
 }: UniversityComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(value);
+  const [inputValue, setInputValue] = React.useState("");
+  const [selectedUniversity, setSelectedUniversity] = React.useState<{ id: string; name: string } | null>(null);
   const { universities, loading, searchUniversities, totalCount } = useUniversities(country);
 
-  // Update input value when prop value changes
+  // Find university by ID when value changes
   React.useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+    if (value) {
+      // Check if value is a UUID (selected from list) or a custom name
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+      
+      if (isUUID) {
+        const university = universities.find(u => u.id === value);
+        if (university) {
+          setSelectedUniversity(university);
+          setInputValue(university.name);
+        }
+      } else {
+        // Custom university name
+        setSelectedUniversity(null);
+        setInputValue(value);
+      }
+    } else {
+      setSelectedUniversity(null);
+      setInputValue("");
+    }
+  }, [value, universities]);
 
-  // Clear input when country changes - DON'T call onChange to prevent infinite loop
+  // Clear input when country changes
   React.useEffect(() => {
     if (!country) {
       setInputValue("");
+      setSelectedUniversity(null);
     }
   }, [country]);
 
-  const handleSelect = (selectedValue: string) => {
-    setInputValue(selectedValue);
-    onChange(selectedValue);
+  const handleSelect = (universityId: string, universityName: string) => {
+    setSelectedUniversity({ id: universityId, name: universityName });
+    setInputValue(universityName);
+    onChange(universityId, false); // Pass UUID and flag that it's not custom
     setOpen(false);
   };
 
   const handleInputChange = (newValue: string) => {
     setInputValue(newValue);
-    onChange(newValue);
+    // When typing freely, treat as custom university name
+    onChange(newValue, true); // Pass name and flag that it's custom
   };
 
   const filteredUniversities = React.useMemo(() => {
@@ -142,7 +164,7 @@ export function UniversityCombobox({
                   <CommandItem
                     key={university.id}
                     value={university.name}
-                    onSelect={() => handleSelect(university.name)}
+                    onSelect={() => handleSelect(university.id, university.name)}
                     className="cursor-pointer"
                   >
                     <div className="flex items-center justify-between w-full">
@@ -150,7 +172,7 @@ export function UniversityCombobox({
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            inputValue === university.name
+                            selectedUniversity?.id === university.id
                               ? "opacity-100"
                               : "opacity-0"
                           )}

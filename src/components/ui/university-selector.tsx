@@ -33,7 +33,7 @@ export function UniversitySelector({
     }
   }, [universities, onChange]);
 
-  const updateUniversity = React.useCallback((index: number, value: string) => {
+  const updateUniversity = React.useCallback((index: number, value: string, isCustom?: boolean) => {
     const newUniversities = [...universities];
     newUniversities[index] = value;
     onChange(newUniversities);
@@ -66,7 +66,7 @@ export function UniversitySelector({
             <UniversityCombobox
               country={country}
               value={university}
-              onChange={(value) => updateUniversity(index, value)}
+              onChange={(value, isCustom) => updateUniversity(index, value, isCustom)}
               placeholder={index === 0 ? "Primary university (required)" : "Additional university"}
               disabled={disabled}
               error={error && index === 0 ? error : undefined}

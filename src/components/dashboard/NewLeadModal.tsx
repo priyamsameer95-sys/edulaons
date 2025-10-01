@@ -237,6 +237,40 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         throw new Error('You are not logged in. Please refresh the page and log in again.');
       }
 
+      // Process universities - create records for custom names
+      const processedUniversities = await Promise.all(
+        formData.universities
+          .filter(u => u && u.trim())
+          .map(async (uni) => {
+            // Check if it's a UUID (selected from list)
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uni);
+            
+            if (isUUID) {
+              return uni; // Already a UUID
+            }
+            
+            // Custom university name - create a new university record
+            console.log('🏛️ [NewLeadModal] Creating custom university:', uni);
+            const { data: newUni, error: uniError } = await supabase
+              .from('universities')
+              .insert({
+                name: uni.trim(),
+                country: formData.country,
+                city: 'Unknown'
+              })
+              .select('id')
+              .single();
+            
+            if (uniError) {
+              console.error('❌ [NewLeadModal] Failed to create custom university:', uniError);
+              throw new Error(`Failed to add custom university: ${uni}`);
+            }
+            
+            console.log('✅ [NewLeadModal] Custom university created:', newUni.id);
+            return newUni.id;
+          })
+      );
+
       // Prepare data for edge function
       const leadPayload = {
         student_name: formData.student_name,
@@ -244,7 +278,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         student_email: formData.student_email,
         student_pin_code: formData.student_pin_code,
         country: formData.country,
-        universities: formData.universities.filter(u => u && u.trim()),
+        universities: processedUniversities,
         intake_month: formData.intake_month,
         loan_type: formData.loan_type,
         amount_requested: formData.amount_requested,
