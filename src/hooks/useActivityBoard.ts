@@ -143,7 +143,15 @@ export function useActivityBoard() {
       // Process status change activities
       statusData?.forEach((status: any) => {
         const lead = status.leads_new;
-        if (!lead) return;
+        if (!lead) {
+          console.warn('[ActivityBoard] Status change missing lead relationship:', status.id);
+          return;
+        }
+
+        // Validate partner and student data
+        const partnerName = lead.partners?.name || 'Unknown Partner';
+        const studentName = lead.students?.name || 'Unknown Student';
+        const partnerId = lead.partner_id || 'unknown';
 
         // Skip if status didn't actually change
         if (status.old_status === status.new_status) return;
@@ -164,10 +172,10 @@ export function useActivityBoard() {
           type: 'status',
           timestamp: status.created_at,
           leadId: lead.id,
-          leadCaseId: lead.case_id,
-          partnerId: lead.partner_id,
-          partnerName: lead.partners?.name || 'Unknown Partner',
-          studentName: lead.students?.name || 'Unknown Student',
+          leadCaseId: lead.case_id || 'N/A',
+          partnerId,
+          partnerName,
+          studentName,
           message: `Status changed: ${status.old_status || 'none'} → ${status.new_status}`,
           details: {
             oldStatus: status.old_status,
@@ -183,7 +191,15 @@ export function useActivityBoard() {
       // Process document activities
       docData?.forEach((doc: any) => {
         const lead = doc.leads_new;
-        if (!lead) return;
+        if (!lead) {
+          console.warn('[ActivityBoard] Document missing lead relationship:', doc.id);
+          return;
+        }
+
+        // Validate partner and student data
+        const partnerName = lead.partners?.name || 'Unknown Partner';
+        const studentName = lead.students?.name || 'Unknown Student';
+        const partnerId = lead.partner_id || 'unknown';
 
         const isPending = doc.verification_status === 'pending';
         const isRejected = doc.verification_status === 'rejected';
@@ -196,12 +212,12 @@ export function useActivityBoard() {
           id: doc.id,
           priority,
           type: 'document',
-          timestamp: doc.uploaded_at,
+          timestamp: doc.uploaded_at || new Date().toISOString(),
           leadId: lead.id,
-          leadCaseId: lead.case_id,
-          partnerId: lead.partner_id,
-          partnerName: lead.partners?.name || 'Unknown Partner',
-          studentName: lead.students?.name || 'Unknown Student',
+          leadCaseId: lead.case_id || 'N/A',
+          partnerId,
+          partnerName,
+          studentName,
           message: `Document ${doc.verification_status}: ${doc.document_types?.name || 'Unknown'}`,
           details: {
             documentType: doc.document_types?.name,
@@ -213,8 +229,21 @@ export function useActivityBoard() {
 
       // Process leads for new and stuck activities
       leadsData?.forEach((lead: any) => {
-        const lastUpdate = new Date(lead.updated_at);
-        const createdDate = new Date(lead.created_at);
+        // Validate partner and student data
+        const partnerName = lead.partners?.name || 'Unknown Partner';
+        const studentName = lead.students?.name || 'Unknown Student';
+        const partnerId = lead.partner_id || 'unknown';
+
+        // Safely parse dates with validation
+        const lastUpdate = lead.updated_at ? new Date(lead.updated_at) : new Date();
+        const createdDate = lead.created_at ? new Date(lead.created_at) : new Date();
+        
+        // Validate dates
+        if (isNaN(lastUpdate.getTime()) || isNaN(createdDate.getTime())) {
+          console.warn('[ActivityBoard] Invalid date for lead:', lead.id);
+          return;
+        }
+
         const nowTime = Date.now();
         const daysSinceUpdate = Math.floor((nowTime - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
         const daysSinceCreation = Math.floor((nowTime - createdDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -228,10 +257,10 @@ export function useActivityBoard() {
             type: 'lead',
             timestamp: lead.created_at,
             leadId: lead.id,
-            leadCaseId: lead.case_id,
-            partnerId: lead.partner_id,
-            partnerName: lead.partners?.name || 'Unknown Partner',
-            studentName: lead.students?.name || 'Unknown Student',
+            leadCaseId: lead.case_id || 'N/A',
+            partnerId,
+            partnerName,
+            studentName,
             message: `🆕 New lead created`,
             actionable: lead.status === 'new',
             actionType: 'view_lead',
@@ -247,10 +276,10 @@ export function useActivityBoard() {
             type: 'lead',
             timestamp: lead.updated_at,
             leadId: lead.id,
-            leadCaseId: lead.case_id,
-            partnerId: lead.partner_id,
-            partnerName: lead.partners?.name || 'Unknown Partner',
-            studentName: lead.students?.name || 'Unknown Student',
+            leadCaseId: lead.case_id || 'N/A',
+            partnerId,
+            partnerName,
+            studentName,
             message: `⚠️ Lead stuck for ${daysSinceUpdate} days`,
             actionable: true,
             actionType: 'view_lead',
@@ -286,9 +315,11 @@ export function useActivityBoard() {
       const urgentCount = allActivities.filter(a => a.priority === 'URGENT').length;
       const attentionCount = allActivities.filter(a => a.priority === 'ATTENTION').length;
       const todayActivitiesCount = allActivities.filter(
-        a => new Date(a.timestamp) >= todayStart
+        a => a.timestamp && new Date(a.timestamp) >= todayStart
       ).length;
-      const activePartners = new Set(allActivities.map(a => a.partnerId)).size;
+      const activePartners = new Set(
+        allActivities.map(a => a.partnerId).filter(id => id && id !== 'unknown')
+      ).size;
 
       setStats({
         urgentCount,

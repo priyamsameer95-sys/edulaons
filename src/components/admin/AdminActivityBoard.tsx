@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { 
   FileText, 
   TrendingUp, 
@@ -223,13 +224,19 @@ export function AdminActivityBoard({
 
   const groupedActivities = groupByPartner
     ? activities.reduce((acc, activity) => {
-        if (!acc[activity.partnerId]) {
-          acc[activity.partnerId] = {
-            partnerName: activity.partnerName,
+        // Skip activities without a valid partner ID
+        const partnerId = activity.partnerId || 'unknown';
+        if (!partnerId || partnerId === 'unknown') {
+          console.warn('[ActivityBoard] Activity missing partnerId:', activity.id);
+        }
+        
+        if (!acc[partnerId]) {
+          acc[partnerId] = {
+            partnerName: activity.partnerName || 'Unknown Partner',
             activities: [],
           };
         }
-        acc[activity.partnerId].activities.push(activity);
+        acc[partnerId].activities.push(activity);
         return acc;
       }, {} as Record<string, { partnerName: string; activities: ActivityItem[] }>)
     : null;
@@ -299,11 +306,12 @@ export function AdminActivityBoard({
       <ScrollArea className="flex-1 p-6">
         <div className="space-y-4">
           {activities.length === 0 ? (
-            <div className="text-center py-12">
-              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No activities to show</p>
-            </div>
-          ) : groupByPartner && groupedActivities ? (
+            <EmptyState
+              icon={CheckCircle2}
+              title="No Recent Activity"
+              description="There are no recent activities to display. New leads, status changes, and document uploads will appear here."
+            />
+          ) : groupByPartner && groupedActivities && Object.keys(groupedActivities).length > 0 ? (
             Object.entries(groupedActivities).map(([partnerId, group]) => {
               const isExpanded = expandedPartners.has(partnerId);
               const urgentCount = group.activities.filter(a => a.priority === 'URGENT').length;
