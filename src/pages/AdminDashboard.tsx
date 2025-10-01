@@ -29,6 +29,7 @@ import { AdminActionRequired } from '@/components/gamification/AdminActionRequir
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import { DataSanityCheck } from '@/components/admin/DataSanityCheck';
+import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -698,80 +699,22 @@ const AdminDashboard = () => {
                     </Card>
                   </div>
 
-                  {/* Recent Activity - Full Width Table Style */}
-                  <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-accent-foreground" />
-                      Recent Activity
-                    </CardTitle>
-                    <CardDescription>Latest lead submissions across all partners</CardDescription>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {recentLeads.length} active leads
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {recentLeads.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No recent activity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-0">
-                    {/* Header */}
-                    <div className="grid grid-cols-9 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
-                      <div className="col-span-2">Student</div>
-                      <div className="col-span-2">Partner</div>
-                      <div className="col-span-1">Destination</div>
-                      <div className="col-span-2">Loan Amount</div>
-                      <div className="col-span-1">Status</div>
-                      <div className="col-span-1">Date</div>
-                    </div>
-                    {/* Data Rows */}
-                    {recentLeads.slice(0, 8).map((lead) => (
-                      <div 
-                        key={lead.id} 
-                        className="grid grid-cols-9 gap-4 py-3 border-b border-border/50 hover:bg-muted/50 transition-colors rounded cursor-pointer group"
-                        onClick={() => {
-                          setSelectedLead(lead);
-                          setShowLeadDetailSheet(true);
-                        }}
-                      >
-                        <div className="col-span-2">
-                          <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{lead.student?.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{lead.student?.email}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <Badge variant="outline" className="text-xs">
-                            {lead.partner?.name}
-                          </Badge>
-                        </div>
-                        <div className="col-span-1">
-                          <p className="text-sm">{lead.study_destination}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="font-semibold text-sm">
-                            {formatCurrency(Number(lead.loan_amount))}
-                          </p>
-                        </div>
-                        <div className="col-span-1">
-                          <StatusBadge status={lead.status as LeadStatus} type="lead" className="text-xs" />
-                        </div>
-                        <div className="col-span-1">
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(lead.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  )}
-                </CardContent>
-              </Card>
+                  {/* Activity Board - Comprehensive Activity Tracking */}
+                  <AdminActivityBoard
+                    onViewLead={(leadId) => {
+                      const lead = allLeads.find(l => l.id === leadId);
+                      if (lead) {
+                        handleViewLead(lead);
+                      }
+                    }}
+                    onUpdateStatus={(leadId) => {
+                      const lead = allLeads.find(l => l.id === leadId);
+                      if (lead) {
+                        handleQuickStatusUpdate(lead);
+                      }
+                    }}
+                    onVerifyDocument={handleVerifyDocument}
+                  />
                 </div>
               </TabsContent>
 
