@@ -187,8 +187,29 @@ export function useActivityBoard() {
       // Check for stuck leads (no activity in 7+ days, not approved/rejected)
       leadsData?.forEach((lead: any) => {
         const lastUpdate = new Date(lead.updated_at);
+        const createdDate = new Date(lead.created_at);
         const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceCreation = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
 
+        // Show newly created leads (within last 7 days)
+        if (daysSinceCreation <= 7) {
+          allActivities.push({
+            id: `new-${lead.id}`,
+            priority: lead.status === 'new' ? 'ATTENTION' : 'INFO',
+            type: 'lead',
+            timestamp: lead.created_at,
+            leadId: lead.id,
+            leadCaseId: lead.case_id,
+            partnerId: lead.partner_id,
+            partnerName: lead.partners?.name || 'Unknown Partner',
+            studentName: lead.students?.name || 'Unknown Student',
+            message: `🆕 New lead created`,
+            actionable: lead.status === 'new',
+            actionType: 'view_lead',
+          });
+        }
+
+        // Check for stuck leads (no activity in 7+ days, not approved/rejected)
         if (daysSinceUpdate >= 7 && lead.status !== 'approved' && lead.status !== 'rejected') {
           allActivities.push({
             id: `stuck-${lead.id}`,
