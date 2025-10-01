@@ -49,21 +49,33 @@ export function useActivityBoard() {
       setLoading(true);
       setError(null);
 
-      const now = new Date();
-      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const todayStart = new Date(now.setHours(0, 0, 0, 0));
+      console.log('[ActivityBoard] Starting to fetch activities...');
 
-      // Fetch status history activities
+      // Use UTC dates consistently
+      const now = new Date();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+
+      console.log('[ActivityBoard] Date range:', {
+        now: now.toISOString(),
+        sevenDaysAgo: sevenDaysAgo.toISOString(),
+        thirtyDaysAgo: thirtyDaysAgo.toISOString(),
+      });
+
+      // Fetch status history activities - use explicit foreign key
       const { data: statusData, error: statusError } = await supabase
         .from('lead_status_history')
         .select(`
           *,
-          leads_new!inner(
+          leads_new!lead_status_history_lead_id_fkey(
             id,
             case_id,
             status,
             documents_status,
             updated_at,
+            created_at,
             partner_id,
             partners!leads_new_partner_id_fkey(name),
             students!leads_new_student_id_fkey(name)
@@ -73,7 +85,11 @@ export function useActivityBoard() {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (statusError) throw statusError;
+      if (statusError) {
+        console.error('[ActivityBoard] Status history error:', statusError);
+        throw statusError;
+      }
+      console.log('[ActivityBoard] Status data fetched:', statusData?.length || 0, 'records');
 
       // Fetch document activities - specify the foreign key relationship
       const { data: docData, error: docError } = await supabase
@@ -81,24 +97,29 @@ export function useActivityBoard() {
         .select(`
           *,
           document_types(name),
-          leads_new!fk_lead_documents_lead_id(
+          leads_new!lead_documents_lead_id_fkey(
             id,
             case_id,
             status,
             documents_status,
             updated_at,
+            created_at,
             partner_id,
-            partners(name),
-            students(name)
+            partners!leads_new_partner_id_fkey(name),
+            students!leads_new_student_id_fkey(name)
           )
         `)
         .gte('uploaded_at', sevenDaysAgo.toISOString())
         .order('uploaded_at', { ascending: false })
         .limit(100);
 
-      if (docError) throw docError;
+      if (docError) {
+        console.error('[ActivityBoard] Document error:', docError);
+        throw docError;
+      }
+      console.log('[ActivityBoard] Document data fetched:', docData?.length || 0, 'records');
 
-      // Fetch leads to check for stuck ones
+      // Fetch leads - use created_at to catch new leads
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -106,12 +127,18 @@ export function useActivityBoard() {
           partners!leads_new_partner_id_fkey(name),
           students!leads_new_student_id_fkey(name)
         `)
-        .gte('updated_at', sevenDaysAgo.toISOString())
-        .order('updated_at', { ascending: false });
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false });
 
-      if (leadsError) throw leadsError;
+      if (leadsError) {
+        console.error('[ActivityBoard] Leads error:', leadsError);
+        throw leadsError;
+      }
+      console.log('[ActivityBoard] Leads data fetched:', leadsData?.length || 0, 'records');
 
       const allActivities: ActivityItem[] = [];
+
+      console.log('[ActivityBoard] Processing activities...');
 
       // Process status change activities
       statusData?.forEach((status: any) => {
@@ -184,15 +211,17 @@ export function useActivityBoard() {
         });
       });
 
-      // Check for stuck leads (no activity in 7+ days, not approved/rejected)
+      // Process leads for new and stuck activities
       leadsData?.forEach((lead: any) => {
         const lastUpdate = new Date(lead.updated_at);
         const createdDate = new Date(lead.created_at);
-        const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
-        const daysSinceCreation = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+        const nowTime = Date.now();
+        const daysSinceUpdate = Math.floor((nowTime - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceCreation = Math.floor((nowTime - createdDate.getTime()) / (1000 * 60 * 60 * 24));
 
         // Show newly created leads (within last 7 days)
         if (daysSinceCreation <= 7) {
+          console.log(`[ActivityBoard] New lead detected: ${lead.case_id}, created ${daysSinceCreation} days ago`);
           allActivities.push({
             id: `new-${lead.id}`,
             priority: lead.status === 'new' ? 'ATTENTION' : 'INFO',
@@ -211,6 +240,7 @@ export function useActivityBoard() {
 
         // Check for stuck leads (no activity in 7+ days, not approved/rejected)
         if (daysSinceUpdate >= 7 && lead.status !== 'approved' && lead.status !== 'rejected') {
+          console.log(`[ActivityBoard] Stuck lead detected: ${lead.case_id}, no update for ${daysSinceUpdate} days`);
           allActivities.push({
             id: `stuck-${lead.id}`,
             priority: 'URGENT',
@@ -240,6 +270,14 @@ export function useActivityBoard() {
         const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
         if (priorityDiff !== 0) return priorityDiff;
         return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+
+      console.log('[ActivityBoard] Total activities processed:', allActivities.length);
+      console.log('[ActivityBoard] Activities by priority:', {
+        URGENT: allActivities.filter(a => a.priority === 'URGENT').length,
+        ATTENTION: allActivities.filter(a => a.priority === 'ATTENTION').length,
+        INFO: allActivities.filter(a => a.priority === 'INFO').length,
+        SUCCESS: allActivities.filter(a => a.priority === 'SUCCESS').length,
       });
 
       setActivities(allActivities);
