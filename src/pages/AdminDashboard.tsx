@@ -29,6 +29,7 @@ import { AdminActionRequired } from '@/components/gamification/AdminActionRequir
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import { DataSanityCheck } from '@/components/admin/DataSanityCheck';
+import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -118,6 +119,20 @@ const AdminDashboard = () => {
     const lead = recentLeads.find(l => l.id === leadId);
     if (lead) {
       handleViewLead(lead);
+    }
+  };
+
+  const handleActivityViewLead = (leadId: string) => {
+    const lead = allLeads.find(l => l.id === leadId);
+    if (lead) {
+      handleViewLead(lead);
+    }
+  };
+
+  const handleActivityUpdateStatus = (leadId: string) => {
+    const lead = allLeads.find(l => l.id === leadId);
+    if (lead) {
+      handleQuickStatusUpdate(lead);
     }
   };
 
@@ -553,10 +568,14 @@ const AdminDashboard = () => {
 
             {/* Tabs Section */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+              <TabsList className="grid w-full grid-cols-5 max-w-3xl">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Activity
                 </TabsTrigger>
                 <TabsTrigger value="partners" className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
@@ -777,6 +796,14 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="activity" className="space-y-6 mt-6">
+                <AdminActivityBoard
+                  onViewLead={handleActivityViewLead}
+                  onUpdateStatus={handleActivityUpdateStatus}
+                  onVerifyDocument={handleVerifyDocument}
+                />
               </TabsContent>
 
               <TabsContent value="partners" className="space-y-6 mt-6">
