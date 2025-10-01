@@ -49,65 +49,52 @@ export function useActivityBoard() {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 [ActivityBoard] Starting fetch...');
+      console.log('🔍 [ActivityBoard] Starting optimized fetch with JOINs...');
 
       const allActivities: ActivityItem[] = [];
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      // Fetch status changes
-      console.log('📊 Fetching status changes...');
+      // Fetch status changes WITH joined data in a single query
+      console.log('📊 Fetching status changes with JOINs...');
       const { data: statusData, error: statusError } = await supabase
         .from('lead_status_history')
-        .select('*')
+        .select(`
+          id,
+          created_at,
+          old_status,
+          new_status,
+          change_reason,
+          lead_id,
+          leads_new!inner (
+            id,
+            case_id,
+            partner_id,
+            student_id,
+            partners (
+              name
+            ),
+            students (
+              name
+            )
+          )
+        `)
         .gte('created_at', sevenDaysAgo)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (statusError) {
-        console.error('❌ Status error:', statusError);
+        console.error('❌ Status fetch error:', statusError);
       } else {
-        console.log('✅ Status data:', statusData?.length || 0);
+        console.log('✅ Status data fetched:', statusData?.length || 0);
 
         // Process status changes
         for (const status of statusData || []) {
           if (!status.created_at) continue;
 
-          // Fetch lead info separately
-          const { data: leadData, error: leadError } = await supabase
-            .from('leads_new')
-            .select('id, case_id, partner_id, student_id')
-            .eq('id', status.lead_id)
-            .maybeSingle();
-
-          if (leadError) {
-            console.error('❌ Lead fetch error:', leadError, 'for lead_id:', status.lead_id);
+          const lead = status.leads_new as any;
+          if (!lead) {
+            console.warn('⚠️ No lead data for status change:', status.id);
             continue;
-          }
-          if (!leadData) {
-            console.warn('⚠️ No lead data found for lead_id:', status.lead_id);
-            continue;
-          }
-
-          // Fetch partner info
-          const { data: partnerData, error: partnerError } = await supabase
-            .from('partners')
-            .select('name')
-            .eq('id', leadData.partner_id)
-            .maybeSingle();
-
-          if (partnerError) {
-            console.error('❌ Partner fetch error:', partnerError, 'for partner_id:', leadData.partner_id);
-          }
-
-          // Fetch student info
-          const { data: studentData, error: studentError } = await supabase
-            .from('students')
-            .select('name')
-            .eq('id', leadData.student_id)
-            .maybeSingle();
-
-          if (studentError) {
-            console.error('❌ Student fetch error:', studentError, 'for student_id:', leadData.student_id);
           }
 
           const priority: ActivityPriority =
@@ -120,11 +107,11 @@ export function useActivityBoard() {
             priority,
             type: 'status',
             timestamp: status.created_at,
-            leadId: leadData.id,
-            leadCaseId: leadData.case_id || 'N/A',
-            partnerId: leadData.partner_id || 'unknown',
-            partnerName: partnerData?.name || 'Unknown Partner',
-            studentName: studentData?.name || 'Unknown Student',
+            leadId: lead.id,
+            leadCaseId: lead.case_id || 'N/A',
+            partnerId: lead.partner_id || 'unknown',
+            partnerName: lead.partners?.name || 'Unknown Partner',
+            studentName: lead.students?.name || 'Unknown Student',
             message: `Status changed: ${status.old_status || 'none'} → ${status.new_status}`,
             details: {
               oldStatus: status.old_status,
@@ -138,64 +125,49 @@ export function useActivityBoard() {
         console.log('✅ Processed status activities:', allActivities.filter(a => a.type === 'status').length);
       }
 
-      // Fetch leads for new lead activities
-      console.log('📋 Fetching leads...');
+      // Fetch recent leads WITH joined data in a single query
+      console.log('📋 Fetching recent leads with JOINs...');
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
-        .select('*')
+        .select(`
+          id,
+          case_id,
+          created_at,
+          partner_id,
+          student_id,
+          partners (
+            name
+          ),
+          students (
+            name
+          )
+        `)
+        .gte('created_at', sevenDaysAgo)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (leadsError) {
-        console.error('❌ Leads error:', leadsError);
+        console.error('❌ Leads fetch error:', leadsError);
       } else {
-        console.log('✅ Leads data:', leadsData?.length || 0);
+        console.log('✅ Leads data fetched:', leadsData?.length || 0);
 
         for (const lead of leadsData || []) {
           if (!lead.created_at) continue;
 
-          const createdDate = new Date(lead.created_at);
-          const daysSinceCreation = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-
-          // Show leads created in last 7 days
-          if (daysSinceCreation <= 7) {
-            // Fetch partner info
-            const { data: partnerData, error: partnerError } = await supabase
-              .from('partners')
-              .select('name')
-              .eq('id', lead.partner_id)
-              .maybeSingle();
-
-            if (partnerError) {
-              console.error('❌ Partner fetch error for lead:', partnerError, 'partner_id:', lead.partner_id);
-            }
-
-            // Fetch student info
-            const { data: studentData, error: studentError } = await supabase
-              .from('students')
-              .select('name')
-              .eq('id', lead.student_id)
-              .maybeSingle();
-
-            if (studentError) {
-              console.error('❌ Student fetch error for lead:', studentError, 'student_id:', lead.student_id);
-            }
-
-            allActivities.push({
-              id: `new-${lead.id}`,
-              priority: 'INFO',
-              type: 'lead',
-              timestamp: lead.created_at,
-              leadId: lead.id,
-              leadCaseId: lead.case_id || 'N/A',
-              partnerId: lead.partner_id || 'unknown',
-              partnerName: partnerData?.name || 'Unknown Partner',
-              studentName: studentData?.name || 'Unknown Student',
-              message: '🆕 New lead created',
-              actionable: true,
-              actionType: 'view_lead',
-            });
-          }
+          allActivities.push({
+            id: `new-${lead.id}`,
+            priority: 'INFO',
+            type: 'lead',
+            timestamp: lead.created_at,
+            leadId: lead.id,
+            leadCaseId: lead.case_id || 'N/A',
+            partnerId: lead.partner_id || 'unknown',
+            partnerName: (lead as any).partners?.name || 'Unknown Partner',
+            studentName: (lead as any).students?.name || 'Unknown Student',
+            message: '🆕 New lead created',
+            actionable: true,
+            actionType: 'view_lead',
+          });
         }
         console.log('✅ Processed lead activities:', allActivities.filter(a => a.type === 'lead').length);
       }
