@@ -197,7 +197,9 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                     <div>
                       <p className="font-semibold">{lead.co_applicant?.name || 'N/A'}</p>
                       <p className="text-sm text-muted-foreground capitalize">{lead.co_applicant?.relationship || 'N/A'}</p>
-                      <p className="text-sm text-muted-foreground">₹{lead.co_applicant?.salary?.toLocaleString() || 'N/A'}/year</p>
+                      <p className="text-sm text-muted-foreground">
+                        {lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/year` : 'N/A'}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

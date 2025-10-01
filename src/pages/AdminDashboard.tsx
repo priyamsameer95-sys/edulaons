@@ -21,6 +21,8 @@ import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStat
 import { useStatusManager } from '@/hooks/useStatusManager';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
+import { useRefactoredLeads } from '@/hooks/useRefactoredLeads';
+import { RefactoredLead } from '@/types/refactored-lead';
 
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AdminActionRequired } from '@/components/gamification/AdminActionRequired';
@@ -46,30 +48,8 @@ interface PartnerStats {
   recentActivity: string;
 }
 
-interface Lead {
-  id: string;
-  case_id: string;
-  status: string;
-  documents_status: string;
-  loan_amount: number;
-  loan_type: string;
-  study_destination: string;
-  created_at: string;
-  updated_at: string;
-  student_name: string;
-  partner_name: string;
-  students: {
-    name: string;
-    email: string;
-  };
-  partners: {
-    name: string;
-    partner_code: string;
-  };
-  lenders: {
-    name: string;
-  };
-}
+// Using RefactoredLead type from shared types
+type Lead = RefactoredLead;
 
 interface TopPartnerData {
   name: string;
@@ -87,6 +67,7 @@ const AdminDashboard = () => {
   const { signOut, appUser } = useAuth();
   const { toast } = useToast();
   const { bulkUpdateStatus } = useStatusManager();
+  const { leads: allLeads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
   const [kpis, setKpis] = useState<AdminKPIs>({
     totalLeads: 0,
     totalPartners: 0,
@@ -294,43 +275,18 @@ const AdminDashboard = () => {
 
   const fetchRecentLeads = async () => {
     try {
-      const query = supabase
-        .from('leads_new')
-        .select(`
-          id,
-          case_id,
-          status,
-          documents_status,
-          loan_amount,
-          loan_type,
-          study_destination,
-          created_at,
-          updated_at,
-          students!leads_new_student_id_fkey (
-            name,
-            email
-          ),
-          partners!leads_new_partner_id_fkey (
-            name,
-            partner_code
-          ),
-          lenders!leads_new_lender_id_fkey (
-            name
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
+      // Filter leads from the hook based on selected partner
+      let leads = allLeads;
+      
       if (selectedPartner !== 'all') {
-        query.eq('partner_id', selectedPartner);
+        leads = allLeads.filter(lead => lead.partner?.id === selectedPartner);
       }
-
-      const { data } = await query;
-      const leads = (data || []).map(lead => ({
-        ...lead,
-        student_name: lead.students?.name || 'N/A',
-        partner_name: lead.partners?.name || 'N/A'
-      }));
+      
+      // Sort by created_at descending and limit to 20
+      leads = leads
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 20);
+      
       setRecentLeads(leads);
       
       // Filter leads based on search term
@@ -374,10 +330,10 @@ const AdminDashboard = () => {
     }
 
     const filtered = leads.filter(lead => 
-      lead.students?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.students?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.student?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.student?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.case_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.partners?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      lead.partner?.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
     setFilteredLeads(filtered);
@@ -390,9 +346,12 @@ const AdminDashboard = () => {
         await Promise.all([
           fetchAdminKPIs(),
           fetchPartnerStats(),
-          fetchRecentLeads(),
           fetchLoanComparison(),
         ]);
+        // fetchRecentLeads depends on allLeads, so call separately
+        if (!leadsLoading) {
+          await fetchRecentLeads();
+        }
       } catch (error) {
         console.error('Error loading dashboard:', error);
         toast({
@@ -476,49 +435,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Convert Lead to RefactoredLead format for EnhancedAdminLeadActions
-  const convertToRefactoredLead = (lead: Lead) => ({
-    id: lead.id,
-    case_id: lead.case_id,
-    student_id: lead.id, // Using lead id as fallback
-    co_applicant_id: lead.id, // Using lead id as fallback
-    partner_id: lead.partners?.name || null,
-    lender_id: lead.lenders?.name || '',
-    loan_amount: Number(lead.loan_amount),
-    loan_type: lead.loan_type as 'secured' | 'unsecured',
-    study_destination: lead.study_destination as any,
-    intake_month: null, // Not available in current Lead interface
-    intake_year: null, // Not available in current Lead interface
-    status: lead.status as any,
-    documents_status: lead.documents_status as any,
-    created_at: lead.created_at,
-    updated_at: lead.updated_at,
-    student: {
-      id: lead.id,
-      name: lead.students?.name || '',
-      email: lead.students?.email || '',
-      phone: '',
-      date_of_birth: null,
-      nationality: null,
-      street_address: null,
-      city: null,
-      state: null,
-      country: null,
-      postal_code: null,
-      created_at: lead.created_at,
-      updated_at: lead.updated_at,
-    },
-    partner: lead.partners ? {
-      id: lead.id,
-      name: lead.partners.name,
-      email: '',
-      phone: null,
-      address: null,
-      is_active: true,
-      created_at: lead.created_at,
-      updated_at: lead.updated_at,
-    } : undefined,
-  });
+  // No conversion needed - already using RefactoredLead
 
   if (loading) {
     return (
@@ -825,12 +742,12 @@ const AdminDashboard = () => {
                         }}
                       >
                         <div className="col-span-2">
-                          <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{lead.students?.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{lead.students?.email}</p>
+                          <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{lead.student?.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{lead.student?.email}</p>
                         </div>
                         <div className="col-span-2">
                           <Badge variant="outline" className="text-xs">
-                            {lead.partners?.name}
+                            {lead.partner?.name}
                           </Badge>
                         </div>
                         <div className="col-span-1">
@@ -983,14 +900,14 @@ const AdminDashboard = () => {
                         className="mt-1"
                       />
                       <div className="flex-1 space-y-1">
-                        <h3 className="font-semibold text-foreground">{lead.students?.name}</h3>
+                        <h3 className="font-semibold text-foreground">{lead.student?.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {lead.students?.email}
+                          {lead.student?.email}
                         </p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <span>Case: {lead.case_id}</span>
                           <span>•</span>
-                          <span>Partner: {lead.partners?.name}</span>
+                          <span>Partner: {lead.partner?.name}</span>
                         </div>
                       </div>
                       <div className="text-right space-y-2">
