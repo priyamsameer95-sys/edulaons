@@ -185,10 +185,14 @@ export function useActivityBoard() {
       });
 
       // Check for stuck leads (no activity in 7+ days, not approved/rejected)
+      // Also show newly created leads (within last 7 days) that have no other activities
       leadsData?.forEach((lead: any) => {
         const lastUpdate = new Date(lead.updated_at);
+        const createdDate = new Date(lead.created_at);
         const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceCreation = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
 
+        // Check if lead is stuck (7+ days, not finalized)
         if (daysSinceUpdate >= 7 && lead.status !== 'approved' && lead.status !== 'rejected') {
           allActivities.push({
             id: `stuck-${lead.id}`,
@@ -204,6 +208,27 @@ export function useActivityBoard() {
             actionable: true,
             actionType: 'view_lead',
           });
+        }
+        // Show new leads created within the last 7 days that don't have other activities
+        else if (daysSinceCreation <= 7) {
+          const hasActivity = allActivities.some(a => a.leadId === lead.id);
+          if (!hasActivity) {
+            const priority: ActivityPriority = lead.status === 'new' ? 'ATTENTION' : 'INFO';
+            allActivities.push({
+              id: `new-${lead.id}`,
+              priority,
+              type: 'lead',
+              timestamp: lead.created_at,
+              leadId: lead.id,
+              leadCaseId: lead.case_id,
+              partnerId: lead.partner_id,
+              partnerName: lead.partners?.name || 'Unknown Partner',
+              studentName: lead.students?.name || 'Unknown Student',
+              message: `🆕 New lead created`,
+              actionable: true,
+              actionType: 'view_lead',
+            });
+          }
         }
       });
 
