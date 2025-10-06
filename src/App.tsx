@@ -7,6 +7,7 @@ import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import NewLeadPage from "./pages/NewLeadPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
@@ -46,6 +47,16 @@ const App = () => (
             element={
               <ProtectedRoute requiredRole="partner">
                 <PartnerDashboardWrapper />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* New Lead Page */}
+          <Route 
+            path="/partner/:partnerCode/new-lead" 
+            element={
+              <ProtectedRoute requiredRole="partner">
+                <NewLeadPage />
               </ProtectedRoute>
             } 
           />

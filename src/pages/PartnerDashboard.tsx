@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { Plus, FileText, TrendingUp, CheckCircle, DollarSign, LogOut, Settings, 
 import ShareButton from "@/components/ShareButton";
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
-import { NewLeadModal } from "@/components/dashboard/NewLeadModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,8 +28,9 @@ interface PartnerDashboardProps {
 }
 
 const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
+  const navigate = useNavigate();
+  const { partnerCode } = useParams();
   const { signOut, appUser, isAdmin } = useAuth();
-  const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("leads");
   const [kpisLoading, setKpisLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -192,7 +193,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </Button>
-              <Button onClick={() => setNewLeadOpen(true)}>
+              <Button onClick={() => navigate(`/partner/${partnerCode}/new-lead`)}>
                 <Plus className="h-4 w-4 mr-2" />
                 New Lead
               </Button>
@@ -371,16 +372,9 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         </div>
       </div>
 
-      {/* New Lead Modal */}
-      <NewLeadModal 
-        open={newLeadOpen} 
-        onOpenChange={setNewLeadOpen}
-        onSuccess={() => fetchKPIs()}
-      />
-
       {/* Floating Action Button - Mobile */}
       <Button 
-        onClick={() => setNewLeadOpen(true)} 
+        onClick={() => navigate(`/partner/${partnerCode}/new-lead`)}
         className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full shadow-lg z-50" 
         size="icon"
       >
