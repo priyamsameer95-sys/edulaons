@@ -628,24 +628,43 @@ const NewLeadPage = () => {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Loan Type <span className="text-destructive">*</span>
-                    </Label>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">
+                        Do you have collateral to offer? <span className="text-destructive">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        (Don't worry—this won't affect your application, just helps us find the best match)
+                      </p>
+                    </div>
                     <RadioGroup
                       value={formData.loan_type}
                       onValueChange={(value: 'secured' | 'unsecured') => {
                         handleInputChange('loan_type', value);
                       }}
-                      className="flex space-x-6"
+                      className="space-y-3"
                     >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="secured" id="secured" />
-                        <Label htmlFor="secured" className="font-normal">Secured</Label>
+                      <div className="flex items-start space-x-3 rounded-lg border border-border p-4 transition-colors hover:bg-accent/50 cursor-pointer">
+                        <RadioGroupItem value="secured" id="secured" className="mt-0.5" />
+                        <div className="flex-1">
+                          <Label htmlFor="secured" className="font-medium cursor-pointer">
+                            Yes, I have collateral
+                          </Label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Property, fixed deposits, investments, or other assets
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="unsecured" id="unsecured" />
-                        <Label htmlFor="unsecured" className="font-normal">Unsecured</Label>
+                      <div className="flex items-start space-x-3 rounded-lg border border-border p-4 transition-colors hover:bg-accent/50 cursor-pointer">
+                        <RadioGroupItem value="unsecured" id="unsecured" className="mt-0.5" />
+                        <div className="flex-1">
+                          <Label htmlFor="unsecured" className="font-medium cursor-pointer">
+                            No collateral
+                          </Label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            I'm looking for a collateral-free loan option
+                          </p>
+                        </div>
                       </div>
                     </RadioGroup>
                     {errors.loan_type && (
