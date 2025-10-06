@@ -168,6 +168,7 @@ const NewLeadPage = () => {
   const [coApplicantOpen, setCoApplicantOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [amountInWords, setAmountInWords] = useState<string>('');
+  const [salaryInWords, setSalaryInWords] = useState<string>('');
   const { toast } = useToast();
   const { handleError } = useErrorHandler();
   const { appUser } = useAuth();
@@ -322,6 +323,15 @@ const NewLeadPage = () => {
         setAmountInWords(convertNumberToWords(numericAmount));
       } else {
         setAmountInWords('');
+      }
+    }
+    
+    if (field === 'co_applicant_salary') {
+      const numericSalary = parseFloat(value);
+      if (!isNaN(numericSalary) && numericSalary > 0) {
+        setSalaryInWords(convertNumberToWords(numericSalary));
+      } else {
+        setSalaryInWords('');
       }
     }
     
@@ -762,6 +772,14 @@ const NewLeadPage = () => {
                             placeholder="Annual income in rupees (e.g., 500000)"
                             className={errors.co_applicant_salary ? 'border-destructive' : ''}
                           />
+                          {salaryInWords && (
+                            <p className="text-sm text-muted-foreground">
+                              ₹ {salaryInWords}
+                            </p>
+                          )}
+                          {errors.co_applicant_salary && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_salary}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
