@@ -63,7 +63,7 @@ const leadFormConfig: FieldConfig = {
     pattern: /^(\+[\d]{1,3}[\d\s\-()]{7,14}|[\d]{10})$/
   },
   student_email: { 
-    pattern: /^[^\\s@]+@[^\\s@]+\.[^\\s@]+$/
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   },
   student_pin_code: { 
     required: true, 
@@ -100,7 +100,7 @@ const leadFormConfig: FieldConfig = {
   },
   co_applicant_name: { required: true, minLength: 2, maxLength: 100 },
   co_applicant_email: { 
-    pattern: /^[^\\s@]+@[^\\s@]+\.[^\\s@]+$/
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   },
   co_applicant_phone: { 
     required: true, 
@@ -400,15 +400,16 @@ const NewLeadPage = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="student_name" className="text-sm font-medium">
-                      Full Name <span className="text-destructive">*</span>
+                      What's your full name? <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="student_name"
                       {...getFieldProps('student_name')}
                       onChange={(e) => handleInputChange('student_name', e.target.value)}
-                      placeholder="e.g., John Smith"
+                      placeholder="Your full name"
                       className={errors.student_name ? 'border-destructive focus:border-destructive' : ''}
                     />
+                    <p className="text-xs text-muted-foreground">This will be used in your loan documents</p>
                     {errors.student_name && (
                       <p className="text-sm text-destructive">{errors.student_name}</p>
                     )}
@@ -416,15 +417,16 @@ const NewLeadPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="student_phone" className="text-sm font-medium">
-                      Mobile Number <span className="text-destructive">*</span>
+                      What's your mobile number? <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="student_phone"
                       value={formData.student_phone}
                       onChange={(e) => handleInputChange('student_phone', e.target.value)}
-                      placeholder="10-digit Indian number or +Country Code"
+                      placeholder="Your 10-digit mobile number"
                       className={errors.student_phone ? 'border-destructive' : ''}
                     />
+                    <p className="text-xs text-muted-foreground">We'll send you updates on this number</p>
                     {errors.student_phone && (
                       <p className="text-sm text-destructive">{errors.student_phone}</p>
                     )}
@@ -432,14 +434,14 @@ const NewLeadPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="student_email" className="text-sm font-medium">
-                      Email Address <span className="text-muted-foreground">(Optional)</span>
+                      What's your email? <span className="text-muted-foreground">(Optional)</span>
                     </Label>
                     <Input
                       id="student_email"
                       type="email"
                       value={formData.student_email}
                       onChange={(e) => handleInputChange('student_email', e.target.value)}
-                      placeholder="student@example.com"
+                      placeholder="your.email@example.com"
                       className={errors.student_email ? 'border-destructive' : ''}
                     />
                     {errors.student_email && (
@@ -449,13 +451,13 @@ const NewLeadPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="student_pin_code" className="text-sm font-medium">
-                      PIN Code <span className="text-destructive">*</span>
+                      What's your PIN code? <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="student_pin_code"
                       value={formData.student_pin_code}
                       onChange={(e) => handleInputChange('student_pin_code', e.target.value)}
-                      placeholder="6-digit PIN code"
+                      placeholder="Your area PIN code"
                       maxLength={6}
                       className={errors.student_pin_code ? 'border-destructive' : ''}
                     />
@@ -581,7 +583,7 @@ const NewLeadPage = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      Country <span className="text-destructive">*</span>
+                      Where are you planning to study? <span className="text-destructive">*</span>
                     </Label>
                     <Select
                       value={formData.country}
@@ -591,7 +593,7 @@ const NewLeadPage = () => {
                       }}
                     >
                       <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select destination country" />
+                        <SelectValue placeholder="Select your destination country" />
                       </SelectTrigger>
                       <SelectContent>
                         {countries.map((country) => (
@@ -615,12 +617,12 @@ const NewLeadPage = () => {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      Intake Month & Year <span className="text-destructive">*</span>
+                      When do you plan to start? <span className="text-destructive">*</span>
                     </Label>
                     <MonthYearPicker
                       value={formData.intake_month}
                       onChange={(value) => handleInputChange('intake_month', value)}
-                      placeholder="Select intake month and year"
+                      placeholder="Select your intake month and year"
                       error={!!errors.intake_month}
                     />
                     {errors.intake_month && (
@@ -628,43 +630,27 @@ const NewLeadPage = () => {
                     )}
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">
-                        Do you have collateral to offer? <span className="text-destructive">*</span>
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        (Don't worry—this won't affect your application, just helps us find the best match)
-                      </p>
-                    </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Do you have collateral to offer? <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      (Don't worry, this won't affect your application, just helps us find the best match)
+                    </p>
                     <RadioGroup
                       value={formData.loan_type}
                       onValueChange={(value: 'secured' | 'unsecured') => {
                         handleInputChange('loan_type', value);
                       }}
-                      className="space-y-3"
+                      className="flex gap-6"
                     >
-                      <div className="flex items-start space-x-3 rounded-lg border border-border p-4 transition-colors hover:bg-accent/50 cursor-pointer">
-                        <RadioGroupItem value="secured" id="secured" className="mt-0.5" />
-                        <div className="flex-1">
-                          <Label htmlFor="secured" className="font-medium cursor-pointer">
-                            Yes, I have collateral
-                          </Label>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Property, fixed deposits, investments, or other assets
-                          </p>
-                        </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="secured" id="secured" />
+                        <Label htmlFor="secured" className="font-normal cursor-pointer">Yes</Label>
                       </div>
-                      <div className="flex items-start space-x-3 rounded-lg border border-border p-4 transition-colors hover:bg-accent/50 cursor-pointer">
-                        <RadioGroupItem value="unsecured" id="unsecured" className="mt-0.5" />
-                        <div className="flex-1">
-                          <Label htmlFor="unsecured" className="font-medium cursor-pointer">
-                            No collateral
-                          </Label>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            I'm looking for a collateral-free loan option
-                          </p>
-                        </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unsecured" id="unsecured" />
+                        <Label htmlFor="unsecured" className="font-normal cursor-pointer">No</Label>
                       </div>
                     </RadioGroup>
                     {errors.loan_type && (
@@ -674,17 +660,18 @@ const NewLeadPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="amount_requested" className="text-sm font-medium">
-                      Requested Amount (₹) <span className="text-destructive">*</span>
+                      How much funding do you need? <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="amount_requested"
                       type="number"
                       value={formData.amount_requested}
                       onChange={(e) => handleInputChange('amount_requested', e.target.value)}
-                      placeholder="Enter loan amount in rupees"
+                      placeholder="Amount in rupees (e.g., 2000000 for ₹20 lakhs)"
                       step="1000"
                       className={errors.amount_requested ? 'border-destructive' : ''}
                     />
+                    <p className="text-xs text-muted-foreground">Between ₹1 lakh and ₹2 crores</p>
                     {amountInWords && (
                       <p className="text-sm text-muted-foreground">
                         ₹ {amountInWords}
@@ -705,7 +692,7 @@ const NewLeadPage = () => {
                       <CardTitle className="text-lg flex items-center justify-between">
                         <div className="flex items-center">
                           <Users className="h-5 w-5 mr-2 text-primary" />
-                          Co-applicant Details
+                          Who will be your co-applicant?
                           <span className="text-destructive ml-1">*</span>
                         </div>
                         <ChevronDown className={cn("h-4 w-4 transition-transform", coApplicantOpen && "transform rotate-180")} />
@@ -717,7 +704,7 @@ const NewLeadPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="co_applicant_name" className="text-sm font-medium">
-                            Full Name <span className="text-destructive">*</span>
+                            What's their full name? <span className="text-destructive">*</span>
                           </Label>
                           <Input
                             id="co_applicant_name"
@@ -730,20 +717,20 @@ const NewLeadPage = () => {
 
                         <div className="space-y-2">
                           <Label htmlFor="co_applicant_phone" className="text-sm font-medium">
-                            Phone Number <span className="text-destructive">*</span>
+                            What's their phone number? <span className="text-destructive">*</span>
                           </Label>
                           <Input
                             id="co_applicant_phone"
                             value={formData.co_applicant_phone}
                             onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
-                            placeholder="10-digit phone number"
+                            placeholder="Their 10-digit phone number"
                             className={errors.co_applicant_phone ? 'border-destructive' : ''}
                           />
                         </div>
 
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">
-                            Relationship <span className="text-destructive">*</span>
+                            How are they related to you? <span className="text-destructive">*</span>
                           </Label>
                           <Select
                             value={formData.co_applicant_relationship}
@@ -765,27 +752,27 @@ const NewLeadPage = () => {
 
                         <div className="space-y-2">
                           <Label htmlFor="co_applicant_salary" className="text-sm font-medium">
-                            Annual Salary (₹) <span className="text-destructive">*</span>
+                            What's their annual salary? <span className="text-destructive">*</span>
                           </Label>
                           <Input
                             id="co_applicant_salary"
                             type="number"
                             value={formData.co_applicant_salary}
                             onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
-                            placeholder="e.g., 500000"
+                            placeholder="Annual income in rupees (e.g., 500000)"
                             className={errors.co_applicant_salary ? 'border-destructive' : ''}
                           />
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="co_applicant_pin_code" className="text-sm font-medium">
-                            PIN Code <span className="text-destructive">*</span>
+                            What's their PIN code? <span className="text-destructive">*</span>
                           </Label>
                           <Input
                             id="co_applicant_pin_code"
                             value={formData.co_applicant_pin_code}
                             onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value)}
-                            placeholder="6-digit PIN code"
+                            placeholder="Their area PIN code"
                             maxLength={6}
                             className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
                           />
