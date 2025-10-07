@@ -2,12 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Partner Dashboard Design System - Professional Fintech Aesthetic */
+/* World-Class Education Loan Application - Design System */
 
 @layer base {
   :root {
-    /* Base colors - Professional blue theme */
-    --background: 250 100% 99%;
+    /* Base colors - Clean, professional */
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
     /* Cards and surfaces */
@@ -18,49 +18,69 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary brand - Vibrant blue for students */
-    --primary: 217 91% 60%;
+    /* Primary brand - Trust blue */
+    --primary: 217 91% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 50%;
-    --primary-light: 217 91% 70%;
+    --primary-hover: 217 91% 45%;
+    --primary-light: 217 91% 95%;
 
-    /* Secondary - Fresh green for success */
-    --secondary: 142 76% 45%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary - Clean gray */
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 222 47% 11%;
 
     /* Muted elements */
-    --muted: 220 13% 95%;
+    --muted: 220 13% 96%;
     --muted-foreground: 220 9% 46%;
 
-    /* Accent - Purple for highlights */
+    /* Accent - Focus purple */
     --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
 
-    /* Status colors */
-    --success: 142 76% 36%;
+    /* Status colors - WCAG AA compliant */
+    --success: 142 71% 35%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --success-light: 142 71% 95%;
+    --warning: 38 92% 45%;
     --warning-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --warning-light: 38 92% 95%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 72% 97%;
 
     /* Borders and inputs */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 214 84% 56%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --input-focus: 217 91% 55%;
+    --ring: 217 91% 55%;
 
-    /* Vibrant gradients for students */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
-    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 45%), hsl(173 80% 40%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(217 91% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(262 83% 58%) 50%, hsl(142 76% 45%) 100%);
+    /* Spacing system (8px base unit) */
+    --spacing-xs: 0.25rem;     /* 4px */
+    --spacing-sm: 0.5rem;      /* 8px */
+    --spacing-md: 1rem;        /* 16px */
+    --spacing-lg: 1.5rem;      /* 24px */
+    --spacing-xl: 2rem;        /* 32px */
+    --spacing-2xl: 3rem;       /* 48px */
+    --spacing-3xl: 4rem;       /* 64px */
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(220 13% 69% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 13% 69% / 0.1), 0 2px 4px -1px hsl(220 13% 69% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(220 13% 69% / 0.1), 0 4px 6px -2px hsl(220 13% 69% / 0.05);
-    
-    --radius: 0.75rem;
+    /* Typography scale */
+    --font-size-xs: 0.75rem;    /* 12px */
+    --font-size-sm: 0.875rem;   /* 14px */
+    --font-size-base: 1rem;     /* 16px */
+    --font-size-lg: 1.125rem;   /* 18px */
+    --font-size-xl: 1.25rem;    /* 20px */
+    --font-size-2xl: 1.5rem;    /* 24px */
+    --font-size-3xl: 2rem;      /* 32px */
+
+    /* Radius */
+    --radius: 0.5rem;
+    --radius-sm: 0.375rem;
+    --radius-lg: 0.75rem;
+    --radius-full: 9999px;
+
+    /* Transitions */
+    --transition-fast: 150ms ease-out;
+    --transition-base: 200ms ease-out;
+    --transition-slow: 300ms ease-out;
 
     --sidebar-background: 0 0% 98%;
 
@@ -80,7 +100,7 @@
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 222 47% 8%;
     --foreground: 210 40% 98%;
 
     --card: 222 47% 11%;
@@ -89,34 +109,34 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 214 84% 56%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 84% 46%;
+    --primary-hover: 217 91% 50%;
+    --primary-light: 217 91% 20%;
 
-    --secondary: 214 32% 17%;
+    --secondary: 220 13% 15%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 220 13% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 214 32% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --success-light: 142 71% 15%;
+    --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --warning-light: 38 92% 15%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 72% 15%;
 
-    --border: 220 13% 15%;
-    --input: 220 13% 15%;
-    --ring: 214 84% 56%;
-
-    /* Dark gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(214 84% 46%));
-    --gradient-card: linear-gradient(135deg, hsl(222 47% 11%), hsl(220 13% 15%));
-    --gradient-accent: linear-gradient(135deg, hsl(214 32% 17%), hsl(220 13% 15%));
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --input-focus: 217 91% 60%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -126,7 +146,60 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Focus styles - WCAG AA compliant */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Form field with validation states */
+  .field-valid {
+    @apply border-success;
+  }
+
+  .field-error {
+    @apply border-destructive;
+  }
+
+  /* Helper text */
+  .helper-text {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  /* Section divider */
+  .section-divider {
+    @apply border-t border-border my-6;
+  }
+
+  /* Inline validation icon */
+  .validation-icon {
+    @apply absolute right-3 top-1/2 -translate-y-1/2;
+  }
+}
+
+@layer utilities {
+  /* Touch targets - minimum 44x44px */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all var(--transition-base);
+  }
+
+  /* Focus ring */
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
 

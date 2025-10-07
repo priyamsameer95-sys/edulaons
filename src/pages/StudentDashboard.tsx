@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
 import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { EmptyStateHero } from "@/components/student/EmptyStateHero";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
@@ -91,8 +90,10 @@ const StudentDashboard = () => {
 
   if (!hasApplications) {
     return (
-      <div className="container mx-auto py-12 px-4">
-        <EmptyStateHero onStartApplication={() => setShowApplicationForm(true)} />
+      <div className="min-h-screen bg-muted/30">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <StudentApplicationFlow />
+        </div>
       </div>
     );
   }
