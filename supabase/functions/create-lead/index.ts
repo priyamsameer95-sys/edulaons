@@ -238,6 +238,61 @@ serve(async (req) => {
       }
     }
 
+    // Step 7: Get recommended lenders based on universities
+    console.log('🏦 [create-lead] Fetching recommended lenders...');
+    let recommendedLenders = [];
+    
+    if (body.universities && body.universities.length > 0) {
+      const { data: preferences, error: prefError } = await supabaseAdmin
+        .from('university_lender_preferences')
+        .select(`
+          lender_id,
+          compatibility_score,
+          is_preferred,
+          lenders!inner (
+            id,
+            name,
+            code
+          )
+        `)
+        .in('university_id', body.universities)
+        .eq('study_destination', body.country)
+        .order('compatibility_score', { ascending: false })
+        .limit(5);
+
+      if (!prefError && preferences && preferences.length > 0) {
+        recommendedLenders = preferences.map((pref: any) => ({
+          lender_id: pref.lenders.id,
+          lender_name: pref.lenders.name,
+          lender_code: pref.lenders.code,
+          compatibility_score: pref.compatibility_score,
+          is_preferred: pref.is_preferred
+        }));
+        console.log('✅ [create-lead] Found recommended lenders:', recommendedLenders.length);
+      }
+    }
+    
+    // If no university-specific recommendations, get default lenders
+    if (recommendedLenders.length === 0) {
+      console.log('📋 [create-lead] Fetching default lenders...');
+      const { data: allLenders, error: lendersError } = await supabaseAdmin
+        .from('lenders')
+        .select('id, name, code')
+        .eq('is_active', true)
+        .limit(5);
+
+      if (!lendersError && allLenders) {
+        recommendedLenders = allLenders.map((lender: any) => ({
+          lender_id: lender.id,
+          lender_name: lender.name,
+          lender_code: lender.code,
+          compatibility_score: 50,
+          is_preferred: false
+        }));
+        console.log('✅ [create-lead] Using default lenders:', recommendedLenders.length);
+      }
+    }
+
     console.log('🎉 [create-lead] Lead creation completed successfully');
 
     return new Response(
@@ -248,7 +303,8 @@ serve(async (req) => {
           case_id: lead.case_id,
           student_id: student.id,
           co_applicant_id: coApplicant.id
-        }
+        },
+        recommended_lenders: recommendedLenders
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -117,7 +117,8 @@ const StudentApplicationFlow = () => {
 
           {currentStep === 4 && submissionResult && (
             <SuccessStep
-              caseId={submissionResult.case_id}
+              caseId={submissionResult.lead?.case_id || submissionResult.case_id}
+              leadId={submissionResult.lead?.id}
               recommendedLenders={submissionResult.recommended_lenders || []}
             />
           )}
