@@ -115,12 +115,12 @@ const Login = () => {
   return (
     <div className="flex min-h-screen overflow-hidden">
       {/* Left Brand Panel */}
-      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-gradient-to-br from-primary via-accent to-primary-hover p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-primary p-12 flex-col justify-between">
         {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-gradient-to-br from-green-400 to-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
 
         {/* Content */}
@@ -155,21 +155,21 @@ const Login = () => {
 
         {/* Stats Cards */}
         <div className="relative z-10 grid grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="bg-gradient-to-br from-emerald-500/90 to-teal-600/90 backdrop-blur-md border border-white/30 rounded-xl p-4 hover:scale-105 transition-all shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md border border-white/30 rounded-xl p-4 hover:scale-105 transition-all shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-5 w-5 text-white" />
             </div>
             <div className="text-2xl font-bold text-white">10K+</div>
             <div className="text-xs text-white/90">Students Helped</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-500/90 to-orange-600/90 backdrop-blur-md border border-white/30 rounded-xl p-4 hover:scale-105 transition-all shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md border border-white/30 rounded-xl p-4 hover:scale-105 transition-all shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <div className="text-2xl font-bold text-white">₹500Cr+</div>
             <div className="text-xs text-white/90">Loans Processed</div>
           </div>
-          <div className="bg-gradient-to-br from-fuchsia-500/90 to-pink-600/90 backdrop-blur-md border border-white/30 rounded-xl p-4 hover:scale-105 transition-all shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md border border-white/30 rounded-xl p-4 hover:scale-105 transition-all shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="h-5 w-5 text-white" />
             </div>
@@ -180,31 +180,31 @@ const Login = () => {
       </div>
 
       {/* Right Form Panel */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-accent/5 p-6 lg:p-12">
+      <div className="flex-1 flex items-center justify-center bg-background p-6 lg:p-12">
         <div className="w-full max-w-md animate-fade-in" style={{ animationDelay: '0.1s' }}>
           {/* Mobile Logo */}
           <div className="flex lg:hidden items-center justify-center gap-3 mb-8">
-            <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="p-2 bg-primary rounded-xl shadow-lg">
+              <GraduationCap className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground font-display bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">EduLoan</h1>
+              <h1 className="text-xl font-bold text-foreground font-display">EduLoan</h1>
               <p className="text-xs text-muted-foreground">Smart Education Financing</p>
             </div>
           </div>
 
-          <Card className="border-card-border shadow-xl bg-card/80 backdrop-blur-sm">
+          <Card className="border-card-border shadow-xl">
             <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-2xl font-bold font-display bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">Welcome Back</CardTitle>
+              <CardTitle className="text-2xl font-bold font-display">Welcome Back</CardTitle>
               <CardDescription>
                 Sign in to your account or create a new one to get started
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10">
-                  <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-primary data-[state=active]:text-white">Sign Up</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="signin" className="mt-0">
@@ -243,7 +243,7 @@ const Login = () => {
                     </div>
                     <Button 
                       type="submit" 
-                      className="w-full shadow-primary hover:shadow-lg transition-all bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent" 
+                      className="w-full shadow-primary hover:shadow-lg transition-all" 
                       disabled={isLoading}
                     >
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -337,7 +337,7 @@ const Login = () => {
                     </div>
                     <Button 
                       type="submit" 
-                      className="w-full shadow-primary hover:shadow-lg transition-all bg-gradient-to-r from-accent to-primary hover:from-accent hover:to-primary-hover" 
+                      className="w-full shadow-primary hover:shadow-lg transition-all" 
                       disabled={isLoading}
                     >
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
