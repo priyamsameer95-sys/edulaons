@@ -31,6 +31,7 @@ import { DocumentVerificationModal } from '@/components/admin/DocumentVerificati
 import UserManagementTab from '@/components/admin/UserManagementTab';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
+import { LendersManagementTab } from '@/components/admin/LendersManagementTab';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -570,7 +571,7 @@ const AdminDashboard = () => {
             {/* Tabs Section */}
             <div ref={tabsRef}>
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} max-w-4xl`}>
+                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-6' : 'grid-cols-4'} max-w-5xl`}>
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -588,10 +589,16 @@ const AdminDashboard = () => {
                   Users
                 </TabsTrigger>
                 {appUser?.role === 'super_admin' && (
-                  <TabsTrigger value="audit" className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Audit
-                  </TabsTrigger>
+                  <>
+                    <TabsTrigger value="lenders" className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Lenders
+                    </TabsTrigger>
+                    <TabsTrigger value="audit" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Audit
+                    </TabsTrigger>
+                  </>
                 )}
               </TabsList>
 
@@ -964,9 +971,15 @@ const AdminDashboard = () => {
               </TabsContent>
 
               {appUser?.role === 'super_admin' && (
-                <TabsContent value="audit" className="space-y-6 mt-6">
-                  <AuditLogViewer />
-                </TabsContent>
+                <>
+                  <TabsContent value="lenders" className="space-y-6 mt-6">
+                    <LendersManagementTab />
+                  </TabsContent>
+                  
+                  <TabsContent value="audit" className="space-y-6 mt-6">
+                    <AuditLogViewer />
+                  </TabsContent>
+                </>
               )}
             </Tabs>
             </div>
