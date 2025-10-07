@@ -29,6 +29,8 @@ import { AdminActionRequired } from '@/components/gamification/AdminActionRequir
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import UserManagementTab from '@/components/admin/UserManagementTab';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -66,6 +68,7 @@ interface LoanAmountComparison {
 const AdminDashboard = () => {
   const { signOut, appUser } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('overview');
   const { bulkUpdateStatus } = useStatusManager();
   const { leads: allLeads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
   const [kpis, setKpis] = useState<AdminKPIs>({

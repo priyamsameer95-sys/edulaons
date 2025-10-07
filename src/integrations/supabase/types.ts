@@ -61,6 +61,9 @@ export type Database = {
       app_users: {
         Row: {
           created_at: string
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivation_reason: string | null
           email: string
           id: string
           is_active: boolean
@@ -70,6 +73,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           email: string
           id?: string
           is_active?: boolean
@@ -79,6 +85,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
           email?: string
           id?: string
           is_active?: boolean
@@ -925,6 +934,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_management_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          performed_by: string
+          reason: string | null
+          success: boolean | null
+          target_user_email: string
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by: string
+          reason?: string | null
+          success?: boolean | null
+          target_user_email: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          performed_by?: string
+          reason?: string | null
+          success?: boolean | null
+          target_user_email?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

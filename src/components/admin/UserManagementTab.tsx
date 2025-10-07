@@ -6,12 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { UserPlus, Search, MoreVertical, Edit, Eye, Trash2, Shield, Building2, Users } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, Edit, Eye, Shield, Building2, Users, XCircle, CheckCircle } from 'lucide-react';
 import { useUserManagement, AppUser } from '@/hooks/useUserManagement';
 import CreateUserModal from './CreateUserModal';
 import EditUserModal from './EditUserModal';
 import UserDetailsSheet from './UserDetailsSheet';
+import { DeactivateUserDialog } from './DeactivateUserDialog';
+import { ReactivateUserDialog } from './ReactivateUserDialog';
 import { formatDistanceToNow } from 'date-fns';
 
 interface UserManagementTabProps {
@@ -22,7 +23,7 @@ interface UserManagementTabProps {
 const PROTECTED_EMAIL = 'priyam.sameer@cashkaro.com';
 
 const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTabProps) => {
-  const { users, partners, loading, fetchUsers, fetchPartners, deleteUser } = useUserManagement();
+  const { users, partners, loading, fetchUsers, fetchPartners, deactivateUser, reactivateUser } = useUserManagement();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -30,7 +31,8 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; user: AppUser | null }>({ open: false, user: null });
+  const [deactivateDialog, setDeactivateDialog] = useState<{ open: boolean; user: AppUser | null }>({ open: false, user: null });
+  const [reactivateDialog, setReactivateDialog] = useState<{ open: boolean; user: AppUser | null }>({ open: false, user: null });
 
   useEffect(() => {
     fetchUsers();
@@ -75,23 +77,39 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
     setShowDetailsSheet(true);
   };
 
-  const handleDeleteClick = (user: AppUser) => {
-    setDeleteConfirm({ open: true, user });
+  const handleDeactivateClick = (user: AppUser) => {
+    setDeactivateDialog({ open: true, user });
   };
 
-  const handleDeleteConfirm = async () => {
-    if (deleteConfirm.user) {
-      await deleteUser(deleteConfirm.user.id, deleteConfirm.user.email);
-      setDeleteConfirm({ open: false, user: null });
+  const handleDeactivateConfirm = async (reason: string) => {
+    if (deactivateDialog.user) {
+      await deactivateUser(deactivateDialog.user.id, reason);
+      setDeactivateDialog({ open: false, user: null });
     }
   };
 
-  const canDelete = (user: AppUser) => {
+  const handleReactivateClick = (user: AppUser) => {
+    setReactivateDialog({ open: true, user });
+  };
+
+  const handleReactivateConfirm = async (reason: string) => {
+    if (reactivateDialog.user) {
+      await reactivateUser(reactivateDialog.user.id, reason);
+      setReactivateDialog({ open: false, user: null });
+    }
+  };
+
+  const canDeactivate = (user: AppUser) => {
     return (
       currentUserRole === 'super_admin' &&
       user.id !== currentUserId &&
-      user.email !== PROTECTED_EMAIL
+      user.email !== PROTECTED_EMAIL &&
+      user.is_active
     );
+  };
+
+  const canReactivate = (user: AppUser) => {
+    return currentUserRole === 'super_admin' && !user.is_active;
   };
 
   return (
@@ -214,15 +232,27 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
                                     Edit User
                                   </DropdownMenuItem>
                                 )}
-                                {canDelete(user) && (
+                                {canReactivate(user) && (
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      onClick={() => handleDeleteClick(user)}
+                                      onClick={() => handleReactivateClick(user)}
+                                      className="text-green-600"
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Reactivate User
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {canDeactivate(user) && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeactivateClick(user)}
                                       className="text-destructive"
                                     >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete User
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Deactivate User
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -263,23 +293,21 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
         user={selectedUser}
       />
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ open, user: null })}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteConfirm.user?.email}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Deactivate/Reactivate Dialogs */}
+      <DeactivateUserDialog
+        open={deactivateDialog.open}
+        onOpenChange={(open) => setDeactivateDialog({ open, user: null })}
+        onConfirm={handleDeactivateConfirm}
+        userEmail={deactivateDialog.user?.email || ''}
+        loading={loading}
+      />
+      <ReactivateUserDialog
+        open={reactivateDialog.open}
+        onOpenChange={(open) => setReactivateDialog({ open, user: null })}
+        onConfirm={handleReactivateConfirm}
+        userEmail={reactivateDialog.user?.email || ''}
+        loading={loading}
+      />
     </>
   );
 };

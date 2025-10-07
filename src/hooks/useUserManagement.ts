@@ -148,13 +148,14 @@ export function useUserManagement() {
     }
   }, [toast, fetchUsers]);
 
-  const deleteUser = useCallback(async (userId: string, userEmail: string) => {
+  const deactivateUser = useCallback(async (userId: string, reason: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('manage-user', {
         body: {
-          action: 'delete',
+          action: 'deactivate',
           user_id: userId,
+          reason,
         },
       });
 
@@ -162,17 +163,51 @@ export function useUserManagement() {
       if (data.error) throw new Error(data.error);
 
       toast({
-        title: 'User Deleted',
-        description: `User ${userEmail} has been deleted`,
+        title: 'User Deactivated',
+        description: 'User account has been deactivated successfully',
       });
 
       await fetchUsers();
       return { success: true };
     } catch (error: any) {
-      logger.error('Error deleting user:', error);
+      logger.error('Error deactivating user:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete user',
+        description: error.message || 'Failed to deactivate user',
+        variant: 'destructive',
+      });
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, fetchUsers]);
+
+  const reactivateUser = useCallback(async (userId: string, reason: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: {
+          action: 'reactivate',
+          user_id: userId,
+          reason,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast({
+        title: 'User Reactivated',
+        description: 'User account has been reactivated successfully',
+      });
+
+      await fetchUsers();
+      return { success: true };
+    } catch (error: any) {
+      logger.error('Error reactivating user:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reactivate user',
         variant: 'destructive',
       });
       return { success: false };
@@ -189,6 +224,7 @@ export function useUserManagement() {
     fetchPartners,
     createUser,
     updateUser,
-    deleteUser,
+    deactivateUser,
+    reactivateUser,
   };
 }
