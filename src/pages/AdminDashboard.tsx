@@ -441,14 +441,17 @@ const AdminDashboard = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // Small delay to ensure tab content is rendered
+    // Longer delay to ensure drawer closes and tab content is rendered
     setTimeout(() => {
-      tabsRef.current?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest' 
-      });
-    }, 100);
+      if (tabsRef.current) {
+        // Scroll with offset to account for header
+        const yOffset = -20; // Small offset from top
+        const element = tabsRef.current;
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 350);
   };
 
   // No conversion needed - already using RefactoredLead
