@@ -331,7 +331,10 @@ const AdminDashboard = () => {
               </TabsContent>
 
               <TabsContent value="users" className="mt-6">
-                <UserManagementTab />
+                <UserManagementTab 
+                  currentUserRole={appUser?.role as 'admin' | 'super_admin'}
+                  currentUserId={appUser?.id || ''}
+                />
               </TabsContent>
 
               {appUser?.role === 'super_admin' && (
@@ -349,10 +352,18 @@ const AdminDashboard = () => {
 
           {/* Gamification Widgets */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <PartnerLeaderboard data={leaderboardData} />
+            <PartnerLeaderboard partners={leaderboardData} />
             <div className="space-y-6">
-              <AdminActionRequired onReviewLead={(id) => handleReviewLead(id, recentLeads)} />
-              <PersonalImpact onVerifyDocument={handleVerifyDocument} />
+              <AdminActionRequired 
+                onReviewLead={(id) => handleReviewLead(id, recentLeads)}
+                onVerifyDocument={handleVerifyDocument}
+              />
+              <PersonalImpact 
+                studentsHelped={kpis.totalLeads}
+                loansApproved={kpis.disbursed}
+                totalLoanAmount={kpis.totalLoanAmount}
+                compareToAverage={15}
+              />
             </div>
           </div>
         </div>
@@ -362,14 +373,14 @@ const AdminDashboard = () => {
       <CreatePartnerModal
         open={showCreatePartner}
         onOpenChange={setShowCreatePartner}
-        onSuccess={fetchPartnerStats}
+        onPartnerCreated={fetchPartnerStats}
       />
 
       <BulkStatusUpdate
         open={showBulkUpdate}
         onOpenChange={setShowBulkUpdate}
-        selectedLeadIds={selectedLeads}
-        onSuccess={handleStatusUpdated}
+        leadIds={selectedLeads}
+        onStatusUpdated={handleStatusUpdated}
       />
 
       <LeadDetailSheet
@@ -381,16 +392,17 @@ const AdminDashboard = () => {
       <EnhancedStatusUpdateModal
         open={showStatusUpdateModal}
         onOpenChange={closeStatusUpdate}
-        lead={quickUpdateLead}
-        onSuccess={handleStatusUpdated}
+        leadId={quickUpdateLead?.id || ''}
+        currentStatus={quickUpdateLead?.status || 'new'}
+        currentDocumentsStatus={quickUpdateLead?.documents_status || 'pending'}
+        onStatusUpdated={handleStatusUpdated}
       />
 
       <DocumentVerificationModal
         open={showDocVerificationModal}
         onOpenChange={closeDocVerification}
         document={selectedDocument}
-        leadId={documentLeadId}
-        onVerified={handleStatusUpdated}
+        onVerificationComplete={handleStatusUpdated}
       />
     </div>
   );
