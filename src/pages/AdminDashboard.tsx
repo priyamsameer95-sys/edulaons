@@ -469,6 +469,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-4">
               <AdminActionsDrawer
                 userRole={appUser?.role as 'admin' | 'super_admin'}
+                activeTab={activeTab}
                 onCreatePartner={() => setShowCreatePartner(true)}
                 onSignOut={signOut}
                 onTabChange={setActiveTab}
