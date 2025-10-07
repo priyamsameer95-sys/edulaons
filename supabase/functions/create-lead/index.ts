@@ -334,8 +334,9 @@ serve(async (req) => {
       console.log('📋 [create-lead] Fetching default lenders...');
       const { data: allLenders, error: lendersError } = await supabaseAdmin
         .from('lenders')
-        .select('id, name, code')
+        .select('*')
         .eq('is_active', true)
+        .order('display_order', { ascending: true })
         .limit(5);
 
       if (!lendersError && allLenders) {
@@ -343,6 +344,24 @@ serve(async (req) => {
           lender_id: lender.id,
           lender_name: lender.name,
           lender_code: lender.code,
+          lender_description: lender.description,
+          logo_url: lender.logo_url,
+          website: lender.website,
+          contact_email: lender.contact_email,
+          contact_phone: lender.contact_phone,
+          interest_rate_min: lender.interest_rate_min,
+          interest_rate_max: lender.interest_rate_max,
+          loan_amount_min: lender.loan_amount_min,
+          loan_amount_max: lender.loan_amount_max,
+          processing_fee: lender.processing_fee,
+          foreclosure_charges: lender.foreclosure_charges,
+          moratorium_period: lender.moratorium_period,
+          processing_time_days: lender.processing_time_days,
+          disbursement_time_days: lender.disbursement_time_days,
+          approval_rate: lender.approval_rate,
+          key_features: lender.key_features,
+          eligible_expenses: lender.eligible_expenses,
+          required_documents: lender.required_documents,
           compatibility_score: 50,
           is_preferred: false
         }));
