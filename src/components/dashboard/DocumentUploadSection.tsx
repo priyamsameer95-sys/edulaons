@@ -166,7 +166,7 @@ export const DocumentUploadSection = ({
             <div>
               <h2 className="text-2xl font-semibold text-foreground">Document Collection</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Upload documents organized by category
+                📄 Upload clear photos or PDFs of your documents (up to 20MB each)
               </p>
             </div>
           </div>

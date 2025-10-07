@@ -286,11 +286,6 @@ export function EnhancedDocumentUpload({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>• Accepted formats: <span className="font-medium">{getFileTypeDescription(documentType.accepted_formats)}</span></p>
-              <p>• PDF files: {getFileSizeGuidance(documentType.max_file_size_pdf, 'pdf')}</p>
-              <p>• Images: {getFileSizeGuidance(documentType.max_file_size_image, 'image')}</p>
-            </div>
           </div>
         </div>
       </div>
@@ -326,12 +321,12 @@ export function EnhancedDocumentUpload({
           <div className="space-y-4">
             <div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                {isDragActive ? "Drop your file here" : "Upload your document"}
+                {isDragActive ? "Drop it here!" : "Upload Document"}
               </h3>
               <p className="text-base text-muted-foreground">
                 {isDragActive 
-                  ? "Release to upload your file" 
-                  : "Drag & drop your file here, or click to browse"
+                  ? "Release to upload" 
+                  : "Drag & drop or click to browse"
                 }
               </p>
             </div>
@@ -353,9 +348,9 @@ export function EnhancedDocumentUpload({
               </Button>
             )}
 
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium">{getFileTypeDescription(documentType.accepted_formats)} up to {formatFileSize(Math.max(documentType.max_file_size_pdf, documentType.max_file_size_image))}</p>
-            </div>
+            <p className="text-sm text-muted-foreground font-medium">
+              PDF or Images • Max {formatFileSize(Math.max(documentType.max_file_size_pdf, documentType.max_file_size_image))}
+            </p>
           </div>
         </div>
       </div>
