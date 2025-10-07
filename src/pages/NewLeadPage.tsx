@@ -899,7 +899,7 @@ const NewLeadPage = () => {
                     <div className="p-3 rounded-full bg-success/20">
                       <CheckCircle className="h-6 w-6 text-success" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-lg font-semibold">Lead Created Successfully!</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         Case ID: {createdLead?.case_id}
@@ -908,6 +908,21 @@ const NewLeadPage = () => {
                         You can now upload required documents or skip this step and upload them later.
                       </p>
                     </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSkipDocuments}
+                      >
+                        Skip for Now
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={handleCompleteProcess}
+                      >
+                        Complete & View Lead
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -915,6 +930,7 @@ const NewLeadPage = () => {
               {createdLead && (
                 <DocumentUploadSection
                   leadId={createdLead.id}
+                  loanType={formData.loan_type as 'secured' | 'unsecured'}
                   onDocumentsChange={(uploaded, required) => {
                     console.log(`Documents: ${uploaded}/${required}`);
                   }}
