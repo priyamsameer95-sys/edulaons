@@ -81,7 +81,7 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             </SelectTrigger>
             <SelectContent>
               {STUDY_DESTINATIONS.map((dest) => (
-                <SelectItem key={dest} value={dest}>{dest}</SelectItem>
+                <SelectItem key={dest.value} value={dest.value}>{dest.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
