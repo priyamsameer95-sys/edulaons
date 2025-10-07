@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle, FileCheck } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle, FileCheck, Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -29,8 +29,8 @@ import { AdminActionRequired } from '@/components/gamification/AdminActionRequir
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import UserManagementTab from '@/components/admin/UserManagementTab';
-import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
+import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -466,29 +466,25 @@ const AdminDashboard = () => {
       <div className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Monitor and manage all leads and partners</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowCreatePartner(true)} variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Partner
-              </Button>
-              <Button onClick={signOut} variant="outline">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
+            <div className="flex items-center gap-4">
+              <AdminActionsDrawer
+                userRole={appUser?.role as 'admin' | 'super_admin'}
+                onCreatePartner={() => setShowCreatePartner(true)}
+                onSignOut={signOut}
+                onTabChange={setActiveTab}
+              />
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+                <p className="text-muted-foreground">Monitor and manage all leads and partners</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content with Persistent Sidebar */}
+      {/* Main Content */}
       <div className="container mx-auto px-6 pt-8 pb-12">
-        <div className="flex flex-col lg:flex-row gap-6 w-full">
-          {/* Main Content Area - 70% */}
-          <div className="flex-1 lg:max-w-[70%] space-y-6">
+        <div className="space-y-6">
             {/* Compact Welcome */}
             <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-lg p-6 border animate-fade-in">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -555,8 +551,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Tabs Section */}
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 max-w-4xl">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} max-w-4xl`}>
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -573,6 +569,12 @@ const AdminDashboard = () => {
                   <Users className="h-4 w-4" />
                   Users
                 </TabsTrigger>
+                {appUser?.role === 'super_admin' && (
+                  <TabsTrigger value="audit" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Audit
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6 mt-6">
@@ -942,25 +944,13 @@ const AdminDashboard = () => {
                   currentUserId={appUser?.id || ''}
                 />
               </TabsContent>
-            </Tabs>
-          </div>
 
-          {/* Persistent Sidebar - 30% */}
-          <div className="w-full lg:w-[30%] lg:min-w-[350px] space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <AdminActionRequired
-              onReviewLead={handleReviewLead}
-              onVerifyDocument={handleVerifyDocument}
-            />
-            
-            <PersonalImpact
-              studentsHelped={kpis.totalLeads}
-              loansApproved={kpis.sanctioned}
-              totalLoanAmount={kpis.totalLoanAmount}
-              compareToAverage={15}
-            />
-            
-            <PartnerLeaderboard partners={leaderboardData} />
-          </div>
+              {appUser?.role === 'super_admin' && (
+                <TabsContent value="audit" className="space-y-6 mt-6">
+                  <AuditLogViewer />
+                </TabsContent>
+              )}
+            </Tabs>
         </div>
       </div>
 
