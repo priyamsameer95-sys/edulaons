@@ -3,30 +3,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import StudentApplicationFlow from '@/components/student/StudentApplicationFlow';
 import { Loader2, FileText, CheckCircle2, Clock, XCircle, GraduationCap, FileCheck, TrendingUp, ArrowRight, Upload, Eye, AlertCircle } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 
 const StudentDashboard = () => {
-  const { signOut, appUser, user } = useAuth();
+  const { signOut, appUser } = useAuth();
   const navigate = useNavigate();
   const [hasApplication, setHasApplication] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [applicationData, setApplicationData] = useState<any>(null);
+  const [applicationData] = useState<any>(null);
 
   useEffect(() => {
-    // Type check disabled temporarily until migration completes
     setLoading(false);
-    // TODO: Re-enable after migration completes and types regenerate
-    // const userId = user?.id;
-    // if (!userId) {
-    //   setLoading(false);
-    //   return;
-    // }
-    // Check for existing application here
   }, []);
 
   const handleSignOut = async () => {
@@ -52,15 +41,15 @@ const StudentDashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-primary/10 text-primary border-primary/20';
       case 'in_progress':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+        return 'bg-warning/10 text-warning border-warning/20';
       case 'approved':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return 'bg-success/10 text-success border-success/20';
       case 'rejected':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -75,8 +64,11 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-lg font-semibold text-foreground">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -84,206 +76,220 @@ const StudentDashboard = () => {
   const progress = calculateProgress();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-primary/10">
-      {/* Modern Header */}
-      <div className="border-b border-border/50 bg-card/80 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 rounded-2xl bg-gradient-primary">
-              <GraduationCap className="h-7 w-7 text-primary-foreground" />
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
+      {/* Bold Header with Gradient */}
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl shadow-lg">
+        <div className="container mx-auto px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-gradient-primary">
+                <GraduationCap className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-foreground">
+                  Student Dashboard
+                </h1>
+                <p className="text-base text-muted-foreground font-medium">
+                  Welcome, {appUser?.email?.split('@')[0]}! 🎓
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                Student Portal
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Hey {appUser?.email?.split('@')[0]}! 👋
-              </p>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleSignOut}
+              size="lg"
+              className="font-semibold"
+            >
+              Sign Out
+            </Button>
           </div>
-          <Button variant="outline" onClick={handleSignOut} className="rounded-full">
-            Sign Out
-          </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-6 py-10 max-w-7xl">
+      <main className="container mx-auto px-6 py-12 max-w-7xl">
         {!hasApplication ? (
-          <div className="space-y-10">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-hover to-primary shadow-lg">
-              <div className="absolute inset-0 bg-grid-white/10"></div>
-              <div className="relative px-8 py-12 md:px-12 md:py-16">
-                <div className="max-w-3xl">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/20 backdrop-blur-sm mb-6">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-foreground"></span>
-                    </span>
-                    <span className="text-sm font-medium text-primary-foreground">Get Started Today</span>
+          <div className="space-y-10 animate-fade-in">
+            {/* Massive Hero Banner */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-hero p-12 md:p-16 shadow-2xl">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
+              
+              <div className="relative z-10 max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/20 backdrop-blur-md mb-6 animate-scale-in">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                  </span>
+                  <span className="text-base font-bold text-white">Start Your Journey Today!</span>
+                </div>
+                
+                <h2 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
+                  Your Future Starts Here! 🚀
+                </h2>
+                
+                <p className="text-xl md:text-2xl text-white/95 mb-10 leading-relaxed font-medium">
+                  Apply for your education loan in minutes. Simple, fast, and secure. 
+                  Let's make your study abroad dreams a reality!
+                </p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20">
+                    <div className="p-3 rounded-xl bg-white/20">
+                      <Clock className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-white">5-10 Min</p>
+                      <p className="text-sm text-white/80">Quick Apply</p>
+                    </div>
                   </div>
                   
-                  <h2 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4 leading-tight">
-                    Your Dream University Awaits
-                  </h2>
-                  <p className="text-lg text-primary-foreground/90 mb-8 leading-relaxed">
-                    Take the first step towards your international education journey. Our streamlined application process makes getting your education loan simple and stress-free.
-                  </p>
+                  <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20">
+                    <div className="p-3 rounded-xl bg-white/20">
+                      <CheckCircle2 className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-white">48 Hours</p>
+                      <p className="text-sm text-white/80">Fast Approval</p>
+                    </div>
+                  </div>
                   
-                  <div className="flex flex-wrap gap-4 mb-8">
-                    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
-                      <div className="p-2 rounded-xl bg-primary-foreground/20">
-                        <Clock className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-primary-foreground">Quick Apply</p>
-                        <p className="text-xs text-primary-foreground/80">Just 5-10 minutes</p>
-                      </div>
+                  <div className="flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20">
+                    <div className="p-3 rounded-xl bg-white/20">
+                      <TrendingUp className="h-6 w-6 text-white" />
                     </div>
-                    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
-                      <div className="p-2 rounded-xl bg-primary-foreground/20">
-                        <CheckCircle2 className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-primary-foreground">Fast Approval</p>
-                        <p className="text-xs text-primary-foreground/80">Within 48 hours</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm">
-                      <div className="p-2 rounded-xl bg-primary-foreground/20">
-                        <TrendingUp className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-primary-foreground">Best Rates</p>
-                        <p className="text-xs text-primary-foreground/80">Competitive offers</p>
-                      </div>
+                    <div>
+                      <p className="text-base font-bold text-white">Best Rates</p>
+                      <p className="text-sm text-white/80">Guaranteed</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Application Flow */}
-            <Card className="border-border/50 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl">Complete Your Application</CardTitle>
-                <CardDescription className="text-base">
-                  Follow these simple steps to apply for your education loan
+            {/* Application Form Section */}
+            <Card className="border-2 border-primary/20 shadow-2xl">
+              <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-accent/5 pb-8">
+                <CardTitle className="text-3xl font-black">Start Your Application</CardTitle>
+                <CardDescription className="text-lg">
+                  Fill out the form below to get started. It only takes a few minutes!
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-8">
                 <StudentApplicationFlow />
               </CardContent>
             </Card>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Progress Hero */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-accent to-secondary shadow-lg border border-primary/20">
-              <div className="absolute inset-0 bg-grid-foreground/5"></div>
-              <div className="relative px-8 py-10 md:px-12">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                  <div className="flex-1">
-                    <Badge variant="outline" className="mb-4 gap-2 px-4 py-1.5 bg-card/50 backdrop-blur-sm">
-                      {getStatusIcon(applicationData?.status)}
-                      <span className="capitalize font-semibold text-base">
-                        {applicationData?.status?.replace('_', ' ')}
-                      </span>
-                    </Badge>
-                    
-                    <h2 className="text-3xl md:text-4xl font-bold mb-2">
-                      {applicationData?.status === 'approved' && '🎉 Congratulations!'}
-                      {applicationData?.status === 'in_progress' && '⚡ Application Processing'}
-                      {applicationData?.status === 'new' && '✨ Application Received'}
-                      {applicationData?.status === 'rejected' && 'Application Update'}
-                    </h2>
-                    <p className="text-muted-foreground text-lg mb-1">
-                      Case ID: <span className="font-mono font-semibold text-foreground">{applicationData?.case_id}</span>
-                    </p>
-                    <p className="text-muted-foreground">
-                      {applicationData?.status === 'new' && 'Your application is under review by our team'}
-                      {applicationData?.status === 'in_progress' && 'We\'re working on your application'}
-                      {applicationData?.status === 'approved' && 'Your loan has been approved!'}
-                      {applicationData?.status === 'rejected' && 'We\'ll help you explore other options'}
-                    </p>
-                  </div>
+          <div className="space-y-10 animate-fade-in">
+            {/* Application Status Hero */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-card p-10 border-2 border-primary/20 shadow-2xl">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                <div className="flex-1">
+                  <Badge variant="outline" className={`mb-5 gap-2 px-5 py-2 text-base font-bold ${getStatusColor(applicationData?.status)}`}>
+                    {getStatusIcon(applicationData?.status)}
+                    <span className="capitalize">
+                      {applicationData?.status?.replace('_', ' ')}
+                    </span>
+                  </Badge>
                   
-                  <div className="flex-shrink-0">
-                    <div className="relative w-32 h-32">
-                      <svg className="transform -rotate-90 w-32 h-32">
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          className="text-muted"
-                        />
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          strokeDasharray={`${2 * Math.PI * 56}`}
-                          strokeDashoffset={`${2 * Math.PI * 56 * (1 - progress / 100)}`}
-                          className="text-primary transition-all duration-1000 ease-out"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <p className="text-3xl font-bold text-primary">{progress}%</p>
-                          <p className="text-xs text-muted-foreground">Complete</p>
-                        </div>
-                      </div>
+                  <h2 className="text-4xl md:text-5xl font-black mb-3 text-foreground">
+                    {applicationData?.status === 'approved' && '🎉 Approved!'}
+                    {applicationData?.status === 'in_progress' && '⚡ In Progress'}
+                    {applicationData?.status === 'new' && '✨ Application Received'}
+                    {applicationData?.status === 'rejected' && '📋 Update Required'}
+                  </h2>
+                  
+                  <p className="text-lg text-muted-foreground mb-2">
+                    Case ID: <span className="font-mono font-bold text-foreground text-xl">{applicationData?.case_id}</span>
+                  </p>
+                  
+                  <p className="text-base text-muted-foreground">
+                    {applicationData?.status === 'new' && 'Your application is being reviewed by our expert team'}
+                    {applicationData?.status === 'in_progress' && 'We\'re actively processing your application'}
+                    {applicationData?.status === 'approved' && 'Congratulations! Your loan has been approved'}
+                    {applicationData?.status === 'rejected' && 'Let\'s explore alternative options together'}
+                  </p>
+                </div>
+                
+                {/* Circular Progress */}
+                <div className="relative w-40 h-40 flex-shrink-0">
+                  <svg className="transform -rotate-90 w-40 h-40">
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="70"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      fill="none"
+                      className="text-muted"
+                    />
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="70"
+                      stroke="url(#gradient)"
+                      strokeWidth="12"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 70}`}
+                      strokeDashoffset={`${2 * Math.PI * 70 * (1 - progress / 100)}`}
+                      className="transition-all duration-1000 ease-out"
+                      strokeLinecap="round"
+                    />
+                    <defs>
+                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: 'hsl(217 91% 60%)', stopOpacity: 1 }} />
+                        <stop offset="100%" style={{ stopColor: 'hsl(142 76% 45%)', stopOpacity: 1 }} />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-4xl font-black bg-gradient-primary bg-clip-text text-transparent">{progress}%</p>
+                      <p className="text-sm font-bold text-muted-foreground">Complete</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Key Stats */}
+            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-border/50 hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-gradient-to-br from-success/20 to-success/10">
-                      <FileText className="h-6 w-6 text-success" />
+              <Card className="border-2 border-border hover:border-primary/50 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                <CardContent className="pt-8">
+                  <div className="flex items-center gap-5">
+                    <div className="p-4 rounded-2xl bg-gradient-secondary">
+                      <FileText className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Loan Amount</p>
-                      <p className="text-2xl font-bold">₹{applicationData?.loan_amount?.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-1">Loan Amount</p>
+                      <p className="text-3xl font-black text-foreground">₹{applicationData?.loan_amount?.toLocaleString()}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-border/50 hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10">
-                      <GraduationCap className="h-6 w-6 text-primary" />
+              <Card className="border-2 border-border hover:border-accent/50 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                <CardContent className="pt-8">
+                  <div className="flex items-center gap-5">
+                    <div className="p-4 rounded-2xl bg-gradient-primary">
+                      <GraduationCap className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Destination</p>
-                      <p className="text-2xl font-bold capitalize">{applicationData?.study_destination}</p>
+                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-1">Destination</p>
+                      <p className="text-3xl font-black text-foreground capitalize">{applicationData?.study_destination}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-border/50 hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-gradient-to-br from-warning/20 to-warning/10">
-                      <FileCheck className="h-6 w-6 text-warning" />
+              <Card className="border-2 border-border hover:border-warning/50 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                <CardContent className="pt-8">
+                  <div className="flex items-center gap-5">
+                    <div className="p-4 rounded-2xl bg-warning">
+                      <FileCheck className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Documents</p>
-                      <p className="text-2xl font-bold capitalize">{applicationData?.documents_status}</p>
+                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-1">Documents</p>
+                      <p className="text-3xl font-black text-foreground capitalize">{applicationData?.documents_status}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -291,101 +297,103 @@ const StudentDashboard = () => {
             </div>
 
             {/* Action Cards */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="group relative overflow-hidden border-2 border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
-                <CardHeader className="relative">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:scale-110 transition-transform">
-                      <Upload className="h-7 w-7 text-primary" />
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="group border-2 border-border hover:border-primary hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                <CardHeader className="border-b pb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-4 rounded-2xl bg-primary/10 group-hover:bg-primary group-hover:scale-110 transition-all">
+                      <Upload className="h-8 w-8 text-primary group-hover:text-white transition-colors" />
                     </div>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-                      Action Required
+                    <Badge className="bg-primary text-white px-4 py-1.5 text-base font-bold">
+                      Required
                     </Badge>
                   </div>
-                  <CardTitle className="text-2xl mb-2">Upload Documents</CardTitle>
-                  <CardDescription className="text-base">
-                    Submit your required documents to move forward with your application
+                  <CardTitle className="text-3xl font-black mb-3">Upload Documents</CardTitle>
+                  <CardDescription className="text-lg">
+                    Submit your required documents to continue processing
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="relative">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+                <CardContent className="pt-6">
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between p-5 rounded-xl bg-muted">
                       <div className="flex items-center gap-3">
-                        <FileCheck className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">Status</span>
+                        <FileCheck className="h-6 w-6 text-muted-foreground" />
+                        <span className="font-bold text-lg">Status</span>
                       </div>
-                      <Badge variant="secondary" className="capitalize font-semibold">
+                      <Badge variant="secondary" className="text-base font-bold capitalize px-4 py-1.5">
                         {applicationData?.documents_status}
                       </Badge>
                     </div>
-                    <Button size="lg" className="w-full gap-3 text-base group-hover:gap-4 transition-all shadow-md">
+                    <Button size="lg" className="w-full text-lg font-bold gap-3 h-14 group-hover:gap-4 transition-all">
                       View Requirements
-                      <ArrowRight className="h-5 w-5" />
+                      <ArrowRight className="h-6 w-6" />
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="group relative overflow-hidden border-2 border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-accent to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
-                <CardHeader className="relative">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 rounded-2xl bg-gradient-to-br from-accent to-accent/50 group-hover:scale-110 transition-transform">
-                      <Eye className="h-7 w-7 text-primary" />
+              <Card className="group border-2 border-border hover:border-accent hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                <CardHeader className="border-b pb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-4 rounded-2xl bg-accent/10 group-hover:bg-accent group-hover:scale-110 transition-all">
+                      <Eye className="h-8 w-8 text-accent group-hover:text-white transition-colors" />
                     </div>
-                    <Badge variant="outline" className={getStatusColor(applicationData?.status)}>
-                      <span className="capitalize font-semibold">{applicationData?.status?.replace('_', ' ')}</span>
+                    <Badge variant="outline" className={`text-base font-bold px-4 py-1.5 ${getStatusColor(applicationData?.status)}`}>
+                      <span className="capitalize">{applicationData?.status?.replace('_', ' ')}</span>
                     </Badge>
                   </div>
-                  <CardTitle className="text-2xl mb-2">Track Progress</CardTitle>
-                  <CardDescription className="text-base">
-                    View detailed timeline and get real-time updates on your application
+                  <CardTitle className="text-3xl font-black mb-3">Track Progress</CardTitle>
+                  <CardDescription className="text-lg">
+                    View your application timeline and get real-time updates
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="relative">
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-muted/50 border border-border">
-                      <div className="flex items-start gap-3">
-                        {getStatusIcon(applicationData?.status)}
+                <CardContent className="pt-6">
+                  <div className="space-y-5">
+                    <div className="p-5 rounded-xl bg-muted border-2 border-border">
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          {getStatusIcon(applicationData?.status)}
+                        </div>
                         <div className="flex-1">
-                          <p className="font-semibold capitalize mb-1">
+                          <p className="font-bold text-lg capitalize mb-2">
                             {applicationData?.status?.replace('_', ' ')}
                           </p>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {applicationData?.status === 'new' && 'Our team is reviewing your application details'}
-                            {applicationData?.status === 'in_progress' && 'We\'re processing your documents and verifying information'}
-                            {applicationData?.status === 'approved' && 'Your loan is approved! Next steps will be shared via email'}
-                            {applicationData?.status === 'rejected' && 'Please contact support for alternative options'}
+                          <p className="text-base text-muted-foreground leading-relaxed">
+                            {applicationData?.status === 'new' && 'Our team is carefully reviewing your application'}
+                            {applicationData?.status === 'in_progress' && 'Documents are being verified and processed'}
+                            {applicationData?.status === 'approved' && 'Next steps will be sent to your email shortly'}
+                            {applicationData?.status === 'rejected' && 'Contact support for alternative options'}
                           </p>
                         </div>
                       </div>
                     </div>
-                    <Button size="lg" variant="outline" className="w-full gap-3 text-base group-hover:gap-4 transition-all">
-                      View Full Timeline
-                      <ArrowRight className="h-5 w-5" />
+                    <Button size="lg" variant="outline" className="w-full text-lg font-bold gap-3 h-14 group-hover:gap-4 transition-all">
+                      View Timeline
+                      <ArrowRight className="h-6 w-6" />
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Help Card */}
-            <Card className="border-warning/30 bg-gradient-to-br from-warning/5 to-warning/10 shadow-md">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-5">
-                  <div className="p-3 rounded-2xl bg-warning/20 flex-shrink-0">
-                    <AlertCircle className="h-6 w-6 text-warning" />
+            {/* Help Section */}
+            <Card className="border-2 border-warning/30 bg-gradient-to-br from-warning/10 to-warning/5 shadow-xl">
+              <CardContent className="pt-8">
+                <div className="flex items-start gap-6">
+                  <div className="p-4 rounded-2xl bg-warning/20 flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-warning" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold mb-2">Need Assistance?</h3>
-                    <p className="text-muted-foreground leading-relaxed mb-4">
-                      Our dedicated support team is available to help you with any questions about your application, 
-                      documents, or the loan process. We're here to make your journey smooth!
+                    <h3 className="text-2xl font-black mb-3">Need Help? We're Here! 💬</h3>
+                    <p className="text-lg text-muted-foreground leading-relaxed mb-5">
+                      Our support team is ready to assist you with any questions about your application, 
+                      documents, or the loan process. Don't hesitate to reach out!
                     </p>
-                    <Button variant="outline" className="gap-2">
-                      Contact Support
-                      <ArrowRight className="h-4 w-4" />
+                    <Button size="lg" className="font-bold gap-3">
+                      Contact Support Now
+                      <ArrowRight className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
@@ -393,7 +401,7 @@ const StudentDashboard = () => {
             </Card>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

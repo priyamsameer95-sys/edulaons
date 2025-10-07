@@ -18,22 +18,23 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary brand - Professional blue */
-    --primary: 214 84% 56%;
+    /* Primary brand - Vibrant blue for students */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 84% 46%;
+    --primary-hover: 217 91% 50%;
+    --primary-light: 217 91% 70%;
 
-    /* Secondary - Light blue accent */
-    --secondary: 214 32% 95%;
-    --secondary-foreground: 214 84% 46%;
+    /* Secondary - Fresh green for success */
+    --secondary: 142 76% 45%;
+    --secondary-foreground: 0 0% 100%;
 
     /* Muted elements */
     --muted: 220 13% 95%;
     --muted-foreground: 220 9% 46%;
 
-    /* Accent - Vibrant blue */
-    --accent: 214 76% 88%;
-    --accent-foreground: 214 84% 46%;
+    /* Accent - Purple for highlights */
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
 
     /* Status colors */
     --success: 142 76% 36%;
@@ -48,10 +49,11 @@
     --input: 220 13% 91%;
     --ring: 214 84% 56%;
 
-    /* Professional gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(214 84% 46%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 98%));
-    --gradient-accent: linear-gradient(135deg, hsl(214 76% 88%), hsl(214 32% 95%));
+    /* Vibrant gradients for students */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(262 83% 58%));
+    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 45%), hsl(173 80% 40%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(217 91% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(262 83% 58%) 50%, hsl(142 76% 45%) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(220 13% 69% / 0.05);
