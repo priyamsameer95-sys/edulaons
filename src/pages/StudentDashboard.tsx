@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
-import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft } from "lucide-react";
+import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +14,7 @@ import { formatCurrency } from "@/utils/formatters";
 import type { StudentApplication } from "@/hooks/useStudentApplications";
 
 const StudentDashboard = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { applications, loading, error, refetch } = useStudentApplications();
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null);
@@ -91,6 +91,18 @@ const StudentDashboard = () => {
   if (!hasApplications) {
     return (
       <div className="min-h-screen bg-muted/30">
+        <div className="border-b bg-background">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">My Applications</h1>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+            <Button onClick={signOut} variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <StudentApplicationFlow />
         </div>
@@ -104,15 +116,30 @@ const StudentDashboard = () => {
     const needsAction = selectedApplication.documents_status === 'pending' || selectedApplication.documents_status === 'resubmission_required';
     
     return (
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <Button 
-          variant="ghost" 
-          onClick={() => setSelectedApplication(null)}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Applications
-        </Button>
+      <div className="min-h-screen bg-muted/30">
+        <div className="border-b bg-background sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-6xl">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setSelectedApplication(null)}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div className="border-l pl-4">
+                <h1 className="text-lg font-bold">My Applications</h1>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
+            <Button onClick={signOut} variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+        <div className="container mx-auto py-8 px-4 max-w-6xl">
 
         {/* Status Banner */}
         <Card className={`border-l-4 ${
@@ -326,23 +353,37 @@ const StudentDashboard = () => {
             </CardContent>
           </Card>
         </div>
+        </div>
       </div>
     );
   }
 
   // Show list of applications
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">My Applications</h1>
-          <p className="text-muted-foreground">Track and manage your education loan applications</p>
+    <div className="min-h-screen bg-muted/30">
+      <div className="border-b bg-background sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">My Applications</h1>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
+          </div>
+          <Button onClick={signOut} variant="outline">
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
         </div>
-        <Button onClick={() => setShowApplicationForm(true)} size="lg">
-          <FileText className="mr-2 h-4 w-4" />
-          Start New Application
-        </Button>
       </div>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold mb-1">Your Applications</h2>
+            <p className="text-muted-foreground">Track and manage your education loan applications</p>
+          </div>
+          <Button onClick={() => setShowApplicationForm(true)} size="lg">
+            <FileText className="mr-2 h-4 w-4" />
+            Start New Application
+          </Button>
+        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {applications.map((app) => {
@@ -454,6 +495,7 @@ const StudentDashboard = () => {
             </Card>
           );
         })}
+       </div>
       </div>
     </div>
   );
