@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Building2, Check } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import LenderCard from './LenderCard';
 
 interface SuccessStepProps {
   caseId: string;
@@ -13,6 +14,24 @@ interface SuccessStepProps {
     lender_id: string;
     lender_name: string;
     lender_code: string;
+    lender_description: string | null;
+    logo_url: string | null;
+    website: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    interest_rate_min: number | null;
+    interest_rate_max: number | null;
+    loan_amount_min: number | null;
+    loan_amount_max: number | null;
+    processing_fee: number | null;
+    foreclosure_charges: number | null;
+    moratorium_period: string | null;
+    processing_time_days: number | null;
+    disbursement_time_days: number | null;
+    approval_rate: number | null;
+    key_features: string[] | null;
+    eligible_expenses: any[] | null;
+    required_documents: string[] | null;
     compatibility_score: number;
     is_preferred: boolean;
   }>;
@@ -68,83 +87,54 @@ const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) =
         </div>
       </div>
 
-      {/* Recommended Lenders Card */}
-      <Card className="border-2 transition-shadow hover:shadow-lg animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <CardHeader className="space-y-2 pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Building2 className="h-5 w-5 text-primary" />
-            Select Your Preferred Lender
-          </CardTitle>
-          <CardDescription className="text-base">
-            Choose the lender you'd like to work with for your education loan
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {recommendedLenders && recommendedLenders.length > 0 ? (
-            <>
-              <p className="text-sm text-muted-foreground mb-4">
-                Click on a lender to select them as your preferred choice
-              </p>
-              {recommendedLenders.map((lender, index) => {
-                const isSelected = selectedLenderId === lender.lender_id;
-                return (
-                  <button
-                    key={lender.lender_id}
-                    onClick={() => handleLenderSelection(lender.lender_id)}
-                    disabled={isUpdating}
-                    className={`w-full flex items-center justify-between p-4 rounded-lg transition-all hover:scale-[1.02] animate-fade-in ${
-                      isSelected
-                        ? 'bg-primary/10 border-2 border-primary shadow-md'
-                        : 'bg-muted/30 hover:bg-muted/50 border-2 border-transparent hover:border-primary/30'
-                    } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    style={{ animationDelay: `${500 + index * 100}ms` }}
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className={`flex items-center justify-center w-12 h-12 rounded-full ${
-                        isSelected ? 'bg-primary/20' : 'bg-primary/10'
-                      }`}>
-                        <Building2 className={`h-6 w-6 ${isSelected ? 'text-primary' : 'text-primary/70'}`} />
-                      </div>
-                      <div className="text-left flex-1">
-                        <h3 className="font-semibold text-base">{lender.lender_name}</h3>
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          <p className="text-sm text-muted-foreground">
-                            Match Score: <span className="font-semibold text-foreground">{lender.compatibility_score}%</span>
-                          </p>
-                          {lender.is_preferred && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-success/10 text-success text-xs font-medium rounded-full border border-success/20">
-                              ⭐ Recommended
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <div className="ml-4 flex items-center justify-center w-8 h-8 rounded-full bg-primary animate-scale-in">
-                        <Check className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-              {selectedLenderId && (
-                <div className="mt-4 p-4 bg-success/10 border border-success/20 rounded-lg animate-fade-in">
-                  <p className="text-sm text-success font-medium text-center">
-                    ✓ Your lender preference has been saved
-                  </p>
+      {/* Recommended Lenders Section */}
+      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">Select Your Preferred Lender</h2>
+          <p className="text-muted-foreground">
+            We've matched you with the best lenders based on your profile. Review their offerings and select your preferred choice.
+          </p>
+        </div>
+
+        {recommendedLenders && recommendedLenders.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {recommendedLenders.map((lender, index) => (
+                <div 
+                  key={lender.lender_id} 
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${500 + index * 100}ms` }}
+                >
+                  <LenderCard
+                    lender={lender}
+                    isSelected={selectedLenderId === lender.lender_id}
+                    onSelect={() => handleLenderSelection(lender.lender_id)}
+                    isUpdating={isUpdating}
+                  />
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-8 px-4 bg-muted/20 rounded-lg border border-dashed border-border">
-              <Building2 className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-              <p className="text-muted-foreground">
-                Our team will recommend suitable lenders based on your profile
-              </p>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            {selectedLenderId && (
+              <div className="p-4 bg-success/10 border border-success/20 rounded-lg animate-fade-in text-center">
+                <p className="text-sm text-success font-medium">
+                  ✓ Your lender preference has been saved successfully
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">
+                Our team will recommend suitable lenders based on your profile and contact you shortly.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Next Steps */}
       <div className="text-center space-y-5 animate-fade-in" style={{ animationDelay: '600ms' }}>

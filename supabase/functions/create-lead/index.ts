@@ -245,6 +245,24 @@ serve(async (req) => {
       lender_id: string;
       lender_name: string;
       lender_code: string;
+      lender_description: string | null;
+      logo_url: string | null;
+      website: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      interest_rate_min: number | null;
+      interest_rate_max: number | null;
+      loan_amount_min: number | null;
+      loan_amount_max: number | null;
+      processing_fee: number | null;
+      foreclosure_charges: number | null;
+      moratorium_period: string | null;
+      processing_time_days: number | null;
+      disbursement_time_days: number | null;
+      approval_rate: number | null;
+      key_features: string[] | null;
+      eligible_expenses: any[] | null;
+      required_documents: string[] | null;
       compatibility_score: number;
       is_preferred: boolean;
     }
@@ -265,14 +283,15 @@ serve(async (req) => {
         // Get unique lender IDs
         const lenderIds = [...new Set(preferences.map((p: any) => p.lender_id))];
         
-        // Fetch lender details
+        // Fetch complete lender details
         const { data: lenders, error: lendersError } = await supabaseAdmin
           .from('lenders')
-          .select('id, name, code')
-          .in('id', lenderIds);
+          .select('*')
+          .in('id', lenderIds)
+          .eq('is_active', true);
 
         if (!lendersError && lenders) {
-          // Map preferences to lenders
+          // Map preferences to lenders with full details
           recommendedLenders = preferences
             .map((pref: any) => {
               const lender = lenders.find((l: any) => l.id === pref.lender_id);
@@ -281,13 +300,31 @@ serve(async (req) => {
                 lender_id: lender.id,
                 lender_name: lender.name,
                 lender_code: lender.code,
+                lender_description: lender.description,
+                logo_url: lender.logo_url,
+                website: lender.website,
+                contact_email: lender.contact_email,
+                contact_phone: lender.contact_phone,
+                interest_rate_min: lender.interest_rate_min,
+                interest_rate_max: lender.interest_rate_max,
+                loan_amount_min: lender.loan_amount_min,
+                loan_amount_max: lender.loan_amount_max,
+                processing_fee: lender.processing_fee,
+                foreclosure_charges: lender.foreclosure_charges,
+                moratorium_period: lender.moratorium_period,
+                processing_time_days: lender.processing_time_days,
+                disbursement_time_days: lender.disbursement_time_days,
+                approval_rate: lender.approval_rate,
+                key_features: lender.key_features,
+                eligible_expenses: lender.eligible_expenses,
+                required_documents: lender.required_documents,
                 compatibility_score: pref.compatibility_score,
                 is_preferred: pref.is_preferred
               };
             })
             .filter((item): item is RecommendedLender => item !== null);
           
-          console.log('✅ [create-lead] Found recommended lenders:', recommendedLenders.length);
+          console.log('✅ [create-lead] Found recommended lenders with full details:', recommendedLenders.length);
         }
       }
     }

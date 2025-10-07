@@ -709,38 +709,83 @@ export type Database = {
       }
       lenders: {
         Row: {
+          approval_rate: number | null
           code: string
           contact_email: string | null
           contact_phone: string | null
           created_at: string
           description: string | null
+          disbursement_time_days: number | null
+          display_order: number | null
+          eligible_expenses: Json | null
+          foreclosure_charges: number | null
           id: string
+          interest_rate_max: number | null
+          interest_rate_min: number | null
           is_active: boolean
+          key_features: Json | null
+          loan_amount_max: number | null
+          loan_amount_min: number | null
+          logo_url: string | null
+          moratorium_period: string | null
           name: string
+          processing_fee: number | null
+          processing_time_days: number | null
+          required_documents: Json | null
           updated_at: string
           website: string | null
         }
         Insert: {
+          approval_rate?: number | null
           code: string
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          disbursement_time_days?: number | null
+          display_order?: number | null
+          eligible_expenses?: Json | null
+          foreclosure_charges?: number | null
           id?: string
+          interest_rate_max?: number | null
+          interest_rate_min?: number | null
           is_active?: boolean
+          key_features?: Json | null
+          loan_amount_max?: number | null
+          loan_amount_min?: number | null
+          logo_url?: string | null
+          moratorium_period?: string | null
           name: string
+          processing_fee?: number | null
+          processing_time_days?: number | null
+          required_documents?: Json | null
           updated_at?: string
           website?: string | null
         }
         Update: {
+          approval_rate?: number | null
           code?: string
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          disbursement_time_days?: number | null
+          display_order?: number | null
+          eligible_expenses?: Json | null
+          foreclosure_charges?: number | null
           id?: string
+          interest_rate_max?: number | null
+          interest_rate_min?: number | null
           is_active?: boolean
+          key_features?: Json | null
+          loan_amount_max?: number | null
+          loan_amount_min?: number | null
+          logo_url?: string | null
+          moratorium_period?: string | null
           name?: string
+          processing_fee?: number | null
+          processing_time_days?: number | null
+          required_documents?: Json | null
           updated_at?: string
           website?: string | null
         }
