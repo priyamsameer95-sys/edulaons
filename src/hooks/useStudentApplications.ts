@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useErrorHandler } from './useErrorHandler';
@@ -53,16 +53,11 @@ export const useStudentApplications = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchApplications = useCallback(async () => {
     if (!user?.email) {
       setLoading(false);
       return;
     }
-
-    fetchApplications();
-  }, [user?.email]);
-
-  const fetchApplications = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -168,7 +163,11 @@ export const useStudentApplications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.email, handleDatabaseError]);
+
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
   return {
     applications,
