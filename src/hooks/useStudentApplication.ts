@@ -66,7 +66,17 @@ export const useStudentApplication = () => {
     try {
       setIsSubmitting(true);
 
-      const { data: user } = await supabase.auth.getUser();
+      const { data: user, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user.user) {
+        toast({
+          title: "Session Expired",
+          description: "Please log in again to submit your application",
+          variant: "destructive",
+        });
+        navigate('/login');
+        return;
+      }
       
       const { data: result, error } = await supabase.functions.invoke('create-lead', {
         body: {
