@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +70,7 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const { bulkUpdateStatus } = useStatusManager();
+  const tabsRef = useRef<HTMLDivElement>(null);
   const { leads: allLeads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
   const [kpis, setKpis] = useState<AdminKPIs>({
     totalLeads: 0,
@@ -438,6 +439,18 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Small delay to ensure tab content is rendered
+    setTimeout(() => {
+      tabsRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest' 
+      });
+    }, 100);
+  };
+
   // No conversion needed - already using RefactoredLead
 
   if (loading) {
@@ -472,7 +485,7 @@ const AdminDashboard = () => {
                 activeTab={activeTab}
                 onCreatePartner={() => setShowCreatePartner(true)}
                 onSignOut={signOut}
-                onTabChange={setActiveTab}
+                onTabChange={handleTabChange}
               />
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
@@ -552,8 +565,9 @@ const AdminDashboard = () => {
             </div>
 
             {/* Tabs Section */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} max-w-4xl`}>
+            <div ref={tabsRef}>
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} max-w-4xl`}>
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -952,6 +966,7 @@ const AdminDashboard = () => {
                 </TabsContent>
               )}
             </Tabs>
+            </div>
         </div>
       </div>
 
