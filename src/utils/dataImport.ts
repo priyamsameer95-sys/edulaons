@@ -53,17 +53,29 @@ export function parseUniversityData(rawData: string[][]): UniversityData[] {
   return universities;
 }
 
-// Parse course data from the CSV format
+// Clean stream name by removing count numbers like "(23)" at the end
+function cleanStreamName(streamName: string): string {
+  if (!streamName) return '';
+  return streamName.replace(/\s*\(\d+\)\s*$/, '').trim();
+}
+
+// Parse course data from the CSV format with robust multiline handling
 export function parseCourseData(rawData: string[][]): CourseData[] {
   const courses: CourseData[] = [];
+  const seenCourses = new Set<string>(); // Deduplication
   
   // Skip header row, start from index 1
   for (let i = 1; i < rawData.length; i++) {
     const row = rawData[i];
+    
+    // Skip empty rows
+    if (!row || row.length === 0 || !row[0]) continue;
+    
+    // Handle both 10 and 11 column formats
     if (row.length >= 10) {
       const [
         university_name,
-        , // empty column
+        , // empty column (column index 1)
         degree,
         stream_name,
         program_name,
@@ -75,26 +87,45 @@ export function parseCourseData(rawData: string[][]): CourseData[] {
         starting_month,
       ] = row;
       
-      if (university_name && degree && stream_name && program_name && study_level) {
-        // Clean stream_name by removing count numbers like "(1)" at the end
-        const cleanStreamName = stream_name.replace(/\s*\(\d+\)\s*$/, '').trim();
-        
-        courses.push({
-          university_name: university_name.trim(),
-          degree: degree.trim(),
-          stream_name: cleanStreamName,
-          program_name: program_name.trim(),
-          study_level: study_level.trim(),
-          course_intensity: course_intensity?.trim(),
-          study_mode: study_mode?.trim(),
-          program_duration: program_duration?.trim(),
-          tuition_fees: tuition_fees?.trim(),
-          starting_month: starting_month?.trim(),
-        });
+      // Validate required fields
+      if (!university_name?.trim() || !degree?.trim() || !stream_name?.trim() || 
+          !program_name?.trim() || !study_level?.trim()) {
+        continue;
       }
+      
+      // Clean and normalize data
+      const cleanedUniversityName = university_name.trim();
+      const cleanedDegree = degree.trim();
+      const cleanedStreamName = cleanStreamName(stream_name);
+      const cleanedProgramName = program_name.trim();
+      const cleanedStudyLevel = study_level.trim();
+      
+      // Create unique key for deduplication
+      const courseKey = `${cleanedUniversityName}|${cleanedProgramName}|${cleanedStudyLevel}|${cleanedDegree}`;
+      
+      // Skip duplicates
+      if (seenCourses.has(courseKey)) {
+        continue;
+      }
+      
+      seenCourses.add(courseKey);
+      
+      courses.push({
+        university_name: cleanedUniversityName,
+        degree: cleanedDegree,
+        stream_name: cleanedStreamName,
+        program_name: cleanedProgramName,
+        study_level: cleanedStudyLevel,
+        course_intensity: course_intensity?.trim() || undefined,
+        study_mode: study_mode?.trim() || undefined,
+        program_duration: program_duration?.trim() || undefined,
+        tuition_fees: tuition_fees?.trim() || undefined,
+        starting_month: starting_month?.trim() || undefined,
+      });
     }
   }
   
+  console.log(`Parsed ${courses.length} unique courses from ${rawData.length - 1} rows`);
   return courses;
 }
 
@@ -124,9 +155,10 @@ export async function importUniversities(universities: UniversityData[]) {
   return results;
 }
 
-// Import courses to Supabase
-export async function importCourses(courses: CourseData[]) {
-  console.log(`Importing ${courses.length} courses...`);
+// Import courses to Supabase with optimized batching and error handling
+export async function importCourses(courses: CourseData[], onProgress?: (progress: number, status: string) => void) {
+  console.log(`Starting import of ${courses.length} courses...`);
+  onProgress?.(0, 'Fetching universities...');
   
   // First, get all universities to create a name-to-id mapping
   const { data: universities, error: univError } = await supabase
@@ -140,15 +172,19 @@ export async function importCourses(courses: CourseData[]) {
   
   const universityMap = new Map<string, string>();
   universities?.forEach(univ => {
-    universityMap.set(univ.name, univ.id);
+    universityMap.set(univ.name.trim().toLowerCase(), univ.id);
   });
   
-  // Prepare courses with university IDs
+  console.log(`Loaded ${universityMap.size} universities into memory`);
+  onProgress?.(5, `Mapping ${courses.length} courses to universities...`);
+  
+  // Prepare courses with university IDs and track unmatched
+  const unmatchedUniversities = new Set<string>();
   const coursesWithIds = courses
     .map(course => {
-      const universityId = universityMap.get(course.university_name);
+      const universityId = universityMap.get(course.university_name.trim().toLowerCase());
       if (!universityId) {
-        console.warn(`University not found: ${course.university_name}`);
+        unmatchedUniversities.add(course.university_name);
         return null;
       }
       
@@ -167,26 +203,72 @@ export async function importCourses(courses: CourseData[]) {
     })
     .filter(Boolean) as any[];
   
-  console.log(`Matched ${coursesWithIds.length}/${courses.length} courses to universities`);
+  console.log(`✅ Matched ${coursesWithIds.length}/${courses.length} courses to universities`);
+  if (unmatchedUniversities.size > 0) {
+    console.warn(`⚠️ ${unmatchedUniversities.size} universities not found in database:`, 
+      Array.from(unmatchedUniversities).slice(0, 10).join(', '));
+  }
   
-  const batchSize = 1000;
+  onProgress?.(10, `Importing ${coursesWithIds.length} courses in batches...`);
+  
+  const batchSize = 500; // Reduced for better reliability
   const results = [];
+  const errors = [];
   
   for (let i = 0; i < coursesWithIds.length; i += batchSize) {
     const batch = coursesWithIds.slice(i, i + batchSize);
-    const { data, error } = await supabase
-      .from('courses')
-      .insert(batch)
-      .select('id, program_name');
+    const progress = 10 + Math.floor((i / coursesWithIds.length) * 85);
+    const currentBatch = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(coursesWithIds.length / batchSize);
     
-    if (error) {
-      console.error(`Error importing courses batch ${i}:`, error);
-      throw error;
+    onProgress?.(progress, `Importing batch ${currentBatch}/${totalBatches} (${i + batch.length}/${coursesWithIds.length} courses)...`);
+    
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .upsert(batch, { 
+          onConflict: 'university_id,program_name,study_level,degree',
+          ignoreDuplicates: true 
+        })
+        .select('id, program_name');
+      
+      if (error) {
+        console.error(`❌ Error importing batch ${currentBatch}:`, error);
+        errors.push({ batch: currentBatch, error: error.message });
+        // Continue with next batch instead of throwing
+      } else {
+        results.push(...(data || []));
+        console.log(`✅ Batch ${currentBatch}/${totalBatches} complete: ${data?.length || 0} courses`);
+      }
+    } catch (err) {
+      console.error(`❌ Exception in batch ${currentBatch}:`, err);
+      errors.push({ batch: currentBatch, error: String(err) });
     }
     
-    results.push(...(data || []));
-    console.log(`Imported ${Math.min(i + batchSize, coursesWithIds.length)}/${coursesWithIds.length} courses`);
+    // Small delay to avoid rate limiting
+    if (i + batchSize < coursesWithIds.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
   
-  return results;
+  onProgress?.(95, 'Finalizing import...');
+  
+  console.log('\n=== Import Summary ===');
+  console.log(`✅ Successfully imported: ${results.length} courses`);
+  console.log(`⚠️ Unmatched universities: ${unmatchedUniversities.size}`);
+  console.log(`❌ Errors encountered: ${errors.length}`);
+  
+  if (errors.length > 0) {
+    console.warn('Error details:', errors);
+  }
+  
+  onProgress?.(100, `Import complete! ${results.length} courses imported.`);
+  
+  return {
+    success: results.length,
+    total: courses.length,
+    matched: coursesWithIds.length,
+    errors: errors.length,
+    unmatchedUniversities: Array.from(unmatchedUniversities),
+  };
 }

@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
 import PublicPartner from "./pages/public/PublicPartner";
+import DataImport from "./pages/DataImport";
 
 // Import comprehensive university data import script
 import "./scripts/importData";
@@ -68,6 +69,16 @@ const App = () => (
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Admin Data Import */}
+          <Route 
+            path="/admin/import" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <DataImport />
               </ProtectedRoute>
             } 
           />
