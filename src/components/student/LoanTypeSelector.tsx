@@ -31,9 +31,6 @@ export const LoanTypeSelector = ({
                   <Check className="h-2.5 w-2.5 text-primary-foreground" />
                 </div>}
             </Label>
-            <p className="text-sm text-muted-foreground mt-1">
-              Secured Loan • Lower interest (8-10%)
-            </p>
           </div>
         </div>
 
