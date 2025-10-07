@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import NewLeadPage from "./pages/NewLeadPage";
@@ -67,6 +68,16 @@ const App = () => (
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Student Dashboard */}
+          <Route 
+            path="/student" 
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentDashboard />
               </ProtectedRoute>
             } 
           />

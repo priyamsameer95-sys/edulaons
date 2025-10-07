@@ -94,6 +94,11 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     return <Navigate to="/admin" replace />;
   }
 
+  if (appUser.role === 'student' as any) {
+    console.log('DashboardRouter: Student detected, redirecting to /student');
+    return <Navigate to="/student" replace />;
+  }
+
   if (appUser.role === 'partner') {
     if (!appUser.partner_id) {
       console.error('DashboardRouter: Partner has no partner_id');
