@@ -43,7 +43,6 @@ export const LoanTypeSelector = ({
                   <Check className="h-2.5 w-2.5 text-primary-foreground" />
                 </div>}
             </Label>
-            <p className="text-sm text-muted-foreground mt-1">Faster and High Intrest rate low change of approval </p>
           </div>
         </div>
       </RadioGroup>
