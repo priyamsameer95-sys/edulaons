@@ -28,6 +28,7 @@ import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard
 import { AdminActionRequired } from '@/components/gamification/AdminActionRequired';
 import { PersonalImpact } from '@/components/gamification/PersonalImpact';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
+import UserManagementTab from '@/components/admin/UserManagementTab';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -552,7 +553,7 @@ const AdminDashboard = () => {
 
             {/* Tabs Section */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 max-w-3xl">
+              <TabsList className="grid w-full grid-cols-4 max-w-4xl">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -564,6 +565,10 @@ const AdminDashboard = () => {
                 <TabsTrigger value="leads" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Leads
+                </TabsTrigger>
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Users
                 </TabsTrigger>
               </TabsList>
 
@@ -926,6 +931,13 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+              </TabsContent>
+
+              <TabsContent value="users" className="space-y-6 mt-6">
+                <UserManagementTab
+                  currentUserRole={appUser?.role as 'admin' | 'super_admin'}
+                  currentUserId={appUser?.id || ''}
+                />
               </TabsContent>
             </Tabs>
           </div>
