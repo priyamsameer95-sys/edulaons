@@ -11,6 +11,9 @@ export interface AppUser {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  deactivation_reason?: string | null;
+  deactivated_by?: string | null;
+  deactivated_at?: string | null;
 }
 
 export interface Partner {
