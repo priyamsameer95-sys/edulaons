@@ -18,7 +18,7 @@ interface EditUserModalProps {
 
 const EditUserModal = ({ open, onOpenChange, user, currentUserRole, protectedEmail }: EditUserModalProps) => {
   const { updateUser, fetchPartners, partners, loading } = useUserManagement();
-  const [role, setRole] = useState<'partner' | 'admin' | 'super_admin'>('partner');
+  const [role, setRole] = useState<'partner' | 'admin' | 'super_admin' | 'student' | 'kam'>('partner');
   const [partnerId, setPartnerId] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
 

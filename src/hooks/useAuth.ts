@@ -7,7 +7,7 @@ import { logger } from '@/utils/logger';
 export interface AppUser {
   id: string;
   email: string;
-  role: 'partner' | 'admin' | 'super_admin';
+  role: 'partner' | 'admin' | 'super_admin' | 'student' | 'kam';
   partner_id?: string;
   is_active: boolean;
 }
