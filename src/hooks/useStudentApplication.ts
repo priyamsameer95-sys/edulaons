@@ -18,6 +18,13 @@ export interface StudentApplicationData {
   // Study Details
   universities: string[]; // Array of university IDs
   course: string;
+  courseId?: string; // Optional DB reference
+  courseDetails?: { // Optional enrichment
+    programName: string;
+    degree: string;
+    stream: string;
+    tuition?: string;
+  };
   studyDestination: string;
   intakeMonth: number;
   intakeYear: number;

@@ -9,6 +9,7 @@ import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
 import { LoanTypeSelector } from './LoanTypeSelector';
 import { UniversitySelector } from '@/components/ui/university-selector';
+import { CourseSelector } from '@/components/ui/course-selector';
 import { STUDY_DESTINATIONS, COACHING_MESSAGES, LOAN_AMOUNT_RANGES, MIN_LOAN_AMOUNT } from '@/constants/studentApplication';
 import { Info, AlertCircle } from 'lucide-react';
 
@@ -62,7 +63,31 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-6">
-        {/* Universities */}
+        {/* Study Destination - FIRST */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1">
+            <Label htmlFor="studyDestination">Study Destination *</Label>
+            <CoachingTooltip content={COACHING_MESSAGES.studyDestination} />
+          </div>
+          <Select 
+            value={data.studyDestination || ''} 
+            onValueChange={(value) => {
+              onUpdate({ studyDestination: value, universities: [], course: '', courseId: undefined, courseDetails: undefined });
+            }}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select country" />
+            </SelectTrigger>
+            <SelectContent>
+              {STUDY_DESTINATIONS.map((dest) => (
+                <SelectItem key={dest} value={dest}>{dest}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Universities - SECOND */}
         <div className="space-y-2">
           <div className="flex items-center gap-1">
             <Label>Select Universities (up to 3) *</Label>
@@ -72,7 +97,7 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             country={data.studyDestination || ''}
             universities={data.universities || []}
             onChange={(unis) => {
-              onUpdate({ universities: unis });
+              onUpdate({ universities: unis, course: '', courseId: undefined, courseDetails: undefined });
               setErrors(prev => ({ ...prev, universities: '' }));
             }}
             error={errors.universities}
@@ -87,43 +112,33 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
           )}
         </div>
 
-        {/* Course */}
+        {/* Course - THIRD */}
         <div className="space-y-2">
           <div className="flex items-center gap-1">
-            <Label htmlFor="course">Course/Program *</Label>
+            <Label>Course/Program *</Label>
             <CoachingTooltip content={COACHING_MESSAGES.course} />
           </div>
-          <Input
-            id="course"
-            value={data.course || ''}
-            onChange={(e) => onUpdate({ course: e.target.value })}
-            required
-            placeholder="e.g., Master of Science in Computer Science"
-          />
-        </div>
-
-        {/* Study Destination */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="studyDestination">Study Destination *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.studyDestination} />
-          </div>
-          <Select 
-            value={data.studyDestination || ''} 
-            onValueChange={(value) => {
-              onUpdate({ studyDestination: value, universities: [] });
+          <CourseSelector
+            universityIds={data.universities || []}
+            value={data.courseId && data.courseDetails ? { id: data.courseId, ...data.courseDetails } : data.course}
+            onChange={(value) => {
+              if (typeof value === 'string') {
+                onUpdate({ course: value, courseId: undefined, courseDetails: undefined });
+              } else {
+                onUpdate({ 
+                  course: value.programName,
+                  courseId: value.id,
+                  courseDetails: {
+                    programName: value.programName,
+                    degree: value.degree,
+                    stream: value.stream,
+                    tuition: value.tuition
+                  }
+                });
+              }
             }}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select country" />
-            </SelectTrigger>
-            <SelectContent>
-              {STUDY_DESTINATIONS.map((dest) => (
-                <SelectItem key={dest} value={dest}>{dest}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Search for your course..."
+          />
         </div>
 
         {/* Loan Type */}
