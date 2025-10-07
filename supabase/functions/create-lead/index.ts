@@ -240,35 +240,55 @@ serve(async (req) => {
 
     // Step 7: Get recommended lenders based on universities
     console.log('🏦 [create-lead] Fetching recommended lenders...');
-    let recommendedLenders = [];
+    
+    interface RecommendedLender {
+      lender_id: string;
+      lender_name: string;
+      lender_code: string;
+      compatibility_score: number;
+      is_preferred: boolean;
+    }
+    
+    let recommendedLenders: RecommendedLender[] = [];
     
     if (body.universities && body.universities.length > 0) {
+      // First, get preferences
       const { data: preferences, error: prefError } = await supabaseAdmin
         .from('university_lender_preferences')
-        .select(`
-          lender_id,
-          compatibility_score,
-          is_preferred,
-          lenders!inner (
-            id,
-            name,
-            code
-          )
-        `)
+        .select('lender_id, compatibility_score, is_preferred')
         .in('university_id', body.universities)
         .eq('study_destination', body.country)
         .order('compatibility_score', { ascending: false })
         .limit(5);
 
       if (!prefError && preferences && preferences.length > 0) {
-        recommendedLenders = preferences.map((pref: any) => ({
-          lender_id: pref.lenders.id,
-          lender_name: pref.lenders.name,
-          lender_code: pref.lenders.code,
-          compatibility_score: pref.compatibility_score,
-          is_preferred: pref.is_preferred
-        }));
-        console.log('✅ [create-lead] Found recommended lenders:', recommendedLenders.length);
+        // Get unique lender IDs
+        const lenderIds = [...new Set(preferences.map((p: any) => p.lender_id))];
+        
+        // Fetch lender details
+        const { data: lenders, error: lendersError } = await supabaseAdmin
+          .from('lenders')
+          .select('id, name, code')
+          .in('id', lenderIds);
+
+        if (!lendersError && lenders) {
+          // Map preferences to lenders
+          recommendedLenders = preferences
+            .map((pref: any) => {
+              const lender = lenders.find((l: any) => l.id === pref.lender_id);
+              if (!lender) return null;
+              return {
+                lender_id: lender.id,
+                lender_name: lender.name,
+                lender_code: lender.code,
+                compatibility_score: pref.compatibility_score,
+                is_preferred: pref.is_preferred
+              };
+            })
+            .filter((item): item is RecommendedLender => item !== null);
+          
+          console.log('✅ [create-lead] Found recommended lenders:', recommendedLenders.length);
+        }
       }
     }
     
