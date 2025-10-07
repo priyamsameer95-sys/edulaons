@@ -5,19 +5,22 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useToast } from "@/hooks/use-toast";
 import { 
   FileText, 
   Upload, 
-  Check, 
+  Check,
+  CheckCircle,
   AlertCircle, 
   File, 
   ChevronDown, 
   User, 
   Users, 
   Building,
-  Globe
+  Globe,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -135,79 +138,58 @@ export const DocumentUploadSection = ({
 
   if (loading) {
     return (
-      <div className="bg-gradient-subtle rounded-2xl border border-border/50 shadow-elegant overflow-hidden">
-        <div className="p-8 border-b border-border/10 bg-card/50">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary/10">
-              <Upload className="h-6 w-6 text-primary" />
-            </div>
-            <h2 className="text-2xl font-semibold text-foreground">Required Documents</h2>
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="px-4 py-3 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">Required Documents</h2>
           </div>
         </div>
-        <div className="p-8">
-          <div className="text-center py-12">
-            <File className="h-12 w-12 animate-pulse mx-auto mb-6 text-muted-foreground" />
-            <p className="text-lg text-muted-foreground">Loading document requirements...</p>
-          </div>
+        <div className="px-4 py-8 text-center">
+          <File className="h-8 w-8 animate-pulse mx-auto mb-3 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading documents...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-subtle rounded-2xl border border-border/50 shadow-elegant overflow-hidden">
-      {/* Header Section */}
-      <div className="p-8 border-b border-border/10 bg-card/50">
-        <div className="flex items-center justify-between mb-6">
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
+      {/* Compact Header */}
+      <div className="px-4 py-3 border-b border-border bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Required Documents</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              📄 Upload clear photos or PDFs (max 20MB each)
+            </p>
+          </div>
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary/10">
-              <Upload className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-semibold text-foreground">Document Collection</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                📄 Upload clear photos or PDFs of your documents (up to 20MB each)
-              </p>
+            <Badge variant="outline" className="text-xs">
+              {uploadedRequiredDocs.length}/{requiredDocs.length}
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {Math.round(progressPercentage)}% Complete
             </div>
           </div>
-          <Badge variant="outline" className="px-4 py-2 text-base font-medium bg-card border-border/20">
-            {uploadedRequiredDocs.length}/{requiredDocs.length} Required
-          </Badge>
         </div>
         
-        {/* Progress Section */}
+        {/* Compact Progress */}
         {requiredDocs.length > 0 && (
-          <div className="space-y-4">
-            <Progress 
-              value={progressPercentage} 
-              className="w-full h-3 bg-muted/50 rounded-full overflow-hidden"
-            />
-            <div className="flex items-center justify-between">
-              <p className="text-base text-muted-foreground">
-                {Math.round(progressPercentage)}% of required documents uploaded
-              </p>
-              <span className="text-sm font-medium text-primary">
-                {uploadedRequiredDocs.length} of {requiredDocs.length} completed
-              </span>
-            </div>
-          </div>
+          <Progress 
+            value={progressPercentage} 
+            className="w-full h-1.5 mt-3"
+          />
         )}
       </div>
 
-      {/* Documents by Category */}
-      <div className="p-8 space-y-6">
+      {/* Table Layout */}
+      <div className="divide-y divide-border">
         {visibleCategories.map((category) => {
           const categoryDocs = documentsByCategory[category.id] || [];
           if (categoryDocs.length === 0) return null;
 
           const CategoryIcon = category.icon;
-          const categoryRequiredDocs = categoryDocs.filter(doc => doc.required);
-          const categoryUploadedDocs = categoryRequiredDocs.filter(doc => 
-            getDocumentStatus(doc.id) === 'uploaded'
-          );
-          const categoryProgress = categoryRequiredDocs.length > 0
-            ? (categoryUploadedDocs.length / categoryRequiredDocs.length) * 100
-            : 100;
 
           return (
             <Collapsible
@@ -215,194 +197,152 @@ export const DocumentUploadSection = ({
               open={openCategories[category.id]}
               onOpenChange={() => toggleCategory(category.id)}
             >
-              <Card className="shadow-lg border-border/20 bg-card/80 backdrop-blur-sm">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <CategoryIcon className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            {category.name}
-                            {category.conditional && (
-                              <Badge variant="outline" className="text-xs">
-                                {category.id === 'collateral' ? 'Secured Loan' : 'Optional'}
-                              </Badge>
-                            )}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {categoryRequiredDocs.length > 0 && (
-                          <Badge 
-                            variant={categoryProgress === 100 ? "default" : "secondary"}
-                            className="px-3 py-1"
-                          >
-                            {categoryUploadedDocs.length}/{categoryRequiredDocs.length} Required
-                          </Badge>
-                        )}
-                        <ChevronDown 
-                          className={cn(
-                            "h-5 w-5 transition-transform text-muted-foreground",
-                            openCategories[category.id] && "transform rotate-180"
-                          )} 
-                        />
-                      </div>
+              {/* Category Header */}
+              <CollapsibleTrigger asChild>
+                <div className="px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CategoryIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">{category.name}</span>
+                      {category.conditional && (
+                        <Badge variant="outline" className="text-xs h-5">
+                          {category.id === 'collateral' ? 'Secured' : 'Optional'}
+                        </Badge>
+                      )}
                     </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-6 pt-0">
-                    {categoryDocs.map((docType) => {
-                      const status = getDocumentStatus(docType.id);
-                      const isUploading = uploading.includes(docType.id);
-                      
-                      return (
-                        <div 
-                          key={docType.id} 
-                          className="border border-border/50 rounded-xl p-6 bg-card/50 hover:bg-card transition-colors"
-                        >
-                          {/* Document Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <File className="h-4 w-4 text-primary" />
-                              </div>
-                              <div>
-                                <h3 className="text-base font-semibold text-foreground">{docType.name}</h3>
-                                {docType.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">{docType.description}</p>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3">
+                    <ChevronDown 
+                      className={cn(
+                        "h-4 w-4 transition-transform text-muted-foreground",
+                        openCategories[category.id] && "transform rotate-180"
+                      )} 
+                    />
+                  </div>
+                </div>
+              </CollapsibleTrigger>
+
+              {/* Document Rows */}
+              <CollapsibleContent>
+                <div className="bg-muted/20">
+                  {categoryDocs.map((docType) => {
+                    const status = getDocumentStatus(docType.id);
+                    const isUploading = uploading.includes(docType.id);
+                    
+                    return (
+                      <div 
+                        key={docType.id} 
+                        className="px-4 py-3 border-t border-border/50 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          {/* Document Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <File className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-sm font-medium text-foreground">{docType.name}</span>
                               {docType.required && (
-                                <Badge variant="destructive" className="px-3 py-1 text-xs">
+                                <Badge variant="destructive" className="text-xs h-4 px-1.5">
                                   Required
                                 </Badge>
                               )}
-                              
-                              {/* Status Indicator */}
-                              {status === 'uploaded' && (
-                                <div className="flex items-center gap-2 text-success">
-                                  <div className="p-1 rounded-full bg-success/20">
-                                    <Check className="h-4 w-4" />
-                                  </div>
-                                </div>
-                              )}
-                              {status === 'error' && (
-                                <div className="flex items-center gap-2 text-destructive">
-                                  <div className="p-1 rounded-full bg-destructive/20">
-                                    <AlertCircle className="h-4 w-4" />
-                                  </div>
-                                </div>
-                              )}
-                              {isUploading && (
-                                <div className="p-1 rounded-full bg-primary/20">
-                                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                </div>
+                              {docType.description && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                      <p className="text-xs">{docType.description}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
                             </div>
                           </div>
                           
-                          {/* Upload Area or Status */}
-                          {status !== 'uploaded' && (
-                            <EnhancedDocumentUpload
-                              leadId={leadId}
-                              documentType={docType}
-                              onUploadSuccess={(document) => {
-                                setUploadedDocs(prev => 
-                                  prev.map(doc => 
-                                    doc.documentTypeId === docType.id 
-                                      ? { ...doc, status: 'uploaded' as const }
-                                      : doc
-                                  )
-                                );
-                                
-                                toast({
-                                  title: "✅ Document Uploaded Successfully",
-                                  description: `${docType.name} has been uploaded and is ready for review`,
-                                });
-
-                                const totalRequired = documentTypes.filter(dt => dt.required).length;
-                                const totalUploaded = uploadedDocs.filter(doc => doc.status === 'uploaded').length + 1;
-                                onDocumentsChange?.(totalUploaded, totalRequired);
-                              }}
-                              onUploadError={(error) => {
-                                setUploadedDocs(prev => 
-                                  prev.map(doc => 
-                                    doc.documentTypeId === docType.id 
-                                      ? { ...doc, status: 'error' as const }
-                                      : doc
-                                  )
-                                );
-
-                                toast({
-                                  title: "❌ Upload Failed",
-                                  description: error || "Something went wrong. Please try uploading again.",
-                                  variant: "destructive",
-                                });
-                              }}
-                              disabled={isUploading || !leadId}
-                            />
-                          )}
-                          
-                          {/* Success State */}
-                          {status === 'uploaded' && (
-                            <div className="p-4 rounded-xl border-2 border-success/30 bg-gradient-to-r from-success/10 to-success/5">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-full bg-success/20">
-                                  <Check className="h-5 w-5 text-success" />
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-success">Document verified and ready!</h4>
-                                  <p className="text-xs text-success/90 mt-1">Successfully uploaded and processed</p>
-                                </div>
+                          {/* Status & Actions */}
+                          <div className="flex items-center gap-3">
+                            {/* Upload Status */}
+                            {status === 'uploaded' && (
+                              <div className="flex items-center gap-1.5 text-success">
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="text-xs font-medium">Uploaded</span>
                               </div>
-                            </div>
-                          )}
-                          
-                          {/* Error State */}
-                          {status === 'error' && (
-                            <div className="p-4 rounded-xl border-2 border-destructive/30 bg-gradient-to-r from-destructive/10 to-destructive/5">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-full bg-destructive/20">
-                                  <AlertCircle className="h-5 w-5 text-destructive" />
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-semibold text-destructive">Upload needs attention</h4>
-                                  <p className="text-xs text-destructive/90 mt-1">Please try uploading again</p>
-                                </div>
+                            )}
+                            
+                            {status === 'error' && (
+                              <div className="flex items-center gap-1.5 text-destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <span className="text-xs font-medium">Failed</span>
                               </div>
-                            </div>
-                          )}
+                            )}
+                            
+                            {isUploading && (
+                              <div className="flex items-center gap-1.5 text-primary">
+                                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <span className="text-xs font-medium">Uploading...</span>
+                              </div>
+                            )}
+                            
+                            {/* Upload Button */}
+                            {status !== 'uploaded' && (
+                              <EnhancedDocumentUpload
+                                leadId={leadId}
+                                documentType={docType}
+                                onUploadSuccess={(document) => {
+                                  setUploadedDocs(prev => 
+                                    prev.map(doc => 
+                                      doc.documentTypeId === docType.id 
+                                        ? { ...doc, status: 'uploaded' as const }
+                                        : doc
+                                    )
+                                  );
+                                  
+                                  toast({
+                                    title: "✅ Upload Complete",
+                                    description: `${docType.name} uploaded successfully`,
+                                  });
+
+                                  const totalRequired = documentTypes.filter(dt => dt.required).length;
+                                  const totalUploaded = uploadedDocs.filter(doc => doc.status === 'uploaded').length + 1;
+                                  onDocumentsChange?.(totalUploaded, totalRequired);
+                                }}
+                                onUploadError={(error) => {
+                                  setUploadedDocs(prev => 
+                                    prev.map(doc => 
+                                      doc.documentTypeId === docType.id 
+                                        ? { ...doc, status: 'error' as const }
+                                        : doc
+                                    )
+                                  );
+
+                                  toast({
+                                    title: "❌ Upload Failed",
+                                    description: error || "Please try again",
+                                    variant: "destructive",
+                                  });
+                                }}
+                                disabled={isUploading || !leadId}
+                              />
+                            )}
+                          </div>
                         </div>
-                      );
-                    })}
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
             </Collapsible>
           );
         })}
-        
-        {/* Empty State */}
-        {documentTypes.length === 0 && (
-          <div className="text-center py-16">
-            <div className="p-6 rounded-2xl bg-muted/20 inline-block mb-6">
-              <FileText className="h-16 w-16 mx-auto text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">No document types configured</h3>
-            <p className="text-muted-foreground">Contact support to set up document requirements</p>
-          </div>
-        )}
       </div>
+        
+      {/* Empty State */}
+      {documentTypes.length === 0 && (
+        <div className="px-4 py-12 text-center">
+          <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-base font-semibold text-foreground mb-1">No documents configured</h3>
+          <p className="text-sm text-muted-foreground">Contact support to set up document requirements</p>
+        </div>
+      )}
     </div>
   );
 };
