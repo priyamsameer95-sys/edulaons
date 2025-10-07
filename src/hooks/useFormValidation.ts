@@ -147,8 +147,7 @@ export function useFormValidation<T extends Record<string, any>>(
       updateField(name, e.target.value);
     },
     onBlur: () => validateFieldOnBlur(name),
-    error: touched[name] ? errors[name] : undefined,
-    hasError: !!(touched[name] && errors[name])
+    error: touched[name] ? errors[name] : undefined
   }), [formData, errors, touched, updateField, validateFieldOnBlur]);
 
   // Reset form

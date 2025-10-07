@@ -63,7 +63,14 @@ const leadFormConfig: FieldConfig = {
     pattern: /^(\+[\d]{1,3}[\d\s\-()]{7,14}|[\d]{10})$/
   },
   student_email: { 
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    custom: (value: string) => {
+      if (!value.trim()) return null;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Please enter a valid email (e.g., name@example.com)';
+      }
+      return null;
+    }
   },
   student_pin_code: { 
     required: true, 
@@ -98,9 +105,30 @@ const leadFormConfig: FieldConfig = {
       return null;
     }
   },
-  co_applicant_name: { required: true, minLength: 2, maxLength: 100 },
+  co_applicant_name: { 
+    required: true, 
+    minLength: 2, 
+    maxLength: 100,
+    custom: (value: string) => {
+      const trimmedValue = value.trim();
+      if (trimmedValue.startsWith('/') || trimmedValue.toLowerCase().includes('login')) {
+        return 'Please enter a valid name (not a URL or system path)';
+      }
+      if (!/^[a-zA-Z\s.'-]+$/.test(trimmedValue)) {
+        return 'Name can only contain letters, spaces, dots, hyphens, and apostrophes';
+      }
+      return null;
+    }
+  },
   co_applicant_email: { 
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    custom: (value: string) => {
+      if (!value.trim()) return null;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Please enter a valid email (e.g., name@example.com)';
+      }
+      return null;
+    }
   },
   co_applicant_phone: { 
     required: true, 
@@ -510,6 +538,9 @@ const NewLeadPage = () => {
                             max="120"
                             className={errors.toefl_score ? 'border-destructive' : ''}
                           />
+                          {errors.toefl_score && (
+                            <p className="text-sm text-destructive">{errors.toefl_score}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -526,6 +557,9 @@ const NewLeadPage = () => {
                             max="90"
                             className={errors.pte_score ? 'border-destructive' : ''}
                           />
+                          {errors.pte_score && (
+                            <p className="text-sm text-destructive">{errors.pte_score}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -542,6 +576,9 @@ const NewLeadPage = () => {
                             max="800"
                             className={errors.gmat_score ? 'border-destructive' : ''}
                           />
+                          {errors.gmat_score && (
+                            <p className="text-sm text-destructive">{errors.gmat_score}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -558,6 +595,9 @@ const NewLeadPage = () => {
                             max="340"
                             className={errors.gre_score ? 'border-destructive' : ''}
                           />
+                          {errors.gre_score && (
+                            <p className="text-sm text-destructive">{errors.gre_score}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -575,6 +615,9 @@ const NewLeadPage = () => {
                             step="0.5"
                             className={errors.ielts_score ? 'border-destructive' : ''}
                           />
+                          {errors.ielts_score && (
+                            <p className="text-sm text-destructive">{errors.ielts_score}</p>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -723,6 +766,10 @@ const NewLeadPage = () => {
                             placeholder="Co-applicant's full name"
                             className={errors.co_applicant_name ? 'border-destructive' : ''}
                           />
+                          <p className="text-xs text-muted-foreground">This will be used in your loan documents</p>
+                          {errors.co_applicant_name && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_name}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -736,6 +783,26 @@ const NewLeadPage = () => {
                             placeholder="Their 10-digit phone number"
                             className={errors.co_applicant_phone ? 'border-destructive' : ''}
                           />
+                          {errors.co_applicant_phone && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_phone}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="co_applicant_email" className="text-sm font-medium">
+                            What's their email? <span className="text-muted-foreground">(Optional)</span>
+                          </Label>
+                          <Input
+                            id="co_applicant_email"
+                            type="email"
+                            value={formData.co_applicant_email}
+                            onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
+                            placeholder="their.email@example.com"
+                            className={errors.co_applicant_email ? 'border-destructive' : ''}
+                          />
+                          {errors.co_applicant_email && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_email}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -758,6 +825,9 @@ const NewLeadPage = () => {
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
+                          {errors.co_applicant_relationship && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_relationship}</p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -794,6 +864,9 @@ const NewLeadPage = () => {
                             maxLength={6}
                             className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
                           />
+                          {errors.co_applicant_pin_code && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_pin_code}</p>
+                          )}
                         </div>
                       </div>
                     </CardContent>
