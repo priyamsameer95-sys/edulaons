@@ -59,35 +59,33 @@ export const useStudentApplication = () => {
     try {
       setIsSubmitting(true);
 
-      const { data: result, error } = await (supabase.rpc as any)('create_case_student', {
-        p_student_name: applicationData.name!,
-        p_student_email: (await supabase.auth.getUser()).data.user?.email!,
-        p_student_phone: applicationData.phone!,
-        p_student_dob: applicationData.dateOfBirth!,
-        p_student_nationality: applicationData.nationality!,
-        p_student_country: applicationData.nationality === 'Indian' ? 'India' : 'Other',
-        p_student_city: applicationData.city!,
-        p_student_state: applicationData.state!,
-        p_student_postal_code: applicationData.postalCode!,
-        p_co_applicant_name: applicationData.coApplicantName!,
-        p_co_applicant_relationship: applicationData.coApplicantRelationship as any,
-        p_co_applicant_salary: applicationData.coApplicantSalary!,
-        p_co_applicant_pin_code: applicationData.coApplicantPinCode!,
-        p_co_applicant_phone: applicationData.coApplicantPhone!,
-        p_co_applicant_email: applicationData.coApplicantEmail!,
-        p_loan_amount: applicationData.loanAmount!,
-        p_loan_type: applicationData.loanType as any,
-        p_study_destination: applicationData.studyDestination as any,
-        p_intake_month: applicationData.intakeMonth!,
-        p_intake_year: applicationData.intakeYear!,
-        p_university_ids: applicationData.universities!,
+      const { data: user } = await supabase.auth.getUser();
+      
+      const { data: result, error } = await supabase.functions.invoke('create-lead', {
+        body: {
+          student_name: applicationData.name!,
+          student_email: user.user?.email!,
+          student_phone: applicationData.phone!,
+          student_pin_code: applicationData.postalCode!,
+          co_applicant_name: applicationData.coApplicantName!,
+          co_applicant_relationship: applicationData.coApplicantRelationship!,
+          co_applicant_salary: applicationData.coApplicantSalary!,
+          co_applicant_pin_code: applicationData.coApplicantPinCode!,
+          co_applicant_phone: applicationData.coApplicantPhone!,
+          co_applicant_email: applicationData.coApplicantEmail!,
+          amount_requested: applicationData.loanAmount!,
+          loan_type: applicationData.loanType!,
+          country: applicationData.studyDestination!,
+          intake_month: `${applicationData.intakeYear}-${String(applicationData.intakeMonth).padStart(2, '0')}`,
+          universities: applicationData.universities!,
+        },
       });
 
       if (error) throw error;
 
       toast({
         title: "Application Submitted!",
-        description: `Your case ID is ${(result as any).case_id}`,
+        description: `Your case ID is ${result?.case_id}`,
       });
 
       return result;
