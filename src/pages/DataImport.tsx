@@ -30,7 +30,7 @@ export default function DataImport() {
       setUniversityResult(null);
 
       // Fetch the university CSV file
-      const response = await fetch('/src/data/University_Level_data-3.csv');
+      const response = await fetch('/data/University_Level_data-3.csv');
       const csvText = await response.text();
 
       setUniversityStatus('Parsing university data...');
