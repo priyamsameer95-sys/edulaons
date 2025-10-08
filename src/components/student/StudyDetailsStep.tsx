@@ -36,6 +36,23 @@ const StudyDetailsStep = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Show All Validation Errors */}
+      {Object.keys(validationErrors).length > 0 && (
+        <Alert variant="destructive">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <div className="font-semibold mb-2">Please fix the following errors:</div>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              {Object.entries(validationErrors).map(([field, error]) => (
+                <li key={field}>
+                  <strong>{field}:</strong> {error}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="space-y-6">
         {/* Study Destination - FIRST */}
         <div className="space-y-2">
@@ -74,6 +91,7 @@ const StudyDetailsStep = () => {
               updateApplicationData({ universities: unis, course: '', courseId: undefined, courseDetails: undefined });
             }}
             error={validationErrors.universities}
+            disabled={!applicationData.studyDestination}
           />
           {!applicationData.studyDestination && (
             <Alert>
@@ -111,6 +129,7 @@ const StudyDetailsStep = () => {
               }
             }}
             placeholder="Search for your course..."
+            error={validationErrors.course}
           />
         </div>
 
@@ -138,7 +157,7 @@ const StudyDetailsStep = () => {
               onValueChange={(value) => updateApplicationData({ intakeMonth: parseInt(value) })}
               required
             >
-              <SelectTrigger>
+              <SelectTrigger className={validationErrors.intakeMonth ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select month" />
               </SelectTrigger>
               <SelectContent>
@@ -158,7 +177,7 @@ const StudyDetailsStep = () => {
               onValueChange={(value) => updateApplicationData({ intakeYear: parseInt(value) })}
               required
             >
-              <SelectTrigger>
+              <SelectTrigger className={validationErrors.intakeYear ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
@@ -187,8 +206,12 @@ const StudyDetailsStep = () => {
               updateApplicationData({ loanAmount: amount });
             }}
             placeholder="Enter total amount needed"
+            className={validationErrors.loanAmount ? 'border-destructive' : ''}
             required
           />
+          {validationErrors.loanAmount && (
+            <p className="text-sm text-destructive">{validationErrors.loanAmount}</p>
+          )}
           {loanRangeInfo && (
             <Card className="bg-muted/50">
               <CardContent className="p-3 space-y-1">
@@ -207,9 +230,23 @@ const StudyDetailsStep = () => {
         </div>
       </div>
 
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
-        <Button type="submit" size="lg">Next: Co-Applicant Details</Button>
+        <div className="flex gap-2">
+          <Button 
+            type="button" 
+            variant="ghost" 
+            onClick={() => {
+              if (confirm('Clear all form data? This cannot be undone.')) {
+                localStorage.removeItem('student_application_draft');
+                window.location.reload();
+              }
+            }}
+          >
+            Clear Draft
+          </Button>
+          <Button type="submit" size="lg">Next: Co-Applicant Details</Button>
+        </div>
       </div>
     </form>
   );
