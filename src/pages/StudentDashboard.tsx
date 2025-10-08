@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
 import { StudentApplicationProvider } from "@/contexts/StudentApplicationContext";
-import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut } from "lucide-react";
+import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/utils/formatters";
 import type { StudentApplication } from "@/hooks/useStudentApplications";
+import NotificationBell from "@/components/student/NotificationBell";
 
 const StudentDashboard = () => {
   const { user, signOut } = useAuth();
@@ -375,10 +376,13 @@ const StudentDashboard = () => {
             <h1 className="text-xl font-bold">My Applications</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
-          <Button onClick={signOut} variant="outline">
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button onClick={signOut} variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </div>
       <div className="container mx-auto py-8 px-4">
@@ -491,9 +495,36 @@ const StudentDashboard = () => {
                   </div>
                 </div>
 
+                {/* Action Buttons */}
+                <div className="pt-2 border-t flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/student/application/${app.id}`);
+                    }}
+                    className="flex-1"
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    Track
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedApplication(app);
+                    }}
+                    className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Details
+                  </Button>
+                </div>
+
                 {/* Action Hint */}
                 {needsAction && (
-                  <div className="pt-2 border-t">
+                  <div className="pt-2">
                     <p className="text-xs text-orange-600 font-medium">
                       👉 {app.documents_status === 'pending' ? 'Upload documents to move forward' : 'Resubmit required documents'}
                     </p>

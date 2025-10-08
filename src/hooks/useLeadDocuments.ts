@@ -13,6 +13,7 @@ interface LeadDocument {
   mime_type: string;
   upload_status: string;
   uploaded_by: string;
+  verification_status?: string;
   verification_notes?: string;
   version: number;
   uploaded_at: string;
