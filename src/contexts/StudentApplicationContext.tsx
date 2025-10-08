@@ -22,7 +22,7 @@ export interface StudentApplicationData {
   
   // Study Details
   studyDestination: string;
-  universities: string[];
+  universities: string[]; // Array of university UUIDs or custom university names
   course: string;
   courseId?: string;
   courseDetails?: {

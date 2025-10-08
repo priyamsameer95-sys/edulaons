@@ -42,7 +42,7 @@ export function CourseSelector({
   const [isCustomEntry, setIsCustomEntry] = React.useState(false);
   const [customCourse, setCustomCourse] = React.useState("");
 
-  const { courses, loading } = useCourses(universityIds);
+  const { courses, loading, error: fetchError } = useCourses(universityIds);
 
   // Initialize from value
   React.useEffect(() => {
@@ -155,6 +155,37 @@ export function CourseSelector({
                 <div className="p-4 text-sm text-center text-muted-foreground">
                   Loading courses...
                 </div>
+              ) : fetchError ? (
+                <CommandEmpty>
+                  <div className="p-4 space-y-3">
+                    <p className="text-sm text-muted-foreground">{fetchError}</p>
+                    {inputValue && (
+                      <div className="space-y-2">
+                        <Label htmlFor="custom-course">Enter your course manually:</Label>
+                        <Input
+                          id="custom-course"
+                          value={customCourse}
+                          onChange={(e) => setCustomCourse(e.target.value)}
+                          placeholder="e.g., Master of Science in Computer Science"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCustomEntry();
+                            }
+                          }}
+                        />
+                        <Button 
+                          size="sm" 
+                          className="w-full"
+                          onClick={handleCustomEntry}
+                          disabled={!customCourse.trim()}
+                        >
+                          Use Custom Course
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CommandEmpty>
               ) : filteredCourses.length === 0 ? (
                 <CommandEmpty>
                   <div className="p-4 space-y-3">
