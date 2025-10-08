@@ -82,12 +82,34 @@ export function StudentApplicationProvider({ children }: { children: React.React
       const draft = localStorage.getItem(STORAGE_KEY);
       if (draft) {
         const parsed = JSON.parse(draft);
-        setApplicationData(parsed.data || {});
+        const draftData = parsed.data || {};
+        
+        // Check if draft has corrupted university data (names instead of UUIDs)
+        // UUID format: 8-4-4-4-12 hex characters
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        if (draftData.universities && Array.isArray(draftData.universities)) {
+          const hasInvalidUUIDs = draftData.universities.some(
+            (uni: string) => uni && !uuidRegex.test(uni)
+          );
+          
+          if (hasInvalidUUIDs) {
+            logger.warn('Draft contains invalid university data (names instead of UUIDs). Clearing universities and course fields.');
+            // Clear corrupted fields
+            draftData.universities = [];
+            draftData.course = '';
+            draftData.courseId = undefined;
+            draftData.courseDetails = undefined;
+          }
+        }
+        
+        setApplicationData(draftData);
         setCurrentStep(parsed.step || 0);
         logger.info('Loaded draft application from localStorage');
       }
     } catch (error) {
       logger.error('Failed to load draft:', error);
+      localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 
@@ -127,6 +149,13 @@ export function StudentApplicationProvider({ children }: { children: React.React
     
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
+      
+      // Log validation errors for debugging
+      logger.error('Validation failed for step', currentStep, {
+        errors: validation.errors,
+        data: applicationData
+      });
+      
       toast({
         title: 'Validation Error',
         description: 'Please fix the errors before continuing',
