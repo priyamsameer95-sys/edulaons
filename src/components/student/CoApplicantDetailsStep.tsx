@@ -1,52 +1,22 @@
-import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { StudentApplicationData } from '@/hooks/useStudentApplication';
+import { useStudentApplicationContext } from '@/contexts/StudentApplicationContext';
 import { CoachingTooltip } from './CoachingTooltip';
-import { RELATIONSHIPS, COACHING_MESSAGES, INCOME_INDICATORS, VALIDATION_PATTERNS } from '@/constants/studentApplication';
+import { RELATIONSHIPS, COACHING_MESSAGES, INCOME_INDICATORS } from '@/constants/studentApplication';
 import { Info, AlertCircle, TrendingUp } from 'lucide-react';
 
-interface CoApplicantDetailsStepProps {
-  data: Partial<StudentApplicationData>;
-  onUpdate: (data: Partial<StudentApplicationData>) => void;
-  onNext: () => void;
-  onPrev: () => void;
-}
-
-const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) => {
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const validateField = (field: string, value: any): string | null => {
-    switch (field) {
-      case 'coApplicantPhone':
-        if (!VALIDATION_PATTERNS.phone.test(value)) {
-          return 'Enter valid 10-digit phone number';
-        }
-        return null;
-      case 'coApplicantEmail':
-        if (!VALIDATION_PATTERNS.email.test(value)) {
-          return 'Enter valid email address';
-        }
-        return null;
-      case 'coApplicantPinCode':
-        if (!VALIDATION_PATTERNS.pinCode.test(value)) {
-          return 'Enter valid 6-digit PIN code';
-        }
-        return null;
-      default:
-        return null;
-    }
-  };
-
-  const handleChange = (field: string, value: any) => {
-    onUpdate({ [field]: value });
-    const error = validateField(field, value);
-    setErrors(prev => ({ ...prev, [field]: error || '' }));
-  };
+const CoApplicantDetailsStep = () => {
+  const {
+    applicationData,
+    updateApplicationData,
+    nextStep,
+    prevStep,
+    validationErrors,
+  } = useStudentApplicationContext();
 
   const getIncomeIndicator = (salary: number) => {
     if (salary >= 1000000) return INCOME_INDICATORS[2];
@@ -54,23 +24,11 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
     return INCOME_INDICATORS[0];
   };
 
-  const incomeIndicator = data.coApplicantSalary ? getIncomeIndicator(data.coApplicantSalary) : null;
+  const incomeIndicator = applicationData.coApplicantSalary ? getIncomeIndicator(applicationData.coApplicantSalary) : null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newErrors: Record<string, string> = {};
-    ['coApplicantPhone', 'coApplicantEmail', 'coApplicantPinCode'].forEach(field => {
-      const error = validateField(field, (data as any)[field]);
-      if (error) newErrors[field] = error;
-    });
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    onNext();
+    await nextStep();
   };
 
   return (
@@ -94,8 +52,8 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
           </div>
           <Input
             id="coApplicantName"
-            value={data.coApplicantName || ''}
-            onChange={(e) => onUpdate({ coApplicantName: e.target.value })}
+            value={applicationData.coApplicantName || ''}
+            onChange={(e) => updateApplicationData({ coApplicantName: e.target.value })}
             required
             placeholder="Full name of co-applicant"
           />
@@ -107,8 +65,8 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
             <CoachingTooltip content={COACHING_MESSAGES.coApplicantRelationship} />
           </div>
           <Select 
-            value={data.coApplicantRelationship || ''} 
-            onValueChange={(value) => onUpdate({ coApplicantRelationship: value })}
+            value={applicationData.coApplicantRelationship || ''} 
+            onValueChange={(value) => updateApplicationData({ coApplicantRelationship: value })}
             required
           >
             <SelectTrigger>
@@ -133,16 +91,16 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
           <Input
             id="coApplicantPhone"
             type="tel"
-            value={data.coApplicantPhone || ''}
-            onChange={(e) => handleChange('coApplicantPhone', e.target.value)}
+            value={applicationData.coApplicantPhone || ''}
+            onChange={(e) => updateApplicationData({ coApplicantPhone: e.target.value })}
             maxLength={10}
             placeholder="10-digit mobile number"
-            className={errors.coApplicantPhone ? 'border-destructive' : ''}
+            className={validationErrors.coApplicantPhone ? 'border-destructive' : ''}
           />
-          {errors.coApplicantPhone && (
+          {validationErrors.coApplicantPhone && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {errors.coApplicantPhone}
+              {validationErrors.coApplicantPhone}
             </p>
           )}
         </div>
@@ -155,15 +113,15 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
           <Input
             id="coApplicantEmail"
             type="email"
-            value={data.coApplicantEmail || ''}
-            onChange={(e) => handleChange('coApplicantEmail', e.target.value)}
+            value={applicationData.coApplicantEmail || ''}
+            onChange={(e) => updateApplicationData({ coApplicantEmail: e.target.value })}
             placeholder="email@example.com"
-            className={errors.coApplicantEmail ? 'border-destructive' : ''}
+            className={validationErrors.coApplicantEmail ? 'border-destructive' : ''}
           />
-          {errors.coApplicantEmail && (
+          {validationErrors.coApplicantEmail && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {errors.coApplicantEmail}
+              {validationErrors.coApplicantEmail}
             </p>
           )}
         </div>
@@ -176,8 +134,8 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
           <Input
             id="coApplicantSalary"
             type="number"
-            value={data.coApplicantSalary || ''}
-            onChange={(e) => onUpdate({ coApplicantSalary: parseFloat(e.target.value) })}
+            value={applicationData.coApplicantSalary || ''}
+            onChange={(e) => updateApplicationData({ coApplicantSalary: parseFloat(e.target.value) })}
             required
             min="0"
             placeholder="Annual income in rupees"
@@ -204,23 +162,23 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
           </div>
           <Input
             id="coApplicantPinCode"
-            value={data.coApplicantPinCode || ''}
-            onChange={(e) => handleChange('coApplicantPinCode', e.target.value)}
+            value={applicationData.coApplicantPinCode || ''}
+            onChange={(e) => updateApplicationData({ coApplicantPinCode: e.target.value })}
             maxLength={6}
             placeholder="6-digit PIN code"
-            className={errors.coApplicantPinCode ? 'border-destructive' : ''}
+            className={validationErrors.coApplicantPinCode ? 'border-destructive' : ''}
           />
-          {errors.coApplicantPinCode && (
+          {validationErrors.coApplicantPinCode && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {errors.coApplicantPinCode}
+              {validationErrors.coApplicantPinCode}
             </p>
           )}
         </div>
       </div>
 
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onPrev}>Previous</Button>
+        <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
         <Button type="submit" size="lg">Next: Review Application</Button>
       </div>
     </form>

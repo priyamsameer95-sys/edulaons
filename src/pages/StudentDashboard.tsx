@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
+import { StudentApplicationProvider } from "@/contexts/StudentApplicationContext";
 import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
@@ -70,7 +71,11 @@ const StudentDashboard = () => {
   }
 
   if (showApplicationForm) {
-    return <StudentApplicationFlow />;
+    return (
+      <StudentApplicationProvider>
+        <StudentApplicationFlow />
+      </StudentApplicationProvider>
+    );
   }
 
   if (error) {
@@ -104,7 +109,9 @@ const StudentDashboard = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <StudentApplicationFlow />
+          <StudentApplicationProvider>
+            <StudentApplicationFlow />
+          </StudentApplicationProvider>
         </div>
       </div>
     );

@@ -1,63 +1,35 @@
-import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { StudentApplicationData } from '@/hooks/useStudentApplication';
+import { useStudentApplicationContext } from '@/contexts/StudentApplicationContext';
 import { CoachingTooltip } from './CoachingTooltip';
 import { LoanTypeSelector } from './LoanTypeSelector';
 import { UniversitySelector } from '@/components/ui/university-selector';
 import { CourseSelector } from '@/components/ui/course-selector';
-import { STUDY_DESTINATIONS, COACHING_MESSAGES, LOAN_AMOUNT_RANGES, MIN_LOAN_AMOUNT } from '@/constants/studentApplication';
-import { Info, AlertCircle } from 'lucide-react';
+import { STUDY_DESTINATIONS, COACHING_MESSAGES, LOAN_AMOUNT_RANGES } from '@/constants/studentApplication';
+import { Info } from 'lucide-react';
 
-interface StudyDetailsStepProps {
-  data: Partial<StudentApplicationData>;
-  onUpdate: (data: Partial<StudentApplicationData>) => void;
-  onNext: () => void;
-  onPrev: () => void;
-}
+const StudyDetailsStep = () => {
+  const {
+    applicationData,
+    updateApplicationData,
+    nextStep,
+    prevStep,
+    validationErrors,
+  } = useStudentApplicationContext();
 
-const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepProps) => {
   const currentYear = new Date().getFullYear();
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const loanRangeInfo = data.studyDestination 
-    ? LOAN_AMOUNT_RANGES[data.studyDestination as keyof typeof LOAN_AMOUNT_RANGES]
+  const loanRangeInfo = applicationData.studyDestination 
+    ? LOAN_AMOUNT_RANGES[applicationData.studyDestination as keyof typeof LOAN_AMOUNT_RANGES]
     : null;
 
-  const validateLoanAmount = (amount: number): string | null => {
-    if (!amount || amount < MIN_LOAN_AMOUNT) {
-      return `Minimum loan amount is ₹${(MIN_LOAN_AMOUNT / 100000).toFixed(0)} Lakhs`;
-    }
-    if (loanRangeInfo && amount > loanRangeInfo.max) {
-      return `Maximum for ${data.studyDestination} is ₹${(loanRangeInfo.max / 100000).toFixed(0)} Lakhs`;
-    }
-    return null;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newErrors: Record<string, string> = {};
-    
-    if (!data.universities || data.universities.length === 0) {
-      newErrors.universities = 'Please select at least one university';
-    }
-    
-    const loanError = validateLoanAmount(data.loanAmount || 0);
-    if (loanError) {
-      newErrors.loanAmount = loanError;
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    onNext();
+    await nextStep();
   };
 
   return (
@@ -70,9 +42,9 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             <CoachingTooltip content={COACHING_MESSAGES.studyDestination} />
           </div>
           <Select 
-            value={data.studyDestination || ''} 
+            value={applicationData.studyDestination || ''} 
             onValueChange={(value) => {
-              onUpdate({ studyDestination: value, universities: [], course: '', courseId: undefined, courseDetails: undefined });
+              updateApplicationData({ studyDestination: value, universities: [], course: '', courseId: undefined, courseDetails: undefined });
             }}
             required
           >
@@ -94,15 +66,14 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             <CoachingTooltip content={COACHING_MESSAGES.universities} />
           </div>
           <UniversitySelector
-            country={data.studyDestination || ''}
-            universities={data.universities || []}
+            country={applicationData.studyDestination || ''}
+            universities={applicationData.universities || []}
             onChange={(unis) => {
-              onUpdate({ universities: unis, course: '', courseId: undefined, courseDetails: undefined });
-              setErrors(prev => ({ ...prev, universities: '' }));
+              updateApplicationData({ universities: unis, course: '', courseId: undefined, courseDetails: undefined });
             }}
-            error={errors.universities}
+            error={validationErrors.universities}
           />
-          {!data.studyDestination && (
+          {!applicationData.studyDestination && (
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
@@ -119,13 +90,13 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             <CoachingTooltip content={COACHING_MESSAGES.course} />
           </div>
           <CourseSelector
-            universityIds={data.universities || []}
-            value={data.courseId && data.courseDetails ? { id: data.courseId, ...data.courseDetails } : data.course}
+            universityIds={applicationData.universities || []}
+            value={applicationData.courseId && applicationData.courseDetails ? { id: applicationData.courseId, ...applicationData.courseDetails } : applicationData.course}
             onChange={(value) => {
               if (typeof value === 'string') {
-                onUpdate({ course: value, courseId: undefined, courseDetails: undefined });
+                updateApplicationData({ course: value, courseId: undefined, courseDetails: undefined });
               } else {
-                onUpdate({ 
+                updateApplicationData({ 
                   course: value.programName,
                   courseId: value.id,
                   courseDetails: {
@@ -148,8 +119,8 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             <CoachingTooltip content={COACHING_MESSAGES.loanType} />
           </div>
           <LoanTypeSelector 
-            value={data.loanType || 'secured'} 
-            onChange={(value) => onUpdate({ loanType: value })}
+            value={applicationData.loanType || 'secured'} 
+            onChange={(value) => updateApplicationData({ loanType: value as 'secured' | 'unsecured' })}
           />
         </div>
 
@@ -161,8 +132,8 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
               <CoachingTooltip content={COACHING_MESSAGES.intakeMonth} />
             </div>
             <Select 
-              value={data.intakeMonth?.toString() || ''} 
-              onValueChange={(value) => onUpdate({ intakeMonth: parseInt(value) })}
+              value={applicationData.intakeMonth?.toString() || ''} 
+              onValueChange={(value) => updateApplicationData({ intakeMonth: parseInt(value) })}
               required
             >
               <SelectTrigger>
@@ -181,8 +152,8 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
           <div className="space-y-2">
             <Label htmlFor="intakeYear">Intake Year *</Label>
             <Select 
-              value={data.intakeYear?.toString() || ''} 
-              onValueChange={(value) => onUpdate({ intakeYear: parseInt(value) })}
+              value={applicationData.intakeYear?.toString() || ''} 
+              onValueChange={(value) => updateApplicationData({ intakeYear: parseInt(value) })}
               required
             >
               <SelectTrigger>
@@ -208,29 +179,20 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
           <Input
             id="loanAmount"
             type="number"
-            value={data.loanAmount || ''}
+            value={applicationData.loanAmount || ''}
             onChange={(e) => {
               const amount = parseFloat(e.target.value);
-              onUpdate({ loanAmount: amount });
-              const error = validateLoanAmount(amount);
-              setErrors(prev => ({ ...prev, loanAmount: error || '' }));
+              updateApplicationData({ loanAmount: amount });
             }}
-            min={MIN_LOAN_AMOUNT}
             placeholder="Enter total amount needed"
-            className={errors.loanAmount ? 'border-destructive' : ''}
+            required
           />
-          {errors.loanAmount && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.loanAmount}
-            </p>
-          )}
           {loanRangeInfo && (
             <Card className="bg-muted/50">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">
                   <Info className="h-3 w-3 inline mr-1" />
-                  Typical range for {data.studyDestination}: <span className="font-medium text-foreground">{loanRangeInfo.typical}</span>
+                  Typical range for {applicationData.studyDestination}: <span className="font-medium text-foreground">{loanRangeInfo.typical}</span>
                 </p>
               </CardContent>
             </Card>
@@ -239,7 +201,7 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
       </div>
 
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onPrev}>Previous</Button>
+        <Button type="button" variant="outline" onClick={prevStep}>Previous</Button>
         <Button type="submit" size="lg">Next: Co-Applicant Details</Button>
       </div>
     </form>

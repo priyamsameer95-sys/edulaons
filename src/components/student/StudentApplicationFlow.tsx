@@ -1,12 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useStudentApplication } from '@/hooks/useStudentApplication';
+import { useStudentApplicationContext } from '@/contexts/StudentApplicationContext';
 import PersonalDetailsStep from './PersonalDetailsStep';
 import StudyDetailsStep from './StudyDetailsStep';
 import CoApplicantDetailsStep from './CoApplicantDetailsStep';
 import ReviewStep from './ReviewStep';
 import SuccessStep from './SuccessStep';
-import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 const steps = [
   { title: 'Personal Details', description: 'Tell us about yourself' },
@@ -21,23 +22,30 @@ const StudentApplicationFlow = () => {
     currentStep,
     applicationData,
     isSubmitting,
+    validationErrors,
+    submissionResult,
     updateApplicationData,
     nextStep,
     prevStep,
+    goToStep,
     submitApplication,
-  } = useStudentApplication();
-
-  const [submissionResult, setSubmissionResult] = useState<any>(null);
+  } = useStudentApplicationContext();
 
   const handleSubmit = async () => {
     const result = await submitApplication();
     if (result) {
-      setSubmissionResult(result);
-      nextStep();
+      await nextStep(); // Move to success step
     }
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
+
+  // Allow clicking on completed steps to navigate back
+  const handleStepClick = (index: number) => {
+    if (index < currentStep) {
+      goToStep(index);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -52,25 +60,40 @@ const StudentApplicationFlow = () => {
 
       {/* Step Indicator */}
       <div className="flex justify-between">
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            className={`flex flex-col items-center flex-1 ${
-              index < steps.length - 1 ? 'border-r' : ''
-            }`}
-          >
+        {steps.map((step, index) => {
+          const isComplete = index < currentStep;
+          const isCurrent = index === currentStep;
+          const isClickable = isComplete;
+
+          return (
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                index <= currentStep
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+              key={index}
+              className={`flex flex-col items-center flex-1 ${
+                index < steps.length - 1 ? 'border-r border-border' : ''
               }`}
             >
-              {index + 1}
+              <button
+                type="button"
+                onClick={() => isClickable && handleStepClick(index)}
+                disabled={!isClickable}
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                  isCurrent
+                    ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2'
+                    : isComplete
+                    ? 'bg-primary/80 text-primary-foreground cursor-pointer hover:bg-primary'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                }`}
+              >
+                {index + 1}
+              </button>
+              <p className={`text-xs mt-2 text-center hidden md:block ${
+                isCurrent ? 'font-medium text-foreground' : 'text-muted-foreground'
+              }`}>
+                {step.title}
+              </p>
             </div>
-            <p className="text-xs mt-1 hidden md:block">{step.title}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Step Content */}
@@ -80,39 +103,14 @@ const StudentApplicationFlow = () => {
           <CardDescription>{steps[currentStep].description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {currentStep === 0 && (
-            <PersonalDetailsStep
-              data={applicationData}
-              onUpdate={updateApplicationData}
-              onNext={nextStep}
-            />
-          )}
+          {currentStep === 0 && <PersonalDetailsStep />}
 
-          {currentStep === 1 && (
-            <StudyDetailsStep
-              data={applicationData}
-              onUpdate={updateApplicationData}
-              onNext={nextStep}
-              onPrev={prevStep}
-            />
-          )}
+          {currentStep === 1 && <StudyDetailsStep />}
 
-          {currentStep === 2 && (
-            <CoApplicantDetailsStep
-              data={applicationData}
-              onUpdate={updateApplicationData}
-              onNext={nextStep}
-              onPrev={prevStep}
-            />
-          )}
+          {currentStep === 2 && <CoApplicantDetailsStep />}
 
           {currentStep === 3 && (
-            <ReviewStep
-              data={applicationData}
-              onSubmit={handleSubmit}
-              onPrev={prevStep}
-              isSubmitting={isSubmitting}
-            />
+            <ReviewStep onSubmit={handleSubmit} />
           )}
 
           {currentStep === 4 && submissionResult && (
