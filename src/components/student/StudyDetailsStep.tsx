@@ -11,6 +11,8 @@ import { UniversitySelector } from '@/components/ui/university-selector';
 import { CourseSelector } from '@/components/ui/course-selector';
 import { STUDY_DESTINATIONS, COACHING_MESSAGES, LOAN_AMOUNT_RANGES } from '@/constants/studentApplication';
 import { Info } from 'lucide-react';
+import { formatCurrency } from '@/utils/formatters';
+import { convertNumberToWords } from '@/lib/utils';
 
 const StudyDetailsStep = () => {
   const {
@@ -189,11 +191,16 @@ const StudyDetailsStep = () => {
           />
           {loanRangeInfo && (
             <Card className="bg-muted/50">
-              <CardContent className="p-3">
+              <CardContent className="p-3 space-y-1">
                 <p className="text-xs text-muted-foreground">
                   <Info className="h-3 w-3 inline mr-1" />
                   Typical range for {applicationData.studyDestination}: <span className="font-medium text-foreground">{loanRangeInfo.typical}</span>
                 </p>
+                {applicationData.loanAmount && (
+                  <p className="text-xs font-medium text-foreground">
+                    Amount entered: {formatCurrency(applicationData.loanAmount)} ({convertNumberToWords(applicationData.loanAmount)} Rupees)
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
