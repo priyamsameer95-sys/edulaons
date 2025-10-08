@@ -10,13 +10,28 @@ interface University {
   popular: boolean;
 }
 
+// Map study destination codes to database country names
+const COUNTRY_MAPPING: Record<string, string> = {
+  'USA': 'United States',
+  'UK': 'United Kingdom',
+  'Canada': 'Canada',
+  'Australia': 'Australia',
+  'Germany': 'Germany',
+  'Ireland': 'Ireland',
+  'New Zealand': 'New Zealand',
+  'Other': 'Other'
+};
+
 export const useUniversities = (country: string) => {
   const [loading, setLoading] = useState(false);
   const [universities, setUniversities] = useState<University[]>([]);
+  
+  // Map the country code to actual database country name
+  const dbCountryName = COUNTRY_MAPPING[country] || country;
 
   const filteredUniversities = useMemo(() => {
     return universities
-      .filter(uni => !country || uni.country.toLowerCase() === country.toLowerCase())
+      .filter(uni => !dbCountryName || uni.country.toLowerCase() === dbCountryName.toLowerCase())
       .sort((a, b) => {
         // Popular universities first, then by QS rank (lower is better)
         if (a.popular && !b.popular) return -1;
@@ -30,7 +45,7 @@ export const useUniversities = (country: string) => {
         // Both have no rank, sort alphabetically
         return a.name.localeCompare(b.name);
       });
-  }, [universities, country]);
+  }, [universities, dbCountryName]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -45,8 +60,8 @@ export const useUniversities = (country: string) => {
           .select('*')
           .order('global_rank', { ascending: true, nullsFirst: false });
 
-        if (country) {
-          query = query.eq('country', country);
+        if (dbCountryName) {
+          query = query.eq('country', dbCountryName);
         }
 
         const { data, error } = await query.limit(1000);
@@ -84,7 +99,7 @@ export const useUniversities = (country: string) => {
       abortController.abort();
       isMounted = false;
     };
-  }, [country]);
+  }, [dbCountryName]);
 
   const searchUniversities = (query: string) => {
     if (!query.trim()) return filteredUniversities;
