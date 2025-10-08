@@ -21,7 +21,14 @@ const StudentDashboard = () => {
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
 
-  const hasApplications = applications.length > 0;
+  const hasApplications = applications && applications.length > 0;
+
+  // Wrap the entire component tree in the provider
+  const renderApplicationForm = () => (
+    <StudentApplicationProvider>
+      <StudentApplicationFlow />
+    </StudentApplicationProvider>
+  );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -71,11 +78,7 @@ const StudentDashboard = () => {
   }
 
   if (showApplicationForm) {
-    return (
-      <StudentApplicationProvider>
-        <StudentApplicationFlow />
-      </StudentApplicationProvider>
-    );
+    return renderApplicationForm();
   }
 
   if (error) {
@@ -109,9 +112,7 @@ const StudentDashboard = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <StudentApplicationProvider>
-            <StudentApplicationFlow />
-          </StudentApplicationProvider>
+          {renderApplicationForm()}
         </div>
       </div>
     );
