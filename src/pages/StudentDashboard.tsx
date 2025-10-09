@@ -88,51 +88,87 @@ const StudentDashboard = () => {
   }
 
   if (error) {
+    // Graceful degradation: Still show useful options even on error
     return (
-      <div className="container mx-auto py-8 px-4">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Error Loading Applications</h2>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <div className="flex flex-col gap-2">
-              <Button onClick={refetch} className="w-full">
-                <Activity className="mr-2 h-4 w-4" />
-                Try Again
-              </Button>
-              <Button 
-                onClick={() => {
-                  localStorage.removeItem('student_application_draft');
-                  localStorage.removeItem('student_application_submission');
-                  setShowApplicationForm(true);
-                }} 
-                variant="outline" 
-                className="w-full"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Start Fresh Application
-              </Button>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => navigate('/login')} 
-                  variant="secondary"
-                  className="flex-1"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Login
+      <div className="min-h-screen bg-muted/30">
+        <div className="border-b bg-background">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">My Applications</h1>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+            <Button onClick={signOut} variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+        <div className="container mx-auto py-8 px-4">
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="pt-6">
+              <div className="text-center mb-6">
+                <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Trouble Loading Your Applications</h2>
+                <p className="text-muted-foreground mb-1">{error}</p>
+                <p className="text-sm text-muted-foreground">Don't worry, your data is safe. Try one of the options below.</p>
+              </div>
+              
+              <div className="grid gap-3 mb-6">
+                <Button onClick={refetch} size="lg" className="w-full">
+                  <Activity className="mr-2 h-5 w-5" />
+                  Retry Loading Applications
                 </Button>
+                
                 <Button 
-                  onClick={signOut} 
-                  variant="secondary"
-                  className="flex-1"
+                  onClick={() => {
+                    localStorage.removeItem('student_application_draft');
+                    localStorage.removeItem('student_application_submission');
+                    setShowApplicationForm(true);
+                  }} 
+                  variant="outline" 
+                  size="lg"
+                  className="w-full"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
+                  <FileText className="mr-2 h-5 w-5" />
+                  Start New Application
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+              <Separator className="my-6" />
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Other Options:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    onClick={() => navigate('/login')} 
+                    variant="secondary"
+                    size="sm"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Re-login
+                  </Button>
+                  <Button 
+                    onClick={() => window.location.reload()} 
+                    variant="secondary"
+                    size="sm"
+                  >
+                    <Activity className="mr-2 h-4 w-4" />
+                    Refresh Page
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 <strong>Need help?</strong> Contact support at{' '}
+                  <a href="mailto:support@example.com" className="text-primary hover:underline">
+                    support@example.com
+                  </a>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
