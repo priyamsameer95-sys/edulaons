@@ -90,38 +90,30 @@ serve(async (req) => {
       }
     }
 
-    // Step 1: Validate student email is provided
-    const studentEmail = body.student_email?.trim();
-    if (!studentEmail) {
-      throw new Error('Student email is required');
-    }
-
-    console.log('👨‍🎓 [create-lead] Creating/updating student...');
+    // Step 1: Create student record using service role (bypasses RLS)
+    console.log('👨‍🎓 [create-lead] Creating student...');
     
+    const studentEmail = body.student_email?.trim();
     const studentData = {
       name: body.student_name.trim(),
-      email: studentEmail,
+      email: studentEmail || `${body.student_phone.trim()}@temp.placeholder`,
       phone: body.student_phone.trim(),
       postal_code: body.student_pin_code.trim(),
       country: 'India'
     };
 
-    // Use upsert to create or update existing student record
     const { data: student, error: studentError } = await supabaseAdmin
       .from('students')
-      .upsert(studentData, {
-        onConflict: 'email',
-        ignoreDuplicates: false
-      })
+      .insert(studentData)
       .select()
       .single();
 
     if (studentError) {
-      console.error('❌ [create-lead] Student creation/update failed:', studentError);
+      console.error('❌ [create-lead] Student creation failed:', studentError);
       throw new Error(`Failed to create student: ${studentError.message}`);
     }
 
-    console.log('✅ [create-lead] Student created/updated:', student.id);
+    console.log('✅ [create-lead] Student created:', student.id);
 
     // Step 2: Create co-applicant record
     console.log('👥 [create-lead] Creating co-applicant...');
@@ -382,35 +374,13 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        case_id: lead.case_id,
-        lead_id: lead.id,
-        student_email: studentEmail,
-        message: 'Application submitted successfully',
-        recommended_lenders: recommendedLenders.map(lender => ({
-          lender_id: lender.lender_id,
-          lender_name: lender.lender_name,
-          lender_code: lender.lender_code,
-          lender_description: lender.lender_description,
-          logo_url: lender.logo_url,
-          website: lender.website,
-          contact_email: lender.contact_email,
-          contact_phone: lender.contact_phone,
-          interest_rate_min: lender.interest_rate_min,
-          interest_rate_max: lender.interest_rate_max,
-          loan_amount_min: lender.loan_amount_min,
-          loan_amount_max: lender.loan_amount_max,
-          processing_fee: lender.processing_fee,
-          foreclosure_charges: lender.foreclosure_charges,
-          moratorium_period: lender.moratorium_period,
-          processing_time_days: lender.processing_time_days,
-          disbursement_time_days: lender.disbursement_time_days,
-          approval_rate: lender.approval_rate,
-          key_features: lender.key_features,
-          eligible_expenses: lender.eligible_expenses,
-          required_documents: lender.required_documents,
-          compatibility_score: lender.compatibility_score,
-          is_preferred: lender.is_preferred,
-        }))
+        lead: {
+          id: lead.id,
+          case_id: lead.case_id,
+          student_id: student.id,
+          co_applicant_id: coApplicant.id
+        },
+        recommended_lenders: recommendedLenders
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

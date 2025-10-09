@@ -10,7 +10,6 @@ import LenderCard from './LenderCard';
 interface SuccessStepProps {
   caseId: string;
   leadId?: string;
-  onGoToDashboard?: () => void;
   recommendedLenders: Array<{
     lender_id: string;
     lender_name: string;
@@ -38,18 +37,10 @@ interface SuccessStepProps {
   }>;
 }
 
-const SuccessStep = ({ caseId, leadId, recommendedLenders, onGoToDashboard }: SuccessStepProps) => {
+const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const handleGoToDashboard = () => {
-    if (onGoToDashboard) {
-      onGoToDashboard();
-    } else {
-      navigate('/student');
-    }
-  };
 
   const handleLenderSelection = async (lenderId: string) => {
     if (!leadId) {
@@ -81,35 +72,27 @@ const SuccessStep = ({ caseId, leadId, recommendedLenders, onGoToDashboard }: Su
   return (
     <div className="space-y-8 pb-8">
       {/* Success Icon and Message */}
-      <div className="text-center space-y-6 animate-fade-in-up">
-        <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-success/20 to-success/10 shadow-success animate-scale-in">
-          <CheckCircle2 className="h-16 w-16 text-success animate-scale-in" style={{ animationDelay: '100ms' }} />
+      <div className="text-center space-y-6 animate-fade-in">
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10 animate-scale-in">
+          <CheckCircle2 className="h-14 w-14 text-success animate-scale-in" style={{ animationDelay: '100ms' }} />
         </div>
-        <div className="space-y-4">
-          <h2 className="font-display text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '200ms' }}>
-            Application Submitted!
+        <div className="space-y-3">
+          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '200ms' }}>
+            Application Submitted Successfully!
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '250ms' }}>
-            Your education loan application has been successfully submitted. We're now matching you with the best lenders.
-          </p>
-          <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 shadow-md animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <div className="flex flex-col items-start gap-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Case ID</p>
-              <span className="font-mono font-bold text-2xl text-primary">{caseId}</span>
-            </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-lg border border-border/50 animate-fade-in" style={{ animationDelay: '300ms' }}>
+            <p className="text-sm text-muted-foreground">Your Case ID:</p>
+            <span className="font-mono font-semibold text-lg text-foreground">{caseId}</span>
           </div>
         </div>
       </div>
 
       {/* Recommended Lenders Section */}
-      <div className="space-y-6 animate-fade-in" style={{ animationDelay: '400ms' }}>
-        <div className="space-y-3 text-center">
-          <h2 className="font-display text-3xl font-bold text-foreground">
-            Choose Your Preferred Lender
-          </h2>
-          <p className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            We've matched you with the best lenders based on your profile, university choices, and loan requirements. 
-            Review their offerings and select your preferred choice to continue.
+      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">Select Your Preferred Lender</h2>
+          <p className="text-muted-foreground">
+            We've matched you with the best lenders based on your profile. Review their offerings and select your preferred choice.
           </p>
         </div>
 
@@ -132,16 +115,9 @@ const SuccessStep = ({ caseId, leadId, recommendedLenders, onGoToDashboard }: Su
               ))}
             </div>
             {selectedLenderId && (
-              <div className="p-5 bg-gradient-to-br from-success/10 to-success/5 border-2 border-success/30 rounded-xl animate-fade-in shadow-success text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse-soft" />
-                  <p className="text-sm font-bold text-success uppercase tracking-wide">
-                    Lender Selected
-                  </p>
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse-soft" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Your preference has been saved and our team will process your application accordingly
+              <div className="p-4 bg-success/10 border border-success/20 rounded-lg animate-fade-in text-center">
+                <p className="text-sm text-success font-medium">
+                  ✓ Your lender preference has been saved successfully
                 </p>
               </div>
             )}
@@ -161,25 +137,16 @@ const SuccessStep = ({ caseId, leadId, recommendedLenders, onGoToDashboard }: Su
       </div>
 
       {/* Next Steps */}
-      <div className="text-center space-y-6 animate-fade-in" style={{ animationDelay: '600ms' }}>
-        <div className="max-w-2xl mx-auto p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/20 rounded-xl shadow-md">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-2xl">📋</span>
-            </div>
-            <div className="text-left flex-1">
-              <h3 className="font-display font-semibold text-lg mb-2">Next Steps</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Head to your dashboard and navigate to the <span className="font-semibold text-foreground">Checklist tab</span> to upload all required documents. 
-                Complete document submission will speed up your application processing.
-              </p>
-            </div>
-          </div>
+      <div className="text-center space-y-5 animate-fade-in" style={{ animationDelay: '600ms' }}>
+        <div className="max-w-md mx-auto p-4 bg-primary/5 border border-primary/10 rounded-lg">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            📋 Next, upload your documents in the <span className="font-semibold text-foreground">Checklist tab</span> to complete your application
+          </p>
         </div>
         <Button 
-          onClick={handleGoToDashboard} 
+          onClick={() => navigate('/student')} 
           size="lg"
-          className="px-10 h-14 text-lg font-bold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] bg-gradient-to-r from-primary to-primary-dark"
+          className="px-8 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
         >
           Go to Dashboard
         </Button>

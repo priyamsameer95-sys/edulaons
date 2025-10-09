@@ -3,22 +3,68 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useStudentApplicationContext } from '@/contexts/StudentApplicationContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
-import { GENDERS, QUALIFICATIONS, COACHING_MESSAGES, MIN_AGE } from '@/constants/studentApplication';
+import { GENDERS, QUALIFICATIONS, COACHING_MESSAGES, VALIDATION_PATTERNS, MIN_AGE } from '@/constants/studentApplication';
 import { AlertCircle } from 'lucide-react';
 
-const PersonalDetailsStep = () => {
-  const {
-    applicationData,
-    updateApplicationData,
-    nextStep,
-    validationErrors,
-  } = useStudentApplicationContext();
+interface PersonalDetailsStepProps {
+  data: Partial<StudentApplicationData>;
+  onUpdate: (data: Partial<StudentApplicationData>) => void;
+  onNext: () => void;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProps) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateField = (field: string, value: any): string | null => {
+    switch (field) {
+      case 'name':
+        if (!value || value.trim().length < 2) return 'Name must be at least 2 characters';
+        return null;
+      case 'phone':
+        if (!VALIDATION_PATTERNS.phone.test(value)) {
+          return 'Enter valid 10-digit phone number starting with 6-9';
+        }
+        return null;
+      case 'dateOfBirth':
+        if (!value) return 'Date of birth is required';
+        const age = Math.floor((new Date().getTime() - new Date(value).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        if (age < MIN_AGE) return `You must be at least ${MIN_AGE} years old`;
+        return null;
+      case 'postalCode':
+        if (!VALIDATION_PATTERNS.postalCode.test(value)) {
+          return 'Enter valid 6-digit postal code';
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const handleChange = (field: string, value: any) => {
+    onUpdate({ [field]: value });
+    const error = validateField(field, value);
+    setErrors(prev => ({ ...prev, [field]: error || '' }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    await nextStep();
+    
+    // Validate all fields
+    const newErrors: Record<string, string> = {};
+    ['name', 'phone', 'dateOfBirth', 'postalCode'].forEach(field => {
+      const error = validateField(field, (data as any)[field]);
+      if (error) newErrors[field] = error;
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    onNext();
   };
 
   return (
@@ -31,15 +77,15 @@ const PersonalDetailsStep = () => {
           </div>
           <Input
             id="name"
-            value={applicationData.name || ''}
-            onChange={(e) => updateApplicationData({ name: e.target.value })}
+            value={data.name || ''}
+            onChange={(e) => handleChange('name', e.target.value)}
             placeholder="As per passport/ID"
-            className={validationErrors.name ? 'border-destructive' : ''}
+            className={errors.name ? 'border-destructive' : ''}
           />
-          {validationErrors.name && (
+          {errors.name && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {validationErrors.name}
+              {errors.name}
             </p>
           )}
         </div>
@@ -52,16 +98,16 @@ const PersonalDetailsStep = () => {
           <Input
             id="phone"
             type="tel"
-            value={applicationData.phone || ''}
-            onChange={(e) => updateApplicationData({ phone: e.target.value })}
+            value={data.phone || ''}
+            onChange={(e) => handleChange('phone', e.target.value)}
             placeholder="10-digit mobile number"
             maxLength={10}
-            className={validationErrors.phone ? 'border-destructive' : ''}
+            className={errors.phone ? 'border-destructive' : ''}
           />
-          {validationErrors.phone && (
+          {errors.phone && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {validationErrors.phone}
+              {errors.phone}
             </p>
           )}
         </div>
@@ -74,15 +120,15 @@ const PersonalDetailsStep = () => {
           <Input
             id="dateOfBirth"
             type="date"
-            value={applicationData.dateOfBirth || ''}
-            onChange={(e) => updateApplicationData({ dateOfBirth: e.target.value })}
+            value={data.dateOfBirth || ''}
+            onChange={(e) => handleChange('dateOfBirth', e.target.value)}
             max={new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE)).toISOString().split('T')[0]}
-            className={validationErrors.dateOfBirth ? 'border-destructive' : ''}
+            className={errors.dateOfBirth ? 'border-destructive' : ''}
           />
-          {validationErrors.dateOfBirth && (
+          {errors.dateOfBirth && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {validationErrors.dateOfBirth}
+              {errors.dateOfBirth}
             </p>
           )}
         </div>
@@ -92,7 +138,7 @@ const PersonalDetailsStep = () => {
             <Label htmlFor="gender">Gender *</Label>
             <CoachingTooltip content={COACHING_MESSAGES.gender} />
           </div>
-          <Select value={applicationData.gender || ''} onValueChange={(value) => updateApplicationData({ gender: value })} required>
+          <Select value={data.gender || ''} onValueChange={(value) => onUpdate({ gender: value })} required>
             <SelectTrigger>
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
@@ -111,8 +157,8 @@ const PersonalDetailsStep = () => {
           </div>
           <Input
             id="city"
-            value={applicationData.city || ''}
-            onChange={(e) => updateApplicationData({ city: e.target.value })}
+            value={data.city || ''}
+            onChange={(e) => onUpdate({ city: e.target.value })}
             required
             placeholder="e.g., Mumbai"
           />
@@ -125,8 +171,8 @@ const PersonalDetailsStep = () => {
           </div>
           <Input
             id="state"
-            value={applicationData.state || ''}
-            onChange={(e) => updateApplicationData({ state: e.target.value })}
+            value={data.state || ''}
+            onChange={(e) => onUpdate({ state: e.target.value })}
             required
             placeholder="e.g., Maharashtra"
           />
@@ -139,16 +185,16 @@ const PersonalDetailsStep = () => {
           </div>
           <Input
             id="postalCode"
-            value={applicationData.postalCode || ''}
-            onChange={(e) => updateApplicationData({ postalCode: e.target.value })}
+            value={data.postalCode || ''}
+            onChange={(e) => handleChange('postalCode', e.target.value)}
             placeholder="6-digit PIN code"
             maxLength={6}
-            className={validationErrors.postalCode ? 'border-destructive' : ''}
+            className={errors.postalCode ? 'border-destructive' : ''}
           />
-          {validationErrors.postalCode && (
+          {errors.postalCode && (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {validationErrors.postalCode}
+              {errors.postalCode}
             </p>
           )}
         </div>
@@ -158,7 +204,7 @@ const PersonalDetailsStep = () => {
             <Label htmlFor="qualification">Highest Qualification *</Label>
             <CoachingTooltip content={COACHING_MESSAGES.qualification} />
           </div>
-          <Select value={applicationData.qualification || ''} onValueChange={(value) => updateApplicationData({ qualification: value })} required>
+          <Select value={data.qualification || ''} onValueChange={(value) => onUpdate({ qualification: value })} required>
             <SelectTrigger>
               <SelectValue placeholder="Select qualification" />
             </SelectTrigger>

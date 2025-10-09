@@ -13,8 +13,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
 import PublicPartner from "./pages/public/PublicPartner";
-import DataImport from "./pages/DataImport";
-import ApplicationTracker from "./components/student/ApplicationTracker";
 
 // Import comprehensive university data import script
 import "./scripts/importData";
@@ -74,32 +72,12 @@ const App = () => (
             } 
           />
           
-          {/* Admin Data Import */}
-          <Route 
-            path="/admin/import" 
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <DataImport />
-              </ProtectedRoute>
-            } 
-          />
-          
           {/* Student Dashboard */}
           <Route 
             path="/student" 
             element={
               <ProtectedRoute requiredRole="student">
                 <StudentDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Student Application Tracker */}
-          <Route 
-            path="/student/application/:applicationId" 
-            element={
-              <ProtectedRoute requiredRole="student">
-                <ApplicationTracker />
               </ProtectedRoute>
             } 
           />

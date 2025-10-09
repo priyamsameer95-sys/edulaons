@@ -18,13 +18,6 @@ export interface StudentApplicationData {
   // Study Details
   universities: string[]; // Array of university IDs
   course: string;
-  courseId?: string; // Optional DB reference
-  courseDetails?: { // Optional enrichment
-    programName: string;
-    degree: string;
-    stream: string;
-    tuition?: string;
-  };
   studyDestination: string;
   intakeMonth: number;
   intakeYear: number;
@@ -66,17 +59,7 @@ export const useStudentApplication = () => {
     try {
       setIsSubmitting(true);
 
-      const { data: user, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user.user) {
-        toast({
-          title: "Session Expired",
-          description: "Please log in again to submit your application",
-          variant: "destructive",
-        });
-        navigate('/login');
-        return;
-      }
+      const { data: user } = await supabase.auth.getUser();
       
       const { data: result, error } = await supabase.functions.invoke('create-lead', {
         body: {

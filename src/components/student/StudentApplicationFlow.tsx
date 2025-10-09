@@ -1,14 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useStudentApplicationContext } from '@/contexts/StudentApplicationContext';
+import { useStudentApplication } from '@/hooks/useStudentApplication';
 import PersonalDetailsStep from './PersonalDetailsStep';
 import StudyDetailsStep from './StudyDetailsStep';
 import CoApplicantDetailsStep from './CoApplicantDetailsStep';
 import ReviewStep from './ReviewStep';
 import SuccessStep from './SuccessStep';
+import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { useEffect } from 'react';
 
 const steps = [
   { title: 'Personal Details', description: 'Tell us about yourself' },
@@ -18,47 +16,28 @@ const steps = [
   { title: 'Submit', description: 'Complete application' },
 ];
 
-interface StudentApplicationFlowProps {
-  onComplete?: () => void;
-}
-
-const StudentApplicationFlow = ({ onComplete }: StudentApplicationFlowProps) => {
+const StudentApplicationFlow = () => {
   const {
     currentStep,
     applicationData,
     isSubmitting,
-    validationErrors,
-    submissionResult,
     updateApplicationData,
     nextStep,
     prevStep,
-    goToStep,
     submitApplication,
-  } = useStudentApplicationContext();
+  } = useStudentApplication();
 
-  // If we're on step 5 without submission result, redirect to dashboard (application already exists)
-  useEffect(() => {
-    if (currentStep === 4 && !submissionResult && onComplete) {
-      // Application was already submitted, just show the dashboard
-      onComplete();
-    }
-  }, [currentStep, submissionResult, onComplete]);
+  const [submissionResult, setSubmissionResult] = useState<any>(null);
 
   const handleSubmit = async () => {
     const result = await submitApplication();
     if (result) {
-      await nextStep(); // Move to success step
+      setSubmissionResult(result);
+      nextStep();
     }
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-
-  // Allow clicking on completed steps to navigate back
-  const handleStepClick = (index: number) => {
-    if (index < currentStep) {
-      goToStep(index);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -73,40 +52,25 @@ const StudentApplicationFlow = ({ onComplete }: StudentApplicationFlowProps) => 
 
       {/* Step Indicator */}
       <div className="flex justify-between">
-        {steps.map((step, index) => {
-          const isComplete = index < currentStep;
-          const isCurrent = index === currentStep;
-          const isClickable = isComplete;
-
-          return (
+        {steps.map((step, index) => (
+          <div
+            key={index}
+            className={`flex flex-col items-center flex-1 ${
+              index < steps.length - 1 ? 'border-r' : ''
+            }`}
+          >
             <div
-              key={index}
-              className={`flex flex-col items-center flex-1 ${
-                index < steps.length - 1 ? 'border-r border-border' : ''
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                index <= currentStep
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
               }`}
             >
-              <button
-                type="button"
-                onClick={() => isClickable && handleStepClick(index)}
-                disabled={!isClickable}
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                  isCurrent
-                    ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2'
-                    : isComplete
-                    ? 'bg-primary/80 text-primary-foreground cursor-pointer hover:bg-primary'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed'
-                }`}
-              >
-                {index + 1}
-              </button>
-              <p className={`text-xs mt-2 text-center hidden md:block ${
-                isCurrent ? 'font-medium text-foreground' : 'text-muted-foreground'
-              }`}>
-                {step.title}
-              </p>
+              {index + 1}
             </div>
-          );
-        })}
+            <p className="text-xs mt-1 hidden md:block">{step.title}</p>
+          </div>
+        ))}
       </div>
 
       {/* Step Content */}
@@ -116,37 +80,47 @@ const StudentApplicationFlow = ({ onComplete }: StudentApplicationFlowProps) => 
           <CardDescription>{steps[currentStep].description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {currentStep === 0 && <PersonalDetailsStep />}
-
-          {currentStep === 1 && <StudyDetailsStep />}
-
-          {currentStep === 2 && <CoApplicantDetailsStep />}
-
-          {currentStep === 3 && (
-            <ReviewStep onSubmit={handleSubmit} />
+          {currentStep === 0 && (
+            <PersonalDetailsStep
+              data={applicationData}
+              onUpdate={updateApplicationData}
+              onNext={nextStep}
+            />
           )}
 
-          {currentStep === 4 && (
-            submissionResult ? (
-              <SuccessStep
-                caseId={submissionResult.lead?.case_id || submissionResult.case_id}
-                leadId={submissionResult.lead?.id}
-                recommendedLenders={submissionResult.recommended_lenders || []}
-                onGoToDashboard={onComplete}
-              />
-            ) : (
-              <div className="space-y-4 text-center py-8">
-                <p className="text-muted-foreground">
-                  You're on the final step. Please click "Submit Application" from the Review step to complete your application.
-                </p>
-                {currentStep > 0 && (
-                  <Button variant="outline" onClick={prevStep}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Go Back to Review
-                  </Button>
-                )}
-              </div>
-            )
+          {currentStep === 1 && (
+            <StudyDetailsStep
+              data={applicationData}
+              onUpdate={updateApplicationData}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+
+          {currentStep === 2 && (
+            <CoApplicantDetailsStep
+              data={applicationData}
+              onUpdate={updateApplicationData}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+
+          {currentStep === 3 && (
+            <ReviewStep
+              data={applicationData}
+              onSubmit={handleSubmit}
+              onPrev={prevStep}
+              isSubmitting={isSubmitting}
+            />
+          )}
+
+          {currentStep === 4 && submissionResult && (
+            <SuccessStep
+              caseId={submissionResult.lead?.case_id || submissionResult.case_id}
+              leadId={submissionResult.lead?.id}
+              recommendedLenders={submissionResult.recommended_lenders || []}
+            />
           )}
         </CardContent>
       </Card>

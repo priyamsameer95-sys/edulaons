@@ -1,12 +1,12 @@
 export const STUDY_DESTINATIONS = [
-  { value: 'USA', label: 'United States' },
-  { value: 'UK', label: 'United Kingdom' },
-  { value: 'Canada', label: 'Canada' },
-  { value: 'Australia', label: 'Australia' },
-  { value: 'Germany', label: 'Germany' },
-  { value: 'Ireland', label: 'Ireland' },
-  { value: 'New Zealand', label: 'New Zealand' },
-  { value: 'Other', label: 'Other' }
+  'USA',
+  'UK',
+  'Canada',
+  'Australia',
+  'Germany',
+  'Ireland',
+  'New Zealand',
+  'Other'
 ] as const;
 
 export const LOAN_TYPES = {
@@ -37,14 +37,14 @@ export const GENDERS = [
 ] as const;
 
 export const LOAN_AMOUNT_RANGES = {
-  'USA': { min: 2000000, max: 10000000, typical: '₹20-80 Lakhs' },
-  'UK': { min: 2000000, max: 8000000, typical: '₹20-60 Lakhs' },
-  'Canada': { min: 1500000, max: 8000000, typical: '₹15-60 Lakhs' },
-  'Australia': { min: 2000000, max: 7000000, typical: '₹20-50 Lakhs' },
-  'Germany': { min: 1000000, max: 4000000, typical: '₹10-30 Lakhs' },
-  'Ireland': { min: 1500000, max: 6000000, typical: '₹15-45 Lakhs' },
+  USA: { min: 2000000, max: 10000000, typical: '₹20-80 Lakhs' },
+  UK: { min: 2000000, max: 8000000, typical: '₹20-60 Lakhs' },
+  Canada: { min: 1500000, max: 8000000, typical: '₹15-60 Lakhs' },
+  Australia: { min: 2000000, max: 7000000, typical: '₹20-50 Lakhs' },
+  Germany: { min: 1000000, max: 4000000, typical: '₹10-30 Lakhs' },
+  Ireland: { min: 1500000, max: 6000000, typical: '₹15-45 Lakhs' },
   'New Zealand': { min: 1500000, max: 6000000, typical: '₹15-45 Lakhs' },
-  'Other': { min: 1000000, max: 8000000, typical: '₹10-60 Lakhs' }
+  Other: { min: 500000, max: 5000000, typical: '₹5-40 Lakhs' }
 } as const;
 
 export const INCOME_INDICATORS = [

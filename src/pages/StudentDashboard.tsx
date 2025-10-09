@@ -5,36 +5,22 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
-import { StudentApplicationProvider } from "@/contexts/StudentApplicationContext";
-import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut, Activity } from "lucide-react";
+import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/utils/formatters";
 import type { StudentApplication } from "@/hooks/useStudentApplications";
-import NotificationBell from "@/components/student/NotificationBell";
 
 const StudentDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { applications, loading, error, refetch } = useStudentApplications();
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
 
-  const hasApplications = applications && applications.length > 0;
-
-  const handleApplicationComplete = () => {
-    setShowApplicationForm(false);
-    refetch(); // Refresh applications list
-  };
-
-  // Wrap the entire component tree in the provider
-  const renderApplicationForm = () => (
-    <StudentApplicationProvider>
-      <StudentApplicationFlow onComplete={handleApplicationComplete} />
-    </StudentApplicationProvider>
-  );
+  const hasApplications = applications.length > 0;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -84,91 +70,20 @@ const StudentDashboard = () => {
   }
 
   if (showApplicationForm) {
-    return renderApplicationForm();
+    return <StudentApplicationFlow />;
   }
 
   if (error) {
-    // Graceful degradation: Still show useful options even on error
     return (
-      <div className="min-h-screen bg-muted/30">
-        <div className="border-b bg-background">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">My Applications</h1>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
-            <Button onClick={signOut} variant="outline">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-        <div className="container mx-auto py-8 px-4">
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="pt-6">
-              <div className="text-center mb-6">
-                <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Trouble Loading Your Applications</h2>
-                <p className="text-muted-foreground mb-1">{error}</p>
-                <p className="text-sm text-muted-foreground">Don't worry, your data is safe. Try one of the options below.</p>
-              </div>
-              
-              <div className="grid gap-3 mb-6">
-                <Button onClick={refetch} size="lg" className="w-full">
-                  <Activity className="mr-2 h-5 w-5" />
-                  Retry Loading Applications
-                </Button>
-                
-                <Button 
-                  onClick={() => {
-                    localStorage.removeItem('student_application_draft');
-                    localStorage.removeItem('student_application_submission');
-                    setShowApplicationForm(true);
-                  }} 
-                  variant="outline" 
-                  size="lg"
-                  className="w-full"
-                >
-                  <FileText className="mr-2 h-5 w-5" />
-                  Start New Application
-                </Button>
-              </div>
-
-              <Separator className="my-6" />
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Other Options:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    onClick={() => navigate('/login')} 
-                    variant="secondary"
-                    size="sm"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Re-login
-                  </Button>
-                  <Button 
-                    onClick={() => window.location.reload()} 
-                    variant="secondary"
-                    size="sm"
-                  >
-                    <Activity className="mr-2 h-4 w-4" />
-                    Refresh Page
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground text-center">
-                  💡 <strong>Need help?</strong> Contact support at{' '}
-                  <a href="mailto:support@example.com" className="text-primary hover:underline">
-                    support@example.com
-                  </a>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="container mx-auto py-8 px-4">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error Loading Applications</h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={refetch}>Try Again</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -176,20 +91,8 @@ const StudentDashboard = () => {
   if (!hasApplications) {
     return (
       <div className="min-h-screen bg-muted/30">
-        <div className="border-b bg-background">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">My Applications</h1>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
-            <Button onClick={signOut} variant="outline">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {renderApplicationForm()}
+          <StudentApplicationFlow />
         </div>
       </div>
     );
@@ -201,30 +104,15 @@ const StudentDashboard = () => {
     const needsAction = selectedApplication.documents_status === 'pending' || selectedApplication.documents_status === 'resubmission_required';
     
     return (
-      <div className="min-h-screen bg-muted/30">
-        <div className="border-b bg-background sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-6xl">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setSelectedApplication(null)}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <div className="border-l pl-4">
-                <h1 className="text-lg font-bold">My Applications</h1>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-              </div>
-            </div>
-            <Button onClick={signOut} variant="outline">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-        <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
+        <Button 
+          variant="ghost" 
+          onClick={() => setSelectedApplication(null)}
+          className="mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Applications
+        </Button>
 
         {/* Status Banner */}
         <Card className={`border-l-4 ${
@@ -438,40 +326,23 @@ const StudentDashboard = () => {
             </CardContent>
           </Card>
         </div>
-        </div>
       </div>
     );
   }
 
   // Show list of applications
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="border-b bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">My Applications</h1>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <Button onClick={signOut} variant="outline">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">My Applications</h1>
+          <p className="text-muted-foreground">Track and manage your education loan applications</p>
         </div>
+        <Button onClick={() => setShowApplicationForm(true)} size="lg">
+          <FileText className="mr-2 h-4 w-4" />
+          Start New Application
+        </Button>
       </div>
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold mb-1">Your Applications</h2>
-            <p className="text-muted-foreground">Track and manage your education loan applications</p>
-          </div>
-          <Button onClick={() => setShowApplicationForm(true)} size="lg">
-            <FileText className="mr-2 h-4 w-4" />
-            Start New Application
-          </Button>
-        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {applications.map((app) => {
@@ -571,36 +442,9 @@ const StudentDashboard = () => {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="pt-2 border-t flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/student/application/${app.id}`);
-                    }}
-                    className="flex-1"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Track
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedApplication(app);
-                    }}
-                    className="flex-1"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Details
-                  </Button>
-                </div>
-
                 {/* Action Hint */}
                 {needsAction && (
-                  <div className="pt-2">
+                  <div className="pt-2 border-t">
                     <p className="text-xs text-orange-600 font-medium">
                       👉 {app.documents_status === 'pending' ? 'Upload documents to move forward' : 'Resubmit required documents'}
                     </p>
@@ -610,7 +454,6 @@ const StudentDashboard = () => {
             </Card>
           );
         })}
-       </div>
       </div>
     </div>
   );
