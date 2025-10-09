@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useStudentApplication } from '@/hooks/useStudentApplication';
 import PersonalDetailsStep from './PersonalDetailsStep';
 import StudyDetailsStep from './StudyDetailsStep';
@@ -39,8 +40,42 @@ const StudentApplicationFlow = () => {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
+  const handleFillTestData = () => {
+    updateApplicationData({
+      name: 'John Doe',
+      phone: '+919876543210',
+      dateOfBirth: '2000-01-01',
+      gender: 'male',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      postalCode: '400001',
+      nationality: 'Indian',
+      qualification: 'bachelors',
+      universities: [],
+      course: 'Computer Science',
+      studyDestination: 'USA',
+      intakeMonth: 9,
+      intakeYear: 2025,
+      loanAmount: 5000000,
+      loanType: 'secured',
+      coApplicantName: 'Jane Doe',
+      coApplicantRelationship: 'parent',
+      coApplicantPhone: '+919876543211',
+      coApplicantEmail: 'jane.doe@example.com',
+      coApplicantSalary: 1200000,
+      coApplicantPinCode: '400001',
+    });
+  };
+
   return (
     <div className="space-y-6">
+      {/* Test Data Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleFillTestData} variant="outline" size="sm">
+          Fill Test Data
+        </Button>
+      </div>
+
       {/* Progress Bar */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-muted-foreground">
