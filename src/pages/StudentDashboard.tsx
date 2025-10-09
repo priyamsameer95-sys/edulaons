@@ -95,7 +95,42 @@ const StudentDashboard = () => {
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Error Loading Applications</h2>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={refetch}>Try Again</Button>
+            <div className="flex flex-col gap-2">
+              <Button onClick={refetch} className="w-full">
+                <Activity className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+              <Button 
+                onClick={() => {
+                  localStorage.removeItem('student_application_draft');
+                  localStorage.removeItem('student_application_submission');
+                  setShowApplicationForm(true);
+                }} 
+                variant="outline" 
+                className="w-full"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Start Fresh Application
+              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => navigate('/login')} 
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Login
+                </Button>
+                <Button 
+                  onClick={signOut} 
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
