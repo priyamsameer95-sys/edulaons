@@ -76,9 +76,10 @@ export function StudentApplicationProvider({ children }: { children: React.React
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
   const { toast } = useToast();
 
-  // Load draft from localStorage on mount
+  // Load draft and submission result from localStorage on mount
   useEffect(() => {
     try {
+      // Load draft application data
       const draft = localStorage.getItem(STORAGE_KEY);
       if (draft) {
         const parsed = JSON.parse(draft);
@@ -106,6 +107,19 @@ export function StudentApplicationProvider({ children }: { children: React.React
         setApplicationData(draftData);
         setCurrentStep(parsed.step || 0);
         logger.info('Loaded draft application from localStorage');
+      }
+
+      // Load submission result if exists
+      const savedResult = localStorage.getItem('submission_result');
+      if (savedResult) {
+        try {
+          const result = JSON.parse(savedResult);
+          setSubmissionResult(result);
+          logger.info('Loaded submission result from localStorage');
+        } catch (err) {
+          logger.error('Failed to parse submission result:', err);
+          localStorage.removeItem('submission_result');
+        }
       }
     } catch (error) {
       logger.error('Failed to load draft:', error);
