@@ -137,10 +137,16 @@ serve(async (req) => {
           await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, targetUser, { role, partner_id, is_active }, reason, false, 'Only super admins can modify admin users', req);
           throw new Error('Only super admins can modify admin users');
         }
-        // Prevent modifying the protected super admin
-        if (targetUser.email === 'priyam.sameer@cashkaro.com') {
-          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, targetUser, { role, partner_id, is_active }, reason, false, 'Cannot modify protected super admin account', req);
-          throw new Error('Cannot modify protected super admin account');
+        // Check if account is protected
+        const { data: protectedAccount } = await supabaseClient
+          .from('protected_accounts')
+          .select('email')
+          .eq('email', targetUser.email)
+          .maybeSingle();
+        
+        if (protectedAccount) {
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, targetUser, { role, partner_id, is_active }, reason, false, 'Cannot modify protected account', req);
+          throw new Error('Cannot modify protected account');
         }
       }
 
@@ -195,9 +201,16 @@ serve(async (req) => {
         throw new Error('User not found');
       }
 
-      if (targetUser.email === 'priyam.sameer@cashkaro.com') {
-        await logAudit(supabaseClient, 'deactivate', requestUser.id, user_id, targetUser.email, null, null, reason, false, 'Cannot deactivate protected super admin account', req);
-        throw new Error('Cannot deactivate protected super admin account');
+      // Check if account is protected
+      const { data: protectedAccount } = await supabaseClient
+        .from('protected_accounts')
+        .select('email')
+        .eq('email', targetUser.email)
+        .maybeSingle();
+
+      if (protectedAccount) {
+        await logAudit(supabaseClient, 'deactivate', requestUser.id, user_id, targetUser.email, null, null, reason, false, 'Cannot deactivate protected account', req);
+        throw new Error('Cannot deactivate protected account');
       }
 
       if (!targetUser.is_active) {

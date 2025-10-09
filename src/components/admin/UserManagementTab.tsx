@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { UserPlus, Search, MoreVertical, Edit, Eye, Shield, Building2, Users, XCircle, CheckCircle, Download, ChevronDown, CalendarIcon } from 'lucide-react';
 import { useUserManagement, AppUser } from '@/hooks/useUserManagement';
+import { useProtectedAccounts } from '@/hooks/useProtectedAccounts';
 import CreateUserModal from './CreateUserModal';
 import EditUserModal from './EditUserModal';
 import UserDetailsSheet from './UserDetailsSheet';
@@ -27,10 +28,9 @@ interface UserManagementTabProps {
   currentUserId: string;
 }
 
-const PROTECTED_EMAIL = 'priyam.sameer@cashkaro.com';
-
 const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTabProps) => {
   const { users, partners, loading, fetchUsers, fetchPartners, deactivateUser, reactivateUser } = useUserManagement();
+  const { isProtectedEmail } = useProtectedAccounts();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchMode, setSearchMode] = useState<'email' | 'user_id' | 'partner_name'>('email');
@@ -149,7 +149,7 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
     return (
       currentUserRole === 'super_admin' &&
       user.id !== currentUserId &&
-      user.email !== PROTECTED_EMAIL &&
+      !isProtectedEmail(user.email) &&
       user.is_active
     );
   };
@@ -394,7 +394,7 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => {
-                      const isProtected = user.email === PROTECTED_EMAIL;
+                      const isProtected = isProtectedEmail(user.email);
                       return (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">
@@ -484,7 +484,6 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
         onOpenChange={setShowEditModal}
         user={selectedUser}
         currentUserRole={currentUserRole}
-        protectedEmail={PROTECTED_EMAIL}
       />
       <UserDetailsSheet
         open={showDetailsSheet}

@@ -7,22 +7,23 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserCog, Shield } from 'lucide-react';
 import { useUserManagement, AppUser } from '@/hooks/useUserManagement';
+import { useProtectedAccounts } from '@/hooks/useProtectedAccounts';
 
 interface EditUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: AppUser | null;
   currentUserRole: 'admin' | 'super_admin';
-  protectedEmail: string;
 }
 
-const EditUserModal = ({ open, onOpenChange, user, currentUserRole, protectedEmail }: EditUserModalProps) => {
+const EditUserModal = ({ open, onOpenChange, user, currentUserRole }: EditUserModalProps) => {
   const { updateUser, fetchPartners, partners, loading } = useUserManagement();
+  const { isProtectedEmail } = useProtectedAccounts();
   const [role, setRole] = useState<'partner' | 'admin' | 'super_admin' | 'student' | 'kam'>('partner');
   const [partnerId, setPartnerId] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
 
-  const isProtected = user?.email === protectedEmail;
+  const isProtected = user ? isProtectedEmail(user.email) : false;
 
   useEffect(() => {
     if (open && user) {

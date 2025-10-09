@@ -1046,6 +1046,30 @@ export type Database = {
         }
         Relationships: []
       }
+      protected_accounts: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          id?: string
+          reason: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           city: string | null
