@@ -85,9 +85,9 @@ export const useStudentApplications = () => {
         .from('leads_new')
         .select(`
           *,
-          students:student_id!inner(name, email, phone, nationality, city, state),
-          co_applicants:co_applicant_id!inner(name, relationship, salary),
-          lenders:lender_id!inner(name, code),
+          students!fk_leads_new_student!inner(name, email, phone, nationality, city, state),
+          co_applicants!fk_leads_new_co_applicant!inner(name, relationship, salary),
+          lenders!fk_leads_new_lender!inner(name, code),
           partners:partner_id(name, email)
         `)
         .eq('student_id', studentData.id)
