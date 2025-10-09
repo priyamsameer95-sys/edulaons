@@ -113,12 +113,26 @@ const StudentApplicationFlow = () => {
             <ReviewStep onSubmit={handleSubmit} />
           )}
 
-          {currentStep === 4 && submissionResult && (
-            <SuccessStep
-              caseId={submissionResult.lead?.case_id || submissionResult.case_id}
-              leadId={submissionResult.lead?.id}
-              recommendedLenders={submissionResult.recommended_lenders || []}
-            />
+          {currentStep === 4 && (
+            submissionResult ? (
+              <SuccessStep
+                caseId={submissionResult.lead?.case_id || submissionResult.case_id}
+                leadId={submissionResult.lead?.id}
+                recommendedLenders={submissionResult.recommended_lenders || []}
+              />
+            ) : (
+              <div className="space-y-4 text-center py-8">
+                <p className="text-muted-foreground">
+                  You're on the final step. Please click "Submit Application" from the Review step to complete your application.
+                </p>
+                {currentStep > 0 && (
+                  <Button variant="outline" onClick={prevStep}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Go Back to Review
+                  </Button>
+                )}
+              </div>
+            )
           )}
         </CardContent>
       </Card>
