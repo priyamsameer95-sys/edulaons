@@ -81,7 +81,12 @@ const StudentDashboard = () => {
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Error Loading Applications</h2>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={refetch}>Try Again</Button>
+            <div className="space-y-2">
+              <Button onClick={refetch} className="w-full">Try Again</Button>
+              <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
+                Go to Login
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

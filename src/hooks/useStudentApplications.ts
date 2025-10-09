@@ -88,7 +88,7 @@ export const useStudentApplications = () => {
           students!fk_leads_new_student!inner(name, email, phone, nationality, city, state),
           co_applicants!fk_leads_new_co_applicant!inner(name, relationship, salary),
           lenders!fk_leads_new_lender!inner(name, code),
-          partners:partner_id(name, email)
+          partners!fk_leads_new_partner(name, email)
         `)
         .eq('student_id', studentData.id)
         .order('created_at', { ascending: false });
