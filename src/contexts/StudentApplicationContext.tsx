@@ -208,7 +208,7 @@ export function StudentApplicationProvider({ children }: { children: React.React
       // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
+      if (authError || !user || !user.email) {
         toast({
           title: 'Session Expired',
           description: 'Please log in to submit your application',
@@ -221,6 +221,7 @@ export function StudentApplicationProvider({ children }: { children: React.React
       // Transform camelCase to snake_case for edge function
       const transformedData = {
         student_name: applicationData.name,
+        student_email: user.email, // Use authenticated user's email
         student_phone: applicationData.phone,
         student_dob: applicationData.dateOfBirth,
         student_gender: applicationData.gender,
@@ -259,7 +260,9 @@ export function StudentApplicationProvider({ children }: { children: React.React
 
       logger.info('Application submitted successfully:', data);
       
+      // Store submission result in state AND localStorage for persistence
       setSubmissionResult(data);
+      localStorage.setItem('submission_result', JSON.stringify(data));
       
       // Clear draft
       localStorage.removeItem(STORAGE_KEY);
@@ -291,6 +294,7 @@ export function StudentApplicationProvider({ children }: { children: React.React
     setValidationErrors({});
     setSubmissionResult(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('submission_result');
   }, []);
 
   const value: ApplicationContextValue = {

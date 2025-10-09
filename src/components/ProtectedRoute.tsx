@@ -44,7 +44,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         case 'partner':
           return appUser.role === 'partner' || appUser.role === 'admin' || appUser.role === 'super_admin';
         case 'student':
-          return (appUser.role as any) === 'student';
+          return appUser.role === 'student';
         default:
           return false;
       }
