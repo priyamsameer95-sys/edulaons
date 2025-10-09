@@ -1,3 +1,4 @@
+import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +25,13 @@ const StudyDetailsStep = () => {
   } = useStudentApplicationContext();
 
   const currentYear = new Date().getFullYear();
+
+  // Initialize loan type to 'secured' if not set
+  React.useEffect(() => {
+    if (!applicationData.loanType) {
+      updateApplicationData({ loanType: 'secured' });
+    }
+  }, [applicationData.loanType, updateApplicationData]);
 
   const loanRangeInfo = applicationData.studyDestination 
     ? LOAN_AMOUNT_RANGES[applicationData.studyDestination as keyof typeof LOAN_AMOUNT_RANGES]
