@@ -90,14 +90,67 @@ serve(async (req) => {
       }
     }
 
-    // Step 1: Create student record using service role (bypasses RLS)
+    // Step 1: Validate universities match study destination
+    if (body.universities && body.universities.length > 0) {
+      console.log('🎓 [create-lead] Validating universities...');
+      const { data: universities, error: uniValidationError } = await supabaseAdmin
+        .from('universities')
+        .select('id, country')
+        .in('id', body.universities);
+
+      if (uniValidationError) {
+        throw new Error('Failed to validate universities');
+      }
+
+      const invalidUniversities = universities?.filter(
+        (uni: any) => uni.country.toLowerCase() !== body.country.toLowerCase()
+      );
+
+      if (invalidUniversities && invalidUniversities.length > 0) {
+        throw new Error(`Selected universities must be from ${body.country}`);
+      }
+      console.log('✅ [create-lead] Universities validated');
+    }
+
+    // Step 2: Check for duplicate applications
+    console.log('🔍 [create-lead] Checking for duplicate applications...');
+    const [intakeYear, intakeMonth] = body.intake_month ? body.intake_month.split('-').map(Number) : [null, null];
+    
+    // Try to find existing student by email or phone
+    const { data: existingStudent } = await supabaseAdmin
+      .from('students')
+      .select('id')
+      .or(`email.eq.${body.student_email?.trim()},phone.eq.${body.student_phone.trim().replace(/^\+91/, '').replace(/\D/g, '')}`)
+      .maybeSingle();
+
+    if (existingStudent) {
+      // Check for duplicate application using the new function
+      const { data: isDuplicate, error: dupCheckError } = await supabaseAdmin
+        .rpc('check_duplicate_application', {
+          _student_id: existingStudent.id,
+          _intake_month: intakeMonth,
+          _intake_year: intakeYear,
+          _study_destination: body.country
+        });
+
+      if (dupCheckError) {
+        console.warn('⚠️ [create-lead] Duplicate check failed:', dupCheckError);
+      } else if (isDuplicate) {
+        throw new Error('You already have an active application for this intake and destination');
+      }
+    }
+    console.log('✅ [create-lead] No duplicate found');
+
+    // Step 3: Create student record using service role (bypasses RLS)
     console.log('👨‍🎓 [create-lead] Creating student...');
     
     const studentEmail = body.student_email?.trim();
+    // Clean phone number (remove +91 and non-digits)
+    const cleanPhone = body.student_phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
     const studentData = {
       name: body.student_name.trim(),
-      email: studentEmail || `${body.student_phone.trim()}@temp.placeholder`,
-      phone: body.student_phone.trim(),
+      email: studentEmail || `${cleanPhone}@temp.placeholder`,
+      phone: cleanPhone,
       postal_code: body.student_pin_code.trim(),
       country: 'India'
     };
@@ -115,14 +168,16 @@ serve(async (req) => {
 
     console.log('✅ [create-lead] Student created:', student.id);
 
-    // Step 2: Create co-applicant record
+    // Step 4: Create co-applicant record
     console.log('👥 [create-lead] Creating co-applicant...');
     
     const coApplicantEmail = body.co_applicant_email?.trim();
+    // Clean co-applicant phone number
+    const cleanCoApplicantPhone = body.co_applicant_phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
     const coApplicantData = {
       name: body.co_applicant_name.trim(),
       email: coApplicantEmail || null,
-      phone: body.co_applicant_phone.trim(),
+      phone: cleanCoApplicantPhone,
       relationship: body.co_applicant_relationship,
       salary: parseFloat(body.co_applicant_salary),
       pin_code: body.co_applicant_pin_code.trim()
@@ -141,7 +196,7 @@ serve(async (req) => {
 
     console.log('✅ [create-lead] Co-applicant created:', coApplicant.id);
 
-    // Step 3: Get default lender
+    // Step 5: Get default lender
     console.log('🏦 [create-lead] Getting lender...');
     
     const { data: lender, error: lenderError } = await supabaseAdmin
@@ -157,11 +212,10 @@ serve(async (req) => {
 
     console.log('✅ [create-lead] Lender found:', lender.name);
 
-    // Step 4: Create lead record
+    // Step 6: Create lead record
     console.log('📋 [create-lead] Creating lead...');
     
     const caseId = `EDU-${Date.now()}`;
-    const [intakeYear, intakeMonth] = body.intake_month ? body.intake_month.split('-').map(Number) : [null, null];
 
     const leadData = {
       case_id: caseId,
@@ -191,7 +245,7 @@ serve(async (req) => {
 
     console.log('✅ [create-lead] Lead created:', lead.id);
 
-    // Step 5: Create academic test records if provided
+    // Step 7: Create academic test records if provided
     const testScores = [];
     if (body.gmat_score) testScores.push({ student_id: student.id, test_type: 'GMAT', score: body.gmat_score });
     if (body.gre_score) testScores.push({ student_id: student.id, test_type: 'GRE', score: body.gre_score });
@@ -213,7 +267,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 6: Create university associations
+    // Step 8: Create university associations
     if (body.universities && body.universities.length > 0) {
       console.log('🎓 [create-lead] Creating university associations...');
       
@@ -238,7 +292,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 7: Get recommended lenders based on universities
+    // Step 9: Get recommended lenders based on universities
     console.log('🏦 [create-lead] Fetching recommended lenders...');
     
     interface RecommendedLender {

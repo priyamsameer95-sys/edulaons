@@ -1282,6 +1282,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_duplicate_application: {
+        Args: {
+          _intake_month: number
+          _intake_year: number
+          _student_id: string
+          _study_destination: Database["public"]["Enums"]["study_destination_enum"]
+        }
+        Returns: boolean
+      }
       get_partner_lead_stats: {
         Args: { _partner_id: string }
         Returns: {

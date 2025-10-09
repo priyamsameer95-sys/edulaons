@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+
+const STORAGE_KEY = 'student_application_draft';
 
 export interface StudentApplicationData {
   // Personal Details
@@ -43,16 +45,69 @@ export const useStudentApplication = () => {
     loanType: 'secured',
   });
 
+  // Load saved form data from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setApplicationData(prev => ({ ...prev, ...parsed.data }));
+        setCurrentStep(parsed.step || 0);
+      }
+    } catch (error) {
+      console.error('Failed to load saved application data:', error);
+    }
+  }, []);
+
   const updateApplicationData = (data: Partial<StudentApplicationData>) => {
-    setApplicationData(prev => ({ ...prev, ...data }));
+    setApplicationData(prev => {
+      const updated = { ...prev, ...data };
+      // Save to localStorage whenever data changes
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          data: updated,
+          step: currentStep,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (error) {
+        console.error('Failed to save application data:', error);
+      }
+      return updated;
+    });
   };
 
   const nextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, 4));
+    setCurrentStep(prev => {
+      const newStep = Math.min(prev + 1, 4);
+      // Save step to localStorage
+      try {
+        const current = localStorage.getItem(STORAGE_KEY);
+        if (current) {
+          const parsed = JSON.parse(current);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, step: newStep }));
+        }
+      } catch (error) {
+        console.error('Failed to save step:', error);
+      }
+      return newStep;
+    });
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 0));
+    setCurrentStep(prev => {
+      const newStep = Math.max(prev - 1, 0);
+      // Save step to localStorage
+      try {
+        const current = localStorage.getItem(STORAGE_KEY);
+        if (current) {
+          const parsed = JSON.parse(current);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, step: newStep }));
+        }
+      } catch (error) {
+        console.error('Failed to save step:', error);
+      }
+      return newStep;
+    });
   };
 
   const submitApplication = async () => {
@@ -82,6 +137,13 @@ export const useStudentApplication = () => {
       });
 
       if (error) throw error;
+
+      // Clear saved form data on successful submission
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Failed to clear saved data:', error);
+      }
 
       toast({
         title: "Application Submitted!",

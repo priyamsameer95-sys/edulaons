@@ -80,7 +80,8 @@ export const useStudentApplications = () => {
         return;
       }
 
-      // Fetch all applications for this student with related data
+      // Fetch all applications with related data including universities in ONE QUERY
+      // This fixes the N+1 query problem
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -88,68 +89,60 @@ export const useStudentApplications = () => {
           students!fk_leads_new_student!inner(name, email, phone, nationality, city, state),
           co_applicants!fk_leads_new_co_applicant!inner(name, relationship, salary),
           lenders!fk_leads_new_lender!inner(name, code),
-          partners!fk_leads_new_partner(name, email)
+          partners!fk_leads_new_partner(name, email),
+          lead_universities(
+            universities(id, name, country, city)
+          )
         `)
         .eq('student_id', studentData.id)
         .order('created_at', { ascending: false });
 
       if (leadsError) throw leadsError;
 
-      // Fetch universities for each lead
-      const applicationsWithUniversities = await Promise.all(
-        (leadsData || []).map(async (lead: any) => {
-          const { data: universitiesData } = await supabase
-            .from('lead_universities')
-            .select('universities:university_id(id, name, country, city)')
-            .eq('lead_id', lead.id);
+      // Transform the data to properly structure universities per lead
+      const applicationsWithUniversities = (leadsData || []).map((lead: any) => {
+        // Extract universities from lead_universities array
+        const universities = (lead.lead_universities || [])
+          .map((lu: any) => lu.universities)
+          .filter((uni: any) => uni !== null);
 
-          const universities = (universitiesData || [])
-            .map(item => (item as any).universities)
-            .filter((uni: any) => uni !== null) as Array<{
-              id: string;
-              name: string;
-              country: string;
-              city: string;
-            }>;
-
-          return {
-            id: lead.id,
-            case_id: lead.case_id,
-            loan_amount: Number(lead.loan_amount),
-            loan_type: lead.loan_type,
-            study_destination: lead.study_destination,
-            intake_month: lead.intake_month,
-            intake_year: lead.intake_year,
-            status: lead.status,
-            documents_status: lead.documents_status,
-            created_at: lead.created_at,
-            updated_at: lead.updated_at,
-            status_updated_at: lead.status_updated_at,
-            student: {
-              name: lead.students?.name,
-              email: lead.students?.email,
-              phone: lead.students?.phone,
-              nationality: lead.students?.nationality,
-              city: lead.students?.city,
-              state: lead.students?.state,
-            },
-            co_applicant: {
-              name: lead.co_applicants?.name,
-              relationship: lead.co_applicants?.relationship,
-              salary: Number(lead.co_applicants?.salary || 0),
-            },
-            lender: {
-              name: lead.lenders?.name,
-              code: lead.lenders?.code,
-            },
-            partner: lead.partners ? {
-              name: lead.partners.name,
-              email: lead.partners.email,
-            } : undefined,
-            universities,
-          } as StudentApplication;
-        })
-      );
+        return {
+          id: lead.id,
+          case_id: lead.case_id,
+          loan_amount: Number(lead.loan_amount),
+          loan_type: lead.loan_type,
+          study_destination: lead.study_destination,
+          intake_month: lead.intake_month,
+          intake_year: lead.intake_year,
+          status: lead.status,
+          documents_status: lead.documents_status,
+          created_at: lead.created_at,
+          updated_at: lead.updated_at,
+          status_updated_at: lead.status_updated_at,
+          student: {
+            name: lead.students?.name,
+            email: lead.students?.email,
+            phone: lead.students?.phone,
+            nationality: lead.students?.nationality,
+            city: lead.students?.city,
+            state: lead.students?.state,
+          },
+          co_applicant: {
+            name: lead.co_applicants?.name,
+            relationship: lead.co_applicants?.relationship,
+            salary: Number(lead.co_applicants?.salary || 0),
+          },
+          lender: {
+            name: lead.lenders?.name,
+            code: lead.lenders?.code,
+          },
+          partner: lead.partners ? {
+            name: lead.partners.name,
+            email: lead.partners.email,
+          } : undefined,
+          universities,
+        } as StudentApplication;
+      });
 
       logger.info('[useStudentApplications] Fetched applications:', applicationsWithUniversities.length);
       setApplications(applicationsWithUniversities);
