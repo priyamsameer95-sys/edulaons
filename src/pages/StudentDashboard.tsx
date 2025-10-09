@@ -24,10 +24,15 @@ const StudentDashboard = () => {
 
   const hasApplications = applications && applications.length > 0;
 
+  const handleApplicationComplete = () => {
+    setShowApplicationForm(false);
+    refetch(); // Refresh applications list
+  };
+
   // Wrap the entire component tree in the provider
   const renderApplicationForm = () => (
     <StudentApplicationProvider>
-      <StudentApplicationFlow />
+      <StudentApplicationFlow onComplete={handleApplicationComplete} />
     </StudentApplicationProvider>
   );
 

@@ -17,7 +17,11 @@ const steps = [
   { title: 'Submit', description: 'Complete application' },
 ];
 
-const StudentApplicationFlow = () => {
+interface StudentApplicationFlowProps {
+  onComplete?: () => void;
+}
+
+const StudentApplicationFlow = ({ onComplete }: StudentApplicationFlowProps) => {
   const {
     currentStep,
     applicationData,
@@ -119,6 +123,7 @@ const StudentApplicationFlow = () => {
                 caseId={submissionResult.lead?.case_id || submissionResult.case_id}
                 leadId={submissionResult.lead?.id}
                 recommendedLenders={submissionResult.recommended_lenders || []}
+                onGoToDashboard={onComplete}
               />
             ) : (
               <div className="space-y-4 text-center py-8">

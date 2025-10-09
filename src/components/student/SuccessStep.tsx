@@ -10,6 +10,7 @@ import LenderCard from './LenderCard';
 interface SuccessStepProps {
   caseId: string;
   leadId?: string;
+  onGoToDashboard?: () => void;
   recommendedLenders: Array<{
     lender_id: string;
     lender_name: string;
@@ -37,10 +38,18 @@ interface SuccessStepProps {
   }>;
 }
 
-const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) => {
+const SuccessStep = ({ caseId, leadId, recommendedLenders, onGoToDashboard }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleGoToDashboard = () => {
+    if (onGoToDashboard) {
+      onGoToDashboard();
+    } else {
+      navigate('/student');
+    }
+  };
 
   const handleLenderSelection = async (lenderId: string) => {
     if (!leadId) {
@@ -168,7 +177,7 @@ const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) =
           </div>
         </div>
         <Button 
-          onClick={() => navigate('/student')} 
+          onClick={handleGoToDashboard} 
           size="lg"
           className="px-10 h-14 text-lg font-bold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] bg-gradient-to-r from-primary to-primary-dark"
         >
