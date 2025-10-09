@@ -90,7 +90,7 @@ export const useStudentApplications = () => {
           co_applicants!fk_leads_new_co_applicant!inner(name, relationship, salary),
           lenders!fk_leads_new_lender!inner(name, code),
           partners!fk_leads_new_partner(name, email),
-          lead_universities(
+          lead_universities!fk_lead_universities_lead(
             universities(id, name, country, city)
           )
         `)
