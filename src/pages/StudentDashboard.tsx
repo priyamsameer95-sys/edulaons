@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
-import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft } from "lucide-react";
+import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +14,7 @@ import { formatCurrency } from "@/utils/formatters";
 import type { StudentApplication } from "@/hooks/useStudentApplications";
 
 const StudentDashboard = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { applications, loading, error, refetch } = useStudentApplications();
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null);
@@ -85,6 +85,17 @@ const StudentDashboard = () => {
               <Button onClick={refetch} className="w-full">Try Again</Button>
               <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
                 Go to Login
+              </Button>
+              <Button 
+                onClick={async () => {
+                  await signOut();
+                  navigate('/login');
+                }} 
+                variant="outline" 
+                className="w-full"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
               </Button>
             </div>
           </CardContent>
@@ -343,10 +354,23 @@ const StudentDashboard = () => {
           <h1 className="text-3xl font-bold mb-2">My Applications</h1>
           <p className="text-muted-foreground">Track and manage your education loan applications</p>
         </div>
-        <Button onClick={() => setShowApplicationForm(true)} size="lg">
-          <FileText className="mr-2 h-4 w-4" />
-          Start New Application
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowApplicationForm(true)} size="lg">
+            <FileText className="mr-2 h-4 w-4" />
+            Start New Application
+          </Button>
+          <Button 
+            onClick={async () => {
+              await signOut();
+              navigate('/login');
+            }} 
+            variant="outline" 
+            size="lg"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
