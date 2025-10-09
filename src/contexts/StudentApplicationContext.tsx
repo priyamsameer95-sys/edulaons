@@ -218,11 +218,38 @@ export function StudentApplicationProvider({ children }: { children: React.React
         return null;
       }
 
+      // Transform camelCase to snake_case for edge function
+      const transformedData = {
+        student_name: applicationData.name,
+        student_phone: applicationData.phone,
+        student_dob: applicationData.dateOfBirth,
+        student_gender: applicationData.gender,
+        student_city: applicationData.city,
+        student_state: applicationData.state,
+        student_pin_code: applicationData.postalCode,
+        student_qualification: applicationData.qualification,
+        
+        co_applicant_name: applicationData.coApplicantName,
+        co_applicant_phone: applicationData.coApplicantPhone,
+        co_applicant_email: applicationData.coApplicantEmail,
+        co_applicant_salary: applicationData.coApplicantSalary,
+        co_applicant_relationship: applicationData.coApplicantRelationship,
+        co_applicant_pin_code: applicationData.coApplicantPinCode,
+        
+        country: applicationData.studyDestination,
+        loan_type: applicationData.loanType,
+        intake_month: `${applicationData.intakeYear}-${String(applicationData.intakeMonth).padStart(2, '0')}`,
+        amount_requested: applicationData.loanAmount,
+        universities: applicationData.universities,
+        course_name: applicationData.course,
+        course_id: applicationData.courseId,
+      };
+
       // Submit to edge function
-      logger.info('Submitting application...');
+      logger.info('Submitting application...', transformedData);
       
       const { data, error } = await supabase.functions.invoke('create-lead', {
-        body: applicationData,
+        body: transformedData,
       });
 
       if (error) {
