@@ -23,6 +23,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { LeadStatus, DocumentStatus } from '@/utils/statusUtils';
 import { useRefactoredLeads } from '@/hooks/useRefactoredLeads';
 import { RefactoredLead } from '@/types/refactored-lead';
+import { assertAdminRole } from '@/utils/roleCheck';
+import { AdminErrorBoundary } from '@/components/admin/AdminErrorBoundary';
 
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AdminActionRequired } from '@/components/gamification/AdminActionRequired';
@@ -476,15 +478,32 @@ const AdminDashboard = () => {
     );
   }
 
+  // Type guard for admin role
+  if (!appUser || !assertAdminRole(appUser.role)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You don't have permission to access the admin dashboard
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <AdminErrorBoundary>
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <AdminActionsDrawer
-                userRole={appUser?.role as 'admin' | 'super_admin'}
+                userRole={appUser.role as 'admin' | 'super_admin'}
                 activeTab={activeTab}
                 onCreatePartner={() => setShowCreatePartner(true)}
                 onSignOut={signOut}
@@ -957,13 +976,13 @@ const AdminDashboard = () => {
               </TabsContent>
 
               <TabsContent value="users" className="space-y-6 mt-6">
-                <UserManagementTab
-                  currentUserRole={appUser?.role as 'admin' | 'super_admin'}
-                  currentUserId={appUser?.id || ''}
-                />
+              <UserManagementTab
+                currentUserRole={appUser.role as 'admin' | 'super_admin'}
+                currentUserId={appUser.id}
+              />
               </TabsContent>
 
-              {appUser?.role === 'super_admin' && (
+              {appUser.role === 'super_admin' && (
                 <TabsContent value="audit" className="space-y-6 mt-6">
                   <AuditLogViewer />
                 </TabsContent>
@@ -1037,6 +1056,7 @@ const AdminDashboard = () => {
         />
       )}
     </div>
+    </AdminErrorBoundary>
   );
 };
 

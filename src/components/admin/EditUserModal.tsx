@@ -1,3 +1,4 @@
+import { LoadingButton } from '@/components/ui/loading-button';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -158,9 +159,9 @@ const EditUserModal = ({ open, onOpenChange, user, currentUserRole }: EditUserMo
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || isProtected}>
-              {loading ? 'Updating...' : 'Update User'}
-            </Button>
+            <LoadingButton type="submit" loading={loading} loadingText="Updating..." disabled={isProtected}>
+              Update User
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>

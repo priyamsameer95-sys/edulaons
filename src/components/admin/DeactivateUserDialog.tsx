@@ -1,3 +1,4 @@
+import { LoadingButton } from '@/components/ui/loading-button';
 import { useState } from 'react';
 import {
   AlertDialog,
@@ -74,13 +75,15 @@ export function DeactivateUserDialog({
           <Button variant="outline" onClick={handleCancel} disabled={loading}>
             Cancel
           </Button>
-          <Button
+          <LoadingButton
             variant="destructive"
             onClick={handleConfirm}
-            disabled={loading || reason.trim().length < 5}
+            loading={loading}
+            loadingText="Deactivating..."
+            disabled={reason.trim().length < 5}
           >
-            {loading ? 'Deactivating...' : 'Deactivate User'}
-          </Button>
+            Deactivate User
+          </LoadingButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

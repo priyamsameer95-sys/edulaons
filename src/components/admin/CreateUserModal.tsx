@@ -1,3 +1,4 @@
+import { LoadingButton } from '@/components/ui/loading-button';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -246,9 +247,9 @@ const CreateUserModal = ({ open, onOpenChange, currentUserRole }: CreateUserModa
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create User'}
-            </Button>
+            <LoadingButton type="submit" loading={loading} loadingText="Creating...">
+              Create User
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>

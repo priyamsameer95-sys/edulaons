@@ -1,3 +1,4 @@
+import { LoadingButton } from '@/components/ui/loading-button';
 import { useState } from 'react';
 import {
   AlertDialog,
@@ -73,12 +74,14 @@ export function ReactivateUserDialog({
           <Button variant="outline" onClick={handleCancel} disabled={loading}>
             Cancel
           </Button>
-          <Button
+          <LoadingButton
             onClick={handleConfirm}
-            disabled={loading || reason.trim().length < 5}
+            loading={loading}
+            loadingText="Reactivating..."
+            disabled={reason.trim().length < 5}
           >
-            {loading ? 'Reactivating...' : 'Reactivate User'}
-          </Button>
+            Reactivate User
+          </LoadingButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

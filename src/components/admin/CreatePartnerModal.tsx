@@ -1,3 +1,4 @@
+import { LoadingButton } from '@/components/ui/loading-button';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -433,9 +434,9 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating Partner...' : 'Create Partner with Login'}
-            </Button>
+            <LoadingButton type="submit" loading={loading} loadingText="Creating Partner...">
+              Create Partner with Login
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>
