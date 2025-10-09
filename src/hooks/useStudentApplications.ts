@@ -85,10 +85,10 @@ export const useStudentApplications = () => {
         .from('leads_new')
         .select(`
           *,
-          students!inner(name, email, phone, nationality, city, state),
-          co_applicants!inner(name, relationship, salary),
-          lenders!inner(name, code),
-          partners(name, email)
+          students:student_id!inner(name, email, phone, nationality, city, state),
+          co_applicants:co_applicant_id!inner(name, relationship, salary),
+          lenders:lender_id!inner(name, code),
+          partners:partner_id(name, email)
         `)
         .eq('student_id', studentData.id)
         .order('created_at', { ascending: false });
@@ -97,7 +97,7 @@ export const useStudentApplications = () => {
 
       // Fetch universities for each lead
       const applicationsWithUniversities = await Promise.all(
-        (leadsData || []).map(async (lead) => {
+        (leadsData || []).map(async (lead: any) => {
           const { data: universitiesData } = await supabase
             .from('lead_universities')
             .select('universities:university_id(id, name, country, city)')
@@ -126,21 +126,21 @@ export const useStudentApplications = () => {
             updated_at: lead.updated_at,
             status_updated_at: lead.status_updated_at,
             student: {
-              name: lead.students.name,
-              email: lead.students.email,
-              phone: lead.students.phone,
-              nationality: lead.students.nationality,
-              city: lead.students.city,
-              state: lead.students.state,
+              name: lead.students?.name,
+              email: lead.students?.email,
+              phone: lead.students?.phone,
+              nationality: lead.students?.nationality,
+              city: lead.students?.city,
+              state: lead.students?.state,
             },
             co_applicant: {
-              name: lead.co_applicants.name,
-              relationship: lead.co_applicants.relationship,
-              salary: Number(lead.co_applicants.salary),
+              name: lead.co_applicants?.name,
+              relationship: lead.co_applicants?.relationship,
+              salary: Number(lead.co_applicants?.salary || 0),
             },
             lender: {
-              name: lead.lenders.name,
-              code: lead.lenders.code,
+              name: lead.lenders?.name,
+              code: lead.lenders?.code,
             },
             partner: lead.partners ? {
               name: lead.partners.name,

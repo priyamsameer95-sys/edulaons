@@ -19,7 +19,7 @@ export function useRefactoredLeads() {
         .from('leads_new')
         .select(`
           *,
-          students (
+          students:student_id (
             id,
             name,
             email,
@@ -34,7 +34,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          co_applicants (
+          co_applicants:co_applicant_id (
             id,
             name,
             relationship,
@@ -47,7 +47,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          partners (
+          partners:partner_id (
             id,
             name,
             email,
@@ -57,7 +57,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          lenders (
+          lenders:lender_id (
             id,
             name,
             code,
@@ -80,7 +80,7 @@ export function useRefactoredLeads() {
 
       logger.info('[useRefactoredLeads] Fetched leads:', data?.length || 0);
 
-      const mappedLeads = data?.map(mapDbRefactoredLeadToLead) || [];
+      const mappedLeads = (data as any)?.map(mapDbRefactoredLeadToLead) || [];
       logger.info('[useRefactoredLeads] Mapped leads:', mappedLeads.length);
       setLeads(mappedLeads);
     } catch (err) {

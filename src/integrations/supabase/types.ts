@@ -126,6 +126,108 @@ export type Database = {
           },
         ]
       }
+      application_activities: {
+        Row: {
+          activity_type: string
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: Database["public"]["Enums"]["app_role"] | null
+          created_at: string
+          description: string
+          id: string
+          lead_id: string
+          metadata: Json | null
+        }
+        Insert: {
+          activity_type: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: Database["public"]["Enums"]["app_role"] | null
+          created_at?: string
+          description: string
+          id?: string
+          lead_id: string
+          metadata?: Json | null
+        }
+        Update: {
+          activity_type?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: Database["public"]["Enums"]["app_role"] | null
+          created_at?: string
+          description?: string
+          id?: string
+          lead_id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_application_activities_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          lead_id: string
+          updated_at: string
+          user_id: string | null
+          user_name: string | null
+          user_role: Database["public"]["Enums"]["app_role"] | null
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          lead_id: string
+          updated_at?: string
+          user_id?: string | null
+          user_name?: string | null
+          user_role?: Database["public"]["Enums"]["app_role"] | null
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          lead_id?: string
+          updated_at?: string
+          user_id?: string | null
+          user_name?: string | null
+          user_role?: Database["public"]["Enums"]["app_role"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_comments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_application_comments_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auth_error_logs: {
         Row: {
           context: Json | null
@@ -418,6 +520,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_lead_documents_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_lead_documents_lead_id"
             columns: ["lead_id"]
             isOneToOne: false
@@ -616,6 +725,41 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_leads_new_co_applicant"
+            columns: ["co_applicant_id"]
+            isOneToOne: false
+            referencedRelation: "co_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_new_lender"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_new_partner"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_statistics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "fk_leads_new_partner"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_leads_new_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leads_new_co_applicant_id_fkey"
             columns: ["co_applicant_id"]
             isOneToOne: false
@@ -684,6 +828,27 @@ export type Database = {
           old_lender_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_lah_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lah_new_lender"
+            columns: ["new_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lah_old_lender"
+            columns: ["old_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lender_assignment_history_lead_id_fkey"
             columns: ["lead_id"]
@@ -790,6 +955,60 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          id: string
+          is_read: boolean | null
+          lead_id: string | null
+          message: string
+          metadata: Json | null
+          notification_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          lead_id?: string | null
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          lead_id?: string | null
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_notifications_lead"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partners: {
         Row: {
@@ -964,6 +1183,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_ulp_lender"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_ulp_university"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "university_lender_preferences_lender_id_fkey"
             columns: ["lender_id"]
