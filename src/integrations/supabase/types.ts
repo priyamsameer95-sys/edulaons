@@ -1294,6 +1294,10 @@ export type Database = {
           total_loan_amount: number
         }[]
       }
+      get_student_id_by_email: {
+        Args: { _email: string }
+        Returns: string
+      }
       get_user_partner: {
         Args: { _user_id: string }
         Returns: string
