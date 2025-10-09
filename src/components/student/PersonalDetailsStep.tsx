@@ -24,7 +24,9 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
         if (!value || value.trim().length < 2) return 'Name must be at least 2 characters';
         return null;
       case 'phone':
-        if (!VALIDATION_PATTERNS.phone.test(value)) {
+        // Remove any non-digit characters and leading +91
+        const cleanPhone = value.replace(/\D/g, '').replace(/^91/, '');
+        if (!VALIDATION_PATTERNS.phone.test(cleanPhone)) {
           return 'Enter valid 10-digit phone number starting with 6-9';
         }
         return null;
@@ -99,7 +101,10 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
             id="phone"
             type="tel"
             value={data.phone || ''}
-            onChange={(e) => handleChange('phone', e.target.value)}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+              handleChange('phone', cleaned);
+            }}
             placeholder="10-digit mobile number"
             maxLength={10}
             className={errors.phone ? 'border-destructive' : ''}

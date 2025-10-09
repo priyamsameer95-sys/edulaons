@@ -23,7 +23,9 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
   const validateField = (field: string, value: any): string | null => {
     switch (field) {
       case 'coApplicantPhone':
-        if (!VALIDATION_PATTERNS.phone.test(value)) {
+        // Remove any non-digit characters  
+        const cleanPhone = value.replace(/\D/g, '');
+        if (!VALIDATION_PATTERNS.phone.test(cleanPhone)) {
           return 'Enter valid 10-digit phone number';
         }
         return null;
@@ -134,7 +136,10 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
             id="coApplicantPhone"
             type="tel"
             value={data.coApplicantPhone || ''}
-            onChange={(e) => handleChange('coApplicantPhone', e.target.value)}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+              handleChange('coApplicantPhone', cleaned);
+            }}
             maxLength={10}
             placeholder="10-digit mobile number"
             className={errors.coApplicantPhone ? 'border-destructive' : ''}

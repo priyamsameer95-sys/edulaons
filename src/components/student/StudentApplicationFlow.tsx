@@ -40,41 +40,56 @@ const StudentApplicationFlow = () => {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const handleFillTestData = () => {
+  const handleFillTestData = async () => {
+    // First set study destination so universities can be loaded
     updateApplicationData({
-      name: 'John Doe',
-      phone: '+919876543210',
-      dateOfBirth: '2000-01-01',
-      gender: 'male',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      postalCode: '400001',
-      nationality: 'Indian',
-      qualification: 'bachelors',
-      universities: [],
-      course: 'Computer Science',
       studyDestination: 'USA',
-      intakeMonth: 9,
-      intakeYear: 2025,
-      loanAmount: 5000000,
-      loanType: 'secured',
-      coApplicantName: 'Jane Doe',
-      coApplicantRelationship: 'parent',
-      coApplicantPhone: '+919876543211',
-      coApplicantEmail: 'jane.doe@example.com',
-      coApplicantSalary: 1200000,
-      coApplicantPinCode: '400001',
     });
+
+    // Wait a moment for university data to be available
+    setTimeout(() => {
+      updateApplicationData({
+        name: 'John Doe',
+        phone: '9876543210',
+        dateOfBirth: '2000-01-01',
+        gender: 'male',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400001',
+        nationality: 'Indian',
+        qualification: 'bachelors',
+        universities: [], // Will be filled manually from dropdown
+        course: 'Master of Science in Computer Science',
+        studyDestination: 'USA',
+        intakeMonth: 9,
+        intakeYear: 2025,
+        loanAmount: 5000000,
+        loanType: 'secured',
+        coApplicantName: 'Jane Doe',
+        coApplicantRelationship: 'parent',
+        coApplicantPhone: '9876543211',
+        coApplicantEmail: 'jane.doe@example.com',
+        coApplicantSalary: 1200000,
+        coApplicantPinCode: '400001',
+      });
+    }, 100);
   };
 
   return (
     <div className="space-y-6">
       {/* Test Data Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleFillTestData} variant="outline" size="sm">
-          Fill Test Data
-        </Button>
-      </div>
+      {currentStep < 4 && (
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleFillTestData} 
+            variant="outline" 
+            size="sm"
+            type="button"
+          >
+            Fill Test Data
+          </Button>
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="space-y-2">
@@ -86,24 +101,31 @@ const StudentApplicationFlow = () => {
       </div>
 
       {/* Step Indicator */}
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-2">
         {steps.map((step, index) => (
           <div
             key={index}
-            className={`flex flex-col items-center flex-1 ${
-              index < steps.length - 1 ? 'border-r' : ''
-            }`}
+            className={`flex flex-col items-center flex-1 transition-all duration-300`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                index <= currentStep
-                  ? 'bg-primary text-primary-foreground'
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                index < currentStep
+                  ? 'bg-green-500 text-white'
+                  : index === currentStep
+                  ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
-              {index + 1}
+              {index < currentStep ? '✓' : index + 1}
             </div>
-            <p className="text-xs mt-1 hidden md:block">{step.title}</p>
+            <p className={`text-xs mt-2 text-center font-medium ${
+              index === currentStep ? 'text-primary' : 'text-muted-foreground'
+            }`}>
+              {step.title}
+            </p>
+            {index < currentStep && (
+              <p className="text-xs text-green-600 hidden md:block">Completed</p>
+            )}
           </div>
         ))}
       </div>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { formatCurrency } from '@/utils/formatters';
+import { Loader2 } from 'lucide-react';
 
 interface ReviewStepProps {
   data: Partial<StudentApplicationData>;
@@ -96,10 +97,26 @@ const ReviewStep = ({ data, onSubmit, onPrev, isSubmitting }: ReviewStepProps) =
         </CardContent>
       </Card>
 
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onPrev}>Previous</Button>
-        <Button onClick={onSubmit} disabled={isSubmitting}>
-          {isSubmitting ? 'Submitting...' : 'Submit Application'}
+      <div className="flex justify-between mt-6">
+        <Button onClick={onPrev} variant="outline" size="lg" disabled={isSubmitting}>
+          Previous
+        </Button>
+        <Button 
+          onClick={onSubmit} 
+          disabled={isSubmitting} 
+          size="lg"
+          className="relative overflow-hidden group min-w-[200px]"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <span className="relative z-10">Submit Application</span>
+            </>
+          )}
         </Button>
       </div>
     </div>
