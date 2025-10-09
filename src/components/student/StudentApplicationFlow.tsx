@@ -8,6 +8,7 @@ import SuccessStep from './SuccessStep';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useEffect } from 'react';
 
 const steps = [
   { title: 'Personal Details', description: 'Tell us about yourself' },
@@ -34,6 +35,14 @@ const StudentApplicationFlow = ({ onComplete }: StudentApplicationFlowProps) => 
     goToStep,
     submitApplication,
   } = useStudentApplicationContext();
+
+  // If we're on step 5 without submission result, redirect to dashboard (application already exists)
+  useEffect(() => {
+    if (currentStep === 4 && !submissionResult && onComplete) {
+      // Application was already submitted, just show the dashboard
+      onComplete();
+    }
+  }, [currentStep, submissionResult, onComplete]);
 
   const handleSubmit = async () => {
     const result = await submitApplication();
