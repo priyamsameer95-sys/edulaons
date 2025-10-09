@@ -90,30 +90,38 @@ serve(async (req) => {
       }
     }
 
-    // Step 1: Create student record using service role (bypasses RLS)
-    console.log('👨‍🎓 [create-lead] Creating student...');
-    
+    // Step 1: Validate student email is provided
     const studentEmail = body.student_email?.trim();
+    if (!studentEmail) {
+      throw new Error('Student email is required');
+    }
+
+    console.log('👨‍🎓 [create-lead] Creating/updating student...');
+    
     const studentData = {
       name: body.student_name.trim(),
-      email: studentEmail || `${body.student_phone.trim()}@temp.placeholder`,
+      email: studentEmail,
       phone: body.student_phone.trim(),
       postal_code: body.student_pin_code.trim(),
       country: 'India'
     };
 
+    // Use upsert to create or update existing student record
     const { data: student, error: studentError } = await supabaseAdmin
       .from('students')
-      .insert(studentData)
+      .upsert(studentData, {
+        onConflict: 'email',
+        ignoreDuplicates: false
+      })
       .select()
       .single();
 
     if (studentError) {
-      console.error('❌ [create-lead] Student creation failed:', studentError);
+      console.error('❌ [create-lead] Student creation/update failed:', studentError);
       throw new Error(`Failed to create student: ${studentError.message}`);
     }
 
-    console.log('✅ [create-lead] Student created:', student.id);
+    console.log('✅ [create-lead] Student created/updated:', student.id);
 
     // Step 2: Create co-applicant record
     console.log('👥 [create-lead] Creating co-applicant...');
@@ -374,13 +382,17 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        lead: {
-          id: lead.id,
-          case_id: lead.case_id,
-          student_id: student.id,
-          co_applicant_id: coApplicant.id
-        },
-        recommended_lenders: recommendedLenders
+        case_id: lead.case_id,
+        lead_id: lead.id,
+        student_email: studentEmail,
+        message: 'Application submitted successfully',
+        recommended_lenders: recommendedLenders.map(lender => ({
+          id: lender.lender_id,
+          name: lender.lender_name,
+          code: lender.lender_code,
+          logo_url: lender.logo_url,
+          description: lender.lender_description,
+        }))
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
