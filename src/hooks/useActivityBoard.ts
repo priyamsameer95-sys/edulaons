@@ -225,10 +225,12 @@ export function useActivityBoard() {
       setLoading(true);
       setError(null);
 
-      logger.info('[ActivityBoard] Starting fetch...');
       const cutoffDate = getActivityCutoffDate();
+      logger.info('🔍 [ActivityBoard] Starting fetch...');
+      logger.info('📅 [ActivityBoard] Cutoff date:', cutoffDate);
 
       // Fetch status changes with joined data
+      logger.info('📊 [ActivityBoard] Fetching status changes...');
       const { data: statusData, error: statusError } = await supabase
         .from('lead_status_history')
         .select(`
@@ -252,11 +254,14 @@ export function useActivityBoard() {
         .limit(ACTIVITY_CONFIG.MAX_STATUS_ITEMS);
 
       if (statusError) {
-        logger.error('[ActivityBoard] Status fetch error:', statusError);
+        logger.error('❌ [ActivityBoard] Status fetch error:', statusError);
         throw statusError;
       }
+      
+      logger.info(`✅ [ActivityBoard] Found ${statusData?.length || 0} status changes`);
 
       // Fetch recent leads with joined data
+      logger.info('🆕 [ActivityBoard] Fetching new leads...');
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -273,19 +278,35 @@ export function useActivityBoard() {
         .limit(ACTIVITY_CONFIG.MAX_LEAD_ITEMS);
 
       if (leadsError) {
-        logger.error('[ActivityBoard] Leads fetch error:', leadsError);
+        logger.error('❌ [ActivityBoard] Leads fetch error:', leadsError);
         throw leadsError;
+      }
+      
+      logger.info(`✅ [ActivityBoard] Found ${leadsData?.length || 0} new leads`);
+      if (leadsData && leadsData.length > 0) {
+        logger.info('📋 [ActivityBoard] Sample lead:', {
+          id: leadsData[0].id,
+          case_id: leadsData[0].case_id,
+          created_at: leadsData[0].created_at,
+          student: leadsData[0].students,
+          partner: leadsData[0].partners
+        });
       }
 
       // Process and combine activities
+      logger.info('⚙️ [ActivityBoard] Processing activities...');
       const statusActivities = processStatusChanges(statusData as any);
+      logger.info(`📊 Processed ${statusActivities.length} status activities`);
+      
       const leadActivities = processNewLeads(leadsData as any);
+      logger.info(`🆕 Processed ${leadActivities.length} lead activities`);
+      
       const allActivities = [...statusActivities, ...leadActivities];
 
       // Sort activities
       const sortedActivities = sortActivities(allActivities);
 
-      logger.info('[ActivityBoard] Fetch complete:', {
+      logger.info('✅ [ActivityBoard] Fetch complete:', {
         total: sortedActivities.length,
         status: statusActivities.length,
         leads: leadActivities.length,
