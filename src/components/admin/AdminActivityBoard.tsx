@@ -113,10 +113,10 @@ const ActivityCard = ({
   const timeAgo = formatTimeAgo(activity.timestamp);
 
   return (
-    <Card className={`p-4 border-l-4 ${config.bgColor} hover:shadow-md transition-shadow`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1">
-          <div className={`mt-1 ${config.color}`}>
+    <Card className={`p-6 border-l-4 ${config.bgColor} hover:shadow-lg hover-lift transition-all duration-300 animate-slide-in-right`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4 flex-1">
+          <div className={`mt-1 p-2 rounded-lg bg-background/50 ${config.color}`}>
             <Icon className="h-5 w-5" />
           </div>
           
@@ -295,12 +295,12 @@ export function AdminActivityBoard({
   }
 
   return (
-    <Card className="flex flex-col h-full">
-      <div className="p-6 border-b space-y-4">
-        <div className="flex items-center justify-between">
+    <Card className="flex flex-col h-full shadow-lg">
+      <div className="p-8 border-b space-y-6 bg-gradient-to-r from-card to-card/50">
+        <div className="flex items-center justify-between animate-fade-in">
           <div>
             <h2 className="text-2xl font-bold">Activity Board</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               Real-time notifications and actionable insights
             </p>
           </div>
@@ -308,15 +308,18 @@ export function AdminActivityBoard({
             variant="outline"
             size="sm"
             onClick={() => setGroupByPartner(!groupByPartner)}
+            className="hover-lift"
           >
             {groupByPartner ? 'View All' : 'Group by Partner'}
           </Button>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="p-4 bg-destructive/10 border-destructive/20">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+        <div className="grid grid-cols-4 gap-6">
+          <Card className="p-5 bg-destructive/10 border-destructive/20 hover-lift stagger-fade-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/20">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
               <div>
                 <p className="text-2xl font-bold text-destructive">{stats.urgentCount}</p>
                 <p className="text-xs text-muted-foreground">Urgent Items</p>
@@ -324,9 +327,11 @@ export function AdminActivityBoard({
             </div>
           </Card>
           
-          <Card className="p-4 bg-warning/10 border-warning/20">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" />
+          <Card className="p-5 bg-warning/10 border-warning/20 hover-lift stagger-fade-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-warning/20">
+                <Clock className="h-5 w-5 text-warning" />
+              </div>
               <div>
                 <p className="text-2xl font-bold text-warning">{stats.attentionCount}</p>
                 <p className="text-xs text-muted-foreground">Needs Attention</p>
@@ -334,9 +339,11 @@ export function AdminActivityBoard({
             </div>
           </Card>
           
-          <Card className="p-4 bg-primary/10 border-primary/20">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
+          <Card className="p-5 bg-primary/10 border-primary/20 hover-lift stagger-fade-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
               <div>
                 <p className="text-2xl font-bold">{stats.todayActivitiesCount}</p>
                 <p className="text-xs text-muted-foreground">Today</p>
@@ -344,9 +351,11 @@ export function AdminActivityBoard({
             </div>
           </Card>
           
-          <Card className="p-4 bg-success/10 border-success/20">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-success" />
+          <Card className="p-5 bg-success/10 border-success/20 hover-lift stagger-fade-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/20">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              </div>
               <div>
                 <p className="text-2xl font-bold text-success">{stats.activePartnersCount}</p>
                 <p className="text-xs text-muted-foreground">Active Partners</p>
@@ -356,8 +365,8 @@ export function AdminActivityBoard({
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-6">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 p-8">
+        <div className="space-y-6">
           {activities.length === 0 ? (
             <EmptyState
               icon={CheckCircle2}
@@ -378,18 +387,18 @@ export function AdminActivityBoard({
               const attentionCount = group.activities.filter(a => a.priority === 'ATTENTION').length;
               
               return (
-                <div key={partnerId} className="space-y-3">
+                <div key={partnerId} className="space-y-4 animate-fade-in">
                   <button
                     onClick={() => togglePartner(partnerId)}
-                    className="w-full flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                    className="w-full flex items-center justify-between p-5 bg-muted/50 rounded-lg hover:bg-muted hover:shadow-md transition-all duration-200"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <div className="text-left">
-                        <h3 className="font-semibold">{group.partnerName}</h3>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <h3 className="font-semibold text-lg">{group.partnerName}</h3>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                           <span>{group.activities.length} activities</span>
                           {urgentCount > 0 && (
-                            <Badge variant="outline" className="text-destructive border-destructive">
+                            <Badge variant="outline" className="text-destructive border-destructive animate-glow">
                               {urgentCount} urgent
                             </Badge>
                           )}
@@ -402,14 +411,14 @@ export function AdminActivityBoard({
                       </div>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5 transition-transform" />
                     ) : (
-                      <ChevronDown className="h-5 w-5" />
+                      <ChevronDown className="h-5 w-5 transition-transform" />
                     )}
                   </button>
 
                   {isExpanded && (
-                    <div className="space-y-3 ml-4">
+                    <div className="space-y-4 ml-6 animate-fade-in">
                       {group.activities.map((activity) => (
                         <ActivityCard
                           key={activity.id}

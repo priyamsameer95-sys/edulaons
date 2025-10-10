@@ -494,12 +494,12 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-8 w-64 animate-shimmer" />
+              <Skeleton className="h-10 w-24 animate-shimmer" />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-32" />
+                <Skeleton key={i} className={`h-32 animate-shimmer stagger-fade-${i + 1 as 1 | 2 | 3 | 4}`} />
               ))}
             </div>
           </div>
@@ -528,8 +528,8 @@ const AdminDashboard = () => {
     <AdminErrorBoundary>
       <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-6 py-4">
+      <div className="border-b bg-gradient-to-r from-card to-card/50 shadow-sm backdrop-blur-sm">
+        <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <AdminActionsDrawer
@@ -539,9 +539,11 @@ const AdminDashboard = () => {
                 onSignOut={signOut}
                 onTabChange={handleTabChange}
               />
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Monitor and manage all leads and partners</p>
+              <div className="animate-fade-in">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                  Admin Dashboard
+                </h1>
+                <p className="text-muted-foreground mt-1">Monitor and manage all leads and partners</p>
               </div>
             </div>
           </div>
@@ -550,68 +552,78 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-6 pt-8 pb-12">
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Compact Welcome */}
-            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-lg p-6 border animate-fade-in">
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background rounded-lg p-8 border border-primary/20 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold">Welcome back, Admin!</h2>
-                  <p className="text-muted-foreground">System Overview & Performance</p>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    Welcome back, Admin!
+                  </h2>
+                  <p className="text-muted-foreground mt-1">System Overview & Performance</p>
                 </div>
               </div>
             </div>
 
-            {/* Strategic KPI Cards - Single Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="hover:shadow-lg transition-all">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <FileText className="h-4 w-4" />
+            {/* Strategic KPI Cards - Single Row with Staggered Animation */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <Card className="hover-lift stagger-fade-1 border-l-4 border-l-primary/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FileText className="h-4 w-4 text-primary" />
+                    </div>
                     Total Leads
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{kpis.totalLeads}</div>
-                  <p className="text-xs text-muted-foreground mt-1">All partners</p>
+                  <div className="text-3xl font-bold">{kpis.totalLeads}</div>
+                  <p className="text-xs text-muted-foreground mt-2">All partners</p>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-all border-success/20 bg-success/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Building2 className="h-4 w-4 text-success" />
+              <Card className="hover-lift stagger-fade-2 border-l-4 border-l-success/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-success/10">
+                      <Building2 className="h-4 w-4 text-success" />
+                    </div>
                     Active Partners
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-success">{kpis.totalPartners}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Contributing</p>
+                  <div className="text-3xl font-bold text-success">{kpis.totalPartners}</div>
+                  <p className="text-xs text-muted-foreground mt-2">Contributing</p>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-all border-primary/20 bg-primary/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <DollarSign className="h-4 w-4 text-primary" />
+              <Card className="hover-lift stagger-fade-3 border-l-4 border-l-accent/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-accent/10">
+                      <DollarSign className="h-4 w-4 text-accent" />
+                    </div>
                     Pipeline Value
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg font-bold text-primary">{formatCurrency(loanComparison.pipeline)}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{kpis.inPipeline} leads</p>
+                  <div className="text-xl font-bold text-accent">{formatCurrency(loanComparison.pipeline)}</div>
+                  <p className="text-xs text-muted-foreground mt-2">{kpis.inPipeline} leads</p>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-all border-accent/20 bg-accent/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4 text-accent-foreground" />
+              <Card className="hover-lift stagger-fade-4 border-l-4 border-l-warning/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-warning/10">
+                      <TrendingUp className="h-4 w-4 text-warning" />
+                    </div>
                     Conversion Rate
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-accent-foreground">{loanComparison.conversionRate}%</div>
-                  <p className="text-xs text-muted-foreground mt-1">{kpis.sanctioned} approved</p>
+                  <div className="text-3xl font-bold text-warning">{loanComparison.conversionRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-2">{kpis.sanctioned} approved</p>
                 </CardContent>
               </Card>
             </div>

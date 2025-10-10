@@ -93,13 +93,16 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Upload New Document Button */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Document Management</h3>
+      <div className="flex justify-between items-center p-6 bg-gradient-to-r from-primary/5 to-background rounded-lg border animate-fade-in">
+        <div>
+          <h3 className="text-xl font-semibold">Document Management</h3>
+          <p className="text-sm text-muted-foreground mt-1">Upload and verify student documents</p>
+        </div>
         <Button
           onClick={() => setUploadModalOpen(true)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 hover-lift"
         >
           <Upload className="h-4 w-4" />
           Upload for Student
@@ -107,54 +110,63 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
       </div>
 
       {/* Documents List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {documents.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-8">
+          <Card className="animate-fade-in">
+            <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">No documents uploaded yet</p>
+                <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground text-lg">No documents uploaded yet</p>
               </div>
             </CardContent>
           </Card>
         ) : (
-          documents.map((document: LeadDocument) => {
+          documents.map((document: LeadDocument, index: number) => {
             const VerificationIcon = getVerificationIcon(document.verification_status || 'pending');
             const UploadedByIcon = getUploadedByIcon(document.uploaded_by || 'student');
             
             return (
-              <Card key={document.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
+              <Card 
+                key={document.id} 
+                className={`hover-lift transition-all stagger-fade-${Math.min(index + 1, 4) as 1 | 2 | 3 | 4}`}
+              >
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 flex-1">
-                      <VerificationIcon className={`h-5 w-5 ${
-                        document.verification_status === 'verified' ? 'text-success' :
-                        document.verification_status === 'rejected' ? 'text-destructive' :
-                        'text-warning'
-                      }`} />
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className={`p-2 rounded-lg ${
+                        document.verification_status === 'verified' ? 'bg-success/10' :
+                        document.verification_status === 'rejected' ? 'bg-destructive/10' :
+                        'bg-warning/10'
+                      }`}>
+                        <VerificationIcon className={`h-5 w-5 ${
+                          document.verification_status === 'verified' ? 'text-success' :
+                          document.verification_status === 'rejected' ? 'text-destructive' :
+                          'text-warning'
+                        }`} />
+                      </div>
                       
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{document.original_filename}</span>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold text-base">{document.original_filename}</span>
                           <UploadedByIcon className="h-4 w-4 text-muted-foreground" />
                           {document.uploaded_by === 'admin' && (
                             <Badge variant="outline" className="text-xs">Admin Upload</Badge>
                           )}
                         </div>
                         
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-muted-foreground mb-1">
                           {document.document_types?.name} • {document.document_types?.category}
                         </div>
                         
                         {document.admin_notes && (
-                          <div className="text-xs text-muted-foreground mt-1 italic">
+                          <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/50 rounded italic">
                             Admin notes: {document.admin_notes}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       {getVerificationBadge(document.verification_status || 'pending')}
                       
                       <div className="flex gap-2">
@@ -162,6 +174,7 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDownload(document)}
+                          className="hover-lift"
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -171,6 +184,7 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                           size="sm"
                           onClick={() => handleVerificationAction(document)}
                           title="Update Status"
+                          className="hover-lift"
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
