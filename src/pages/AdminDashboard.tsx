@@ -34,6 +34,7 @@ import UserManagementTab from '@/components/admin/UserManagementTab';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
 import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
+import { NotificationCenter } from '@/components/admin/NotificationCenter';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -546,6 +547,7 @@ const AdminDashboard = () => {
                 <p className="text-muted-foreground mt-1">Monitor and manage all leads and partners</p>
               </div>
             </div>
+            <NotificationCenter />
           </div>
         </div>
       </div>

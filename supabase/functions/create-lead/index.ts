@@ -425,6 +425,28 @@ serve(async (req) => {
 
     console.log('🎉 [create-lead] Lead creation completed successfully');
 
+    // Step 10: Send student invitation email (async, don't block response)
+    if (studentEmail) {
+      console.log('📧 [create-lead] Sending student invitation email...');
+      
+      const { data: partnerData } = await supabaseAdmin
+        .from('partners')
+        .select('name')
+        .eq('id', appUser.partner_id)
+        .single();
+
+      supabaseAdmin.functions.invoke('send-student-invitation', {
+        body: {
+          studentEmail,
+          studentName: student.name,
+          caseId,
+          partnerName: partnerData?.name || 'Your Partner'
+        }
+      }).catch(error => {
+        console.warn('⚠️ [create-lead] Email sending failed (non-blocking):', error);
+      });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
