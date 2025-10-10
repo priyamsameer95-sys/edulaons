@@ -36,19 +36,16 @@
     --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
 
-    /* Status colors - WCAG AAA compliant high-contrast */
-    --success: 142 76% 30%;
+    /* Status colors - WCAG AA compliant */
+    --success: 142 71% 35%;
     --success-foreground: 0 0% 100%;
     --success-light: 142 71% 95%;
-    --warning: 38 96% 40%;
+    --warning: 38 92% 45%;
     --warning-foreground: 0 0% 100%;
     --warning-light: 38 92% 95%;
-    --destructive: 0 84% 45%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --destructive-light: 0 72% 97%;
-    --urgent: 0 84% 45%;
-    --attention: 38 96% 40%;
-    --info: 217 95% 40%;
 
     /* Borders and inputs */
     --border: 220 13% 88%;

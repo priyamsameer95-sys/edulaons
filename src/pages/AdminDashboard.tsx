@@ -34,11 +34,6 @@ import UserManagementTab from '@/components/admin/UserManagementTab';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
 import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
-import { NotificationCenter } from '@/components/admin/NotificationCenter';
-import { KPICard } from '@/components/admin/KPICard';
-import { ActionRequiredSection } from '@/components/admin/ActionRequiredSection';
-import { QuickStatsGrid } from '@/components/admin/QuickStatsGrid';
-import { useActivityBoard } from '@/hooks/useActivityBoard';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -80,7 +75,6 @@ const AdminDashboard = () => {
   const { bulkUpdateStatus } = useStatusManager();
   const tabsRef = useRef<HTMLDivElement>(null);
   const { leads: allLeads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
-  const { stats: activityStats } = useActivityBoard();
   const [kpis, setKpis] = useState<AdminKPIs>({
     totalLeads: 0,
     totalPartners: 0,
@@ -552,7 +546,6 @@ const AdminDashboard = () => {
                 <p className="text-muted-foreground mt-1">Monitor and manage all leads and partners</p>
               </div>
             </div>
-            <NotificationCenter />
           </div>
         </div>
       </div>
@@ -572,43 +565,67 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Strategic KPI Cards - Using New KPICard Component */}
+            {/* Strategic KPI Cards - Single Row with Staggered Animation */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <KPICard
-                title="Total Leads"
-                value={kpis.totalLeads}
-                subtitle="All partners"
-                icon={FileText}
-                color="primary"
-                className="stagger-fade-1"
-              />
-              
-              <KPICard
-                title="Active Partners"
-                value={kpis.totalPartners}
-                subtitle="Contributing"
-                icon={Building2}
-                color="success"
-                className="stagger-fade-2"
-              />
-              
-              <KPICard
-                title="Pipeline Value"
-                value={formatCurrency(loanComparison.pipeline)}
-                subtitle={`${kpis.inPipeline} leads`}
-                icon={DollarSign}
-                color="accent"
-                className="stagger-fade-3"
-              />
-              
-              <KPICard
-                title="Conversion Rate"
-                value={`${loanComparison.conversionRate}%`}
-                subtitle={`${kpis.sanctioned} approved`}
-                icon={TrendingUp}
-                color="warning"
-                className="stagger-fade-4"
-              />
+              <Card className="hover-lift stagger-fade-1 border-l-4 border-l-primary/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FileText className="h-4 w-4 text-primary" />
+                    </div>
+                    Total Leads
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{kpis.totalLeads}</div>
+                  <p className="text-xs text-muted-foreground mt-2">All partners</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-lift stagger-fade-2 border-l-4 border-l-success/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-success/10">
+                      <Building2 className="h-4 w-4 text-success" />
+                    </div>
+                    Active Partners
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-success">{kpis.totalPartners}</div>
+                  <p className="text-xs text-muted-foreground mt-2">Contributing</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-lift stagger-fade-3 border-l-4 border-l-accent/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-accent/10">
+                      <DollarSign className="h-4 w-4 text-accent" />
+                    </div>
+                    Pipeline Value
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl font-bold text-accent">{formatCurrency(loanComparison.pipeline)}</div>
+                  <p className="text-xs text-muted-foreground mt-2">{kpis.inPipeline} leads</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-lift stagger-fade-4 border-l-4 border-l-warning/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-warning/10">
+                      <TrendingUp className="h-4 w-4 text-warning" />
+                    </div>
+                    Conversion Rate
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-warning">{loanComparison.conversionRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-2">{kpis.sanctioned} approved</p>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Tabs Section */}
@@ -641,62 +658,226 @@ const AdminDashboard = () => {
 
               <TabsContent value="overview" className="space-y-6 mt-6">
                 <div className="space-y-6">
-                  {/* Action Required Section */}
-                  <ActionRequiredSection
-                    urgentCount={activityStats.urgentCount}
-                    attentionCount={activityStats.attentionCount}
-                    onViewUrgent={() => {/* Scroll to activity board */}}
-                    onViewAttention={() => {/* Scroll to activity board */}}
-                  />
+                  {/* Activity Board */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Recent Activity
+                      </CardTitle>
+                      <CardDescription>Live feed of lead activities and status changes</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminActivityBoard
+                        onViewLead={handleViewLeadById}
+                        onUpdateStatus={handleQuickStatusUpdateById}
+                        onVerifyDocument={handleVerifyDocument}
+                      />
+                    </CardContent>
+                  </Card>
 
-                  {/* Activity Board - No wrapper card */}
-                  <AdminActivityBoard
-                    onViewLead={handleViewLeadById}
-                    onUpdateStatus={handleQuickStatusUpdateById}
-                    onVerifyDocument={handleVerifyDocument}
-                  />
+                  {/* Actionable Insights Cards */}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Lead Pipeline Breakdown */}
+                    <Card className="hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                          <BarChart3 className="h-4 w-4 text-primary" />
+                          Pipeline Breakdown
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          {(() => {
+                            const statusCounts = recentLeads.reduce((acc, lead) => {
+                              acc[lead.status] = (acc[lead.status] || 0) + 1;
+                              return acc;
+                            }, {} as Record<string, number>);
+                            
+                            const statusOrder = ['new', 'in_progress', 'approved', 'rejected'];
+                            const statusLabels: Record<string, string> = {
+                              new: 'New',
+                              in_progress: 'In Progress',
+                              approved: 'Approved',
+                              rejected: 'Rejected'
+                            };
+                            
+                            return statusOrder.map((status) => {
+                              const count = statusCounts[status] || 0;
+                              const percentage = kpis.totalLeads > 0 ? Math.round((count / kpis.totalLeads) * 100) : 0;
+                              
+                              return (
+                                <div key={status}>
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-muted-foreground">{statusLabels[status]}</span>
+                                    <span className="font-medium">{count} ({percentage}%)</span>
+                                  </div>
+                                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full transition-all ${
+                                        status === 'new' ? 'bg-primary' :
+                                        status === 'in_progress' ? 'bg-warning' :
+                                        status === 'approved' ? 'bg-success' :
+                                        'bg-destructive'
+                                      }`}
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Quick Stats Grid - Consolidated Metrics */}
-                  <QuickStatsGrid
-                    pipelineBreakdown={(() => {
-                      const statusCounts = recentLeads.reduce((acc, lead) => {
-                        acc[lead.status] = (acc[lead.status] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>);
-                      
-                      const statusOrder = [
-                        { key: 'new', label: 'New', color: 'bg-primary' },
-                        { key: 'in_progress', label: 'In Progress', color: 'bg-warning' },
-                        { key: 'approved', label: 'Approved', color: 'bg-success' },
-                        { key: 'rejected', label: 'Rejected', color: 'bg-destructive' },
-                      ];
-                      
-                      return statusOrder.map(({ key, label, color }) => {
-                        const count = statusCounts[key] || 0;
-                        const percentage = kpis.totalLeads > 0 ? Math.round((count / kpis.totalLeads) * 100) : 0;
-                        return { status: label, count, percentage, color };
-                      });
-                    })()}
-                    topPartners={partnerStats
-                      .sort((a, b) => b.totalLeads - a.totalLeads)
-                      .slice(0, 3)
-                      .map(p => ({ id: p.id, name: p.name, totalLeads: p.totalLeads }))}
-                    documentStats={(() => {
-                      const docCounts = recentLeads.reduce((acc, lead) => {
-                        acc[lead.documents_status] = (acc[lead.documents_status] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>);
-                      return {
-                        pending: docCounts['pending'] || 0,
-                        verified: docCounts['verified'] || 0,
-                        rejected: docCounts['rejected'] || 0,
-                        total: recentLeads.length,
-                      };
-                    })()}
-                  />
+                    {/* Partner Performance Summary */}
+                    <Card className="hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                          <Trophy className="h-4 w-4 text-warning" />
+                          Top Performers
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          {partnerStats
+                            .sort((a, b) => b.totalLeads - a.totalLeads)
+                            .slice(0, 3)
+                            .map((partner, index) => (
+                              <div key={partner.id} className="flex items-center justify-between py-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={index === 0 ? "default" : "secondary"} className="w-5 h-5 flex items-center justify-center p-0 text-xs">
+                                    {index + 1}
+                                  </Badge>
+                                  <span className="text-sm font-medium truncate">{partner.name}</span>
+                                </div>
+                                <span className="text-sm font-bold">{partner.totalLeads}</span>
+                              </div>
+                            ))}
+                          {partnerStats.length === 0 && (
+                            <p className="text-xs text-muted-foreground">No partner data</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Removed duplicate insight cards - now in QuickStatsGrid */}
-                  {/* Removed duplicate Recent Activity section - ActivityBoard is above */}
+                    {/* Document Status Overview */}
+                    <Card className="hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                          <FileCheck className="h-4 w-4 text-accent-foreground" />
+                          Document Status
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          {(() => {
+                            const docCounts = recentLeads.reduce((acc, lead) => {
+                              acc[lead.documents_status] = (acc[lead.documents_status] || 0) + 1;
+                              return acc;
+                            }, {} as Record<string, number>);
+                            
+                            const docStatuses = [
+                              { key: 'pending', label: 'Pending', color: 'text-warning' },
+                              { key: 'verified', label: 'Verified', color: 'text-success' },
+                              { key: 'rejected', label: 'Rejected', color: 'text-destructive' },
+                            ];
+                            
+                            return docStatuses.map(({ key, label, color }) => (
+                              <div key={key} className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">{label}:</span>
+                                <span className={`font-semibold ${color}`}>{docCounts[key] || 0}</span>
+                              </div>
+                            ));
+                          })()}
+                          <div className="flex justify-between text-sm border-t border-border/50 pt-2">
+                            <span className="text-muted-foreground">Total:</span>
+                            <span className="font-semibold">{recentLeads.length}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Recent Activity - Full Width Table Style */}
+                  <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-accent-foreground" />
+                      Recent Activity
+                    </CardTitle>
+                    <CardDescription>Latest lead submissions across all partners</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {recentLeads.length} active leads
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {recentLeads.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent activity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-0">
+                    {/* Header */}
+                    <div className="grid grid-cols-10 gap-4 pb-3 border-b text-xs font-medium text-muted-foreground">
+                      <div className="col-span-2">Student</div>
+                      <div className="col-span-2">Partner</div>
+                      <div className="col-span-1">Destination</div>
+                      <div className="col-span-1">Lender</div>
+                      <div className="col-span-2">Loan Amount</div>
+                      <div className="col-span-1">Status</div>
+                      <div className="col-span-1">Date</div>
+                    </div>
+                    {/* Data Rows */}
+                    {recentLeads.slice(0, 8).map((lead) => (
+                      <div 
+                        key={lead.id} 
+                        className="grid grid-cols-10 gap-4 py-3 border-b border-border/50 hover:bg-muted/50 transition-colors rounded cursor-pointer group"
+                        onClick={() => {
+                          setSelectedLead(lead);
+                          setShowLeadDetailSheet(true);
+                        }}
+                      >
+                        <div className="col-span-2">
+                          <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">{lead.student?.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{lead.student?.email}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge variant="outline" className="text-xs">
+                            {lead.partner?.name}
+                          </Badge>
+                        </div>
+                        <div className="col-span-1">
+                          <p className="text-sm">{lead.study_destination}</p>
+                        </div>
+                        <div className="col-span-1">
+                          <p className="text-xs truncate">{lead.lender?.name || 'N/A'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="font-semibold text-sm">
+                            {formatCurrency(Number(lead.loan_amount))}
+                          </p>
+                        </div>
+                        <div className="col-span-1">
+                          <StatusBadge status={lead.status as LeadStatus} type="lead" className="text-xs" />
+                        </div>
+                        <div className="col-span-1">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(lead.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  )}
+                </CardContent>
+              </Card>
                 </div>
               </TabsContent>
 

@@ -111,7 +111,7 @@ export function StatusBadge({ status, type, className, showIcon = true, showTool
   const badgeContent = (
     <Badge 
       variant="secondary" 
-      className={`${colorClass} ${className} gap-1.5 min-w-[80px] justify-center font-semibold text-sm border-2`}
+      className={`${colorClass} ${className} gap-1.5`}
     >
       {showIcon && icon}
       {label}

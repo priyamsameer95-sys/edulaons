@@ -295,77 +295,78 @@ export function AdminActivityBoard({
   }
 
   return (
-    <div className="flex flex-col space-y-6">
-      {/* Header with action button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Activity Feed</h2>
-          <p className="text-sm text-muted-foreground mt-1">Real-time activity stream</p>
+    <Card className="flex flex-col h-full shadow-lg">
+      <div className="p-8 border-b space-y-6 bg-gradient-to-r from-card to-card/50">
+        <div className="flex items-center justify-between animate-fade-in">
+          <div>
+            <h2 className="text-2xl font-bold">Activity Board</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Real-time notifications and actionable insights
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setGroupByPartner(!groupByPartner)}
+            className="hover-lift"
+          >
+            {groupByPartner ? 'View All' : 'Group by Partner'}
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setGroupByPartner(!groupByPartner)}
-          className="hover-lift font-semibold"
-        >
-          {groupByPartner ? 'View All' : 'Group by Partner'}
-        </Button>
+
+        <div className="grid grid-cols-4 gap-6">
+          <Card className="p-5 bg-destructive/10 border-destructive/20 hover-lift stagger-fade-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/20">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-destructive">{stats.urgentCount}</p>
+                <p className="text-xs text-muted-foreground">Urgent Items</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-5 bg-warning/10 border-warning/20 hover-lift stagger-fade-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-warning/20">
+                <Clock className="h-5 w-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-warning">{stats.attentionCount}</p>
+                <p className="text-xs text-muted-foreground">Needs Attention</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-5 bg-primary/10 border-primary/20 hover-lift stagger-fade-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.todayActivitiesCount}</p>
+                <p className="text-xs text-muted-foreground">Today</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-5 bg-success/10 border-success/20 hover-lift stagger-fade-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/20">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-success">{stats.activePartnersCount}</p>
+                <p className="text-xs text-muted-foreground">Active Partners</p>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
 
-      {/* Stats Grid - Removed nested Card wrapper */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="p-5 bg-destructive/15 border-2 border-destructive/30 rounded-lg hover-lift">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-destructive/30">
-              <AlertTriangle className="h-6 w-6 text-destructive" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-destructive">{stats.urgentCount}</p>
-              <p className="text-xs font-semibold text-muted-foreground">Urgent Items</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-5 bg-warning/15 border-2 border-warning/30 rounded-lg hover-lift">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-warning/30">
-              <Clock className="h-6 w-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-warning">{stats.attentionCount}</p>
-              <p className="text-xs font-semibold text-muted-foreground">Needs Attention</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-5 bg-primary/15 border-2 border-primary/30 rounded-lg hover-lift">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/30">
-              <TrendingUp className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-primary">{stats.todayActivitiesCount}</p>
-              <p className="text-xs font-semibold text-muted-foreground">Today</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-5 bg-success/15 border-2 border-success/30 rounded-lg hover-lift">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-success/30">
-              <CheckCircle2 className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-success">{stats.activePartnersCount}</p>
-              <p className="text-xs font-semibold text-muted-foreground">Active Partners</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Activity List */}
-      <ScrollArea className="h-[600px] rounded-lg border-2 p-6 bg-muted/30">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 p-8">
+        <div className="space-y-6">
           {activities.length === 0 ? (
             <EmptyState
               icon={CheckCircle2}
@@ -445,6 +446,6 @@ export function AdminActivityBoard({
           )}
         </div>
       </ScrollArea>
-    </div>
+    </Card>
   );
 }
