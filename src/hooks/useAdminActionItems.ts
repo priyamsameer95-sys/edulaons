@@ -52,7 +52,7 @@ export function useAdminActionItems() {
           loan_amount,
           created_at,
           students!fk_leads_new_student (name),
-          partners!fk_leads_new_partner (name)
+          partners!leads_new_partner_id_fkey (name)
         `)
         .eq('status', 'new')
         .order('created_at', { ascending: true });

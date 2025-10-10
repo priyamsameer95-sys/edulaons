@@ -47,7 +47,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          partners!fk_leads_new_partner (
+          partners!leads_new_partner_id_fkey (
             id,
             name,
             email,

@@ -245,7 +245,7 @@ export function useActivityBoard() {
             case_id,
             partner_id,
             student_id,
-            partners (name),
+            partners!leads_new_partner_id_fkey (name),
             students (name)
           )
         `)
@@ -270,7 +270,7 @@ export function useActivityBoard() {
           created_at,
           partner_id,
           student_id,
-          partners (name),
+          partners!leads_new_partner_id_fkey (name),
           students (name)
         `)
         .gte('created_at', cutoffDate)
