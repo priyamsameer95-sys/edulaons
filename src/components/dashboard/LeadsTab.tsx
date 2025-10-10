@@ -40,10 +40,25 @@ import { LEAD_STATUS_OPTIONS, DOCUMENT_STATUS_OPTIONS } from "@/utils/statusUtil
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 import { useAuth } from "@/hooks/useAuth";
 
+/**
+ * Props for the LeadsTab component
+ */
 interface LeadsTabProps {
+  /** Optional callback to handle creating a new lead */
   onNewLead?: () => void;
 }
 
+/**
+ * LeadsTab - Main component for displaying and managing leads
+ * 
+ * Features:
+ * - Advanced filtering (search, status, loan type, country, date range)
+ * - Pagination with dynamic page numbers and ellipsis
+ * - Real-time updates via Supabase subscriptions
+ * - Lead detail view in a slide-out sheet
+ * - Admin-only status update functionality
+ * - Empty states with helpful messages
+ */
 export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -65,81 +80,82 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Real-time subscriptions are handled by the useRefactoredLeads hook
+  /**
+   * Real-time subscriptions are handled automatically by the useRefactoredLeads hook
+   * No manual subscription management needed here
+   */
 
-  // Filter leads based on current filter criteria
+  /**
+   * Filter leads based on active filter criteria
+   * Applies search, status, loan type, country, and date range filters
+   */
   const filteredLeads = useMemo(() => {
-    console.log('🔍 DEBUG: Total leads from DB:', leads.length, leads.map(l => ({ case_id: l.case_id, student_name: l.student?.name })));
-    console.log('🔍 DEBUG: Active filters:', { searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange });
-    
-    const filtered = leads.filter((lead) => {
-      // Search filter
+    return leads.filter((lead) => {
+      // Search filter - matches name, phone, or case ID
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch = 
           (lead.student?.name || '').toLowerCase().includes(query) ||
           (lead.student?.phone || '').toLowerCase().includes(query) ||
           lead.case_id.toLowerCase().includes(query);
-        if (!matchesSearch) {
-          console.log('❌ Filtered out by search:', lead.case_id, lead.student?.name);
-          return false;
-        }
+        if (!matchesSearch) return false;
       }
 
       // Status filter
       if (statusFilter !== "all" && lead.status !== statusFilter) {
-        console.log('❌ Filtered out by status:', lead.case_id, 'Expected:', statusFilter, 'Got:', lead.status);
         return false;
       }
 
       // Loan type filter
       if (loanTypeFilter !== "all" && lead.loan_type.toLowerCase() !== loanTypeFilter) {
-        console.log('❌ Filtered out by loan type:', lead.case_id, 'Expected:', loanTypeFilter, 'Got:', lead.loan_type);
         return false;
       }
 
       // Country filter
       if (countryFilter !== "all" && lead.study_destination.toLowerCase() !== countryFilter) {
-        console.log('❌ Filtered out by country:', lead.case_id, 'Expected:', countryFilter, 'Got:', lead.study_destination);
         return false;
       }
 
       // Date range filter
       if (dateRange.from || dateRange.to) {
         const leadDate = new Date(lead.created_at);
-        if (dateRange.from && leadDate < dateRange.from) {
-          console.log('❌ Filtered out by date (from):', lead.case_id);
-          return false;
-        }
-        if (dateRange.to && leadDate > dateRange.to) {
-          console.log('❌ Filtered out by date (to):', lead.case_id);
-          return false;
-        }
+        if (dateRange.from && leadDate < dateRange.from) return false;
+        if (dateRange.to && leadDate > dateRange.to) return false;
       }
 
-      console.log('✅ Lead passed all filters:', lead.case_id, lead.student?.name);
       return true;
     });
-    
-    console.log('📊 DEBUG: Filtered leads count:', filtered.length, 'out of', leads.length);
-    return filtered;
   }, [leads, searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
 
-  // Pagination calculations
+  /**
+   * Pagination calculations
+   */
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
   
-  // Reset pagination when filters change
+  /**
+   * Reset to page 1 when filters change
+   */
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
 
-  // Check if any filters are active
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || loanTypeFilter !== "all" || countryFilter !== "all" || dateRange.from || dateRange.to;
+  /**
+   * Check if any filters are currently active
+   */
+  const hasActiveFilters = 
+    searchQuery || 
+    statusFilter !== "all" || 
+    loanTypeFilter !== "all" || 
+    countryFilter !== "all" || 
+    dateRange.from || 
+    dateRange.to;
 
-  // Clear all filters
+  /**
+   * Clear all active filters and reset pagination
+   */
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
@@ -149,18 +165,26 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
     setCurrentPage(1);
   };
 
+  /**
+   * Open status update modal for a lead
+   */
   const handleStatusUpdate = (lead: RefactoredLead) => {
     setLeadToUpdate(lead);
     setStatusUpdateModalOpen(true);
   };
 
+  /**
+   * Get badge styling for loan type
+   */
   const getLoanTypeBadge = (type: string) => {
     return type === 'secured' ? 
       'bg-primary text-primary-foreground' : 
       'bg-secondary text-secondary-foreground';
   };
 
-
+  /**
+   * Open lead detail sheet
+   */
   const handleViewLead = (lead: RefactoredLead) => {
     setSelectedLead(lead);
     setSheetOpen(true);

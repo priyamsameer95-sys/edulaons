@@ -17,16 +17,26 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useActivityBoard, ActivityItem, ActivityPriority } from '@/hooks/useActivityBoard';
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/utils/logger';
 
+/**
+ * Props for the AdminActivityBoard component
+ */
 interface AdminActivityBoardProps {
+  /** Callback when viewing a lead */
   onViewLead?: (leadId: string) => void;
+  /** Callback when updating lead status */
   onUpdateStatus?: (leadId: string) => void;
+  /** Callback when verifying a document */
   onVerifyDocument?: (documentId: string, leadId: string) => void;
 }
 
+/**
+ * Configuration for activity priority levels
+ * Maps priority to display properties (color, icon, label)
+ */
 const priorityConfig: Record<ActivityPriority, {
   color: string;
   bgColor: string;
@@ -59,35 +69,48 @@ const priorityConfig: Record<ActivityPriority, {
   },
 };
 
+/**
+ * Formats a timestamp into a human-readable "time ago" string
+ * @param timestamp - The timestamp to format
+ * @returns Formatted string (e.g., "2 hours ago") or "Unknown time" on error
+ */
+const formatTimeAgo = (timestamp: string | null | undefined): string => {
+  try {
+    if (!timestamp) return 'Unknown time';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      logger.warn('[ActivityCard] Invalid timestamp:', timestamp);
+      return 'Unknown time';
+    }
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (err) {
+    logger.error('[ActivityCard] Error formatting date:', err);
+    return 'Unknown time';
+  }
+};
+
+/**
+ * Props for ActivityCard component
+ */
+interface ActivityCardProps {
+  activity: ActivityItem;
+  onViewLead?: (leadId: string) => void;
+  onUpdateStatus?: (leadId: string) => void;
+  onVerifyDocument?: (documentId: string, leadId: string) => void;
+}
+
+/**
+ * Individual activity card displaying a single activity with actions
+ */
 const ActivityCard = ({ 
   activity, 
   onViewLead,
   onUpdateStatus,
   onVerifyDocument,
-}: { 
-  activity: ActivityItem;
-  onViewLead?: (leadId: string) => void;
-  onUpdateStatus?: (leadId: string) => void;
-  onVerifyDocument?: (documentId: string, leadId: string) => void;
-}) => {
+}: ActivityCardProps) => {
   const config = priorityConfig[activity.priority];
   const Icon = config.icon;
-
-  // Safely format timestamp with validation
-  const getTimeAgo = () => {
-    try {
-      if (!activity.timestamp) return 'Unknown time';
-      const date = new Date(activity.timestamp);
-      if (isNaN(date.getTime())) {
-        logger.warn('[ActivityCard] Invalid timestamp:', activity.timestamp);
-        return 'Unknown time';
-      }
-      return formatDistanceToNow(date, { addSuffix: true });
-    } catch (err) {
-      logger.error('[ActivityCard] Error formatting date:', err);
-      return 'Unknown time';
-    }
-  };
+  const timeAgo = formatTimeAgo(activity.timestamp);
 
   return (
     <Card className={`p-4 border-l-4 ${config.bgColor} hover:shadow-md transition-shadow`}>
@@ -103,7 +126,7 @@ const ActivityCard = ({
                 {config.label}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {getTimeAgo()}
+                {timeAgo}
               </span>
             </div>
             
@@ -196,6 +219,12 @@ const ActivityCard = ({
   );
 };
 
+/**
+ * AdminActivityBoard - Displays real-time activity feed with filtering and grouping
+ * 
+ * Shows recent activities including lead creation, status changes, and document uploads.
+ * Activities can be grouped by partner and filtered by priority level.
+ */
 export function AdminActivityBoard({
   onViewLead,
   onUpdateStatus,
@@ -205,7 +234,9 @@ export function AdminActivityBoard({
   const [groupByPartner, setGroupByPartner] = useState(true);
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
 
-  // ✅ ALL HOOKS MUST BE AT THE TOP - BEFORE ANY RETURNS!
+  /**
+   * Toggle expand/collapse state for a partner group
+   */
   const togglePartner = useCallback((partnerId: string) => {
     setExpandedPartners(prev => {
       const newExpanded = new Set(prev);
@@ -218,18 +249,16 @@ export function AdminActivityBoard({
     });
   }, []);
 
-  // Group activities by partner with proper validation (memoized)
+  /**
+   * Group activities by partner for organized display
+   * Returns null if grouping is disabled
+   */
   const groupedActivities = useMemo(() => {
     if (!groupByPartner) return null;
     
     return activities.reduce((acc, activity) => {
       const partnerId = activity.partnerId || 'unknown';
       const partnerName = activity.partnerName || 'Unknown Partner';
-      
-      // Only log warning if we genuinely have an unknown partner
-      if (partnerId === 'unknown' && !activity.partnerName) {
-        logger.warn('[ActivityBoard] Activity missing partner info:', activity.id);
-      }
       
       if (!acc[partnerId]) {
         acc[partnerId] = {
@@ -241,8 +270,6 @@ export function AdminActivityBoard({
       return acc;
     }, {} as Record<string, { partnerName: string; activities: ActivityItem[] }>);
   }, [groupByPartner, activities]);
-
-  // ✅ NOW conditional returns are safe - all hooks have been called
   if (loading) {
     return (
       <Card className="p-6">
