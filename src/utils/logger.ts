@@ -7,7 +7,8 @@ const IS_DEV = import.meta.env.DEV;
 
 export const logger = {
   info: (...args: any[]) => {
-    if (IS_DEV) console.log(...args);
+    // Always log for debugging (temporarily)
+    console.log(...args);
   },
   
   warn: (...args: any[]) => {

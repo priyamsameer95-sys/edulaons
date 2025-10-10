@@ -33,6 +33,7 @@ import { DocumentVerificationModal } from '@/components/admin/DocumentVerificati
 import UserManagementTab from '@/components/admin/UserManagementTab';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
+import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -281,11 +282,17 @@ const AdminDashboard = () => {
 
   const fetchRecentLeads = async () => {
     try {
+      console.log('🔍 [AdminDash] fetchRecentLeads called with:', {
+        allLeadsCount: allLeads.length,
+        selectedPartner
+      });
+      
       // Filter leads from the hook based on selected partner
       let leads = allLeads;
       
       if (selectedPartner !== 'all') {
         leads = allLeads.filter(lead => lead.partner?.id === selectedPartner);
+        console.log(`📊 [AdminDash] Filtered by partner: ${leads.length} leads`);
       }
       
       // Sort by created_at descending and limit to 20
@@ -293,6 +300,7 @@ const AdminDashboard = () => {
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 20);
       
+      console.log('✅ [AdminDash] Recent leads set:', leads.length);
       setRecentLeads(leads);
       
       // Filter leads based on search term
@@ -330,7 +338,13 @@ const AdminDashboard = () => {
   };
 
   const filterLeads = (leads: Lead[]) => {
+    console.log('🔍 [AdminDash] filterLeads called:', {
+      inputLeadsCount: leads.length,
+      searchTerm
+    });
+    
     if (!searchTerm.trim()) {
+      console.log('✅ [AdminDash] No search term, showing all:', leads.length);
       setFilteredLeads(leads);
       return;
     }
@@ -342,6 +356,7 @@ const AdminDashboard = () => {
       lead.partner?.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
+    console.log('✅ [AdminDash] Filtered leads:', filtered.length);
     setFilteredLeads(filtered);
   };
 
@@ -454,6 +469,21 @@ const AdminDashboard = () => {
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
     }, 350);
+  };
+
+  // Wrapper functions for AdminActivityBoard callbacks
+  const handleViewLeadById = (leadId: string) => {
+    const lead = allLeads.find(l => l.id === leadId);
+    if (lead) {
+      handleViewLead(lead);
+    }
+  };
+
+  const handleQuickStatusUpdateById = (leadId: string) => {
+    const lead = allLeads.find(l => l.id === leadId);
+    if (lead) {
+      handleQuickStatusUpdate(lead);
+    }
   };
 
   // No conversion needed - already using RefactoredLead
@@ -616,6 +646,24 @@ const AdminDashboard = () => {
 
               <TabsContent value="overview" className="space-y-6 mt-6">
                 <div className="space-y-6">
+                  {/* Activity Board */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Recent Activity
+                      </CardTitle>
+                      <CardDescription>Live feed of lead activities and status changes</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AdminActivityBoard
+                        onViewLead={handleViewLeadById}
+                        onUpdateStatus={handleQuickStatusUpdateById}
+                        onVerifyDocument={handleVerifyDocument}
+                      />
+                    </CardContent>
+                  </Card>
+
                   {/* Actionable Insights Cards */}
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {/* Lead Pipeline Breakdown */}
