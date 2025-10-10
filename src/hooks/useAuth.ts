@@ -54,49 +54,6 @@ export function useAuth() {
         role: roleData || 'student' // Default to student if no role found
       };
 
-      if (error) {
-        logger.error('[useAuth] Error fetching app user:', error);
-        
-        // Log authentication error for debugging
-        try {
-          await supabase.from('auth_error_logs').insert({
-            user_id: userId,
-            error_type: 'fetch_app_user_failed',
-            error_message: error.message,
-            context: { retryCount, errorCode: error.code, errorDetails: error.details }
-          });
-        } catch (err) {
-          logger.error('Failed to log auth error:', err);
-        }
-
-        // Retry up to 2 times with exponential backoff
-        if (retryCount < 2) {
-          const delay = Math.pow(2, retryCount) * 1000;
-          logger.info(`[useAuth] Retrying fetchAppUser in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return fetchAppUser(userId, retryCount + 1);
-        }
-        
-        return null;
-      }
-
-      if (!data) {
-        logger.error('[useAuth] No app_users record found for user:', userId);
-        
-        try {
-          await supabase.from('auth_error_logs').insert({
-            user_id: userId,
-            error_type: 'app_user_not_found',
-            error_message: 'No app_users record found',
-            context: { retryCount }
-          });
-        } catch (err) {
-          logger.error('Failed to log auth error:', err);
-        }
-        
-        return null;
-      }
-
       logger.info('[useAuth] Successfully fetched app user:', {
         id: data.id,
         role: data.role,
