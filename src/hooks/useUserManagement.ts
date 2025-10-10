@@ -31,14 +31,29 @@ export function useUserManagement() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch app_users with their roles from user_roles table
+      const { data: appUsers, error: appUsersError } = await supabase
         .from('app_users')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
-      return data || [];
+      if (appUsersError) throw appUsersError;
+
+      // For each user, fetch their primary role
+      const usersWithRoles = await Promise.all(
+        (appUsers || []).map(async (user) => {
+          const { data: roleData } = await supabase
+            .rpc('get_user_role', { _user_id: user.id });
+          
+          return {
+            ...user,
+            role: roleData || 'student'
+          } as AppUser;
+        })
+      );
+
+      setUsers(usersWithRoles);
+      return usersWithRoles;
     } catch (error: any) {
       logger.error('Error fetching users:', error);
       toast({

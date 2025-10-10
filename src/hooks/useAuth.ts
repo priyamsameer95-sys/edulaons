@@ -23,11 +23,36 @@ export function useAuth() {
     try {
       logger.info(`[useAuth] Fetching app user for ID: ${userId} (attempt ${retryCount + 1})`);
       
-      const { data, error } = await supabase
+      // Fetch from app_users and get primary role from user_roles table
+      const { data: appUserData, error: appUserError } = await supabase
         .from('app_users')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+
+      if (appUserError) {
+        logger.error('[useAuth] Error fetching app user:', appUserError);
+        throw appUserError;
+      }
+
+      if (!appUserData) {
+        logger.error('[useAuth] No app_users record found for user:', userId);
+        return null;
+      }
+
+      // Fetch user's primary role from user_roles table
+      const { data: roleData, error: roleError } = await supabase
+        .rpc('get_user_role', { _user_id: userId });
+
+      if (roleError) {
+        logger.error('[useAuth] Error fetching user role:', roleError);
+        throw roleError;
+      }
+
+      const data = {
+        ...appUserData,
+        role: roleData || 'student' // Default to student if no role found
+      };
 
       if (error) {
         logger.error('[useAuth] Error fetching app user:', error);

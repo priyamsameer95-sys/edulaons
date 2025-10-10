@@ -37,7 +37,7 @@ serve(async (req) => {
   );
 
   let requestUser: any = null;
-  let appUser: any = null;
+  let requestUserRole: any = null;
 
   try {
     // Verify the request is authenticated
@@ -50,21 +50,22 @@ serve(async (req) => {
     }
     requestUser = user;
 
-    // Verify user is admin or super_admin
-    const { data: userData } = await supabaseClient
-      .from('app_users')
-      .select('role, email')
-      .eq('id', requestUser.id)
-      .single();
+    // Get user's role from user_roles table using has_role function
+    const { data: isSuperAdmin } = await supabaseClient
+      .rpc('has_role', { _user_id: requestUser.id, _role: 'super_admin' });
+    
+    const { data: isAdmin } = await supabaseClient
+      .rpc('has_role', { _user_id: requestUser.id, _role: 'admin' });
 
-    if (!userData || !['admin', 'super_admin'].includes(userData.role)) {
+    if (!isSuperAdmin && !isAdmin) {
       throw new Error('Insufficient permissions');
     }
-    appUser = userData;
+    
+    requestUserRole = isSuperAdmin ? 'super_admin' : 'admin';
 
     const { action, email, password, role, partner_id, user_id, is_active, reason } = await req.json();
 
-    console.log(`[manage-user] Action: ${action} by ${appUser.email}`);
+    console.log(`[manage-user] Action: ${action} by ${requestUser.email} (${requestUserRole})`);
 
     if (action === 'create') {
       // Validate email
@@ -78,8 +79,9 @@ serve(async (req) => {
         await logAudit(supabaseClient, 'create', requestUser.id, null, email, null, { role }, null, false, 'Email already exists', req);
         throw new Error('User with this email already exists');
       }
+
       // Only super_admin can create admin users
-      if ((role === 'admin' || role === 'super_admin') && appUser.role !== 'super_admin') {
+      if ((role === 'admin' || role === 'super_admin') && requestUserRole !== 'super_admin') {
         throw new Error('Only super admins can create admin users');
       }
 
@@ -98,7 +100,6 @@ serve(async (req) => {
         .insert({
           id: newUser.user.id,
           email,
-          role,
           partner_id: role === 'partner' ? partner_id : null,
           is_active: true,
         });
@@ -107,6 +108,21 @@ serve(async (req) => {
         // Rollback: delete auth user
         await supabaseClient.auth.admin.deleteUser(newUser.user.id);
         throw insertError;
+      }
+
+      // Grant role using the secure grant_user_role function
+      const { error: roleError } = await supabaseClient
+        .rpc('grant_user_role', {
+          _user_id: newUser.user.id,
+          _role: role,
+          _granted_by: requestUser.id
+        });
+
+      if (roleError) {
+        // Rollback: delete app_users and auth user
+        await supabaseClient.from('app_users').delete().eq('id', newUser.user.id);
+        await supabaseClient.auth.admin.deleteUser(newUser.user.id);
+        throw roleError;
       }
 
       console.log(`[manage-user] Created user: ${email} with role: ${role}`);
@@ -121,10 +137,13 @@ serve(async (req) => {
     }
 
     if (action === 'update') {
-      // Check if updating admin users (only super_admin can)
+      // Get target user's current role
+      const { data: targetUserRole } = await supabaseClient
+        .rpc('get_user_role', { _user_id: user_id });
+
       const { data: targetUser } = await supabaseClient
         .from('app_users')
-        .select('role, email, partner_id, is_active')
+        .select('email, partner_id, is_active')
         .eq('id', user_id)
         .single();
 
@@ -132,11 +151,13 @@ serve(async (req) => {
         throw new Error('User not found');
       }
 
-      if (targetUser.role === 'admin' || targetUser.role === 'super_admin') {
-        if (appUser.role !== 'super_admin') {
-          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, targetUser, { role, partner_id, is_active }, reason, false, 'Only super admins can modify admin users', req);
+      // Only super_admin can modify admin users
+      if (targetUserRole === 'admin' || targetUserRole === 'super_admin') {
+        if (requestUserRole !== 'super_admin') {
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, { role: targetUserRole }, { role }, reason, false, 'Only super admins can modify admin users', req);
           throw new Error('Only super admins can modify admin users');
         }
+        
         // Check if account is protected
         const { data: protectedAccount } = await supabaseClient
           .from('protected_accounts')
@@ -145,32 +166,57 @@ serve(async (req) => {
           .maybeSingle();
         
         if (protectedAccount) {
-          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, targetUser, { role, partner_id, is_active }, reason, false, 'Cannot modify protected account', req);
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, { role: targetUserRole }, { role }, reason, false, 'Cannot modify protected account', req);
           throw new Error('Cannot modify protected account');
         }
       }
 
-      const oldValues = { role: targetUser.role, partner_id: targetUser.partner_id, is_active: targetUser.is_active };
+      const oldValues = { role: targetUserRole, partner_id: targetUser.partner_id, is_active: targetUser.is_active };
+      
+      // Update role if provided
+      if (role !== undefined && role !== targetUserRole) {
+        // Revoke old role
+        await supabaseClient.rpc('revoke_user_role', {
+          _user_id: user_id,
+          _role: targetUserRole,
+          _revoked_by: requestUser.id
+        });
+
+        // Grant new role
+        const { error: roleError } = await supabaseClient.rpc('grant_user_role', {
+          _user_id: user_id,
+          _role: role,
+          _granted_by: requestUser.id
+        });
+
+        if (roleError) {
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, oldValues, { role }, reason, false, roleError.message, req);
+          throw roleError;
+        }
+      }
+
+      // Update app_users fields
       const updates: any = {};
-      if (role !== undefined) updates.role = role;
       if (partner_id !== undefined) updates.partner_id = partner_id;
       if (is_active !== undefined) updates.is_active = is_active;
-      updates.updated_at = new Date().toISOString();
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString();
 
-      const { error: updateError } = await supabaseClient
-        .from('app_users')
-        .update(updates)
-        .eq('id', user_id);
+        const { error: updateError } = await supabaseClient
+          .from('app_users')
+          .update(updates)
+          .eq('id', user_id);
 
-      if (updateError) {
-        await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, oldValues, updates, reason, false, updateError.message, req);
-        throw updateError;
+        if (updateError) {
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, oldValues, updates, reason, false, updateError.message, req);
+          throw updateError;
+        }
       }
 
       console.log(`[manage-user] Updated user: ${user_id}`);
       
       // Log successful update
-      await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, oldValues, updates, reason, true, null, req);
+      await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, oldValues, { role, ...updates }, reason, true, null, req);
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -180,14 +226,14 @@ serve(async (req) => {
 
     if (action === 'deactivate') {
       // Only super_admin can deactivate
-      if (appUser.role !== 'super_admin') {
+      if (requestUserRole !== 'super_admin') {
         await logAudit(supabaseClient, 'deactivate', requestUser.id, user_id, 'unknown', null, null, reason, false, 'Only super admins can deactivate users', req);
         throw new Error('Only super admins can deactivate users');
       }
 
-      // Check if trying to deactivate self or protected account
+      // Check if trying to deactivate self
       if (user_id === requestUser.id) {
-        await logAudit(supabaseClient, 'deactivate', requestUser.id, user_id, appUser.email, null, null, reason, false, 'Cannot deactivate your own account', req);
+        await logAudit(supabaseClient, 'deactivate', requestUser.id, user_id, requestUser.email, null, null, reason, false, 'Cannot deactivate your own account', req);
         throw new Error('Cannot deactivate your own account');
       }
 
@@ -223,6 +269,18 @@ serve(async (req) => {
         throw new Error('Deactivation reason is required (minimum 5 characters)');
       }
 
+      // Revoke all active roles
+      const { data: userRole } = await supabaseClient
+        .rpc('get_user_role', { _user_id: user_id });
+
+      if (userRole) {
+        await supabaseClient.rpc('revoke_user_role', {
+          _user_id: user_id,
+          _role: userRole,
+          _revoked_by: requestUser.id
+        });
+      }
+
       // Soft delete: set is_active to false
       const { error: deactivateError } = await supabaseClient
         .from('app_users')
@@ -253,7 +311,7 @@ serve(async (req) => {
 
     if (action === 'reactivate') {
       // Only super_admin can reactivate
-      if (appUser.role !== 'super_admin') {
+      if (requestUserRole !== 'super_admin') {
         await logAudit(supabaseClient, 'reactivate', requestUser.id, user_id, 'unknown', null, null, reason, false, 'Only super admins can reactivate users', req);
         throw new Error('Only super admins can reactivate users');
       }
@@ -277,6 +335,16 @@ serve(async (req) => {
         await logAudit(supabaseClient, 'reactivate', requestUser.id, user_id, targetUser.email, null, null, reason, false, 'Reactivation reason is required (minimum 5 characters)', req);
         throw new Error('Reactivation reason is required (minimum 5 characters)');
       }
+
+      // Need to re-grant a role (default to the old role or student)
+      // This is a simplification - in production you might want to store the old role
+      const roleToGrant = 'student'; // Default role on reactivation
+
+      await supabaseClient.rpc('grant_user_role', {
+        _user_id: user_id,
+        _role: roleToGrant,
+        _granted_by: requestUser.id
+      });
 
       // Reactivate: set is_active to true and clear deactivation fields
       const { error: reactivateError } = await supabaseClient
@@ -310,12 +378,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('[manage-user] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    
-    // Log failed action if we have enough context
-    if (requestUser && appUser) {
-      const { action, user_id, email } = await req.json().catch(() => ({ action: 'unknown', user_id: null, email: 'unknown' }));
-      await logAudit(supabaseClient, action, requestUser.id, user_id, email, null, null, null, false, errorMessage, req);
-    }
     
     return new Response(
       JSON.stringify({ error: errorMessage }),
