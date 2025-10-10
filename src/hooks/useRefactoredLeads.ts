@@ -34,7 +34,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          co_applicants!fk_leads_new_co_applicant (
+          co_applicants!leads_new_co_applicant_id_fkey (
             id,
             name,
             relationship,
@@ -57,7 +57,7 @@ export function useRefactoredLeads() {
             created_at,
             updated_at
           ),
-          lenders!fk_leads_new_lender (
+          lenders!leads_new_lender_id_fkey (
             id,
             name,
             code,
