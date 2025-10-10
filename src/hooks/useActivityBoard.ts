@@ -2,9 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
+/** Priority levels for activity items */
 export type ActivityPriority = 'URGENT' | 'ATTENTION' | 'INFO' | 'SUCCESS';
+
+/** Types of activities that can occur */
 export type ActivityType = 'document' | 'status' | 'lead' | 'system';
 
+/** Main activity item interface */
 export interface ActivityItem {
   id: string;
   priority: ActivityPriority;
@@ -27,6 +31,7 @@ export interface ActivityItem {
   actionType?: 'verify_document' | 'update_status' | 'view_lead' | 'contact_partner';
 }
 
+/** Statistics for the activity board */
 interface ActivityBoardStats {
   urgentCount: number;
   attentionCount: number;
@@ -34,6 +39,105 @@ interface ActivityBoardStats {
   activePartnersCount: number;
 }
 
+/** Database response types with proper typing */
+interface LeadWithRelations {
+  id: string;
+  case_id: string;
+  created_at: string;
+  partner_id: string | null;
+  student_id: string;
+  partners: { name: string } | null;
+  students: { name: string } | null;
+}
+
+interface StatusChangeWithRelations {
+  id: string;
+  created_at: string;
+  old_status: string | null;
+  new_status: string;
+  change_reason: string | null;
+  lead_id: string;
+  leads_new: LeadWithRelations | null;
+}
+
+/** Configuration constants */
+const ACTIVITY_CONFIG = {
+  LOOKBACK_DAYS: 7,
+  MAX_STATUS_ITEMS: 100,
+  MAX_LEAD_ITEMS: 50,
+} as const;
+
+/** Priority order for sorting (lower number = higher priority) */
+const PRIORITY_ORDER: Record<ActivityPriority, number> = {
+  URGENT: 0,
+  ATTENTION: 1,
+  INFO: 2,
+  SUCCESS: 3,
+} as const;
+
+/**
+ * Determines priority based on the new status
+ */
+const getPriorityFromStatus = (newStatus: string): ActivityPriority => {
+  if (newStatus === 'rejected') return 'URGENT';
+  if (newStatus === 'approved') return 'SUCCESS';
+  return 'ATTENTION';
+};
+
+/**
+ * Safely extracts partner name from lead data
+ */
+const getPartnerName = (lead: LeadWithRelations | null): string => {
+  return lead?.partners?.name || 'Unknown Partner';
+};
+
+/**
+ * Safely extracts student name from lead data
+ */
+const getStudentName = (lead: LeadWithRelations | null): string => {
+  return lead?.students?.name || 'Unknown Student';
+};
+
+/**
+ * Calculates the cutoff date for activities
+ */
+const getActivityCutoffDate = (): string => {
+  return new Date(Date.now() - ACTIVITY_CONFIG.LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+};
+
+/**
+ * Calculates statistics from activities
+ */
+const calculateStats = (activities: ActivityItem[]): ActivityBoardStats => {
+  const today = new Date().toDateString();
+  
+  return {
+    urgentCount: activities.filter(a => a.priority === 'URGENT').length,
+    attentionCount: activities.filter(a => a.priority === 'ATTENTION').length,
+    todayActivitiesCount: activities.filter(a => 
+      new Date(a.timestamp).toDateString() === today
+    ).length,
+    activePartnersCount: new Set(activities.map(a => a.partnerId)).size,
+  };
+};
+
+/**
+ * Sorts activities by priority (urgent first) and then by timestamp (newest first)
+ */
+const sortActivities = (activities: ActivityItem[]): ActivityItem[] => {
+  return [...activities].sort((a, b) => {
+    const priorityDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  });
+};
+
+/**
+ * Custom hook for managing the Activity Board
+ * Fetches and manages status changes and new leads from the last 7 days
+ * 
+ * @returns Activity items, statistics, loading state, error state, and refetch function
+ */
 export function useActivityBoard() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [stats, setStats] = useState<ActivityBoardStats>({
@@ -45,18 +149,86 @@ export function useActivityBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Processes status change records into activity items
+   */
+  const processStatusChanges = useCallback((statusData: StatusChangeWithRelations[]): ActivityItem[] => {
+    const activities: ActivityItem[] = [];
+
+    for (const status of statusData) {
+      if (!status.created_at) continue;
+
+      const lead = status.leads_new;
+      if (!lead) {
+        logger.warn('[ActivityBoard] No lead data for status change:', status.id);
+        continue;
+      }
+
+      activities.push({
+        id: status.id,
+        priority: getPriorityFromStatus(status.new_status),
+        type: 'status',
+        timestamp: status.created_at,
+        leadId: lead.id,
+        leadCaseId: lead.case_id || 'N/A',
+        partnerId: lead.partner_id || 'unknown',
+        partnerName: getPartnerName(lead),
+        studentName: getStudentName(lead),
+        message: `Status changed: ${status.old_status || 'none'} → ${status.new_status}`,
+        details: {
+          oldStatus: status.old_status || undefined,
+          newStatus: status.new_status,
+          changeReason: status.change_reason || undefined,
+        },
+        actionable: true,
+        actionType: 'view_lead',
+      });
+    }
+
+    return activities;
+  }, []);
+
+  /**
+   * Processes new lead records into activity items
+   */
+  const processNewLeads = useCallback((leadsData: LeadWithRelations[]): ActivityItem[] => {
+    const activities: ActivityItem[] = [];
+
+    for (const lead of leadsData) {
+      if (!lead.created_at) continue;
+
+      activities.push({
+        id: `new-${lead.id}`,
+        priority: 'INFO',
+        type: 'lead',
+        timestamp: lead.created_at,
+        leadId: lead.id,
+        leadCaseId: lead.case_id || 'N/A',
+        partnerId: lead.partner_id || 'unknown',
+        partnerName: getPartnerName(lead),
+        studentName: getStudentName(lead),
+        message: '🆕 New lead created',
+        actionable: true,
+        actionType: 'view_lead',
+      });
+    }
+
+    return activities;
+  }, []);
+
+  /**
+   * Fetches all activities from the database
+   * Combines status changes and new leads from the configured lookback period
+   */
   const fetchActivities = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      logger.info('[ActivityBoard] Starting optimized fetch with JOINs...');
+      logger.info('[ActivityBoard] Starting fetch...');
+      const cutoffDate = getActivityCutoffDate();
 
-      const allActivities: ActivityItem[] = [];
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-      // Fetch status changes WITH joined data in a single query
-      logger.info('[ActivityBoard] Fetching status changes with JOINs...');
+      // Fetch status changes with joined data
       const { data: statusData, error: statusError } = await supabase
         .from('lead_status_history')
         .select(`
@@ -71,63 +243,20 @@ export function useActivityBoard() {
             case_id,
             partner_id,
             student_id,
-            partners (
-              name
-            ),
-            students (
-              name
-            )
+            partners (name),
+            students (name)
           )
         `)
-        .gte('created_at', sevenDaysAgo)
+        .gte('created_at', cutoffDate)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(ACTIVITY_CONFIG.MAX_STATUS_ITEMS);
 
       if (statusError) {
         logger.error('[ActivityBoard] Status fetch error:', statusError);
-      } else {
-        logger.info('[ActivityBoard] Status data fetched:', statusData?.length || 0);
-
-        // Process status changes
-        for (const status of statusData || []) {
-          if (!status.created_at) continue;
-
-          const lead = status.leads_new as any;
-          if (!lead) {
-            logger.warn('[ActivityBoard] No lead data for status change:', status.id);
-            continue;
-          }
-
-          const priority: ActivityPriority =
-            status.new_status === 'rejected' ? 'URGENT' :
-            status.new_status === 'approved' ? 'SUCCESS' :
-            'ATTENTION';
-
-          allActivities.push({
-            id: status.id,
-            priority,
-            type: 'status',
-            timestamp: status.created_at,
-            leadId: lead.id,
-            leadCaseId: lead.case_id || 'N/A',
-            partnerId: lead.partner_id || 'unknown',
-            partnerName: lead.partners?.name || 'Unknown Partner',
-            studentName: lead.students?.name || 'Unknown Student',
-            message: `Status changed: ${status.old_status || 'none'} → ${status.new_status}`,
-            details: {
-              oldStatus: status.old_status,
-              newStatus: status.new_status,
-              changeReason: status.change_reason,
-            },
-            actionable: true,
-            actionType: 'view_lead',
-          });
-        }
-        logger.info('[ActivityBoard] Processed status activities:', allActivities.filter(a => a.type === 'status').length);
+        throw statusError;
       }
 
-      // Fetch recent leads WITH joined data in a single query
-      logger.info('[ActivityBoard] Fetching recent leads with JOINs...');
+      // Fetch recent leads with joined data
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -136,103 +265,71 @@ export function useActivityBoard() {
           created_at,
           partner_id,
           student_id,
-          partners (
-            name
-          ),
-          students (
-            name
-          )
+          partners (name),
+          students (name)
         `)
-        .gte('created_at', sevenDaysAgo)
+        .gte('created_at', cutoffDate)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(ACTIVITY_CONFIG.MAX_LEAD_ITEMS);
 
       if (leadsError) {
-        logger.error('[ActivityBoard] Leads error:', leadsError);
-      } else {
-        logger.info('[ActivityBoard] Leads data fetched:', leadsData?.length || 0);
-
-        for (const lead of leadsData || []) {
-          if (!lead.created_at) continue;
-
-          allActivities.push({
-            id: `new-${lead.id}`,
-            priority: 'INFO',
-            type: 'lead',
-            timestamp: lead.created_at,
-            leadId: lead.id,
-            leadCaseId: lead.case_id || 'N/A',
-            partnerId: lead.partner_id || 'unknown',
-            partnerName: (lead as any).partners?.name || 'Unknown Partner',
-            studentName: (lead as any).students?.name || 'Unknown Student',
-            message: '🆕 New lead created',
-            actionable: true,
-            actionType: 'view_lead',
-          });
-        }
-        logger.info('[ActivityBoard] Processed lead activities:', allActivities.filter(a => a.type === 'lead').length);
+        logger.error('[ActivityBoard] Leads fetch error:', leadsError);
+        throw leadsError;
       }
 
-      // Sort by priority and timestamp
-      const priorityOrder: Record<ActivityPriority, number> = {
-        URGENT: 0,
-        ATTENTION: 1,
-        INFO: 2,
-        SUCCESS: 3,
-      };
+      // Process and combine activities
+      const statusActivities = processStatusChanges(statusData as any);
+      const leadActivities = processNewLeads(leadsData as any);
+      const allActivities = [...statusActivities, ...leadActivities];
 
-      allActivities.sort((a, b) => {
-        const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-        if (priorityDiff !== 0) return priorityDiff;
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      // Sort activities
+      const sortedActivities = sortActivities(allActivities);
+
+      logger.info('[ActivityBoard] Fetch complete:', {
+        total: sortedActivities.length,
+        status: statusActivities.length,
+        leads: leadActivities.length,
       });
 
-      logger.info('[ActivityBoard] Total activities:', allActivities.length);
-      logger.info('[ActivityBoard] Breakdown:', {
-        URGENT: allActivities.filter(a => a.priority === 'URGENT').length,
-        ATTENTION: allActivities.filter(a => a.priority === 'ATTENTION').length,
-        INFO: allActivities.filter(a => a.priority === 'INFO').length,
-        SUCCESS: allActivities.filter(a => a.priority === 'SUCCESS').length,
-      });
-
-      setActivities(allActivities);
-
-      // Calculate stats
-      const today = new Date().toDateString();
-      const stats: ActivityBoardStats = {
-        urgentCount: allActivities.filter(a => a.priority === 'URGENT').length,
-        attentionCount: allActivities.filter(a => a.priority === 'ATTENTION').length,
-        todayActivitiesCount: allActivities.filter(a => 
-          new Date(a.timestamp).toDateString() === today
-        ).length,
-        activePartnersCount: new Set(allActivities.map(a => a.partnerId)).size,
-      };
-
-      setStats(stats);
+      setActivities(sortedActivities);
+      setStats(calculateStats(sortedActivities));
     } catch (err) {
-      logger.error('[ActivityBoard] Exception:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch activities';
+      logger.error('[ActivityBoard] Error:', err);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [processStatusChanges, processNewLeads]);
 
+  /**
+   * Manually trigger a refetch of activities
+   */
   const refetch = useCallback(() => {
     fetchActivities();
   }, [fetchActivities]);
 
+  /**
+   * Initial fetch on mount
+   */
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
 
-  // Set up real-time subscription
+  /**
+   * Set up real-time subscriptions for automatic updates
+   * Listens to status changes and new lead insertions
+   */
   useEffect(() => {
     const statusChannel = supabase
       .channel('activity_board_status')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'lead_status_history' },
-        () => fetchActivities()
+        () => {
+          logger.info('[ActivityBoard] Real-time update: status change detected');
+          fetchActivities();
+        }
       )
       .subscribe();
 
@@ -241,7 +338,10 @@ export function useActivityBoard() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'leads_new' },
-        () => fetchActivities()
+        () => {
+          logger.info('[ActivityBoard] Real-time update: new lead detected');
+          fetchActivities();
+        }
       )
       .subscribe();
 
@@ -251,7 +351,10 @@ export function useActivityBoard() {
     };
   }, [fetchActivities]);
 
-  const memoizedReturn = useMemo(
+  /**
+   * Memoize return value to prevent unnecessary re-renders
+   */
+  return useMemo(
     () => ({
       activities,
       stats,
@@ -261,6 +364,4 @@ export function useActivityBoard() {
     }),
     [activities, stats, loading, error, refetch]
   );
-
-  return memoizedReturn;
 }
