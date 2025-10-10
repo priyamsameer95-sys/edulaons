@@ -739,13 +739,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_leads_new_student"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "leads_new_co_applicant_id_fkey"
             columns: ["co_applicant_id"]
             isOneToOne: false

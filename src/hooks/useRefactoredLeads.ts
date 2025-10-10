@@ -19,7 +19,7 @@ export function useRefactoredLeads() {
         .from('leads_new')
         .select(`
           *,
-          students!fk_leads_new_student (
+          students!leads_new_student_id_fkey (
             id,
             name,
             email,

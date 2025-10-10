@@ -246,7 +246,7 @@ export function useActivityBoard() {
             partner_id,
             student_id,
             partners!leads_new_partner_id_fkey (name),
-            students (name)
+            students!leads_new_student_id_fkey (name)
           )
         `)
         .gte('created_at', cutoffDate)
@@ -271,7 +271,7 @@ export function useActivityBoard() {
           partner_id,
           student_id,
           partners!leads_new_partner_id_fkey (name),
-          students (name)
+          students!leads_new_student_id_fkey (name)
         `)
         .gte('created_at', cutoffDate)
         .order('created_at', { ascending: false })
