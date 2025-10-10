@@ -58,6 +58,45 @@ export type Database = {
           },
         ]
       }
+      admin_security_audit: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_lead_id: string | null
+          target_partner_id: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_lead_id?: string | null
+          target_partner_id?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_lead_id?: string | null
+          target_partner_id?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       app_users: {
         Row: {
           created_at: string
@@ -1433,6 +1472,16 @@ export type Database = {
       is_current_user_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_admin_action: {
+        Args: {
+          _action: string
+          _details?: Json
+          _target_lead_id?: string
+          _target_partner_id?: string
+          _target_user_id?: string
+        }
+        Returns: string
       }
       migrate_existing_leads: {
         Args: Record<PropertyKey, never>
