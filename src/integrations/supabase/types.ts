@@ -65,6 +65,7 @@ export type Database = {
           deactivated_by: string | null
           deactivation_reason: string | null
           email: string
+          first_login_at: string | null
           id: string
           is_active: boolean
           partner_id: string | null
@@ -77,6 +78,7 @@ export type Database = {
           deactivated_by?: string | null
           deactivation_reason?: string | null
           email: string
+          first_login_at?: string | null
           id?: string
           is_active?: boolean
           partner_id?: string | null
@@ -89,6 +91,7 @@ export type Database = {
           deactivated_by?: string | null
           deactivation_reason?: string | null
           email?: string
+          first_login_at?: string | null
           id?: string
           is_active?: boolean
           partner_id?: string | null
@@ -921,6 +924,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          in_app_notifications: boolean | null
+          receive_lead_updates: boolean | null
+          receive_partner_creation: boolean | null
+          receive_student_first_login: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          in_app_notifications?: boolean | null
+          receive_lead_updates?: boolean | null
+          receive_partner_creation?: boolean | null
+          receive_student_first_login?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          in_app_notifications?: boolean | null
+          receive_lead_updates?: boolean | null
+          receive_partner_creation?: boolean | null
+          receive_student_first_login?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -1042,7 +1081,10 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           email: string
+          email_invite_sent: boolean | null
           id: string
+          invite_sent_at: string | null
+          invite_token: string | null
           name: string
           nationality: string | null
           phone: string
@@ -1057,7 +1099,10 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           email: string
+          email_invite_sent?: boolean | null
           id?: string
+          invite_sent_at?: string | null
+          invite_token?: string | null
           name: string
           nationality?: string | null
           phone: string
@@ -1072,7 +1117,10 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           email?: string
+          email_invite_sent?: boolean | null
           id?: string
+          invite_sent_at?: string | null
+          invite_token?: string | null
           name?: string
           nationality?: string | null
           phone?: string
