@@ -209,24 +209,6 @@ Deno.serve(async (req) => {
 
     console.log('Successfully created partner with auth')
 
-    // Send welcome email (async, don't block response)
-    console.log('📧 [create-partner-with-auth] Sending welcome email...');
-    const emailClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-    
-    emailClient.functions.invoke('send-partner-welcome', {
-      body: {
-        partnerEmail: email,
-        partnerName: name,
-        partnerCode: partner.partner_code,
-        temporaryPassword: password
-      }
-    }).catch((error: any) => {
-      console.warn('⚠️ [create-partner-with-auth] Email sending failed (non-blocking):', error);
-    });
-
     // Generate dashboard URL - use the current origin or fallback
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://lovableproject.com'
     const dashboardUrl = `${origin}/partner/${partnerCode}`
