@@ -82,14 +82,34 @@ const StudentDashboard = () => {
             <h2 className="text-xl font-semibold mb-2">Error Loading Applications</h2>
             <p className="text-muted-foreground mb-4">{error}</p>
             <div className="space-y-2">
-              <Button onClick={refetch} className="w-full">Try Again</Button>
-              <Button onClick={() => navigate('/login')} variant="outline" className="w-full">
+              <Button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  refetch();
+                }} 
+                className="w-full"
+              >
+                Try Again
+              </Button>
+              <Button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/login');
+                }} 
+                variant="outline" 
+                className="w-full"
+              >
                 Go to Login
               </Button>
               <Button 
-                onClick={async () => {
-                  await signOut();
-                  navigate('/login');
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await signOut();
+                    navigate('/login');
+                  } catch (err) {
+                    console.error('Sign out error:', err);
+                  }
                 }} 
                 variant="outline" 
                 className="w-full"

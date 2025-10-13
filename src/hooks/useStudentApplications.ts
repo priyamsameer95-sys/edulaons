@@ -71,7 +71,10 @@ export const useStudentApplications = () => {
         .eq('email', user?.email)
         .maybeSingle();
 
-      if (studentError) throw studentError;
+      if (studentError) {
+        logger.error('[useStudentApplications] Error fetching student:', studentError);
+        throw studentError;
+      }
 
       if (!studentData) {
         logger.info('[useStudentApplications] No student record found');
@@ -80,24 +83,30 @@ export const useStudentApplications = () => {
         return;
       }
 
-      // Fetch all applications with related data including universities in ONE QUERY
-      // This fixes the N+1 query problem
+      logger.info('[useStudentApplications] Found student ID:', studentData.id);
+
+      // Simplified query without explicit foreign key names - let RLS handle permissions
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
           *,
-          students!fk_leads_new_student!inner(name, email, phone, nationality, city, state),
-          co_applicants!fk_leads_new_co_applicant!inner(name, relationship, salary),
-          lenders!fk_leads_new_lender!inner(name, code),
-          partners!fk_leads_new_partner(name, email),
-          lead_universities!fk_lead_universities_lead(
+          students(name, email, phone, nationality, city, state),
+          co_applicants(name, relationship, salary),
+          lenders(name, code),
+          partners(name, email),
+          lead_universities(
             universities(id, name, country, city)
           )
         `)
         .eq('student_id', studentData.id)
         .order('created_at', { ascending: false });
 
-      if (leadsError) throw leadsError;
+      if (leadsError) {
+        logger.error('[useStudentApplications] Error fetching leads:', leadsError);
+        throw leadsError;
+      }
+
+      logger.info('[useStudentApplications] Raw leads data:', leadsData?.length, 'leads');
 
       // Transform the data to properly structure universities per lead
       const applicationsWithUniversities = (leadsData || []).map((lead: any) => {
