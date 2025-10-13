@@ -45,7 +45,7 @@ export const LenderScoringConfig = ({ lenderId }: LenderScoringConfigProps) => {
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           These configurations control how student eligibility scores translate into loan amounts and interest rates. 
-          Changes will be automatically saved when you click "Update Lender".
+          Students scoring 90+ get maximum eligibility, 80-89 get high eligibility, 70-79 get moderate eligibility, and below 70 are rejected.
         </AlertDescription>
       </Alert>
 
@@ -85,6 +85,7 @@ export const LenderScoringConfig = ({ lenderId }: LenderScoringConfigProps) => {
 
       <LoanBandEditor
         bands={config.loan_bands}
+        maxLoanAmount={config.max_loan_amount}
         onChange={(bands) => updateConfig({ loan_bands: bands })}
       />
 

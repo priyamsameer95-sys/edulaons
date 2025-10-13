@@ -19,9 +19,9 @@ export interface LenderConfig {
   max_loan_amount: number;
   loan_bands: {
     '90-100': LoanBand;
-    '75-89': LoanBand;
-    '60-74': LoanBand;
-    '0-59': LoanBand;
+    '80-89': LoanBand;
+    '70-79': LoanBand;
+    'below-70': LoanBand;
   };
   rate_config: {
     excellent: RateTier;
@@ -42,9 +42,9 @@ const DEFAULT_CONFIG: Omit<LenderConfig, 'id' | 'lender_id'> = {
   max_loan_amount: 5000000,
   loan_bands: {
     '90-100': { min_percent: 90, max_percent: 100 },
-    '75-89': { min_percent: 75, max_percent: 89 },
-    '60-74': { min_percent: 60, max_percent: 74 },
-    '0-59': { min_percent: 0, max_percent: 59 },
+    '80-89': { min_percent: 70, max_percent: 90 },
+    '70-79': { min_percent: 50, max_percent: 70 },
+    'below-70': { min_percent: 0, max_percent: 0 },
   },
   rate_config: {
     excellent: { min: 11.0, max: 12.0, score_threshold: 90 },
