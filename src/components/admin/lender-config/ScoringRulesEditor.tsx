@@ -204,6 +204,105 @@ export const ScoringRulesEditor = ({ rules, onChange }: ScoringRulesEditorProps)
             </AccordionContent>
           </AccordionItem>
 
+          {/* TOEFL Test Scores */}
+          <AccordionItem value="toefl">
+            <AccordionTrigger>TOEFL Score Points</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>100+</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.toefl['100_plus']}
+                    onChange={(e) => updateRule(['test_scores', 'toefl', '100_plus'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>80 - 99</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.toefl['80_to_99']}
+                    onChange={(e) => updateRule(['test_scores', 'toefl', '80_to_99'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>60 - 79</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.toefl['60_to_79']}
+                    onChange={(e) => updateRule(['test_scores', 'toefl', '60_to_79'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* GRE Test Scores */}
+          <AccordionItem value="gre">
+            <AccordionTrigger>GRE Score Points</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>320+</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.gre['320_plus']}
+                    onChange={(e) => updateRule(['test_scores', 'gre', '320_plus'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>300 - 319</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.gre['300_to_319']}
+                    onChange={(e) => updateRule(['test_scores', 'gre', '300_to_319'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>280 - 299</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.gre['280_to_299']}
+                    onChange={(e) => updateRule(['test_scores', 'gre', '280_to_299'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* GMAT Test Scores */}
+          <AccordionItem value="gmat">
+            <AccordionTrigger>GMAT Score Points</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>700+</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.gmat['700_plus']}
+                    onChange={(e) => updateRule(['test_scores', 'gmat', '700_plus'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>650 - 699</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.gmat['650_to_699']}
+                    onChange={(e) => updateRule(['test_scores', 'gmat', '650_to_699'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>600 - 649</Label>
+                  <Input
+                    type="number"
+                    value={rules.test_scores.gmat['600_to_649']}
+                    onChange={(e) => updateRule(['test_scores', 'gmat', '600_to_649'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
           {/* Co-Applicant Relationship */}
           <AccordionItem value="relationship">
             <AccordionTrigger>Co-Applicant Relationship Points</AccordionTrigger>
