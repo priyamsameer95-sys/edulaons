@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LenderScoringConfig } from './lender-config/LenderScoringConfig';
 
 interface Lender {
   id: string;
@@ -167,10 +168,11 @@ export function EditLenderModal({
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
+            <TabsTrigger value="student-profile">Student Profile</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -360,6 +362,10 @@ export function EditLenderModal({
                 placeholder="https://www.lender.com"
               />
             </div>
+          </TabsContent>
+
+          <TabsContent value="student-profile" className="space-y-4">
+            <LenderScoringConfig lenderId={lender.id} />
           </TabsContent>
         </Tabs>
 
