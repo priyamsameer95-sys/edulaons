@@ -28,9 +28,12 @@ import {
   useActivityBoard, 
   ActivityItem, 
   ActivityPriority,
-  ActivityFilter 
+  ActivityFilter,
+  ActivityType 
 } from '@/hooks/useActivityBoard';
 import { useState, useCallback, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import type { SmartAction } from './SmartActionsPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +121,7 @@ interface ActivityCardProps {
   onViewLead?: (leadId: string) => void;
   onUpdateStatus?: (leadId: string) => void;
   onVerifyDocument?: (documentId: string, leadId: string) => void;
+  onCelebrate?: (activityType: string, impactAmount?: number) => void;
 }
 
 /**
@@ -128,6 +132,7 @@ const ActivityCard = ({
   onViewLead,
   onUpdateStatus,
   onVerifyDocument,
+  onCelebrate,
 }: ActivityCardProps) => {
   const config = priorityConfig[activity.priority];
   const Icon = config.icon;
@@ -151,7 +156,19 @@ const ActivityCard = ({
               </span>
             </div>
             
-            <p className="font-medium text-sm mb-1">{activity.message}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-medium text-sm">{activity.message}</p>
+              {activity.priority === 'URGENT' && activity.impactAmount && (
+                <ActivityTooltip
+                  activityType={activity.activityType}
+                  priority={activity.priority}
+                  impactAmount={activity.impactAmount}
+                  timeRemaining={activity.timeRemaining}
+                  recommendedAction={activity.recommendedAction}
+                  conversionProbability={activity.conversionProbability}
+                />
+              )}
+            </div>
             
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="font-medium">{activity.partnerName}</span>
@@ -159,6 +176,22 @@ const ActivityCard = ({
               <span>{activity.studentName}</span>
               <span>•</span>
               <span className="font-mono">{activity.leadCaseId}</span>
+              {activity.impactAmount && activity.impactAmount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="font-semibold text-primary">
+                    ₹{(activity.impactAmount / 100000).toFixed(1)}L at risk
+                  </span>
+                </>
+              )}
+              {activity.timeRemaining && activity.timeRemaining > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="font-semibold text-warning">
+                    {activity.timeRemaining}h remaining
+                  </span>
+                </>
+              )}
             </div>
 
             {activity.details && (
@@ -197,7 +230,10 @@ const ActivityCard = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onVerifyDocument?.(activity.id, activity.leadId)}
+                onClick={() => {
+                  onVerifyDocument?.(activity.id, activity.leadId);
+                  onCelebrate?.('document_pending', activity.impactAmount);
+                }}
               >
                 <Shield className="h-4 w-4 mr-1" />
                 Verify
@@ -217,7 +253,10 @@ const ActivityCard = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onUpdateStatus?.(activity.leadId)}
+              onClick={() => {
+                onUpdateStatus?.(activity.leadId);
+                onCelebrate?.('status_change', activity.impactAmount);
+              }}
             >
               <TrendingUp className="h-4 w-4 mr-1" />
               Update
@@ -251,11 +290,18 @@ export function AdminActivityBoard({
   onUpdateStatus,
   onVerifyDocument,
 }: AdminActivityBoardProps) {
+  const { user } = useAuth();
   const { activities, stats, loading, error } = useActivityBoard();
   const [groupByPartner, setGroupByPartner] = useState(true);
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
   const [priorityFilter, setPriorityFilter] = useState<ActivityFilter>('all');
   const [typeFilter, setTypeFilter] = useState<ActivityFilter>('all');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{
+    activityType?: string;
+    impactAmount?: number;
+  }>({});
+  const [recentCompletions, setRecentCompletions] = useState(0);
 
   /**
    * Toggle expand/collapse state for a partner group
@@ -282,6 +328,53 @@ export function AdminActivityBoard({
       return true;
     });
   }, [activities, priorityFilter, typeFilter]);
+
+  /**
+   * Generate smart actions from urgent activities
+   */
+  const generateSmartActions = useMemo((): SmartAction[] => {
+    const urgentActivities = filteredActivities.filter(a => a.priority === 'URGENT');
+    
+    const actionsByType = urgentActivities.reduce((acc, activity) => {
+      const type = activity.activityType;
+      if (!acc[type]) {
+        acc[type] = {
+          count: 0,
+          impact: 0,
+          activities: []
+        };
+      }
+      acc[type].count++;
+      acc[type].impact += activity.impactAmount || 0;
+      acc[type].activities.push(activity);
+      return acc;
+    }, {} as Record<string, { count: number; impact: number; activities: ActivityItem[] }>);
+
+    return Object.entries(actionsByType)
+      .map(([type, data]) => ({
+        title: type === 'status_change' ? 'Status Changes Required' 
+             : type === 'document_pending' ? 'Documents Pending Verification'
+             : type === 'new_lead' ? 'New Leads Need Attention'
+             : 'Lender Assignment Needed',
+        description: `${data.count} ${data.count === 1 ? 'item' : 'items'} requiring immediate action`,
+        count: data.count,
+        impact: `₹${(data.impact / 100000).toFixed(1)}L`,
+        estimatedTime: `${data.count * 5}min`,
+        priority: 'URGENT' as ActivityPriority,
+        onClick: () => {
+          const firstActivity = data.activities[0];
+          if (type === 'status_change' && onUpdateStatus) {
+            onUpdateStatus(firstActivity.leadId);
+          } else if (type === 'document_pending' && onVerifyDocument) {
+            onVerifyDocument(firstActivity.id, firstActivity.leadId);
+          } else if (onViewLead) {
+            onViewLead(firstActivity.leadId);
+          }
+        }
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  }, [filteredActivities, onUpdateStatus, onVerifyDocument, onViewLead]);
 
   /**
    * Group activities by partner for organized display
@@ -348,15 +441,21 @@ export function AdminActivityBoard({
   }
 
   return (
-    <Card className="flex flex-col h-full shadow-lg">
-      <div className="p-8 border-b space-y-6 bg-gradient-to-r from-card to-card/50">
-        <div className="flex items-center justify-between animate-fade-in">
-          <div>
-            <h2 className="text-2xl font-bold">Activity Board</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Real-time notifications and actionable insights • {filteredActivities.length} activities
-            </p>
-          </div>
+    <>
+      <ActivityMotivation 
+        userId={user?.id || ''} 
+        recentCompletions={recentCompletions}
+      />
+      
+      <Card className="flex flex-col h-full shadow-lg">
+        <div className="p-8 border-b space-y-6 bg-gradient-to-r from-card to-card/50">
+          <div className="flex items-center justify-between animate-fade-in">
+            <div>
+              <h2 className="text-2xl font-bold">Activity Board</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Real-time notifications and actionable insights • {filteredActivities.length} activities
+              </p>
+            </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -490,6 +589,10 @@ export function AdminActivityBoard({
             </div>
           </Card>
         </div>
+        
+        {generateSmartActions.length > 0 && (
+          <SmartActionsPanel actions={generateSmartActions} />
+        )}
       </div>
 
       <ScrollArea className="flex-1 p-8">
@@ -547,13 +650,18 @@ export function AdminActivityBoard({
                   {isExpanded && (
                     <div className="space-y-4 ml-6 animate-fade-in">
                       {group.activities.map((activity) => (
-                        <ActivityCard
-                          key={activity.id}
-                          activity={activity}
-                          onViewLead={onViewLead}
-                          onUpdateStatus={onUpdateStatus}
-                          onVerifyDocument={onVerifyDocument}
-                        />
+                  <ActivityCard
+                    key={activity.id}
+                    activity={activity}
+                    onViewLead={onViewLead}
+                    onUpdateStatus={onUpdateStatus}
+                    onVerifyDocument={onVerifyDocument}
+                    onCelebrate={(activityType, impactAmount) => {
+                      setCelebrationData({ activityType, impactAmount });
+                      setShowCelebration(true);
+                      setRecentCompletions(prev => prev + 1);
+                    }}
+                  />
                       ))}
                     </div>
                   )}
@@ -568,11 +676,24 @@ export function AdminActivityBoard({
                 onViewLead={onViewLead}
                 onUpdateStatus={onUpdateStatus}
                 onVerifyDocument={onVerifyDocument}
+                onCelebrate={(activityType, impactAmount) => {
+                  setCelebrationData({ activityType, impactAmount });
+                  setShowCelebration(true);
+                  setRecentCompletions(prev => prev + 1);
+                }}
               />
             ))
           )}
         </div>
       </ScrollArea>
     </Card>
+    
+    <ActivityCelebration
+      show={showCelebration}
+      onClose={() => setShowCelebration(false)}
+      activityType={celebrationData.activityType}
+      impactAmount={celebrationData.impactAmount}
+    />
+  </>
   );
 }

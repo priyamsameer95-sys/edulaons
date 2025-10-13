@@ -16,6 +16,7 @@ export interface ActivityItem {
   id: string;
   priority: ActivityPriority;
   type: ActivityType;
+  activityType: 'status_change' | 'document_pending' | 'new_lead' | 'lender_assignment';
   timestamp: string;
   leadId: string;
   leadCaseId: string;
@@ -23,6 +24,10 @@ export interface ActivityItem {
   partnerName: string;
   studentName: string;
   message: string;
+  lead?: {
+    status?: string;
+    student_name?: string;
+  };
   details?: {
     oldStatus?: string;
     newStatus?: string;
