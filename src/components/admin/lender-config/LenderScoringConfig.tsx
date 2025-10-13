@@ -2,6 +2,8 @@ import { useLenderConfig } from '@/hooks/useLenderConfig';
 import { LoanBandEditor } from './LoanBandEditor';
 import { InterestRateTierEditor } from './InterestRateTierEditor';
 import { UniversityGradeMapper } from './UniversityGradeMapper';
+import { ScoreWeightsEditor } from './ScoreWeightsEditor';
+import { ScoringRulesEditor } from './ScoringRulesEditor';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +48,16 @@ export const LenderScoringConfig = ({ lenderId }: LenderScoringConfigProps) => {
           Changes will be automatically saved when you click "Update Lender".
         </AlertDescription>
       </Alert>
+
+      <ScoreWeightsEditor
+        weights={config.score_weights}
+        onChange={(weights) => updateConfig({ score_weights: weights })}
+      />
+
+      <ScoringRulesEditor
+        rules={config.scoring_rules}
+        onChange={(rules) => updateConfig({ scoring_rules: rules })}
+      />
 
       <Card>
         <CardHeader>

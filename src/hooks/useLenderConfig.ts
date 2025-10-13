@@ -30,6 +30,12 @@ export interface LenderConfig {
     below_average: RateTier;
   };
   university_grade_mapping: Record<string, string>;
+  score_weights: {
+    university_weight: number;
+    student_weight: number;
+    co_applicant_weight: number;
+  };
+  scoring_rules: any;
 }
 
 const DEFAULT_CONFIG: Omit<LenderConfig, 'id' | 'lender_id'> = {
@@ -47,6 +53,83 @@ const DEFAULT_CONFIG: Omit<LenderConfig, 'id' | 'lender_id'> = {
     below_average: { min: 15.0, max: 16.0, score_threshold: 0 },
   },
   university_grade_mapping: {},
+  score_weights: {
+    university_weight: 30,
+    student_weight: 40,
+    co_applicant_weight: 30,
+  },
+  scoring_rules: {
+    student_academic: {
+      tenth_points_per_10_percent: 1.0,
+      twelfth_points_per_10_percent: 1.5,
+      bachelors_points_per_10_percent: 1.5,
+      max_tenth_points: 10,
+      max_twelfth_points: 15,
+      max_bachelors_points: 15,
+    },
+    highest_qualification: {
+      phd: 20,
+      masters: 16,
+      bachelors: 12,
+      diploma: 8,
+    },
+    student_pin_code_tier: {
+      tier1: 10,
+      tier2: 7,
+      tier3: 4,
+    },
+    test_scores: {
+      ielts: {
+        '7_0_plus': 10,
+        '6_5_to_6_9': 7,
+        '6_0_to_6_4': 5,
+      },
+      toefl: {
+        '100_plus': 10,
+        '80_to_99': 7,
+        '60_to_79': 5,
+      },
+      gre: {
+        '320_plus': 10,
+        '300_to_319': 7,
+        '280_to_299': 5,
+      },
+      gmat: {
+        '700_plus': 10,
+        '650_to_699': 7,
+        '600_to_649': 5,
+      },
+    },
+    university_grades: {
+      A: 80,
+      B: 65,
+      C: 50,
+      D: 35,
+    },
+    course_eligibility: {
+      eligible: 20,
+      partially_eligible: 10,
+      not_eligible: 0,
+    },
+    co_applicant_relationship: {
+      father: 25,
+      mother: 25,
+      brother: 20,
+      sister: 20,
+      spouse: 15,
+      other: 10,
+    },
+    co_applicant_employment: {
+      salaried: 25,
+      self_employed: 20,
+    },
+    co_applicant_salary_bands: {
+      above_1_lakh: 40,
+      '75k_to_1_lakh': 30,
+      '50k_to_75k': 20,
+      below_50k: 10,
+    },
+  },
 };
 
 export const useLenderConfig = (lenderId: string | null) => {
@@ -81,6 +164,8 @@ export const useLenderConfig = (lenderId: string | null) => {
           loan_bands: data.loan_bands as any,
           rate_config: data.rate_config as any,
           university_grade_mapping: (data.university_grade_mapping as any) || {},
+          score_weights: (data.score_weights as any) || DEFAULT_CONFIG.score_weights,
+          scoring_rules: (data.scoring_rules as any) || DEFAULT_CONFIG.scoring_rules,
         });
       } else {
         // Create default config if none exists
@@ -116,6 +201,8 @@ export const useLenderConfig = (lenderId: string | null) => {
           loan_bands: configToSave.loan_bands as any,
           rate_config: configToSave.rate_config as any,
           university_grade_mapping: configToSave.university_grade_mapping as any,
+          score_weights: configToSave.score_weights as any,
+          scoring_rules: configToSave.scoring_rules as any,
         }, { onConflict: 'lender_id' });
 
       if (error) throw error;
