@@ -34,6 +34,7 @@ import UserManagementTab from '@/components/admin/UserManagementTab';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
 import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
+import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -631,7 +632,7 @@ const AdminDashboard = () => {
             {/* Tabs Section */}
             <div ref={tabsRef}>
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-5' : 'grid-cols-4'} max-w-4xl`}>
+                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-6' : 'grid-cols-5'} max-w-5xl`}>
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -639,6 +640,10 @@ const AdminDashboard = () => {
                 <TabsTrigger value="partners" className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   Partners
+                </TabsTrigger>
+                <TabsTrigger value="lenders" className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Lenders
                 </TabsTrigger>
                 <TabsTrigger value="leads" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -879,6 +884,10 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="lenders" className="space-y-6 mt-6">
+                <LenderManagementTab />
               </TabsContent>
 
               <TabsContent value="partners" className="space-y-6 mt-6">
