@@ -358,9 +358,9 @@ export function AdminActivityBoard({
              : 'Lender Assignment Needed',
         description: `${data.count} ${data.count === 1 ? 'item' : 'items'} requiring immediate action`,
         count: data.count,
-        impact: `₹${(data.impact / 100000).toFixed(1)}L`,
-        estimatedTime: `${data.count * 5}min`,
-        priority: 'URGENT' as ActivityPriority,
+        impactAmount: data.impact,
+        estimatedTime: data.count * 5,
+        priority: 'URGENT' as const,
         onClick: () => {
           const firstActivity = data.activities[0];
           if (type === 'status_change' && onUpdateStatus) {
