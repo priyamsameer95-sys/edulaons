@@ -32,6 +32,11 @@ export interface ActivityItem {
   };
   actionable: boolean;
   actionType?: 'verify_document' | 'update_status' | 'view_lead' | 'contact_partner';
+  // Phase 1 enhancements
+  impactAmount?: number;
+  timeRemaining?: number; // hours until escalation
+  conversionProbability?: number; // percentage
+  recommendedAction?: string;
 }
 
 /** Statistics for the activity board */
@@ -214,6 +219,61 @@ const sortActivities = (activities: ActivityItem[]): ActivityItem[] => {
 };
 
 /**
+ * Calculate time remaining until escalation (in hours)
+ */
+const calculateTimeRemaining = (timestamp: string, priority: ActivityPriority): number | undefined => {
+  const hoursSince = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
+  
+  if (priority === 'URGENT') return undefined; // Already urgent
+  if (priority === 'ATTENTION') {
+    return Math.max(0, 24 - hoursSince); // Escalates to URGENT in 24h
+  }
+  return Math.max(0, 48 - hoursSince); // Escalates to ATTENTION in 48h
+};
+
+/**
+ * Get recommended action based on activity type
+ */
+const getRecommendedAction = (type: ActivityType, priority: ActivityPriority): string => {
+  if (type === 'document') {
+    if (priority === 'URGENT') {
+      return 'Verify this document immediately to unblock application progress.';
+    }
+    return 'Review and verify document to keep the application moving forward.';
+  }
+  if (type === 'lead') {
+    if (priority === 'URGENT') {
+      return 'Contact this lead now - response time is critical for conversion.';
+    }
+    return 'Reach out to this lead within 24h to maximize engagement.';
+  }
+  if (type === 'status') {
+    if (priority === 'URGENT') {
+      return 'Take immediate action on this status change to prevent delays.';
+    }
+    return 'Review status change and update stakeholders if needed.';
+  }
+  return 'Review this activity and take appropriate action.';
+};
+
+/**
+ * Calculate conversion probability based on historical data
+ */
+const getConversionProbability = (type: ActivityType, hoursSince: number): number => {
+  if (type === 'lead') {
+    if (hoursSince < 24) return 75;
+    if (hoursSince < 48) return 50;
+    return 25;
+  }
+  if (type === 'document') {
+    if (hoursSince < 24) return 85;
+    if (hoursSince < 72) return 60;
+    return 40;
+  }
+  return 50;
+};
+
+/**
  * Custom hook for managing the Activity Board
  * Fetches and manages status changes and new leads from the last 7 days
  * 
@@ -238,7 +298,7 @@ export function useActivityBoard() {
   /**
    * Processes status change records into activity items
    */
-  const processStatusChanges = useCallback((statusData: StatusChangeWithRelations[]): ActivityItem[] => {
+  const processStatusChanges = useCallback((statusData: StatusChangeWithRelations[], leadsWithAmounts?: Map<string, number>): ActivityItem[] => {
     const activities: ActivityItem[] = [];
 
     for (const status of statusData) {
@@ -250,9 +310,13 @@ export function useActivityBoard() {
         continue;
       }
 
+      const hoursSince = (Date.now() - new Date(status.created_at).getTime()) / (1000 * 60 * 60);
+      const priority = getPriorityFromStatus(status.new_status, status.created_at);
+      const impactAmount = leadsWithAmounts?.get(lead.id) || 0;
+
       activities.push({
         id: status.id,
-        priority: getPriorityFromStatus(status.new_status, status.created_at),
+        priority,
         type: 'status',
         timestamp: status.created_at,
         leadId: lead.id,
@@ -268,6 +332,10 @@ export function useActivityBoard() {
         },
         actionable: true,
         actionType: 'view_lead',
+        impactAmount,
+        timeRemaining: calculateTimeRemaining(status.created_at, priority),
+        conversionProbability: getConversionProbability('status', hoursSince),
+        recommendedAction: getRecommendedAction('status', priority),
       });
     }
 
@@ -277,15 +345,19 @@ export function useActivityBoard() {
   /**
    * Processes new lead records into activity items
    */
-  const processNewLeads = useCallback((leadsData: LeadWithRelations[]): ActivityItem[] => {
+  const processNewLeads = useCallback((leadsData: LeadWithRelations[], leadsWithAmounts?: Map<string, number>): ActivityItem[] => {
     const activities: ActivityItem[] = [];
 
     for (const lead of leadsData) {
       if (!lead.created_at) continue;
 
+      const hoursSince = (Date.now() - new Date(lead.created_at).getTime()) / (1000 * 60 * 60);
+      const priority = getNewLeadPriority(lead.created_at);
+      const impactAmount = leadsWithAmounts?.get(lead.id) || 0;
+
       activities.push({
         id: `new-${lead.id}`,
-        priority: getNewLeadPriority(lead.created_at),
+        priority,
         type: 'lead',
         timestamp: lead.created_at,
         leadId: lead.id,
@@ -296,6 +368,10 @@ export function useActivityBoard() {
         message: '🆕 New lead created',
         actionable: true,
         actionType: 'view_lead',
+        impactAmount,
+        timeRemaining: calculateTimeRemaining(lead.created_at, priority),
+        conversionProbability: getConversionProbability('lead', hoursSince),
+        recommendedAction: getRecommendedAction('lead', priority),
       });
     }
 
@@ -305,7 +381,7 @@ export function useActivityBoard() {
   /**
    * Processes document records into activity items
    */
-  const processDocuments = useCallback((documentsData: DocumentWithRelations[]): ActivityItem[] => {
+  const processDocuments = useCallback((documentsData: DocumentWithRelations[], leadsWithAmounts?: Map<string, number>): ActivityItem[] => {
     const activities: ActivityItem[] = [];
 
     for (const doc of documentsData) {
@@ -322,9 +398,13 @@ export function useActivityBoard() {
                          doc.verification_status === 'rejected' ? '❌' : 
                          doc.verification_status === 'pending' ? '⏳' : '📄';
 
+      const hoursSince = (Date.now() - new Date(doc.uploaded_at).getTime()) / (1000 * 60 * 60);
+      const priority = getDocumentPriority(doc.verification_status, doc.uploaded_at);
+      const impactAmount = leadsWithAmounts?.get(lead.id) || 0;
+
       activities.push({
         id: `doc-${doc.id}`,
-        priority: getDocumentPriority(doc.verification_status, doc.uploaded_at),
+        priority,
         type: 'document',
         timestamp: doc.uploaded_at,
         leadId: lead.id,
@@ -338,6 +418,10 @@ export function useActivityBoard() {
         },
         actionable: doc.verification_status === 'pending' || doc.verification_status === 'uploaded',
         actionType: 'verify_document',
+        impactAmount,
+        timeRemaining: calculateTimeRemaining(doc.uploaded_at, priority),
+        conversionProbability: getConversionProbability('document', hoursSince),
+        recommendedAction: getRecommendedAction('document', priority),
       });
     }
 
@@ -515,15 +599,38 @@ export function useActivityBoard() {
         logger.info(`✅ [ActivityBoard] Found ${assignmentsData?.length || 0} lender assignments`);
       }
 
+      // Fetch loan amounts for all leads to calculate impact
+      logger.info('💰 [ActivityBoard] Fetching loan amounts...');
+      const allLeadIds = new Set<string>();
+      
+      statusData?.forEach(s => s.leads_new?.id && allLeadIds.add(s.leads_new.id));
+      leadsData?.forEach(l => l.id && allLeadIds.add(l.id));
+      documentsData?.forEach(d => d.leads_new?.id && allLeadIds.add(d.leads_new.id));
+
+      const leadsWithAmounts = new Map<string, number>();
+      
+      if (allLeadIds.size > 0) {
+        const { data: loanData } = await supabase
+          .from('leads_new')
+          .select('id, loan_amount')
+          .in('id', Array.from(allLeadIds));
+        
+        loanData?.forEach(lead => {
+          if (lead.loan_amount) {
+            leadsWithAmounts.set(lead.id, Number(lead.loan_amount));
+          }
+        });
+      }
+
       // Process and combine activities
       logger.info('⚙️ [ActivityBoard] Processing activities...');
-      const statusActivities = processStatusChanges(statusData as any);
+      const statusActivities = processStatusChanges(statusData as any, leadsWithAmounts);
       logger.info(`📊 Processed ${statusActivities.length} status activities`);
       
-      const leadActivities = processNewLeads(leadsData as any);
+      const leadActivities = processNewLeads(leadsData as any, leadsWithAmounts);
       logger.info(`🆕 Processed ${leadActivities.length} lead activities`);
 
-      const documentActivities = documentsData ? processDocuments(documentsData as any) : [];
+      const documentActivities = documentsData ? processDocuments(documentsData as any, leadsWithAmounts) : [];
       logger.info(`📄 Processed ${documentActivities.length} document activities`);
 
       const lenderActivities = assignmentsData ? processLenderAssignments(assignmentsData as any) : [];
@@ -558,7 +665,7 @@ export function useActivityBoard() {
     } finally {
       setLoading(false);
     }
-  }, [processStatusChanges, processNewLeads]);
+  }, [processStatusChanges, processNewLeads, processDocuments, processLenderAssignments]);
 
   /**
    * Manually trigger a refetch of activities

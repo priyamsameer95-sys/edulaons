@@ -58,6 +58,39 @@ export type Database = {
           },
         ]
       }
+      activity_completions: {
+        Row: {
+          activity_id: string
+          activity_type: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          impact_amount: number | null
+          time_to_complete_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_id: string
+          activity_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          impact_amount?: number | null
+          time_to_complete_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_id?: string
+          activity_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          impact_amount?: number | null
+          time_to_complete_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_security_audit: {
         Row: {
           action: string
@@ -1453,6 +1486,10 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_streak: {
+        Args: { user_uuid: string }
+        Returns: number
       }
       grant_user_role: {
         Args: {

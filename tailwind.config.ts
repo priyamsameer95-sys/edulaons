@@ -120,12 +120,45 @@ export default {
             opacity: "1"
           }
         },
+        "gentle-pulse": {
+          "0%, 100%": {
+            opacity: "1",
+            transform: "scale(1)"
+          },
+          "50%": {
+            opacity: "0.8",
+            transform: "scale(1.02)"
+          }
+        },
+        "spin-in": {
+          "0%": {
+            transform: "rotate(0deg) scale(0)",
+            opacity: "0"
+          },
+          "100%": {
+            transform: "rotate(360deg) scale(1)",
+            opacity: "1"
+          }
+        },
+        "fall": {
+          "0%": {
+            transform: "translateY(0) rotate(0deg)",
+            opacity: "1"
+          },
+          "100%": {
+            transform: "translateY(100vh) rotate(360deg)",
+            opacity: "0"
+          }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.5s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
+        "gentle-pulse": "gentle-pulse 2s ease-in-out infinite",
+        "spin-in": "spin-in 0.6s ease-out",
+        "fall": "fall 2s linear forwards",
       },
     },
   },
