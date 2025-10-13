@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, GraduationCap, DollarSign, Building, FileText } from "lucide-react";
+import { User, GraduationCap, DollarSign, Building, FileText, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentScoreBreakdown from "./StudentScoreBreakdown";
 import StudentAcademicProfile from "./StudentAcademicProfile";
@@ -8,6 +8,8 @@ import StudentFinancialProfile from "./StudentFinancialProfile";
 import StudentUniversityProfile from "./StudentUniversityProfile";
 import { Badge } from "@/components/ui/badge";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
+import { useAuth } from "@/hooks/useAuth";
+import { isSuperAdmin } from "@/utils/roleCheck";
 
 interface StudentProfileSheetProps {
   open: boolean;
@@ -16,7 +18,27 @@ interface StudentProfileSheetProps {
 }
 
 const StudentProfileSheet = ({ open, onOpenChange, leadId }: StudentProfileSheetProps) => {
+  const { appUser } = useAuth();
   const { profile, scores, loading, error } = useStudentProfile(leadId);
+
+  // Only super_admin can access Student Profile
+  if (!isSuperAdmin(appUser?.role)) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-[600px]">
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <ShieldAlert className="h-16 w-16 text-destructive" />
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+              <p className="text-muted-foreground">
+                Only Super Administrators can view Student Profiles.
+              </p>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   if (!leadId) return null;
 
