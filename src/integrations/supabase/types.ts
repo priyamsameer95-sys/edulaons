@@ -1058,6 +1058,8 @@ export type Database = {
           loan_bands: Json
           max_loan_amount: number
           rate_config: Json
+          score_weights: Json | null
+          scoring_rules: Json | null
           university_grade_mapping: Json | null
           updated_at: string | null
         }
@@ -1068,6 +1070,8 @@ export type Database = {
           loan_bands?: Json
           max_loan_amount: number
           rate_config?: Json
+          score_weights?: Json | null
+          scoring_rules?: Json | null
           university_grade_mapping?: Json | null
           updated_at?: string | null
         }
@@ -1078,6 +1082,8 @@ export type Database = {
           loan_bands?: Json
           max_loan_amount?: number
           rate_config?: Json
+          score_weights?: Json | null
+          scoring_rules?: Json | null
           university_grade_mapping?: Json | null
           updated_at?: string | null
         }
@@ -1406,6 +1412,7 @@ export type Database = {
           name: string
           nationality: string | null
           phone: string
+          pin_code_tier: string | null
           postal_code: string | null
           state: string | null
           street_address: string | null
@@ -1430,6 +1437,7 @@ export type Database = {
           name: string
           nationality?: string | null
           phone: string
+          pin_code_tier?: string | null
           postal_code?: string | null
           state?: string | null
           street_address?: string | null
@@ -1454,6 +1462,7 @@ export type Database = {
           name?: string
           nationality?: string | null
           phone?: string
+          pin_code_tier?: string | null
           postal_code?: string | null
           state?: string | null
           street_address?: string | null
@@ -1681,6 +1690,31 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_co_applicant_score: {
+        Args: { p_co_applicant_id: string; p_lender_id: string }
+        Returns: {
+          breakdown: Json
+          score: number
+        }[]
+      }
+      calculate_eligibility_score: {
+        Args: { p_lead_id: string }
+        Returns: string
+      }
+      calculate_student_score: {
+        Args: { p_lender_id: string; p_student_id: string }
+        Returns: {
+          breakdown: Json
+          score: number
+        }[]
+      }
+      calculate_university_score: {
+        Args: { p_lead_id: string; p_lender_id: string }
+        Returns: {
+          breakdown: Json
+          score: number
+        }[]
+      }
       check_duplicate_application: {
         Args: {
           _intake_month: number
