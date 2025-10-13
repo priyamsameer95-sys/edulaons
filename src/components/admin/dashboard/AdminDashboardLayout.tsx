@@ -14,7 +14,10 @@ export const AdminDashboardLayout = ({ children, onSearch }: AdminDashboardLayou
   return (
     <div className="min-h-screen bg-background">
       {/* Collapsible Sidebar */}
-      <CollapsibleSidebar />
+      <CollapsibleSidebar 
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
+      />
 
       {/* Top Navigation */}
       <TopNavigationBar

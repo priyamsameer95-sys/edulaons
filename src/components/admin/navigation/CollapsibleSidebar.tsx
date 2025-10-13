@@ -24,27 +24,30 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
-  { label: 'Dashboard', icon: Home, href: '/admin' },
-  { label: 'Leads', icon: Users, href: '/admin?tab=leads' },
-  { label: 'Partners', icon: Handshake, href: '/admin?tab=partners' },
-  { label: 'Lenders', icon: Building2, href: '/admin?tab=lenders' },
-  { label: 'Documents', icon: FileText, href: '/admin?tab=documents' },
-  { label: 'Analytics', icon: BarChart3, href: '/admin?tab=analytics' },
-  { label: 'Users', icon: User, href: '/admin?tab=users' },
-  { label: 'Settings', icon: Settings, href: '/admin?tab=settings' },
+  { label: 'Dashboard', icon: Home, href: '/admin/v2' },
+  { label: 'Leads', icon: Users, href: '/admin/v2?tab=leads' },
+  { label: 'Partners', icon: Handshake, href: '/admin/v2?tab=partners' },
+  { label: 'Lenders', icon: Building2, href: '/admin/v2?tab=lenders' },
+  { label: 'Documents', icon: FileText, href: '/admin/v2?tab=documents' },
+  { label: 'Analytics', icon: BarChart3, href: '/admin/v2?tab=analytics' },
+  { label: 'Users', icon: User, href: '/admin/v2?tab=users' },
+  { label: 'Settings', icon: Settings, href: '/admin/v2?tab=settings' },
 ];
 
 interface CollapsibleSidebarProps {
   className?: string;
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-export const CollapsibleSidebar = ({ className }: CollapsibleSidebarProps) => {
-  const [collapsed, setCollapsed] = useState(false);
+export const CollapsibleSidebar = ({ className, collapsed: externalCollapsed, onCollapsedChange }: CollapsibleSidebarProps) => {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const collapsed = externalCollapsed ?? internalCollapsed;
   const location = useLocation();
 
   const isActive = (href: string) => {
-    if (href === '/admin') {
-      return location.pathname === '/admin' && !location.search;
+    if (href === '/admin/v2') {
+      return location.pathname === '/admin/v2' && !location.search;
     }
     const tabMatch = href.match(/tab=([^&]+)/);
     if (tabMatch) {
@@ -74,7 +77,11 @@ export const CollapsibleSidebar = ({ className }: CollapsibleSidebarProps) => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            const newValue = !collapsed;
+            setInternalCollapsed(newValue);
+            onCollapsedChange?.(newValue);
+          }}
           className={cn('h-8 w-8', collapsed && 'mx-auto')}
         >
           {collapsed ? (
