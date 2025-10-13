@@ -6,7 +6,10 @@ import { logger } from '@/utils/logger';
 export type ActivityPriority = 'URGENT' | 'ATTENTION' | 'INFO' | 'SUCCESS';
 
 /** Types of activities that can occur */
-export type ActivityType = 'document' | 'status' | 'lead' | 'system';
+export type ActivityType = 'document' | 'status' | 'lead' | 'lender' | 'system';
+
+/** Filter type for activities */
+export type ActivityFilter = 'all' | ActivityPriority | ActivityType;
 
 /** Main activity item interface */
 export interface ActivityItem {
@@ -37,6 +40,10 @@ interface ActivityBoardStats {
   attentionCount: number;
   todayActivitiesCount: number;
   activePartnersCount: number;
+  urgentTrend: number;
+  attentionTrend: number;
+  todayTrend: number;
+  partnersTrend: number;
 }
 
 /** Database response types with proper typing */
@@ -60,6 +67,29 @@ interface StatusChangeWithRelations {
   leads_new: LeadWithRelations | null;
 }
 
+interface DocumentWithRelations {
+  id: string;
+  uploaded_at: string;
+  verification_status: string;
+  document_type_id: string;
+  lead_id: string;
+  document_types: { name: string } | null;
+  leads_new: LeadWithRelations | null;
+}
+
+interface LenderAssignmentWithRelations {
+  id: string;
+  created_at: string;
+  old_lender_id: string | null;
+  new_lender_id: string;
+  change_reason: string | null;
+  assignment_notes: string | null;
+  lead_id: string;
+  old_lender: { name: string } | null;
+  new_lender: { name: string } | null;
+  leads_new: LeadWithRelations | null;
+}
+
 /** Configuration constants */
 const ACTIVITY_CONFIG = {
   LOOKBACK_DAYS: 7,
@@ -76,12 +106,45 @@ const PRIORITY_ORDER: Record<ActivityPriority, number> = {
 } as const;
 
 /**
- * Determines priority based on the new status
+ * Determines priority based on the new status with time-based escalation
  */
-const getPriorityFromStatus = (newStatus: string): ActivityPriority => {
+const getPriorityFromStatus = (newStatus: string, createdAt: string): ActivityPriority => {
+  const hoursSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
+  
   if (newStatus === 'rejected') return 'URGENT';
   if (newStatus === 'approved') return 'SUCCESS';
-  return 'ATTENTION';
+  if (newStatus === 'new' && hoursSinceCreation > 48) return 'URGENT';
+  if (newStatus === 'new' && hoursSinceCreation > 24) return 'ATTENTION';
+  if (newStatus === 'in_progress' && hoursSinceCreation > 72) return 'ATTENTION';
+  
+  return 'INFO';
+};
+
+/**
+ * Determines priority for document verification with time-based escalation
+ */
+const getDocumentPriority = (status: string, uploadedAt: string): ActivityPriority => {
+  const hoursSinceUpload = (Date.now() - new Date(uploadedAt).getTime()) / (1000 * 60 * 60);
+  
+  if (status === 'rejected' || status === 'resubmission_required') return 'URGENT';
+  if (status === 'verified') return 'SUCCESS';
+  if (status === 'pending' && hoursSinceUpload > 24) return 'URGENT';
+  if (status === 'pending') return 'ATTENTION';
+  if (status === 'uploaded') return 'ATTENTION';
+  
+  return 'INFO';
+};
+
+/**
+ * Determines priority for new leads with time-based escalation
+ */
+const getNewLeadPriority = (createdAt: string): ActivityPriority => {
+  const hoursSinceCreation = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
+  
+  if (hoursSinceCreation > 48) return 'URGENT';
+  if (hoursSinceCreation > 24) return 'ATTENTION';
+  
+  return 'INFO';
 };
 
 /**
@@ -106,18 +169,36 @@ const getActivityCutoffDate = (): string => {
 };
 
 /**
- * Calculates statistics from activities
+ * Calculates statistics from activities with trend comparison
  */
-const calculateStats = (activities: ActivityItem[]): ActivityBoardStats => {
+const calculateStats = (activities: ActivityItem[], previousActivities: ActivityItem[]): ActivityBoardStats => {
   const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
+  
+  const urgentCount = activities.filter(a => a.priority === 'URGENT').length;
+  const attentionCount = activities.filter(a => a.priority === 'ATTENTION').length;
+  const todayActivitiesCount = activities.filter(a => 
+    new Date(a.timestamp).toDateString() === today
+  ).length;
+  const activePartnersCount = new Set(activities.map(a => a.partnerId)).size;
+  
+  // Calculate previous day stats for trends
+  const prevUrgentCount = previousActivities.filter(a => a.priority === 'URGENT').length;
+  const prevAttentionCount = previousActivities.filter(a => a.priority === 'ATTENTION').length;
+  const prevDayActivitiesCount = previousActivities.filter(a => 
+    new Date(a.timestamp).toDateString() === yesterday
+  ).length;
+  const prevActivePartnersCount = new Set(previousActivities.map(a => a.partnerId)).size;
   
   return {
-    urgentCount: activities.filter(a => a.priority === 'URGENT').length,
-    attentionCount: activities.filter(a => a.priority === 'ATTENTION').length,
-    todayActivitiesCount: activities.filter(a => 
-      new Date(a.timestamp).toDateString() === today
-    ).length,
-    activePartnersCount: new Set(activities.map(a => a.partnerId)).size,
+    urgentCount,
+    attentionCount,
+    todayActivitiesCount,
+    activePartnersCount,
+    urgentTrend: urgentCount - prevUrgentCount,
+    attentionTrend: attentionCount - prevAttentionCount,
+    todayTrend: todayActivitiesCount - prevDayActivitiesCount,
+    partnersTrend: activePartnersCount - prevActivePartnersCount,
   };
 };
 
@@ -140,11 +221,16 @@ const sortActivities = (activities: ActivityItem[]): ActivityItem[] => {
  */
 export function useActivityBoard() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [previousActivities, setPreviousActivities] = useState<ActivityItem[]>([]);
   const [stats, setStats] = useState<ActivityBoardStats>({
     urgentCount: 0,
     attentionCount: 0,
     todayActivitiesCount: 0,
     activePartnersCount: 0,
+    urgentTrend: 0,
+    attentionTrend: 0,
+    todayTrend: 0,
+    partnersTrend: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +252,7 @@ export function useActivityBoard() {
 
       activities.push({
         id: status.id,
-        priority: getPriorityFromStatus(status.new_status),
+        priority: getPriorityFromStatus(status.new_status, status.created_at),
         type: 'status',
         timestamp: status.created_at,
         leadId: lead.id,
@@ -199,7 +285,7 @@ export function useActivityBoard() {
 
       activities.push({
         id: `new-${lead.id}`,
-        priority: 'INFO',
+        priority: getNewLeadPriority(lead.created_at),
         type: 'lead',
         timestamp: lead.created_at,
         leadId: lead.id,
@@ -208,6 +294,88 @@ export function useActivityBoard() {
         partnerName: getPartnerName(lead),
         studentName: getStudentName(lead),
         message: '🆕 New lead created',
+        actionable: true,
+        actionType: 'view_lead',
+      });
+    }
+
+    return activities;
+  }, []);
+
+  /**
+   * Processes document records into activity items
+   */
+  const processDocuments = useCallback((documentsData: DocumentWithRelations[]): ActivityItem[] => {
+    const activities: ActivityItem[] = [];
+
+    for (const doc of documentsData) {
+      if (!doc.uploaded_at) continue;
+
+      const lead = doc.leads_new;
+      if (!lead) {
+        logger.warn('[ActivityBoard] No lead data for document:', doc.id);
+        continue;
+      }
+
+      const docType = doc.document_types?.name || 'Document';
+      const statusEmoji = doc.verification_status === 'verified' ? '✅' : 
+                         doc.verification_status === 'rejected' ? '❌' : 
+                         doc.verification_status === 'pending' ? '⏳' : '📄';
+
+      activities.push({
+        id: `doc-${doc.id}`,
+        priority: getDocumentPriority(doc.verification_status, doc.uploaded_at),
+        type: 'document',
+        timestamp: doc.uploaded_at,
+        leadId: lead.id,
+        leadCaseId: lead.case_id || 'N/A',
+        partnerId: lead.partner_id || 'unknown',
+        partnerName: getPartnerName(lead),
+        studentName: getStudentName(lead),
+        message: `${statusEmoji} ${docType} - ${doc.verification_status}`,
+        details: {
+          documentType: docType,
+        },
+        actionable: doc.verification_status === 'pending' || doc.verification_status === 'uploaded',
+        actionType: 'verify_document',
+      });
+    }
+
+    return activities;
+  }, []);
+
+  /**
+   * Processes lender assignment records into activity items
+   */
+  const processLenderAssignments = useCallback((assignmentsData: LenderAssignmentWithRelations[]): ActivityItem[] => {
+    const activities: ActivityItem[] = [];
+
+    for (const assignment of assignmentsData) {
+      if (!assignment.created_at) continue;
+
+      const lead = assignment.leads_new;
+      if (!lead) {
+        logger.warn('[ActivityBoard] No lead data for lender assignment:', assignment.id);
+        continue;
+      }
+
+      const oldLenderName = assignment.old_lender?.name || 'None';
+      const newLenderName = assignment.new_lender?.name || 'Unknown';
+
+      activities.push({
+        id: `lender-${assignment.id}`,
+        priority: 'ATTENTION',
+        type: 'lender',
+        timestamp: assignment.created_at,
+        leadId: lead.id,
+        leadCaseId: lead.case_id || 'N/A',
+        partnerId: lead.partner_id || 'unknown',
+        partnerName: getPartnerName(lead),
+        studentName: getStudentName(lead),
+        message: `🏦 Lender changed: ${oldLenderName} → ${newLenderName}`,
+        details: {
+          changeReason: assignment.change_reason || undefined,
+        },
         actionable: true,
         actionType: 'view_lead',
       });
@@ -283,14 +451,68 @@ export function useActivityBoard() {
       }
       
       logger.info(`✅ [ActivityBoard] Found ${leadsData?.length || 0} new leads`);
-      if (leadsData && leadsData.length > 0) {
-        logger.info('📋 [ActivityBoard] Sample lead:', {
-          id: leadsData[0].id,
-          case_id: leadsData[0].case_id,
-          created_at: leadsData[0].created_at,
-          student: leadsData[0].students,
-          partner: leadsData[0].partners
-        });
+
+      // Fetch documents with pending or recent uploads
+      logger.info('📄 [ActivityBoard] Fetching documents...');
+      const { data: documentsData, error: docsError } = await supabase
+        .from('lead_documents')
+        .select(`
+          id,
+          uploaded_at,
+          verification_status,
+          document_type_id,
+          lead_id,
+          document_types!lead_documents_document_type_id_fkey (name),
+          leads_new!lead_documents_lead_id_fkey (
+            id,
+            case_id,
+            partner_id,
+            student_id,
+            partners!leads_new_partner_id_fkey (name),
+            students!leads_new_student_id_fkey (name)
+          )
+        `)
+        .gte('uploaded_at', cutoffDate)
+        .order('uploaded_at', { ascending: false })
+        .limit(100);
+
+      if (docsError) {
+        logger.error('❌ [ActivityBoard] Documents fetch error:', docsError);
+      } else {
+        logger.info(`✅ [ActivityBoard] Found ${documentsData?.length || 0} documents`);
+      }
+
+      // Fetch lender assignments
+      logger.info('🏦 [ActivityBoard] Fetching lender assignments...');
+      const { data: assignmentsData, error: assignError } = await supabase
+        .from('lender_assignment_history')
+        .select(`
+          id,
+          created_at,
+          old_lender_id,
+          new_lender_id,
+          change_reason,
+          assignment_notes,
+          lead_id,
+          old_lender:lenders!lender_assignment_history_old_lender_id_fkey (name),
+          new_lender:lenders!lender_assignment_history_new_lender_id_fkey (name),
+          leads_new!lender_assignment_history_lead_id_fkey (
+            id,
+            case_id,
+            partner_id,
+            student_id,
+            partners!leads_new_partner_id_fkey (name),
+            students!leads_new_student_id_fkey (name)
+          )
+        `)
+        .gte('created_at', cutoffDate)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (assignError) {
+        logger.error('❌ [ActivityBoard] Lender assignments fetch error:', assignError);
+      } else {
+        logger.info(`✅ [ActivityBoard] Found ${assignmentsData?.length || 0} lender assignments`);
       }
 
       // Process and combine activities
@@ -300,8 +522,19 @@ export function useActivityBoard() {
       
       const leadActivities = processNewLeads(leadsData as any);
       logger.info(`🆕 Processed ${leadActivities.length} lead activities`);
+
+      const documentActivities = documentsData ? processDocuments(documentsData as any) : [];
+      logger.info(`📄 Processed ${documentActivities.length} document activities`);
+
+      const lenderActivities = assignmentsData ? processLenderAssignments(assignmentsData as any) : [];
+      logger.info(`🏦 Processed ${lenderActivities.length} lender activities`);
       
-      const allActivities = [...statusActivities, ...leadActivities];
+      const allActivities = [
+        ...statusActivities, 
+        ...leadActivities, 
+        ...documentActivities,
+        ...lenderActivities
+      ];
 
       // Sort activities
       const sortedActivities = sortActivities(allActivities);
@@ -310,10 +543,14 @@ export function useActivityBoard() {
         total: sortedActivities.length,
         status: statusActivities.length,
         leads: leadActivities.length,
+        documents: documentActivities.length,
+        lenders: lenderActivities.length,
       });
 
+      // Store current as previous for trend calculation
+      setPreviousActivities(activities);
       setActivities(sortedActivities);
-      setStats(calculateStats(sortedActivities));
+      setStats(calculateStats(sortedActivities, activities));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch activities';
       logger.error('[ActivityBoard] Error:', err);
@@ -339,7 +576,7 @@ export function useActivityBoard() {
 
   /**
    * Set up real-time subscriptions for automatic updates
-   * Listens to status changes and new lead insertions
+   * Listens to status changes, new leads, documents, and lender assignments
    */
   useEffect(() => {
     const statusChannel = supabase
@@ -366,9 +603,35 @@ export function useActivityBoard() {
       )
       .subscribe();
 
+    const documentsChannel = supabase
+      .channel('activity_board_documents')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lead_documents' },
+        () => {
+          logger.info('[ActivityBoard] Real-time update: document activity detected');
+          fetchActivities();
+        }
+      )
+      .subscribe();
+
+    const lenderChannel = supabase
+      .channel('activity_board_lenders')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'lender_assignment_history' },
+        () => {
+          logger.info('[ActivityBoard] Real-time update: lender assignment detected');
+          fetchActivities();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(statusChannel);
       supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(documentsChannel);
+      supabase.removeChannel(lenderChannel);
     };
   }, [fetchActivities]);
 

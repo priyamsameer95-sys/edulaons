@@ -15,9 +15,25 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  Filter,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
-import { useActivityBoard, ActivityItem, ActivityPriority } from '@/hooks/useActivityBoard';
+import { 
+  useActivityBoard, 
+  ActivityItem, 
+  ActivityPriority,
+  ActivityFilter 
+} from '@/hooks/useActivityBoard';
 import { useState, useCallback, useMemo } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/utils/logger';
 
@@ -233,6 +249,8 @@ export function AdminActivityBoard({
   const { activities, stats, loading, error } = useActivityBoard();
   const [groupByPartner, setGroupByPartner] = useState(true);
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
+  const [priorityFilter, setPriorityFilter] = useState<ActivityFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<ActivityFilter>('all');
 
   /**
    * Toggle expand/collapse state for a partner group
@@ -250,13 +268,24 @@ export function AdminActivityBoard({
   }, []);
 
   /**
+   * Filter activities based on priority and type
+   */
+  const filteredActivities = useMemo(() => {
+    return activities.filter(activity => {
+      if (priorityFilter !== 'all' && activity.priority !== priorityFilter) return false;
+      if (typeFilter !== 'all' && activity.type !== typeFilter) return false;
+      return true;
+    });
+  }, [activities, priorityFilter, typeFilter]);
+
+  /**
    * Group activities by partner for organized display
    * Returns null if grouping is disabled
    */
   const groupedActivities = useMemo(() => {
     if (!groupByPartner) return null;
     
-    return activities.reduce((acc, activity) => {
+    return filteredActivities.reduce((acc, activity) => {
       const partnerId = activity.partnerId || 'unknown';
       const partnerName = activity.partnerName || 'Unknown Partner';
       
@@ -269,7 +298,26 @@ export function AdminActivityBoard({
       acc[partnerId].activities.push(activity);
       return acc;
     }, {} as Record<string, { partnerName: string; activities: ActivityItem[] }>);
-  }, [groupByPartner, activities]);
+  }, [groupByPartner, filteredActivities]);
+
+  /**
+   * Render trend indicator
+   */
+  const renderTrend = (trend: number) => {
+    if (trend === 0) return <Minus className="h-3 w-3 text-muted-foreground" />;
+    if (trend > 0) return (
+      <div className="flex items-center text-success">
+        <TrendingUp className="h-3 w-3 mr-1" />
+        <span className="text-xs font-medium">+{trend}</span>
+      </div>
+    );
+    return (
+      <div className="flex items-center text-destructive">
+        <TrendingDown className="h-3 w-3 mr-1" />
+        <span className="text-xs font-medium">{trend}</span>
+      </div>
+    );
+  };
   if (loading) {
     return (
       <Card className="p-6">
@@ -301,65 +349,139 @@ export function AdminActivityBoard({
           <div>
             <h2 className="text-2xl font-bold">Activity Board</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Real-time notifications and actionable insights
+              Real-time notifications and actionable insights • {filteredActivities.length} activities
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setGroupByPartner(!groupByPartner)}
-            className="hover-lift"
-          >
-            {groupByPartner ? 'View All' : 'Group by Partner'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="hover-lift">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Priority: {priorityFilter === 'all' ? 'All' : priorityFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter by Priority</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setPriorityFilter('all')}>
+                  All Priorities
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPriorityFilter('URGENT')}>
+                  <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
+                  Urgent
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPriorityFilter('ATTENTION')}>
+                  <Clock className="h-4 w-4 mr-2 text-warning" />
+                  Attention
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPriorityFilter('INFO')}>
+                  <FileText className="h-4 w-4 mr-2 text-primary" />
+                  Info
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPriorityFilter('SUCCESS')}>
+                  <CheckCircle2 className="h-4 w-4 mr-2 text-success" />
+                  Success
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="hover-lift">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Type: {typeFilter === 'all' ? 'All' : typeFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter by Type</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTypeFilter('all')}>
+                  All Types
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTypeFilter('lead')}>
+                  🆕 New Leads
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTypeFilter('status')}>
+                  📊 Status Changes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTypeFilter('document')}>
+                  📄 Documents
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTypeFilter('lender')}>
+                  🏦 Lender Changes
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setGroupByPartner(!groupByPartner)}
+              className="hover-lift"
+            >
+              {groupByPartner ? 'View All' : 'Group by Partner'}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-4 gap-6">
           <Card className="p-5 bg-destructive/10 border-destructive/20 hover-lift stagger-fade-1">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/20">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-destructive">{stats.urgentCount}</p>
+                  <p className="text-xs text-muted-foreground">Urgent Items</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-destructive">{stats.urgentCount}</p>
-                <p className="text-xs text-muted-foreground">Urgent Items</p>
-              </div>
+              {renderTrend(stats.urgentTrend)}
             </div>
           </Card>
           
           <Card className="p-5 bg-warning/10 border-warning/20 hover-lift stagger-fade-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/20">
-                <Clock className="h-5 w-5 text-warning" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-warning/20">
+                  <Clock className="h-5 w-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-warning">{stats.attentionCount}</p>
+                  <p className="text-xs text-muted-foreground">Needs Attention</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-warning">{stats.attentionCount}</p>
-                <p className="text-xs text-muted-foreground">Needs Attention</p>
-              </div>
+              {renderTrend(stats.attentionTrend)}
             </div>
           </Card>
           
           <Card className="p-5 bg-primary/10 border-primary/20 hover-lift stagger-fade-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
-                <TrendingUp className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/20">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.todayActivitiesCount}</p>
+                  <p className="text-xs text-muted-foreground">Today</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.todayActivitiesCount}</p>
-                <p className="text-xs text-muted-foreground">Today</p>
-              </div>
+              {renderTrend(stats.todayTrend)}
             </div>
           </Card>
           
           <Card className="p-5 bg-success/10 border-success/20 hover-lift stagger-fade-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20">
-                <CheckCircle2 className="h-5 w-5 text-success" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-success/20">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-success">{stats.activePartnersCount}</p>
+                  <p className="text-xs text-muted-foreground">Active Partners</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-success">{stats.activePartnersCount}</p>
-                <p className="text-xs text-muted-foreground">Active Partners</p>
-              </div>
+              {renderTrend(stats.partnersTrend)}
             </div>
           </Card>
         </div>
@@ -367,7 +489,7 @@ export function AdminActivityBoard({
 
       <ScrollArea className="flex-1 p-8">
         <div className="space-y-6">
-          {activities.length === 0 ? (
+          {filteredActivities.length === 0 ? (
             <EmptyState
               icon={CheckCircle2}
               title="No Recent Activity"
@@ -433,8 +555,8 @@ export function AdminActivityBoard({
                 </div>
               );
             }))
-          ) : (
-            activities.map((activity) => (
+           ) : (
+            filteredActivities.map((activity) => (
               <ActivityCard
                 key={activity.id}
                 activity={activity}
