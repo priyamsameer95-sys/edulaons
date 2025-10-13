@@ -336,11 +336,17 @@ export type Database = {
       co_applicants: {
         Row: {
           created_at: string
+          documents_required: boolean | null
           email: string | null
           employer: string | null
+          employer_details: string | null
+          employment_duration_years: number | null
+          employment_type: string | null
           id: string
+          monthly_salary: number | null
           name: string
           occupation: string | null
+          occupation_details: string | null
           phone: string | null
           pin_code: string
           relationship: Database["public"]["Enums"]["relationship_enum"]
@@ -349,11 +355,17 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          documents_required?: boolean | null
           email?: string | null
           employer?: string | null
+          employer_details?: string | null
+          employment_duration_years?: number | null
+          employment_type?: string | null
           id?: string
+          monthly_salary?: number | null
           name: string
           occupation?: string | null
+          occupation_details?: string | null
           phone?: string | null
           pin_code: string
           relationship: Database["public"]["Enums"]["relationship_enum"]
@@ -362,16 +374,52 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          documents_required?: boolean | null
           email?: string | null
           employer?: string | null
+          employer_details?: string | null
+          employment_duration_years?: number | null
+          employment_type?: string | null
           id?: string
+          monthly_salary?: number | null
           name?: string
           occupation?: string | null
+          occupation_details?: string | null
           phone?: string | null
           pin_code?: string
           relationship?: Database["public"]["Enums"]["relationship_enum"]
           salary?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      course_eligibility: {
+        Row: {
+          course_name: string
+          created_at: string | null
+          eligible: boolean | null
+          id: string
+          required_qualification: string
+          study_level: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_name: string
+          created_at?: string | null
+          eligible?: boolean | null
+          id?: string
+          required_qualification: string
+          study_level: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_name?: string
+          created_at?: string | null
+          eligible?: boolean | null
+          id?: string
+          required_qualification?: string
+          study_level?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -521,6 +569,96 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      eligibility_scores: {
+        Row: {
+          approval_status: string
+          calculated_at: string | null
+          calculation_version: string | null
+          co_applicant_breakdown: Json | null
+          co_applicant_score: number
+          created_at: string | null
+          eligible_loan_max: number | null
+          eligible_loan_min: number | null
+          id: string
+          interest_rate_max: number | null
+          interest_rate_min: number | null
+          lead_id: string
+          lender_id: string | null
+          loan_band_percentage: string | null
+          overall_score: number
+          rate_tier: string | null
+          rejection_reason: string | null
+          student_breakdown: Json | null
+          student_score: number
+          university_breakdown: Json | null
+          university_score: number
+          updated_at: string | null
+        }
+        Insert: {
+          approval_status: string
+          calculated_at?: string | null
+          calculation_version?: string | null
+          co_applicant_breakdown?: Json | null
+          co_applicant_score?: number
+          created_at?: string | null
+          eligible_loan_max?: number | null
+          eligible_loan_min?: number | null
+          id?: string
+          interest_rate_max?: number | null
+          interest_rate_min?: number | null
+          lead_id: string
+          lender_id?: string | null
+          loan_band_percentage?: string | null
+          overall_score?: number
+          rate_tier?: string | null
+          rejection_reason?: string | null
+          student_breakdown?: Json | null
+          student_score?: number
+          university_breakdown?: Json | null
+          university_score?: number
+          updated_at?: string | null
+        }
+        Update: {
+          approval_status?: string
+          calculated_at?: string | null
+          calculation_version?: string | null
+          co_applicant_breakdown?: Json | null
+          co_applicant_score?: number
+          created_at?: string | null
+          eligible_loan_max?: number | null
+          eligible_loan_min?: number | null
+          id?: string
+          interest_rate_max?: number | null
+          interest_rate_min?: number | null
+          lead_id?: string
+          lender_id?: string | null
+          loan_band_percentage?: string | null
+          overall_score?: number
+          rate_tier?: string | null
+          rejection_reason?: string | null
+          student_breakdown?: Json | null
+          student_score?: number
+          university_breakdown?: Json | null
+          university_score?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eligibility_scores_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eligibility_scores_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_documents: {
         Row: {
@@ -912,6 +1050,47 @@ export type Database = {
           },
         ]
       }
+      lender_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          lender_id: string
+          loan_bands: Json
+          max_loan_amount: number
+          rate_config: Json
+          university_grade_mapping: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lender_id: string
+          loan_bands?: Json
+          max_loan_amount: number
+          rate_config?: Json
+          university_grade_mapping?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lender_id?: string
+          loan_bands?: Json
+          max_loan_amount?: number
+          rate_config?: Json
+          university_grade_mapping?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_config_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: true
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lenders: {
         Row: {
           approval_rate: number | null
@@ -1122,6 +1301,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_code_tiers: {
+        Row: {
+          city: string
+          created_at: string | null
+          id: string
+          pin_code: string
+          state: string | null
+          tier: string
+          updated_at: string | null
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          id?: string
+          pin_code: string
+          state?: string | null
+          tier: string
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          id?: string
+          pin_code?: string
+          state?: string | null
+          tier?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       protected_accounts: {
         Row: {
           created_at: string | null
@@ -1181,12 +1390,16 @@ export type Database = {
       }
       students: {
         Row: {
+          bachelors_cgpa: number | null
+          bachelors_percentage: number | null
           city: string | null
           country: string | null
           created_at: string
           date_of_birth: string | null
           email: string
           email_invite_sent: boolean | null
+          gender: string | null
+          highest_qualification: string | null
           id: string
           invite_sent_at: string | null
           invite_token: string | null
@@ -1196,15 +1409,21 @@ export type Database = {
           postal_code: string | null
           state: string | null
           street_address: string | null
+          tenth_percentage: number | null
+          twelfth_percentage: number | null
           updated_at: string
         }
         Insert: {
+          bachelors_cgpa?: number | null
+          bachelors_percentage?: number | null
           city?: string | null
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
           email: string
           email_invite_sent?: boolean | null
+          gender?: string | null
+          highest_qualification?: string | null
           id?: string
           invite_sent_at?: string | null
           invite_token?: string | null
@@ -1214,15 +1433,21 @@ export type Database = {
           postal_code?: string | null
           state?: string | null
           street_address?: string | null
+          tenth_percentage?: number | null
+          twelfth_percentage?: number | null
           updated_at?: string
         }
         Update: {
+          bachelors_cgpa?: number | null
+          bachelors_percentage?: number | null
           city?: string | null
           country?: string | null
           created_at?: string
           date_of_birth?: string | null
           email?: string
           email_invite_sent?: boolean | null
+          gender?: string | null
+          highest_qualification?: string | null
           id?: string
           invite_sent_at?: string | null
           invite_token?: string | null
@@ -1232,6 +1457,8 @@ export type Database = {
           postal_code?: string | null
           state?: string | null
           street_address?: string | null
+          tenth_percentage?: number | null
+          twelfth_percentage?: number | null
           updated_at?: string
         }
         Relationships: []

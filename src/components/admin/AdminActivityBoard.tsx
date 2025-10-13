@@ -531,6 +531,7 @@ export function AdminActivityBoard({
         </div>
         </div>
 
+        <div className="p-8">
         <div className="grid grid-cols-4 gap-6">
           <Card className="p-5 bg-destructive/10 border-destructive/20 hover-lift stagger-fade-1">
             <div className="flex items-center justify-between">
@@ -591,6 +592,7 @@ export function AdminActivityBoard({
               {renderTrend(stats.partnersTrend)}
             </div>
           </Card>
+        </div>
         </div>
         
         {generateSmartActions.length > 0 && (
