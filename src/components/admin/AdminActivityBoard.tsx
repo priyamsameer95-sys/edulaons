@@ -442,10 +442,12 @@ export function AdminActivityBoard({
 
   return (
     <>
-      <ActivityMotivation 
-        userId={user?.id || ''} 
-        recentCompletions={recentCompletions}
-      />
+      {user?.id && (
+        <ActivityMotivation 
+          userId={user.id} 
+          recentCompletions={recentCompletions}
+        />
+      )}
       
       <Card className="flex flex-col h-full shadow-lg">
         <div className="p-8 border-b space-y-6 bg-gradient-to-r from-card to-card/50">
@@ -527,6 +529,7 @@ export function AdminActivityBoard({
             </Button>
           </div>
         </div>
+        </div>
 
         <div className="grid grid-cols-4 gap-6">
           <Card className="p-5 bg-destructive/10 border-destructive/20 hover-lift stagger-fade-1">
@@ -593,9 +596,8 @@ export function AdminActivityBoard({
         {generateSmartActions.length > 0 && (
           <SmartActionsPanel actions={generateSmartActions} />
         )}
-      </div>
 
-      <ScrollArea className="flex-1 p-8">
+        <ScrollArea className="flex-1 p-8">
         <div className="space-y-6">
           {filteredActivities.length === 0 ? (
             <EmptyState
