@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Users, Shield, LogOut, Plus, LayoutDashboard, Building2 } from 'lucide-react';
+import { Menu, Users, Shield, LogOut, Plus, LayoutDashboard, Building2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -96,6 +96,18 @@ export function AdminActionsDrawer({
             >
               <Building2 className="mr-3 h-4 w-4" />
               Partners
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start transition-colors",
+                activeTab === 'lenders' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+              )}
+              onClick={() => handleTabChange('lenders')}
+            >
+              <DollarSign className="mr-3 h-4 w-4" />
+              Lenders
             </Button>
 
             <Button 
