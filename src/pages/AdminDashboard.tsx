@@ -370,10 +370,6 @@ const AdminDashboard = () => {
           fetchPartnerStats(),
           fetchLoanComparison(),
         ]);
-        // fetchRecentLeads depends on allLeads, so call separately
-        if (!leadsLoading) {
-          await fetchRecentLeads();
-        }
       } catch (error) {
         console.error('Error loading dashboard:', error);
         toast({
@@ -388,6 +384,13 @@ const AdminDashboard = () => {
 
     fetchData();
   }, [selectedPartner]);
+
+  // Separate effect for recent leads that depends on allLeads
+  useEffect(() => {
+    if (!leadsLoading && allLeads.length > 0) {
+      fetchRecentLeads();
+    }
+  }, [allLeads, leadsLoading, selectedPartner]);
 
   useEffect(() => {
     filterLeads(recentLeads);

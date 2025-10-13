@@ -97,7 +97,7 @@ export function useRefactoredLeads() {
 
   useEffect(() => {
     fetchLeads();
-  }, []);
+  }, [fetchLeads]);
 
   // Set up real-time subscription
   useEffect(() => {
@@ -119,7 +119,7 @@ export function useRefactoredLeads() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchLeads]);
 
   return {
     leads,
