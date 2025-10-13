@@ -1,4 +1,8 @@
 import { KPICard } from './KPICard';
+import { LeadPipelineChart } from './LeadPipelineChart';
+import { EnhancedLeadTable } from './EnhancedLeadTable';
+import { GeographicDistribution } from './GeographicDistribution';
+import { SmartFiltersPanel } from './SmartFiltersPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, TrendingUp, Users, DollarSign, FileCheck } from 'lucide-react';
@@ -85,76 +89,64 @@ export const DashboardOverview = () => {
         />
       </div>
 
-      {/* Action Items Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Priority Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              Requires Attention
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { icon: FileCheck, label: 'Documents Pending Verification', count: 5, color: 'text-destructive' },
-                { icon: TrendingUp, label: 'Leads Stuck >7 Days', count: 3, color: 'text-warning' },
-                { icon: Users, label: 'New Student First Logins', count: 2, color: 'text-primary' },
-                { icon: DollarSign, label: 'Data Sanity Issues', count: 1, color: 'text-muted-foreground' },
-              ].map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`h-5 w-5 ${item.color}`} />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </div>
-                    <span className={`text-sm font-bold ${item.color}`}>
-                      {item.count}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <Button variant="outline" className="w-full mt-4">
-              View All Issues
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Lead Pipeline Chart */}
+          <LeadPipelineChart />
 
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { time: '2m ago', action: 'Document uploaded', user: 'Raj Kumar' },
-                { time: '5m ago', action: 'Lead status changed', user: 'Admin' },
-                { time: '8m ago', action: 'New student registered', user: 'Priya Shah' },
-                { time: '12m ago', action: 'Partner submitted application', user: 'ABC Consultancy' },
-              ].map((activity, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.user} • {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Button variant="outline" className="w-full mt-4">
-              View All Activities
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Enhanced Lead Table */}
+          <EnhancedLeadTable />
+        </div>
+
+        {/* Right Column - 1/3 width */}
+        <div className="space-y-6">
+          {/* Smart Filters */}
+          <SmartFiltersPanel />
+
+          {/* Geographic Distribution */}
+          <GeographicDistribution />
+
+          {/* Priority Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                Requires Attention
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { icon: FileCheck, label: 'Documents Pending Verification', count: 5, color: 'text-destructive' },
+                  { icon: TrendingUp, label: 'Leads Stuck >7 Days', count: 3, color: 'text-warning' },
+                  { icon: Users, label: 'New Student First Logins', count: 2, color: 'text-primary' },
+                  { icon: DollarSign, label: 'Data Sanity Issues', count: 1, color: 'text-muted-foreground' },
+                ].map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={`h-5 w-5 ${item.color}`} />
+                        <span className="text-sm font-medium">{item.label}</span>
+                      </div>
+                      <span className={`text-sm font-bold ${item.color}`}>
+                        {item.count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <Button variant="outline" className="w-full mt-4">
+                View All Issues
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
