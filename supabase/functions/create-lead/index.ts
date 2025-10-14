@@ -1,5 +1,20 @@
+/**
+ * Create Lead Edge Function - Refactored for better maintainability
+ * Handles student loan application submissions
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateRequiredFields, separateUniversities } from './validation.ts';
+import {
+  validateUniversities,
+  checkDuplicateApplication,
+  createStudent,
+  createCoApplicant,
+  getDefaultLender,
+  createLead,
+  createTestRecords,
+  createUniversityAssociations,
+} from './database.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,49 +22,39 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🚀 [create-lead] Edge function started');
+    console.log('🚀 [create-lead] Starting application submission');
 
-    // Get authorization header
+    // Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('❌ [create-lead] No authorization header');
       throw new Error('Missing authorization header');
     }
 
-    // Create Supabase client with user's auth token for validation
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Create admin client with service role for database operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Verify the user is authenticated
+    // Authenticate user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
     if (authError || !user) {
-      console.error('❌ [create-lead] Authentication failed:', authError);
       throw new Error('Unauthorized: You must be logged in');
     }
+    console.log('✅ User authenticated:', user.id);
 
-    console.log('✅ [create-lead] User authenticated:', user.id);
-
-    // Get user's app_user record to verify permissions
+    // Verify user permissions
     const { data: appUser, error: appUserError } = await supabaseAdmin
       .from('app_users')
       .select('id, role, partner_id, is_active')
@@ -57,421 +62,153 @@ serve(async (req) => {
       .single();
 
     if (appUserError || !appUser) {
-      console.error('❌ [create-lead] Failed to get app user:', appUserError);
-      throw new Error('User account not found or not configured properly');
+      throw new Error('User account not found');
     }
 
     if (!appUser.is_active) {
-      console.error('❌ [create-lead] User account is inactive');
       throw new Error('Your account is inactive. Please contact support.');
     }
+    console.log('✅ User permissions verified:', appUser.role);
 
-    console.log('✅ [create-lead] User permissions verified:', {
-      role: appUser.role,
-      partnerId: appUser.partner_id,
-      isActive: appUser.is_active
-    });
-
-    // Parse request body
+    // Parse and validate request
     const body = await req.json();
-    console.log('📋 [create-lead] Request received');
+    validateRequiredFields(body);
+    console.log('✅ Request validated');
 
-    // Validate required fields
-    const requiredFields = [
-      'student_name', 'student_phone', 'student_pin_code',
-      'co_applicant_name', 'co_applicant_phone', 'co_applicant_salary',
-      'co_applicant_relationship', 'co_applicant_pin_code',
-      'country', 'intake_month', 'loan_type', 'amount_requested'
-    ];
-
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
-    }
-
-    // Step 1: Validate universities match study destination
+    // Validate universities
     if (body.universities && body.universities.length > 0) {
-      console.log('🎓 [create-lead] Validating universities...');
+      console.log('🎓 Validating universities...');
+      await validateUniversities(supabaseAdmin, body.universities, body.country);
       
-      // Separate UUIDs from custom university names
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const universityUUIDs = body.universities.filter((u: string) => uuidPattern.test(u));
-      const customUniversities = body.universities.filter((u: string) => !uuidPattern.test(u));
+      const { uuids, custom } = separateUniversities(body.universities);
+      console.log(`✅ Found ${uuids.length} DB universities, ${custom.length} custom entries`);
       
-      console.log(`📊 [create-lead] Found ${universityUUIDs.length} DB universities, ${customUniversities.length} custom entries`);
-      
-      // Validate only UUIDs against database
-      if (universityUUIDs.length > 0) {
-        const { data: universities, error: uniValidationError } = await supabaseAdmin
-          .from('universities')
-          .select('id, country')
-          .in('id', universityUUIDs);
-
-        if (uniValidationError) {
-          throw new Error('Failed to validate universities');
-        }
-
-        const invalidUniversities = universities?.filter(
-          (uni: any) => uni.country.toLowerCase() !== body.country.toLowerCase()
-        );
-
-        if (invalidUniversities && invalidUniversities.length > 0) {
-          throw new Error(`Selected universities must be from ${body.country}`);
-        }
-        console.log('✅ [create-lead] DB universities validated');
-      }
-      
-      // Custom universities are allowed (user typed them)
-      if (customUniversities.length > 0) {
-        console.log('✅ [create-lead] Custom universities accepted:', customUniversities);
+      if (custom.length > 0) {
+        console.log('📝 Custom universities:', custom);
       }
     }
 
-    // Step 2: Check for duplicate applications
-    console.log('🔍 [create-lead] Checking for duplicate applications...');
-    const [intakeYear, intakeMonth] = body.intake_month ? body.intake_month.split('-').map(Number) : [null, null];
-    
-    // Try to find existing student by email or phone
-    const { data: existingStudent } = await supabaseAdmin
-      .from('students')
-      .select('id')
-      .or(`email.eq.${body.student_email?.trim()},phone.eq.${body.student_phone.trim().replace(/^\+91/, '').replace(/\D/g, '')}`)
-      .maybeSingle();
+    // Check for duplicates
+    console.log('🔍 Checking for duplicate applications...');
+    await checkDuplicateApplication(
+      supabaseAdmin,
+      body.student_email?.trim() || '',
+      body.student_phone,
+      body.intake_month,
+      body.intake_year,
+      body.country
+    );
+    console.log('✅ No duplicate found');
 
-    if (existingStudent) {
-      // Check for duplicate application using the new function
-      const { data: isDuplicate, error: dupCheckError } = await supabaseAdmin
-        .rpc('check_duplicate_application', {
-          _student_id: existingStudent.id,
-          _intake_month: intakeMonth,
-          _intake_year: intakeYear,
-          _study_destination: body.country
-        });
+    // Create student
+    console.log('👨‍🎓 Creating student record...');
+    const student = await createStudent(supabaseAdmin, body);
+    console.log('✅ Student created:', student.id);
 
-      if (dupCheckError) {
-        console.warn('⚠️ [create-lead] Duplicate check failed:', dupCheckError);
-      } else if (isDuplicate) {
-        throw new Error('You already have an active application for this intake and destination');
-      }
-    }
-    console.log('✅ [create-lead] No duplicate found');
+    // Create co-applicant
+    console.log('👥 Creating co-applicant record...');
+    const coApplicant = await createCoApplicant(supabaseAdmin, body);
+    console.log('✅ Co-applicant created:', coApplicant.id);
 
-    // Step 3: Create student record using service role (bypasses RLS)
-    console.log('👨‍🎓 [create-lead] Creating student...');
-    
-    const studentEmail = body.student_email?.trim();
-    // Clean phone number (remove +91 and non-digits)
-    const cleanPhone = body.student_phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
-    const studentData = {
-      name: body.student_name.trim(),
-      email: studentEmail || `${cleanPhone}@temp.placeholder`,
-      phone: cleanPhone,
-      postal_code: body.student_pin_code.trim(),
-      country: 'India',
-      date_of_birth: body.date_of_birth || null,
-      gender: body.gender || null,
-      city: body.city || null,
-      state: body.state || null,
-      nationality: body.nationality || 'Indian',
-      highest_qualification: body.highest_qualification || null,
-      tenth_percentage: body.tenth_percentage || null,
-      twelfth_percentage: body.twelfth_percentage || null,
-      bachelors_percentage: body.bachelors_percentage || null,
-      bachelors_cgpa: body.bachelors_cgpa || null
-    };
+    // Get lender
+    console.log('🏦 Getting lender...');
+    const lender = await getDefaultLender(supabaseAdmin);
+    console.log('✅ Lender found:', lender.name);
 
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from('students')
-      .insert(studentData)
-      .select()
-      .single();
+    // Create lead
+    console.log('📋 Creating lead...');
+    const lead = await createLead(
+      supabaseAdmin,
+      student.id,
+      coApplicant.id,
+      lender.id,
+      appUser.partner_id,
+      body
+    );
+    console.log('✅ Lead created:', lead.case_id);
 
-    if (studentError) {
-      console.error('❌ [create-lead] Student creation failed:', studentError);
-      throw new Error(`Failed to create student: ${studentError.message}`);
-    }
-
-    console.log('✅ [create-lead] Student created:', student.id);
-
-    // Step 4: Create co-applicant record
-    console.log('👥 [create-lead] Creating co-applicant...');
-    
-    const coApplicantEmail = body.co_applicant_email?.trim();
-    // Clean co-applicant phone number
-    const cleanCoApplicantPhone = body.co_applicant_phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
-    const coApplicantData = {
-      name: body.co_applicant_name.trim(),
-      email: coApplicantEmail || null,
-      phone: cleanCoApplicantPhone,
-      relationship: body.co_applicant_relationship,
-      salary: parseFloat(body.co_applicant_monthly_salary) * 12, // Store annual for compatibility
-      monthly_salary: parseFloat(body.co_applicant_monthly_salary),
-      employment_type: body.co_applicant_employment_type,
-      occupation: body.co_applicant_occupation || null,
-      employer: body.co_applicant_employer || null,
-      employment_duration_years: body.co_applicant_employment_duration || null,
-      pin_code: body.co_applicant_pin_code.trim()
-    };
-
-    const { data: coApplicant, error: coApplicantError } = await supabaseAdmin
-      .from('co_applicants')
-      .insert(coApplicantData)
-      .select()
-      .single();
-
-    if (coApplicantError) {
-      console.error('❌ [create-lead] Co-applicant creation failed:', coApplicantError);
-      throw new Error(`Failed to create co-applicant: ${coApplicantError.message}`);
-    }
-
-    console.log('✅ [create-lead] Co-applicant created:', coApplicant.id);
-
-    // Step 5: Get default lender
-    console.log('🏦 [create-lead] Getting lender...');
-    
-    const { data: lender, error: lenderError } = await supabaseAdmin
-      .from('lenders')
-      .select('id, name')
-      .limit(1)
-      .single();
-
-    if (lenderError || !lender) {
-      console.error('❌ [create-lead] Failed to get lender:', lenderError);
-      throw new Error('No lender configured in system');
-    }
-
-    console.log('✅ [create-lead] Lender found:', lender.name);
-
-    // Step 6: Create lead record
-    console.log('📋 [create-lead] Creating lead...');
-    
-    const caseId = `EDU-${Date.now()}`;
-
-    // Store course name in metadata if provided
-    const metadata: any = {};
-    if (body.course_name && body.course_name.trim()) {
-      metadata.course_name = body.course_name.trim();
-      console.log('📚 [create-lead] Course name:', body.course_name.trim());
-    }
-
-    const leadData = {
-      case_id: caseId,
-      student_id: student.id,
-      co_applicant_id: coApplicant.id,
-      partner_id: appUser.partner_id,
-      lender_id: lender.id,
-      loan_amount: parseFloat(body.amount_requested),
-      loan_type: body.loan_type,
-      study_destination: body.country,
-      intake_month: intakeMonth,
-      intake_year: intakeYear,
-      status: 'new',
-      documents_status: 'pending'
-    };
-
-    const { data: lead, error: leadError } = await supabaseAdmin
-      .from('leads_new')
-      .insert(leadData)
-      .select()
-      .single();
-
-    if (leadError) {
-      console.error('❌ [create-lead] Lead creation failed:', leadError);
-      throw new Error(`Failed to create lead: ${leadError.message}`);
-    }
-
-    console.log('✅ [create-lead] Lead created:', lead.id);
-
-    // Step 7: Create academic test records if provided
+    // Create test records
     if (body.tests && Array.isArray(body.tests) && body.tests.length > 0) {
-      console.log('📊 [create-lead] Creating test scores...');
-      const testRecords = body.tests.map((test: any) => ({
-        student_id: student.id,
-        test_type: test.testType,
-        score: test.testScore,
-        certificate_number: test.testCertificateNumber || null,
-        test_date: test.testDate || null
-      }));
-      
-      const { error: testError } = await supabaseAdmin
-        .from('academic_tests')
-        .insert(testRecords);
-      
-      if (testError) {
-        console.warn('⚠️ [create-lead] Test scores creation failed:', testError);
-        // Don't fail the whole operation for test scores
-      } else {
-        console.log('✅ [create-lead] Test scores created');
-      }
+      console.log('📊 Creating test scores...');
+      await createTestRecords(supabaseAdmin, student.id, body.tests);
+      console.log('✅ Test scores created');
     }
 
-    // Step 8: Create university associations
+    // Create university associations
     if (body.universities && body.universities.length > 0) {
-      console.log('🎓 [create-lead] Creating university associations...');
-      
-      // Separate UUIDs from custom names (same logic as validation)
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const universityUUIDs = body.universities.filter((u: string) => u && u.trim() && uuidPattern.test(u));
-      const customUniversities = body.universities.filter((u: string) => u && u.trim() && !uuidPattern.test(u));
-      
-      // Create associations only for valid UUIDs
-      if (universityUUIDs.length > 0) {
-        const universityRecords = universityUUIDs.map((universityId: string) => ({
-          lead_id: lead.id,
-          university_id: universityId
-        }));
-
-        const { error: uniError } = await supabaseAdmin
-          .from('lead_universities')
-          .insert(universityRecords);
-        
-        if (uniError) {
-          console.warn('⚠️ [create-lead] University associations failed:', uniError);
-        } else {
-          console.log(`✅ [create-lead] Created ${universityUUIDs.length} university associations`);
-        }
-      }
-      
-      // Log custom universities (could be stored in lead metadata in future)
-      if (customUniversities.length > 0) {
-        console.log(`📝 [create-lead] Custom universities entered:`, customUniversities);
-        // These are preserved in the validation step but not linked to DB
-      }
+      console.log('🎓 Creating university associations...');
+      await createUniversityAssociations(supabaseAdmin, lead.id, body.universities);
+      console.log('✅ University associations created');
     }
 
-    // Step 9: Get recommended lenders based on universities
-    console.log('🏦 [create-lead] Fetching recommended lenders...');
+    // Get recommended lenders
+    console.log('🏦 Fetching recommended lenders...');
+    let recommendedLenders: any[] = [];
     
-    interface RecommendedLender {
-      lender_id: string;
-      lender_name: string;
-      lender_code: string;
-      lender_description: string | null;
-      logo_url: string | null;
-      website: string | null;
-      contact_email: string | null;
-      contact_phone: string | null;
-      interest_rate_min: number | null;
-      interest_rate_max: number | null;
-      loan_amount_min: number | null;
-      loan_amount_max: number | null;
-      processing_fee: number | null;
-      foreclosure_charges: number | null;
-      moratorium_period: string | null;
-      processing_time_days: number | null;
-      disbursement_time_days: number | null;
-      approval_rate: number | null;
-      key_features: string[] | null;
-      eligible_expenses: any[] | null;
-      required_documents: string[] | null;
-      compatibility_score: number;
-      is_preferred: boolean;
-    }
+    const { uuids } = separateUniversities(body.universities || []);
     
-    let recommendedLenders: RecommendedLender[] = [];
-    
-    if (body.universities && body.universities.length > 0) {
-      // First, get preferences
-      const { data: preferences, error: prefError } = await supabaseAdmin
+    if (uuids.length > 0) {
+      const { data: preferences } = await supabaseAdmin
         .from('university_lender_preferences')
         .select('lender_id, compatibility_score, is_preferred')
-        .in('university_id', body.universities)
+        .in('university_id', uuids)
         .eq('study_destination', body.country)
         .order('compatibility_score', { ascending: false })
         .limit(5);
 
-      if (!prefError && preferences && preferences.length > 0) {
-        // Get unique lender IDs
+      if (preferences && preferences.length > 0) {
         const lenderIds = [...new Set(preferences.map((p: any) => p.lender_id))];
         
-        // Fetch complete lender details
-        const { data: lenders, error: lendersError } = await supabaseAdmin
+        const { data: lenders } = await supabaseAdmin
           .from('lenders')
           .select('*')
           .in('id', lenderIds)
           .eq('is_active', true);
 
-        if (!lendersError && lenders) {
-          // Map preferences to lenders with full details
+        if (lenders) {
           recommendedLenders = preferences
             .map((pref: any) => {
-              const lender = lenders.find((l: any) => l.id === pref.lender_id);
-              if (!lender) return null;
+              const lenderData = lenders.find((l: any) => l.id === pref.lender_id);
+              if (!lenderData) return null;
               return {
-                lender_id: lender.id,
-                lender_name: lender.name,
-                lender_code: lender.code,
-                lender_description: lender.description,
-                logo_url: lender.logo_url,
-                website: lender.website,
-                contact_email: lender.contact_email,
-                contact_phone: lender.contact_phone,
-                interest_rate_min: lender.interest_rate_min,
-                interest_rate_max: lender.interest_rate_max,
-                loan_amount_min: lender.loan_amount_min,
-                loan_amount_max: lender.loan_amount_max,
-                processing_fee: lender.processing_fee,
-                foreclosure_charges: lender.foreclosure_charges,
-                moratorium_period: lender.moratorium_period,
-                processing_time_days: lender.processing_time_days,
-                disbursement_time_days: lender.disbursement_time_days,
-                approval_rate: lender.approval_rate,
-                key_features: lender.key_features,
-                eligible_expenses: lender.eligible_expenses,
-                required_documents: lender.required_documents,
+                ...lenderData,
+                lender_id: lenderData.id,
+                lender_name: lenderData.name,
+                lender_code: lenderData.code,
+                lender_description: lenderData.description,
                 compatibility_score: pref.compatibility_score,
                 is_preferred: pref.is_preferred
               };
             })
-            .filter((item): item is RecommendedLender => item !== null);
-          
-          console.log('✅ [create-lead] Found recommended lenders with full details:', recommendedLenders.length);
+            .filter(Boolean);
         }
       }
     }
     
-    // If no university-specific recommendations, get default lenders
+    // Fallback to default lenders
     if (recommendedLenders.length === 0) {
-      console.log('📋 [create-lead] Fetching default lenders...');
-      const { data: allLenders, error: lendersError } = await supabaseAdmin
+      const { data: allLenders } = await supabaseAdmin
         .from('lenders')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true })
         .limit(5);
 
-      if (!lendersError && allLenders) {
+      if (allLenders) {
         recommendedLenders = allLenders.map((lender: any) => ({
+          ...lender,
           lender_id: lender.id,
           lender_name: lender.name,
           lender_code: lender.code,
           lender_description: lender.description,
-          logo_url: lender.logo_url,
-          website: lender.website,
-          contact_email: lender.contact_email,
-          contact_phone: lender.contact_phone,
-          interest_rate_min: lender.interest_rate_min,
-          interest_rate_max: lender.interest_rate_max,
-          loan_amount_min: lender.loan_amount_min,
-          loan_amount_max: lender.loan_amount_max,
-          processing_fee: lender.processing_fee,
-          foreclosure_charges: lender.foreclosure_charges,
-          moratorium_period: lender.moratorium_period,
-          processing_time_days: lender.processing_time_days,
-          disbursement_time_days: lender.disbursement_time_days,
-          approval_rate: lender.approval_rate,
-          key_features: lender.key_features,
-          eligible_expenses: lender.eligible_expenses,
-          required_documents: lender.required_documents,
           compatibility_score: 50,
           is_preferred: false
         }));
-        console.log('✅ [create-lead] Using default lenders:', recommendedLenders.length);
       }
     }
-
-    console.log('🎉 [create-lead] Lead creation completed successfully');
+    
+    console.log(`✅ Found ${recommendedLenders.length} recommended lenders`);
+    console.log('🎉 Application submission completed successfully');
 
     return new Response(
       JSON.stringify({
@@ -491,12 +228,13 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('💥 [create-lead] Error:', error);
+    console.error('💥 [create-lead] Error:', error.message);
+    console.error('Stack:', error.stack);
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error?.message || 'An unexpected error occurred'
+        error: error.message || 'An unexpected error occurred'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

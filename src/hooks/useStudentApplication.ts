@@ -2,56 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import type { StudentApplicationData } from '@/types/student-application';
+import { transformToEdgeFunctionPayload } from '@/utils/studentApplicationHelpers';
+import { studentApplicationSchema } from '@/lib/validation/studentValidation';
 
 const STORAGE_KEY = 'student_application_draft';
 
-export interface StudentApplicationData {
-  // Personal Details
-  name: string;
-  phone: string;
-  dateOfBirth: string;
-  gender?: string;
-  city?: string;
-  state?: string;
-  postalCode: string;
-  nationality?: string;
-  
-  // Academic Background
-  highestQualification: string;
-  tenthPercentage?: number;
-  twelfthPercentage?: number;
-  bachelorsPercentage?: number;
-  bachelorsCgpa?: number;
-  
-  // Test Scores (Optional) - Array of up to 10 tests
-  tests?: Array<{
-    testType: 'IELTS' | 'TOEFL' | 'GRE' | 'GMAT' | 'PTE' | 'SAT';
-    testScore: number;
-    testCertificateNumber?: string;
-    testDate?: string;
-  }>;
-  
-  // Study Details
-  universities: string[];
-  studyDestination: string;
-  courseName?: string;
-  loanType: 'secured' | 'unsecured';
-  intakeMonth: number;
-  intakeYear: number;
-  loanAmount: number;
-  
-  // Co-Applicant Details
-  coApplicantName: string;
-  coApplicantRelationship: string;
-  coApplicantPhone: string;
-  coApplicantEmail: string;
-  coApplicantMonthlySalary: number;
-  coApplicantEmploymentType: 'salaried' | 'self_employed' | 'business_owner';
-  coApplicantOccupation?: string;
-  coApplicantEmployer?: string;
-  coApplicantEmploymentDuration?: number;
-  coApplicantPinCode: string;
-}
+// Re-export type for backward compatibility
+export type { StudentApplicationData };
 
 export const useStudentApplication = () => {
   const { toast } = useToast();
@@ -132,46 +90,34 @@ export const useStudentApplication = () => {
     try {
       setIsSubmitting(true);
 
-      const { data: user } = await supabase.auth.getUser();
-      
+      // Get authenticated user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user?.email) {
+        throw new Error('You must be logged in to submit an application');
+      }
+
+      // Validate complete application data
+      const validationResult = studentApplicationSchema.safeParse(applicationData);
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        throw new Error(firstError?.message || 'Please fill in all required fields correctly');
+      }
+
+      // Transform data to edge function payload
+      const payload = transformToEdgeFunctionPayload(
+        applicationData as StudentApplicationData,
+        userData.user.email
+      );
+
+      // Submit to edge function
       const { data: result, error } = await supabase.functions.invoke('create-lead', {
-        body: {
-          student_name: applicationData.name!,
-          student_email: user.user?.email!,
-          student_phone: applicationData.phone!,
-          student_pin_code: applicationData.postalCode!,
-          date_of_birth: applicationData.dateOfBirth,
-          gender: applicationData.gender,
-          city: applicationData.city,
-          state: applicationData.state,
-          nationality: applicationData.nationality || 'Indian',
-          highest_qualification: applicationData.highestQualification!,
-          tenth_percentage: applicationData.tenthPercentage,
-          twelfth_percentage: applicationData.twelfthPercentage,
-          bachelors_percentage: applicationData.bachelorsPercentage,
-          bachelors_cgpa: applicationData.bachelorsCgpa,
-          tests: applicationData.tests, // Send tests array
-          co_applicant_name: applicationData.coApplicantName!,
-          co_applicant_relationship: applicationData.coApplicantRelationship!,
-          co_applicant_monthly_salary: applicationData.coApplicantMonthlySalary!,
-          co_applicant_employment_type: applicationData.coApplicantEmploymentType!,
-          co_applicant_occupation: applicationData.coApplicantOccupation,
-          co_applicant_employer: applicationData.coApplicantEmployer,
-          co_applicant_employment_duration: applicationData.coApplicantEmploymentDuration,
-          co_applicant_pin_code: applicationData.coApplicantPinCode!,
-          co_applicant_phone: applicationData.coApplicantPhone!,
-          co_applicant_email: applicationData.coApplicantEmail!,
-          amount_requested: applicationData.loanAmount!,
-          loan_type: applicationData.loanType!,
-          country: applicationData.studyDestination!,
-          course_name: applicationData.courseName,
-          intake_month: applicationData.intakeMonth!,
-          intake_year: applicationData.intakeYear!,
-          universities: applicationData.universities!,
-        },
+        body: payload,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to submit application');
+      }
 
       // Clear saved form data on successful submission
       try {
@@ -181,15 +127,17 @@ export const useStudentApplication = () => {
       }
 
       toast({
-        title: "Application Submitted!",
-        description: `Your case ID is ${result?.case_id}`,
+        title: "Application Submitted Successfully!",
+        description: `Your case ID is ${result?.lead?.case_id || 'N/A'}`,
+        duration: 5000,
       });
 
       return result;
     } catch (error: any) {
+      console.error('Application submission error:', error);
       toast({
         title: "Submission Failed",
-        description: error.message || "Could not submit application",
+        description: error.message || "Could not submit application. Please try again.",
         variant: "destructive",
       });
       throw error;
