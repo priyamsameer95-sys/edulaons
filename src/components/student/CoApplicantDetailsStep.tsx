@@ -1,29 +1,28 @@
 import { useState } from 'react';
-import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
-import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
-import { RELATIONSHIPS, COACHING_MESSAGES, INCOME_INDICATORS, VALIDATION_PATTERNS } from '@/constants/studentApplication';
-import { Info, AlertCircle, TrendingUp } from 'lucide-react';
+import { COACHING_MESSAGES, RELATIONSHIPS, VALIDATION_PATTERNS, EMPLOYMENT_TYPES } from '@/constants/studentApplication';
+import { StudentApplicationData } from '@/hooks/useStudentApplication';
+import { Info, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CoApplicantDetailsStepProps {
-  data: Partial<StudentApplicationData>;
+  data: StudentApplicationData;
   onUpdate: (data: Partial<StudentApplicationData>) => void;
   onNext: () => void;
   onPrev: () => void;
 }
 
-const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) => {
+export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateField = (field: string, value: any): string | null => {
     switch (field) {
       case 'coApplicantPhone':
-        // Remove any non-digit characters  
         const cleanPhone = value.replace(/\D/g, '');
         if (!VALIDATION_PATTERNS.phone.test(cleanPhone)) {
           return 'Enter valid 10-digit phone number';
@@ -50,22 +49,60 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
     setErrors(prev => ({ ...prev, [field]: error || '' }));
   };
 
-  const getIncomeIndicator = (salary: number) => {
-    if (salary >= 1000000) return INCOME_INDICATORS[2];
-    if (salary >= 500000) return INCOME_INDICATORS[1];
-    return INCOME_INDICATORS[0];
+  const getMonthlyIncomeIndicator = (monthlySalary: number) => {
+    if (monthlySalary >= 100000) {
+      return { range: '₹1+ Lakh/month', label: 'Excellent approval chances', color: 'text-green-600' };
+    }
+    if (monthlySalary >= 75000) {
+      return { range: '₹75k-1 Lakh/month', label: 'Very good approval chances', color: 'text-blue-600' };
+    }
+    if (monthlySalary >= 50000) {
+      return { range: '₹50k-75k/month', label: 'Good approval chances', color: 'text-yellow-600' };
+    }
+    return { range: 'Below ₹50k/month', label: 'May affect eligibility', color: 'text-orange-600' };
   };
-
-  const incomeIndicator = data.coApplicantSalary ? getIncomeIndicator(data.coApplicantSalary) : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const newErrors: Record<string, string> = {};
-    ['coApplicantPhone', 'coApplicantEmail', 'coApplicantPinCode'].forEach(field => {
-      const error = validateField(field, (data as any)[field]);
-      if (error) newErrors[field] = error;
-    });
+
+    if (!data.coApplicantName?.trim()) {
+      newErrors.coApplicantName = 'Name is required';
+    }
+
+    if (!data.coApplicantRelationship) {
+      newErrors.coApplicantRelationship = 'Relationship is required';
+    }
+
+    if (!data.coApplicantPhone) {
+      newErrors.coApplicantPhone = 'Phone is required';
+    } else {
+      const error = validateField('coApplicantPhone', data.coApplicantPhone);
+      if (error) newErrors.coApplicantPhone = error;
+    }
+
+    if (!data.coApplicantEmail) {
+      newErrors.coApplicantEmail = 'Email is required';
+    } else {
+      const error = validateField('coApplicantEmail', data.coApplicantEmail);
+      if (error) newErrors.coApplicantEmail = error;
+    }
+
+    if (!data.coApplicantEmploymentType) {
+      newErrors.coApplicantEmploymentType = 'Employment type is required';
+    }
+
+    if (!data.coApplicantMonthlySalary || data.coApplicantMonthlySalary <= 0) {
+      newErrors.coApplicantMonthlySalary = 'Monthly salary is required';
+    }
+
+    if (!data.coApplicantPinCode) {
+      newErrors.coApplicantPinCode = 'PIN code is required';
+    } else {
+      const error = validateField('coApplicantPinCode', data.coApplicantPinCode);
+      if (error) newErrors.coApplicantPinCode = error;
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -83,153 +120,237 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
           <strong>Why do we need a co-applicant?</strong>
           <p className="mt-1 text-sm">
             Most lenders require a co-applicant (usually a parent or guardian) who can support your loan application. 
-            This increases your chances of approval and may help you get better interest rates.
+            Their income and employment significantly affect your eligibility (worth up to 30 eligibility points).
           </p>
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="coApplicantName">Co-Applicant Name *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantName} />
-          </div>
-          <Input
-            id="coApplicantName"
-            value={data.coApplicantName || ''}
-            onChange={(e) => onUpdate({ coApplicantName: e.target.value })}
-            required
-            placeholder="Full name of co-applicant"
-          />
-        </div>
+      <Card className="p-6">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantName}>
+                <Label htmlFor="coApplicantName">
+                  Co-Applicant Name <span className="text-destructive">*</span>
+                </Label>
+              </CoachingTooltip>
+              <Input
+                id="coApplicantName"
+                placeholder="Full legal name"
+                value={data.coApplicantName || ''}
+                onChange={(e) => handleChange('coApplicantName', e.target.value)}
+              />
+              {errors.coApplicantName && (
+                <p className="text-sm text-destructive">{errors.coApplicantName}</p>
+              )}
+            </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="coApplicantRelationship">Relationship *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantRelationship} />
+            <div className="space-y-2">
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantRelationship}>
+                <Label htmlFor="coApplicantRelationship">
+                  Relationship <span className="text-destructive">*</span>
+                </Label>
+              </CoachingTooltip>
+              <Select
+                value={data.coApplicantRelationship || ''}
+                onValueChange={(value) => handleChange('coApplicantRelationship', value)}
+              >
+                <SelectTrigger id="coApplicantRelationship">
+                  <SelectValue placeholder="Select relationship" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RELATIONSHIPS.map((rel) => (
+                    <SelectItem key={rel.value} value={rel.value}>
+                      {rel.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.coApplicantRelationship && (
+                <p className="text-sm text-destructive">{errors.coApplicantRelationship}</p>
+              )}
+            </div>
           </div>
-          <Select 
-            value={data.coApplicantRelationship || ''} 
-            onValueChange={(value) => onUpdate({ coApplicantRelationship: value })}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select relationship" />
-            </SelectTrigger>
-            <SelectContent>
-              {RELATIONSHIPS.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                  {value === 'parent' && <span className="text-xs text-muted-foreground ml-1">(Recommended)</span>}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="coApplicantPhone">Phone Number *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantPhone} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantPhone}>
+                <Label htmlFor="coApplicantPhone">
+                  Phone Number <span className="text-destructive">*</span>
+                </Label>
+              </CoachingTooltip>
+              <Input
+                id="coApplicantPhone"
+                type="tel"
+                placeholder="10-digit mobile number"
+                value={data.coApplicantPhone || ''}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  handleChange('coApplicantPhone', cleaned);
+                }}
+                maxLength={10}
+              />
+              {errors.coApplicantPhone && (
+                <p className="text-sm text-destructive">{errors.coApplicantPhone}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantEmail}>
+                <Label htmlFor="coApplicantEmail">
+                  Email <span className="text-destructive">*</span>
+                </Label>
+              </CoachingTooltip>
+              <Input
+                id="coApplicantEmail"
+                type="email"
+                placeholder="email@example.com"
+                value={data.coApplicantEmail || ''}
+                onChange={(e) => handleChange('coApplicantEmail', e.target.value)}
+              />
+              {errors.coApplicantEmail && (
+                <p className="text-sm text-destructive">{errors.coApplicantEmail}</p>
+              )}
+            </div>
           </div>
-          <Input
-            id="coApplicantPhone"
-            type="tel"
-            value={data.coApplicantPhone || ''}
-            onChange={(e) => {
-              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-              handleChange('coApplicantPhone', cleaned);
-            }}
-            maxLength={10}
-            placeholder="10-digit mobile number"
-            className={errors.coApplicantPhone ? 'border-destructive' : ''}
-          />
-          {errors.coApplicantPhone && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.coApplicantPhone}
-            </p>
-          )}
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="coApplicantEmail">Email *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantEmail} />
+          <div className="space-y-2">
+            <CoachingTooltip content="Employment type affects loan eligibility scoring (worth up to 25 points)">
+              <Label htmlFor="coApplicantEmploymentType">
+                Employment Type <span className="text-destructive">*</span>
+              </Label>
+            </CoachingTooltip>
+            <Select
+              value={data.coApplicantEmploymentType || ''}
+              onValueChange={(value: any) => handleChange('coApplicantEmploymentType', value)}
+            >
+              <SelectTrigger id="coApplicantEmploymentType">
+                <SelectValue placeholder="Select employment type" />
+              </SelectTrigger>
+              <SelectContent>
+                {EMPLOYMENT_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.coApplicantEmploymentType && (
+              <p className="text-sm text-destructive">{errors.coApplicantEmploymentType}</p>
+            )}
           </div>
-          <Input
-            id="coApplicantEmail"
-            type="email"
-            value={data.coApplicantEmail || ''}
-            onChange={(e) => handleChange('coApplicantEmail', e.target.value)}
-            placeholder="email@example.com"
-            className={errors.coApplicantEmail ? 'border-destructive' : ''}
-          />
-          {errors.coApplicantEmail && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.coApplicantEmail}
-            </p>
-          )}
-        </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="coApplicantSalary">Annual Income (₹) *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantSalary} />
+          <div className="space-y-2">
+            <CoachingTooltip content="Monthly take-home salary. Higher income significantly improves approval chances (worth up to 40 points)">
+              <Label htmlFor="coApplicantMonthlySalary">
+                Monthly Salary <span className="text-destructive">*</span>
+              </Label>
+            </CoachingTooltip>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="coApplicantMonthlySalary"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="50000"
+                className="pl-9"
+                value={data.coApplicantMonthlySalary || ''}
+                onChange={(e) => handleChange('coApplicantMonthlySalary', e.target.value ? parseFloat(e.target.value) : undefined)}
+              />
+            </div>
+            {errors.coApplicantMonthlySalary && (
+              <p className="text-sm text-destructive">{errors.coApplicantMonthlySalary}</p>
+            )}
+            {data.coApplicantMonthlySalary && data.coApplicantMonthlySalary > 0 && !errors.coApplicantMonthlySalary && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Annual: ₹{(data.coApplicantMonthlySalary * 12).toLocaleString('en-IN')}
+                </p>
+                <Alert className="mt-2">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className={getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).color}>
+                    <span className="font-medium">{getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).range}:</span>{' '}
+                    {getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).label}
+                  </AlertDescription>
+                </Alert>
+              </>
+            )}
           </div>
-          <Input
-            id="coApplicantSalary"
-            type="number"
-            value={data.coApplicantSalary || ''}
-            onChange={(e) => onUpdate({ coApplicantSalary: parseFloat(e.target.value) })}
-            required
-            min="0"
-            placeholder="Annual income in rupees"
-          />
-          {incomeIndicator && (
-            <Card className="bg-muted/50">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className={`h-4 w-4 ${incomeIndicator.color}`} />
-                  <div>
-                    <p className="text-sm font-medium">{incomeIndicator.label}</p>
-                    <p className="text-xs text-muted-foreground">Income range: {incomeIndicator.range}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="coApplicantPinCode">PIN Code *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantPinCode} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <CoachingTooltip content="Occupation/job title (optional, but helpful for lender assessment)">
+                <Label htmlFor="coApplicantOccupation">Occupation</Label>
+              </CoachingTooltip>
+              <Input
+                id="coApplicantOccupation"
+                placeholder="e.g., Software Engineer"
+                value={data.coApplicantOccupation || ''}
+                onChange={(e) => handleChange('coApplicantOccupation', e.target.value)}
+              />
+            </div>
+
+            {data.coApplicantEmploymentType === 'salaried' && (
+              <div className="space-y-2">
+                <CoachingTooltip content="Employer/company name (helps with verification)">
+                  <Label htmlFor="coApplicantEmployer">Employer Name</Label>
+                </CoachingTooltip>
+                <Input
+                  id="coApplicantEmployer"
+                  placeholder="e.g., TCS, Infosys"
+                  value={data.coApplicantEmployer || ''}
+                  onChange={(e) => handleChange('coApplicantEmployer', e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <CoachingTooltip content="Years in current employment (optional)">
+                <Label htmlFor="coApplicantEmploymentDuration">Employment Duration (years)</Label>
+              </CoachingTooltip>
+              <Input
+                id="coApplicantEmploymentDuration"
+                type="number"
+                min="0"
+                max="50"
+                placeholder="5"
+                value={data.coApplicantEmploymentDuration || ''}
+                onChange={(e) => handleChange('coApplicantEmploymentDuration', e.target.value ? parseInt(e.target.value) : undefined)}
+              />
+            </div>
           </div>
-          <Input
-            id="coApplicantPinCode"
-            value={data.coApplicantPinCode || ''}
-            onChange={(e) => handleChange('coApplicantPinCode', e.target.value)}
-            maxLength={6}
-            placeholder="6-digit PIN code"
-            className={errors.coApplicantPinCode ? 'border-destructive' : ''}
-          />
-          {errors.coApplicantPinCode && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.coApplicantPinCode}
-            </p>
-          )}
-        </div>
-      </div>
 
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onPrev}>Previous</Button>
-        <Button type="submit" size="lg">Next: Review Application</Button>
+          <div className="space-y-2">
+            <CoachingTooltip content={COACHING_MESSAGES.coApplicantPinCode}>
+              <Label htmlFor="coApplicantPinCode">
+                PIN Code <span className="text-destructive">*</span>
+              </Label>
+            </CoachingTooltip>
+            <Input
+              id="coApplicantPinCode"
+              placeholder="6-digit PIN code"
+              value={data.coApplicantPinCode || ''}
+              onChange={(e) => handleChange('coApplicantPinCode', e.target.value)}
+              maxLength={6}
+            />
+            {errors.coApplicantPinCode && (
+              <p className="text-sm text-destructive">{errors.coApplicantPinCode}</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex gap-4">
+        <Button type="button" variant="outline" onClick={onPrev}>
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+        <Button type="submit" className="flex-1">
+          Continue
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
       </div>
     </form>
   );
-};
-
-export default CoApplicantDetailsStep;
+}

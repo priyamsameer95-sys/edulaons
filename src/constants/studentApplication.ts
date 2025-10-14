@@ -113,3 +113,33 @@ export const VALIDATION_PATTERNS = {
 export const MIN_AGE = 16;
 export const MAX_UNIVERSITIES = 3;
 export const MIN_LOAN_AMOUNT = 100000;
+
+export const ACADEMIC_VALIDATION = {
+  tenth: { min: 0, max: 100 },
+  twelfth: { min: 0, max: 100 },
+  bachelors_percentage: { min: 0, max: 100 },
+  bachelors_cgpa: { min: 0, max: 10 },
+  test_scores: {
+    IELTS: { min: 0, max: 9 },
+    TOEFL: { min: 0, max: 120 },
+    GRE: { min: 260, max: 340 },
+    GMAT: { min: 200, max: 800 },
+    PTE: { min: 10, max: 90 },
+    SAT: { min: 400, max: 1600 }
+  }
+} as const;
+
+export const EMPLOYMENT_TYPES = [
+  { value: 'salaried', label: 'Salaried' },
+  { value: 'self_employed', label: 'Self-Employed' },
+  { value: 'business_owner', label: 'Business Owner' }
+] as const;
+
+export const TEST_TYPES = [
+  { value: 'IELTS', label: 'IELTS (0-9)', max: 9 },
+  { value: 'TOEFL', label: 'TOEFL (0-120)', max: 120 },
+  { value: 'GRE', label: 'GRE (260-340)', max: 340 },
+  { value: 'GMAT', label: 'GMAT (200-800)', max: 800 },
+  { value: 'PTE', label: 'PTE (10-90)', max: 90 },
+  { value: 'SAT', label: 'SAT (400-1600)', max: 1600 }
+] as const;

@@ -57,7 +57,7 @@ const StudentApplicationFlow = () => {
         state: 'Maharashtra',
         postalCode: '400001',
         nationality: 'Indian',
-        qualification: 'bachelors',
+        highestQualification: 'bachelors',
         universities: [], // Will be filled manually from dropdown
         course: 'Master of Science in Computer Science',
         studyDestination: 'USA',

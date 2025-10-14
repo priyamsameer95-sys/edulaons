@@ -133,7 +133,7 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             <CoachingTooltip content={COACHING_MESSAGES.loanType} />
           </div>
           <LoanTypeSelector 
-            value={data.loanType || 'secured'} 
+            value={data.loanType as 'secured' | 'unsecured' || 'secured'} 
             onChange={(value) => onUpdate({ loanType: value })}
           />
         </div>

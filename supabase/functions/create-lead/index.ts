@@ -179,7 +179,12 @@ serve(async (req) => {
       email: coApplicantEmail || null,
       phone: cleanCoApplicantPhone,
       relationship: body.co_applicant_relationship,
-      salary: parseFloat(body.co_applicant_salary),
+      salary: parseFloat(body.co_applicant_monthly_salary) * 12, // Store annual for compatibility
+      monthly_salary: parseFloat(body.co_applicant_monthly_salary),
+      employment_type: body.co_applicant_employment_type,
+      occupation: body.co_applicant_occupation || null,
+      employer: body.co_applicant_employer || null,
+      employment_duration_years: body.co_applicant_employment_duration || null,
       pin_code: body.co_applicant_pin_code.trim()
     };
 

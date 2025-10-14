@@ -10,28 +10,43 @@ export interface StudentApplicationData {
   name: string;
   phone: string;
   dateOfBirth: string;
-  gender: string;
-  city: string;
-  state: string;
+  gender?: string;
+  city?: string;
+  state?: string;
   postalCode: string;
-  nationality: string;
-  qualification: string;
+  nationality?: string;
+  
+  // Academic Background
+  highestQualification: string;
+  tenthPercentage?: number;
+  twelfthPercentage?: number;
+  bachelorsPercentage?: number;
+  bachelorsCgpa?: number;
+  
+  // Test Scores (Optional)
+  testType?: 'IELTS' | 'TOEFL' | 'GRE' | 'GMAT' | 'PTE' | 'SAT';
+  testScore?: number;
+  testCertificateNumber?: string;
+  testDate?: string;
   
   // Study Details
-  universities: string[]; // Array of university IDs
-  course: string;
+  universities: string[];
   studyDestination: string;
+  loanType: 'secured' | 'unsecured';
   intakeMonth: number;
   intakeYear: number;
   loanAmount: number;
-  loanType: string;
   
   // Co-Applicant Details
   coApplicantName: string;
   coApplicantRelationship: string;
   coApplicantPhone: string;
   coApplicantEmail: string;
-  coApplicantSalary: number;
+  coApplicantMonthlySalary: number;
+  coApplicantEmploymentType: 'salaried' | 'self_employed' | 'business_owner';
+  coApplicantOccupation?: string;
+  coApplicantEmployer?: string;
+  coApplicantEmploymentDuration?: number;
   coApplicantPinCode: string;
 }
 
@@ -122,16 +137,35 @@ export const useStudentApplication = () => {
           student_email: user.user?.email!,
           student_phone: applicationData.phone!,
           student_pin_code: applicationData.postalCode!,
+          date_of_birth: applicationData.dateOfBirth,
+          gender: applicationData.gender,
+          city: applicationData.city,
+          state: applicationData.state,
+          nationality: applicationData.nationality || 'Indian',
+          highest_qualification: applicationData.highestQualification!,
+          tenth_percentage: applicationData.tenthPercentage,
+          twelfth_percentage: applicationData.twelfthPercentage,
+          bachelors_percentage: applicationData.bachelorsPercentage,
+          bachelors_cgpa: applicationData.bachelorsCgpa,
+          test_type: applicationData.testType,
+          test_score: applicationData.testScore,
+          test_certificate_number: applicationData.testCertificateNumber,
+          test_date: applicationData.testDate,
           co_applicant_name: applicationData.coApplicantName!,
           co_applicant_relationship: applicationData.coApplicantRelationship!,
-          co_applicant_salary: applicationData.coApplicantSalary!,
+          co_applicant_monthly_salary: applicationData.coApplicantMonthlySalary!,
+          co_applicant_employment_type: applicationData.coApplicantEmploymentType!,
+          co_applicant_occupation: applicationData.coApplicantOccupation,
+          co_applicant_employer: applicationData.coApplicantEmployer,
+          co_applicant_employment_duration: applicationData.coApplicantEmploymentDuration,
           co_applicant_pin_code: applicationData.coApplicantPinCode!,
           co_applicant_phone: applicationData.coApplicantPhone!,
           co_applicant_email: applicationData.coApplicantEmail!,
-          amount_requested: applicationData.loanAmount!,
+          loan_amount: applicationData.loanAmount!,
           loan_type: applicationData.loanType!,
-          country: applicationData.studyDestination!,
-          intake_month: `${applicationData.intakeYear}-${String(applicationData.intakeMonth).padStart(2, '0')}`,
+          study_destination: applicationData.studyDestination!,
+          intake_month: applicationData.intakeMonth!,
+          intake_year: applicationData.intakeYear!,
           universities: applicationData.universities!,
         },
       });
