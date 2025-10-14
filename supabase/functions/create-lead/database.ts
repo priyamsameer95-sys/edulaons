@@ -73,7 +73,7 @@ export async function checkDuplicateApplication(
 }
 
 /**
- * Create student record
+ * Create or get existing student record
  */
 export async function createStudent(
   supabaseAdmin: SupabaseClient,
@@ -82,6 +82,51 @@ export async function createStudent(
   const studentEmail = body.student_email?.trim();
   const cleanPhone = cleanPhoneNumber(body.student_phone);
   
+  // Check if student already exists by email
+  if (studentEmail) {
+    const { data: existingStudent } = await supabaseAdmin
+      .from('students')
+      .select('*')
+      .eq('email', studentEmail)
+      .maybeSingle();
+    
+    if (existingStudent) {
+      console.log('✅ Found existing student:', existingStudent.id);
+      
+      // Update student with latest information
+      const updateData = {
+        name: body.student_name.trim(),
+        phone: cleanPhone,
+        postal_code: body.student_pin_code.trim(),
+        date_of_birth: body.date_of_birth || existingStudent.date_of_birth,
+        gender: body.gender || existingStudent.gender,
+        city: body.city || existingStudent.city,
+        state: body.state || existingStudent.state,
+        nationality: body.nationality || existingStudent.nationality,
+        highest_qualification: body.highest_qualification || existingStudent.highest_qualification,
+        tenth_percentage: body.tenth_percentage || existingStudent.tenth_percentage,
+        twelfth_percentage: body.twelfth_percentage || existingStudent.twelfth_percentage,
+        bachelors_percentage: body.bachelors_percentage || existingStudent.bachelors_percentage,
+        bachelors_cgpa: body.bachelors_cgpa || existingStudent.bachelors_cgpa
+      };
+      
+      const { data: updatedStudent, error: updateError } = await supabaseAdmin
+        .from('students')
+        .update(updateData)
+        .eq('id', existingStudent.id)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.warn('⚠️ Failed to update student info:', updateError);
+        return existingStudent;
+      }
+      
+      return updatedStudent;
+    }
+  }
+  
+  // Create new student
   const studentData = {
     name: body.student_name.trim(),
     email: studentEmail || `${cleanPhone}@temp.placeholder`,
@@ -110,6 +155,7 @@ export async function createStudent(
     throw new Error(`Failed to create student: ${error.message}`);
   }
   
+  console.log('✅ Created new student:', student.id);
   return student;
 }
 
