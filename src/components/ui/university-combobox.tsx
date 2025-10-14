@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, Loader2, GraduationCap } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, GraduationCap, AlertCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useUniversities } from "@/hooks/useUniversities";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface UniversityComboboxProps {
   country: string;
@@ -38,7 +39,10 @@ export function UniversityCombobox({
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedUniversity, setSelectedUniversity] = React.useState<{ id: string; name: string } | null>(null);
-  const { universities, loading, searchUniversities, totalCount } = useUniversities(country);
+  const { universities, loading, error: fetchError, searchUniversities, totalCount, refetch } = useUniversities(country);
+  
+  // Debounce search input for better performance
+  const debouncedInputValue = useDebounce(inputValue, 300);
 
   // Find university by ID when value changes
   React.useEffect(() => {
@@ -85,11 +89,11 @@ export function UniversityCombobox({
   };
 
   const filteredUniversities = React.useMemo(() => {
-    return searchUniversities(inputValue);
-  }, [searchUniversities, inputValue]);
+    return searchUniversities(debouncedInputValue);
+  }, [searchUniversities, debouncedInputValue]);
 
-  const showNoResults = !loading && inputValue && filteredUniversities.length === 0;
-  const showSuggestions = !loading && (!inputValue || filteredUniversities.length > 0);
+  const showNoResults = !loading && !fetchError && inputValue && filteredUniversities.length === 0;
+  const showSuggestions = !loading && !fetchError && (!inputValue || filteredUniversities.length > 0);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -125,11 +129,36 @@ export function UniversityCombobox({
           />
           <CommandList>
             {loading && (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                <span className="text-sm text-muted-foreground">
-                  Loading universities...
-                </span>
+              <div className="p-2 space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex items-center space-x-2 p-2">
+                    <div className="h-4 w-4 bg-muted animate-pulse rounded" />
+                    <div className="space-y-1 flex-1">
+                      <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                      <div className="h-3 bg-muted animate-pulse rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {fetchError && (
+              <div className="text-center py-6 px-4">
+                <AlertCircle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+                <p className="text-sm font-medium text-destructive mb-1">
+                  Failed to load universities
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {fetchError}
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => refetch()}
+                  type="button"
+                >
+                  Retry
+                </Button>
               </div>
             )}
 

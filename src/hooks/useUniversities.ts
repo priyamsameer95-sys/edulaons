@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { getCountryNameFromCode } from "@/utils/countryMapping";
 
@@ -12,97 +13,74 @@ interface University {
 }
 
 export const useUniversities = (country: string) => {
-  const [loading, setLoading] = useState(false);
-  const [universities, setUniversities] = useState<University[]>([]);
+  const countryName = country ? getCountryNameFromCode(country) : '';
 
-  const filteredUniversities = useMemo(() => {
-    return universities
-      .filter(uni => !country || uni.country.toLowerCase() === country.toLowerCase())
-      .sort((a, b) => {
-        // Popular universities first, then by QS rank (lower is better)
-        if (a.popular && !b.popular) return -1;
-        if (!a.popular && b.popular) return 1;
-        
-        // Both popular or both not popular, sort by rank
-        if (a.qs_rank && b.qs_rank) return a.qs_rank - b.qs_rank;
-        if (a.qs_rank && !b.qs_rank) return -1;
-        if (!a.qs_rank && b.qs_rank) return 1;
-        
-        // Both have no rank, sort alphabetically
-        return a.name.localeCompare(b.name);
-      });
-  }, [universities, country]);
+  const { data: universities = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['universities', countryName],
+    queryFn: async () => {
+      let query = supabase
+        .from('universities')
+        .select('*')
+        .order('global_rank', { ascending: true, nullsFirst: false });
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    let isMounted = true;
-
-    async function fetchUniversities() {
-      setLoading(true);
-      
-      try {
-        let query = supabase
-          .from('universities')
-          .select('*')
-          .order('global_rank', { ascending: true, nullsFirst: false });
-
-        if (country) {
-          // Convert country code to full name for database query
-          const countryName = getCountryNameFromCode(country);
-          query = query.eq('country', countryName);
-        }
-
-        const { data, error } = await query.limit(1000);
-
-        // Check if component unmounted or country changed
-        if (abortController.signal.aborted || !isMounted) return;
-
-        if (error) {
-          console.error('Error fetching universities:', error);
-          if (isMounted) setUniversities([]);
-        } else {
-          const transformedData: University[] = (data || []).map((uni: any) => ({
-            id: uni.id,
-            name: uni.name,
-            country: uni.country,
-            city: uni.city,
-            qs_rank: uni.global_rank,
-            popular: uni.global_rank ? uni.global_rank <= 100 : false, // Top 100 are popular
-          }));
-          
-          if (isMounted) setUniversities(transformedData);
-        }
-      } catch (error) {
-        if (abortController.signal.aborted || !isMounted) return;
-        console.error('Error in fetchUniversities:', error);
-        if (isMounted) setUniversities([]);
-      } finally {
-        if (isMounted) setLoading(false);
+      if (countryName) {
+        query = query.eq('country', countryName);
       }
-    }
 
-    fetchUniversities();
+      const { data, error } = await query.limit(1000);
 
-    return () => {
-      abortController.abort();
-      isMounted = false;
-    };
-  }, [country]);
+      if (error) throw new Error(error.message);
+
+      return (data || []).map((uni: any) => ({
+        id: uni.id,
+        name: uni.name,
+        country: uni.country,
+        city: uni.city,
+        qs_rank: uni.global_rank,
+        popular: uni.global_rank ? uni.global_rank <= 100 : false,
+      }));
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
+    enabled: !!countryName, // Only fetch if country is selected
+    retry: 2, // Retry twice on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+
+  // Sort universities
+  const sortedUniversities = useMemo(() => {
+    return [...universities].sort((a, b) => {
+      // Popular universities first, then by QS rank (lower is better)
+      if (a.popular && !b.popular) return -1;
+      if (!a.popular && b.popular) return 1;
+      
+      // Both popular or both not popular, sort by rank
+      if (a.qs_rank && b.qs_rank) return a.qs_rank - b.qs_rank;
+      if (a.qs_rank && !b.qs_rank) return -1;
+      if (!a.qs_rank && b.qs_rank) return 1;
+      
+      // Both have no rank, sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+  }, [universities]);
+
 
   const searchUniversities = (query: string) => {
-    if (!query.trim()) return filteredUniversities;
+    if (!query.trim()) return sortedUniversities;
     
     const searchTerm = query.toLowerCase().trim();
-    return filteredUniversities.filter(uni => 
+    return sortedUniversities.filter(uni => 
       uni.name.toLowerCase().includes(searchTerm) ||
       uni.city.toLowerCase().includes(searchTerm)
     );
   };
 
   return {
-    universities: filteredUniversities,
-    loading,
+    universities: sortedUniversities,
+    loading: isLoading,
+    error: error?.message || null,
     searchUniversities,
-    totalCount: filteredUniversities.length
+    totalCount: sortedUniversities.length,
+    refetch,
   };
 };
