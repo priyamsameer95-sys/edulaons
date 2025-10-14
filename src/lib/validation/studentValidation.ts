@@ -4,13 +4,16 @@
 import { z } from 'zod';
 import { VALIDATION_RULES, ERROR_MESSAGES } from '@/constants/validationRules';
 
-// Test Score Schema
+// Test Score Schema - Only validates if testScore is provided
 export const testScoreSchema = z.object({
   testType: z.enum(['IELTS', 'TOEFL', 'GRE', 'GMAT', 'PTE', 'SAT']),
-  testScore: z.number().min(0, 'Test score cannot be negative'),
+  testScore: z.number().optional(),
   testCertificateNumber: z.string().optional(),
   testDate: z.string().optional(),
 }).refine((data) => {
+  // Skip validation if no test score provided
+  if (!data.testScore || data.testScore === 0) return true;
+  
   const rules = VALIDATION_RULES.TEST_SCORES[data.testType];
   return data.testScore >= rules.MIN && data.testScore <= rules.MAX;
 }, (data) => ({

@@ -37,6 +37,21 @@ export const separateUniversities = (universities: string[]) => {
 };
 
 /**
+ * Clean and filter test scores - remove empty or invalid entries
+ */
+export const cleanTestScores = (tests?: Array<any>) => {
+  if (!tests || !Array.isArray(tests)) return undefined;
+  
+  const cleaned = tests.filter(test => 
+    test.testType && 
+    test.testScore && 
+    test.testScore > 0
+  );
+  
+  return cleaned.length > 0 ? cleaned : undefined;
+};
+
+/**
  * Transform application data to edge function payload
  */
 export const transformToEdgeFunctionPayload = (
@@ -61,7 +76,7 @@ export const transformToEdgeFunctionPayload = (
     twelfth_percentage: data.twelfthPercentage,
     bachelors_percentage: data.bachelorsPercentage,
     bachelors_cgpa: data.bachelorsCgpa,
-    tests: data.tests,
+    tests: cleanTestScores(data.tests),
     
     // Study fields
     universities: data.universities,

@@ -96,11 +96,23 @@ export const useStudentApplication = () => {
         throw new Error('You must be logged in to submit an application');
       }
 
+      // Clean test scores before validation
+      const cleanedData = {
+        ...applicationData,
+        tests: applicationData.tests?.filter(test => 
+          test.testType && test.testScore && test.testScore > 0
+        )
+      };
+
       // Validate complete application data
-      const validationResult = studentApplicationSchema.safeParse(applicationData);
+      const validationResult = studentApplicationSchema.safeParse(cleanedData);
       if (!validationResult.success) {
         const firstError = validationResult.error.errors[0];
-        throw new Error(firstError?.message || 'Please fill in all required fields correctly');
+        const fieldPath = firstError.path.join('.');
+        const errorMessage = fieldPath 
+          ? `${fieldPath}: ${firstError.message}` 
+          : firstError.message;
+        throw new Error(errorMessage || 'Please fill in all required fields correctly');
       }
 
       // Transform data to edge function payload
