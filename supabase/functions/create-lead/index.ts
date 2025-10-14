@@ -93,23 +93,39 @@ serve(async (req) => {
     // Step 1: Validate universities match study destination
     if (body.universities && body.universities.length > 0) {
       console.log('🎓 [create-lead] Validating universities...');
-      const { data: universities, error: uniValidationError } = await supabaseAdmin
-        .from('universities')
-        .select('id, country')
-        .in('id', body.universities);
+      
+      // Separate UUIDs from custom university names
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const universityUUIDs = body.universities.filter((u: string) => uuidPattern.test(u));
+      const customUniversities = body.universities.filter((u: string) => !uuidPattern.test(u));
+      
+      console.log(`📊 [create-lead] Found ${universityUUIDs.length} DB universities, ${customUniversities.length} custom entries`);
+      
+      // Validate only UUIDs against database
+      if (universityUUIDs.length > 0) {
+        const { data: universities, error: uniValidationError } = await supabaseAdmin
+          .from('universities')
+          .select('id, country')
+          .in('id', universityUUIDs);
 
-      if (uniValidationError) {
-        throw new Error('Failed to validate universities');
+        if (uniValidationError) {
+          throw new Error('Failed to validate universities');
+        }
+
+        const invalidUniversities = universities?.filter(
+          (uni: any) => uni.country.toLowerCase() !== body.country.toLowerCase()
+        );
+
+        if (invalidUniversities && invalidUniversities.length > 0) {
+          throw new Error(`Selected universities must be from ${body.country}`);
+        }
+        console.log('✅ [create-lead] DB universities validated');
       }
-
-      const invalidUniversities = universities?.filter(
-        (uni: any) => uni.country.toLowerCase() !== body.country.toLowerCase()
-      );
-
-      if (invalidUniversities && invalidUniversities.length > 0) {
-        throw new Error(`Selected universities must be from ${body.country}`);
+      
+      // Custom universities are allowed (user typed them)
+      if (customUniversities.length > 0) {
+        console.log('✅ [create-lead] Custom universities accepted:', customUniversities);
       }
-      console.log('✅ [create-lead] Universities validated');
     }
 
     // Step 2: Check for duplicate applications
@@ -277,24 +293,33 @@ serve(async (req) => {
     if (body.universities && body.universities.length > 0) {
       console.log('🎓 [create-lead] Creating university associations...');
       
-      const universityRecords = body.universities
-        .filter((uniId: string) => uniId && uniId.trim())
-        .map((universityId: string) => ({
+      // Separate UUIDs from custom names (same logic as validation)
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const universityUUIDs = body.universities.filter((u: string) => u && u.trim() && uuidPattern.test(u));
+      const customUniversities = body.universities.filter((u: string) => u && u.trim() && !uuidPattern.test(u));
+      
+      // Create associations only for valid UUIDs
+      if (universityUUIDs.length > 0) {
+        const universityRecords = universityUUIDs.map((universityId: string) => ({
           lead_id: lead.id,
           university_id: universityId
         }));
 
-      if (universityRecords.length > 0) {
         const { error: uniError } = await supabaseAdmin
           .from('lead_universities')
           .insert(universityRecords);
         
         if (uniError) {
           console.warn('⚠️ [create-lead] University associations failed:', uniError);
-          // Don't fail the whole operation
         } else {
-          console.log('✅ [create-lead] University associations created');
+          console.log(`✅ [create-lead] Created ${universityUUIDs.length} university associations`);
         }
+      }
+      
+      // Log custom universities (could be stored in lead metadata in future)
+      if (customUniversities.length > 0) {
+        console.log(`📝 [create-lead] Custom universities entered:`, customUniversities);
+        // These are preserved in the validation step but not linked to DB
       }
     }
 
