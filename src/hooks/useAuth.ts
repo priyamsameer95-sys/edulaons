@@ -10,6 +10,7 @@ export interface AppUser {
   role: 'partner' | 'admin' | 'super_admin' | 'student' | 'kam';
   partner_id?: string;
   is_active: boolean;
+  first_login_at?: string | null;
 }
 
 export function useAuth() {
@@ -103,6 +104,27 @@ export function useAuth() {
               });
             }
             
+            // Track first login for students
+            if (appUserData?.role === 'student' && !appUserData.first_login_at) {
+              logger.info('[useAuth] First login detected for student, updating first_login_at');
+              const { error: updateError } = await supabase
+                .from('app_users')
+                .update({ first_login_at: new Date().toISOString() })
+                .eq('id', session.user.id)
+                .is('first_login_at', null);
+              
+              if (updateError) {
+                logger.error('[useAuth] Error updating first_login_at:', updateError);
+              } else {
+                logger.info('[useAuth] first_login_at updated successfully');
+                // Refresh app user data to get the updated first_login_at
+                const updatedAppUser = await fetchAppUser(session.user.id);
+                setAppUser(updatedAppUser);
+                setLoading(false);
+                return;
+              }
+            }
+            
             setAppUser(appUserData);
             setLoading(false);
           }, 0);
@@ -121,13 +143,34 @@ export function useAuth() {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchAppUser(session.user.id).then((appUserData) => {
+        fetchAppUser(session.user.id).then(async (appUserData) => {
           if (!appUserData) {
             logger.warn('Failed to fetch app user on initial load');
             handleError(new Error('Failed to verify account'), {
               title: 'Connection Issue',
               description: 'Having trouble loading your profile. Please refresh if this persists.'
             });
+          }
+          
+          // Track first login for students on initial session check
+          if (appUserData?.role === 'student' && !appUserData.first_login_at) {
+            logger.info('[useAuth] First login detected for student (initial check), updating first_login_at');
+            const { error: updateError } = await supabase
+              .from('app_users')
+              .update({ first_login_at: new Date().toISOString() })
+              .eq('id', session.user.id)
+              .is('first_login_at', null);
+            
+            if (updateError) {
+              logger.error('[useAuth] Error updating first_login_at:', updateError);
+            } else {
+              logger.info('[useAuth] first_login_at updated successfully');
+              // Refresh app user data to get the updated first_login_at
+              const updatedAppUser = await fetchAppUser(session.user.id);
+              setAppUser(updatedAppUser);
+              setLoading(false);
+              return;
+            }
           }
           
           setAppUser(appUserData);
