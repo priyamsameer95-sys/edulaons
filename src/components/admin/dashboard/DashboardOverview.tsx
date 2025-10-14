@@ -1,18 +1,24 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KPICard } from './KPICard';
 import { LeadPipelineChart } from './LeadPipelineChart';
 import { EnhancedLeadTable } from './EnhancedLeadTable';
 import { SmartFiltersPanel } from './SmartFiltersPanel';
 import { GeographicDistribution } from './GeographicDistribution';
-import { AlertCircle, Bell, ChevronRight } from 'lucide-react';
+import { AlertCircle, Bell, ChevronRight, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RefactoredLead } from '@/types/refactored-lead';
+import { ActiveFilters } from '@/pages/AdminDashboard';
+import { useMemo } from 'react';
 
 interface DashboardOverviewProps {
   allLeads: RefactoredLead[];
   adminKPIs: any;
   isLoadingKPIs: boolean;
+  activeFilters: ActiveFilters;
+  onFiltersChange: (filters: ActiveFilters) => void;
+  onRunSanityCheck: () => void;
+  isRunningSanityCheck: boolean;
   onViewLead: (lead: RefactoredLead) => void;
   onUpdateStatus: (lead: RefactoredLead) => void;
 }
@@ -21,6 +27,10 @@ export const DashboardOverview = ({
   allLeads, 
   adminKPIs, 
   isLoadingKPIs,
+  activeFilters,
+  onFiltersChange,
+  onRunSanityCheck,
+  isRunningSanityCheck,
   onViewLead,
   onUpdateStatus 
 }: DashboardOverviewProps) => {
@@ -28,6 +38,43 @@ export const DashboardOverview = ({
   const activeLeads = allLeads.filter(l => l.status !== 'rejected' && l.status !== 'approved').length;
   const approvedLeads = allLeads.filter(l => l.status === 'approved').length;
   const conversionRate = totalLeads > 0 ? ((approvedLeads / totalLeads) * 100).toFixed(1) : '0';
+
+  // Calculate priority actions from real data
+  const priorityActions = useMemo(() => {
+    const documentsPending = allLeads.filter(l => 
+      l.documents_status === 'pending' || l.documents_status === 'resubmission_required'
+    ).length;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const leadsStuck = allLeads.filter(l => {
+      if (l.status !== 'new' && l.status !== 'in_progress') return false;
+      const statusDate = new Date(l.updated_at);
+      return statusDate < sevenDaysAgo;
+    }).length;
+
+    return { documentsPending, leadsStuck };
+  }, [allLeads]);
+
+  const hasCriticalIssues = priorityActions.documentsPending > 5 || priorityActions.leadsStuck > 3;
+  const hasAnyIssues = priorityActions.documentsPending > 0 || priorityActions.leadsStuck > 0;
+
+  const handlePriorityAction = (action: 'documents' | 'stuck') => {
+    if (action === 'documents') {
+      onFiltersChange({
+        documents_status: ['pending', 'resubmission_required']
+      });
+    } else if (action === 'stuck') {
+      onFiltersChange({
+        status: ['new', 'in_progress']
+      });
+    }
+    // Scroll to table
+    setTimeout(() => {
+      document.getElementById('leads-table')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
 
   return (
     <div className="space-y-6">
@@ -37,24 +84,39 @@ export const DashboardOverview = ({
           <h1 className="text-3xl font-bold tracking-tight">Welcome back, Admin</h1>
           <p className="text-muted-foreground mt-1">Here's what's happening with your loan applications</p>
         </div>
-        <Button variant="outline" size="sm">
-          <Bell className="h-4 w-4 mr-2" />
-          Run Sanity Check
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={onRunSanityCheck}
+          disabled={isRunningSanityCheck}
+        >
+          {isRunningSanityCheck ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Bell className="h-4 w-4 mr-2" />
+          )}
+          {isRunningSanityCheck ? 'Running...' : 'Run Sanity Check'}
         </Button>
       </div>
 
-      {/* Alert for critical actions */}
-      <Alert className="border-destructive bg-destructive/10">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Attention Required</AlertTitle>
-        <AlertDescription className="flex items-center justify-between">
-          <span>You have pending actions that need immediate attention</span>
-          <Button variant="destructive" size="sm">
-            View All
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </AlertDescription>
-      </Alert>
+      {/* Alert for critical actions - only show if critical issues exist */}
+      {hasCriticalIssues && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Attention Required</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>You have {priorityActions.documentsPending} pending documents and {priorityActions.leadsStuck} stuck leads</span>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => handlePriorityAction('documents')}
+            >
+              View All
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* KPI Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -62,25 +124,25 @@ export const DashboardOverview = ({
           title="Total Leads"
           value={isLoadingKPIs ? "..." : totalLeads.toString()}
           subtitle="All applications"
-          progress={75}
+          progress={totalLeads > 0 ? Math.min((totalLeads / 100) * 100, 100) : 0}
         />
         <KPICard
           title="Active Leads"
           value={isLoadingKPIs ? "..." : activeLeads.toString()}
           subtitle="In progress"
-          progress={65}
+          progress={totalLeads > 0 ? (activeLeads / totalLeads) * 100 : 0}
         />
         <KPICard
           title="Approved"
           value={isLoadingKPIs ? "..." : approvedLeads.toString()}
           subtitle="Successfully converted"
-          progress={85}
+          progress={parseFloat(conversionRate)}
         />
         <KPICard
           title="Conversion Rate"
           value={isLoadingKPIs ? "..." : `${conversionRate}%`}
           subtitle="Approval percentage"
-          progress={parseInt(conversionRate)}
+          progress={parseFloat(conversionRate)}
         />
       </div>
 
@@ -94,9 +156,10 @@ export const DashboardOverview = ({
           </div>
 
           {/* Enhanced Lead Table */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2" id="leads-table">
             <EnhancedLeadTable 
               leads={allLeads}
+              globalFilters={activeFilters}
               onViewLead={onViewLead}
               onUpdateStatus={onUpdateStatus}
             />
@@ -106,41 +169,50 @@ export const DashboardOverview = ({
         {/* Right Column - Filters and Distribution */}
         <div className="space-y-6">
           {/* Smart Filters Panel */}
-          <SmartFiltersPanel />
+          <SmartFiltersPanel 
+            leads={allLeads}
+            activeFilters={activeFilters}
+            onFiltersChange={onFiltersChange}
+          />
 
           {/* Geographic Distribution */}
           <GeographicDistribution leads={allLeads} />
 
-          {/* Priority Actions Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-                Requires Attention
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { label: 'Documents Pending', count: 8, priority: 'high' },
-                { label: 'Leads Stuck >7 Days', count: 5, priority: 'medium' },
-                { label: 'New Partner Signups', count: 3, priority: 'low' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className={`text-sm font-bold ${
-                    item.priority === 'high' ? 'text-destructive' :
-                    item.priority === 'medium' ? 'text-warning' :
-                    'text-primary'
-                  }`}>
-                    {item.count}
-                  </span>
-                </div>
-              ))}
-              <Button variant="outline" className="w-full mt-2">
-                View All Issues
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Priority Actions Card - only show if there are issues */}
+          {hasAnyIssues && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  Requires Attention
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {priorityActions.documentsPending > 0 && (
+                  <div 
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => handlePriorityAction('documents')}
+                  >
+                    <span className="text-sm font-medium">Documents Pending</span>
+                    <span className="text-sm font-bold text-destructive">
+                      {priorityActions.documentsPending}
+                    </span>
+                  </div>
+                )}
+                {priorityActions.leadsStuck > 0 && (
+                  <div 
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => handlePriorityAction('stuck')}
+                  >
+                    <span className="text-sm font-medium">Leads Stuck &gt;7 Days</span>
+                    <span className="text-sm font-bold text-warning">
+                      {priorityActions.leadsStuck}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

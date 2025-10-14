@@ -15,6 +15,13 @@ import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { RefactoredLead } from "@/types/refactored-lead";
 
+export interface ActiveFilters {
+  status?: string[];
+  documents_status?: string[];
+  loan_amount?: string[];
+  study_destination?: string[];
+}
+
 interface AdminKPIs {
   totalLeads: number;
   totalPartners: number;
@@ -44,6 +51,8 @@ const AdminDashboard = () => {
     totalLoanAmount: 0,
   });
   const [isLoadingKPIs, setIsLoadingKPIs] = useState(true);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({});
+  const [isRunningSanityCheck, setIsRunningSanityCheck] = useState(false);
 
   const fetchAdminKPIs = async () => {
     try {
@@ -100,6 +109,34 @@ const AdminDashboard = () => {
     fetchAdminKPIs();
   }, []);
 
+  const handleRunSanityCheck = async () => {
+    setIsRunningSanityCheck(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('data-sanity-check');
+      
+      if (error) throw error;
+      
+      const report = data;
+      const issueCount = (report?.errors || 0) + (report?.warnings || 0);
+      
+      toast({
+        title: issueCount > 0 ? "Issues Found" : "All Good!",
+        description: issueCount > 0 
+          ? `Found ${report.errors || 0} errors and ${report.warnings || 0} warnings`
+          : "No data integrity issues detected",
+        variant: issueCount > 0 ? "destructive" : "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to run sanity check",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningSanityCheck(false);
+    }
+  };
+
   const activeTab = searchParams.get('tab') || 'overview';
 
   return (
@@ -109,6 +146,10 @@ const AdminDashboard = () => {
           allLeads={allLeads}
           adminKPIs={adminKPIs}
           isLoadingKPIs={isLoadingKPIs}
+          activeFilters={activeFilters}
+          onFiltersChange={setActiveFilters}
+          onRunSanityCheck={handleRunSanityCheck}
+          isRunningSanityCheck={isRunningSanityCheck}
           onViewLead={(lead) => {
             setSelectedLead(lead);
             setIsLeadSheetOpen(true);

@@ -14,52 +14,84 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { 
   Search, 
-  Filter, 
   MoreVertical, 
   Eye, 
   Edit, 
 } from 'lucide-react';
 import { RefactoredLead } from '@/types/refactored-lead';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ActiveFilters } from '@/pages/AdminDashboard';
 
 interface EnhancedLeadTableProps {
   leads: RefactoredLead[];
+  globalFilters?: ActiveFilters;
   onViewLead: (lead: RefactoredLead) => void;
   onUpdateStatus: (lead: RefactoredLead) => void;
 }
 
 const statusColors: Record<string, string> = {
   new: 'bg-blue-100 text-blue-800 border-blue-200',
+  contacted: 'bg-cyan-100 text-cyan-800 border-cyan-200',
   in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  under_review: 'bg-purple-100 text-purple-800 border-purple-200',
+  document_review: 'bg-purple-100 text-purple-800 border-purple-200',
   approved: 'bg-green-100 text-green-800 border-green-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
-  disbursed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  withdrawn: 'bg-gray-100 text-gray-800 border-gray-200',
 };
 
 const statusLabels: Record<string, string> = {
   new: 'New',
+  contacted: 'Contacted',
   in_progress: 'In Progress',
-  under_review: 'Under Review',
+  document_review: 'Document Review',
   approved: 'Approved',
   rejected: 'Rejected',
-  disbursed: 'Disbursed',
+  withdrawn: 'Withdrawn',
 };
 
-export const EnhancedLeadTable = ({ leads, onViewLead, onUpdateStatus }: EnhancedLeadTableProps) => {
+export const EnhancedLeadTable = ({ leads, globalFilters, onViewLead, onUpdateStatus }: EnhancedLeadTableProps) => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
+  // Filter leads based on search, local status filter, and global filters
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
-      const matchesSearch = lead.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lead.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lead.case_id?.toLowerCase().includes(searchTerm.toLowerCase());
+      // Local search
+      const matchesSearch = 
+        lead.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.case_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.student?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Local status filter
       const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
-      return matchesSearch && matchesStatus;
+      
+      // Global filters
+      const matchesGlobalStatus = !globalFilters?.status?.length || 
+        globalFilters.status.includes(lead.status);
+      
+      const matchesGlobalDocStatus = !globalFilters?.documents_status?.length || 
+        globalFilters.documents_status.includes(lead.documents_status);
+      
+      const matchesGlobalDestination = !globalFilters?.study_destination?.length || 
+        globalFilters.study_destination.includes(lead.study_destination);
+      
+      const matchesGlobalLoanAmount = !globalFilters?.loan_amount?.length || 
+        globalFilters.loan_amount.some(range => {
+          const amount = Number(lead.loan_amount);
+          switch(range) {
+            case '0-10L': return amount < 1000000;
+            case '10L-20L': return amount >= 1000000 && amount < 2000000;
+            case '20L-30L': return amount >= 2000000 && amount < 3000000;
+            case '30L+': return amount >= 3000000;
+            default: return true;
+          }
+        });
+      
+      return matchesSearch && matchesStatus && matchesGlobalStatus && 
+             matchesGlobalDocStatus && matchesGlobalDestination && matchesGlobalLoanAmount;
     });
-  }, [leads, searchTerm, filterStatus]);
+  }, [leads, searchTerm, filterStatus, globalFilters]);
 
   const handleSelectAll = () => {
     if (selectedLeads.length === filteredLeads.length) {
@@ -82,8 +114,14 @@ export const EnhancedLeadTable = ({ leads, onViewLead, onUpdateStatus }: Enhance
   };
 
   const getDocumentProgress = (lead: RefactoredLead) => {
-    return lead.documents_status === 'uploaded' ? 100 : 
-           lead.documents_status === 'pending' ? 30 : 50;
+    switch (lead.documents_status) {
+      case 'verified': return 100;
+      case 'uploaded': return 75;
+      case 'resubmission_required': return 40;
+      case 'pending': return 20;
+      case 'rejected': return 0;
+      default: return 0;
+    }
   };
 
   return (
@@ -108,11 +146,12 @@ export const EnhancedLeadTable = ({ leads, onViewLead, onUpdateStatus }: Enhance
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="new">New</SelectItem>
+                <SelectItem value="contacted">Contacted</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="under_review">Under Review</SelectItem>
+                <SelectItem value="document_review">Document Review</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="disbursed">Disbursed</SelectItem>
+                <SelectItem value="withdrawn">Withdrawn</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -190,7 +229,7 @@ export const EnhancedLeadTable = ({ leads, onViewLead, onUpdateStatus }: Enhance
                   <td className="px-6 py-4">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{lead.documents_status}</span>
+                        <span className="text-muted-foreground capitalize">{lead.documents_status.replace('_', ' ')}</span>
                         <span className="font-medium">{getDocumentProgress(lead)}%</span>
                       </div>
                       <Progress value={getDocumentProgress(lead)} className="h-2" />
