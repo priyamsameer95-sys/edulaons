@@ -35,8 +35,8 @@ const ReviewStep = ({ data, onSubmit, onPrev, isSubmitting }: ReviewStepProps) =
             <span className="text-muted-foreground">Location:</span>
             <span className="font-medium">{data.city}, {data.state} - {data.postalCode}</span>
             
-            <span className="text-muted-foreground">Qualification:</span>
-            <span className="font-medium">{data.qualification}</span>
+            <span className="text-muted-foreground">Highest Qualification:</span>
+            <span className="font-medium">{data.highestQualification || 'Not provided'}</span>
           </div>
         </CardContent>
       </Card>
@@ -47,8 +47,6 @@ const ReviewStep = ({ data, onSubmit, onPrev, isSubmitting }: ReviewStepProps) =
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="grid grid-cols-2 gap-2">
-            <span className="text-muted-foreground">Course:</span>
-            <span className="font-medium">{data.course}</span>
             
             <span className="text-muted-foreground">Destination:</span>
             <span className="font-medium">{data.studyDestination}</span>
@@ -88,8 +86,11 @@ const ReviewStep = ({ data, onSubmit, onPrev, isSubmitting }: ReviewStepProps) =
             <span className="text-muted-foreground">Email:</span>
             <span className="font-medium">{data.coApplicantEmail}</span>
             
-            <span className="text-muted-foreground">Annual Income:</span>
-            <span className="font-medium">{formatCurrency(data.coApplicantSalary || 0)}</span>
+            <span className="text-muted-foreground">Monthly Salary:</span>
+            <span className="font-medium">₹{data.coApplicantMonthlySalary?.toLocaleString('en-IN') || '0'}/month</span>
+            
+            <span className="text-muted-foreground">Employment Type:</span>
+            <span className="font-medium capitalize">{data.coApplicantEmploymentType || 'Not provided'}</span>
             
             <span className="text-muted-foreground">PIN Code:</span>
             <span className="font-medium">{data.coApplicantPinCode}</span>

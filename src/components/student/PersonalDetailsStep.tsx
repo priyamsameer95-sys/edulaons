@@ -204,22 +204,6 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
           )}
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="qualification">Highest Qualification *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.qualification} />
-          </div>
-          <Select value={data.qualification || ''} onValueChange={(value) => onUpdate({ qualification: value })} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select qualification" />
-            </SelectTrigger>
-            <SelectContent>
-              {QUALIFICATIONS.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className="flex justify-end">

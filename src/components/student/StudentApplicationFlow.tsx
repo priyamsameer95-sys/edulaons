@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useStudentApplication } from '@/hooks/useStudentApplication';
+import { useStudentApplication, StudentApplicationData } from '@/hooks/useStudentApplication';
 import PersonalDetailsStep from './PersonalDetailsStep';
 import StudyDetailsStep from './StudyDetailsStep';
 import CoApplicantDetailsStep from './CoApplicantDetailsStep';
@@ -59,7 +59,7 @@ const StudentApplicationFlow = () => {
         nationality: 'Indian',
         highestQualification: 'bachelors',
         universities: [], // Will be filled manually from dropdown
-        course: 'Master of Science in Computer Science',
+        
         studyDestination: 'USA',
         intakeMonth: 9,
         intakeYear: 2025,
@@ -69,7 +69,8 @@ const StudentApplicationFlow = () => {
         coApplicantRelationship: 'parent',
         coApplicantPhone: '9876543211',
         coApplicantEmail: 'jane.doe@example.com',
-        coApplicantSalary: 1200000,
+        coApplicantMonthlySalary: 100000,
+        coApplicantEmploymentType: 'salaried' as const,
         coApplicantPinCode: '400001',
       });
     }, 100);
@@ -154,14 +155,14 @@ const StudentApplicationFlow = () => {
             />
           )}
 
-          {currentStep === 2 && (
-            <CoApplicantDetailsStep
-              data={applicationData}
-              onUpdate={updateApplicationData}
-              onNext={nextStep}
-              onPrev={prevStep}
-            />
-          )}
+        {currentStep === 2 && (
+          <CoApplicantDetailsStep
+            data={applicationData as StudentApplicationData}
+            onUpdate={updateApplicationData}
+            onNext={nextStep}
+            onPrev={prevStep}
+          />
+        )}
 
           {currentStep === 3 && (
             <ReviewStep

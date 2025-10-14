@@ -87,20 +87,6 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
           )}
         </div>
 
-        {/* Course */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="course">Course/Program *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.course} />
-          </div>
-          <Input
-            id="course"
-            value={data.course || ''}
-            onChange={(e) => onUpdate({ course: e.target.value })}
-            required
-            placeholder="e.g., Master of Science in Computer Science"
-          />
-        </div>
 
         {/* Study Destination */}
         <div className="space-y-2">
@@ -133,8 +119,8 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
             <CoachingTooltip content={COACHING_MESSAGES.loanType} />
           </div>
           <LoanTypeSelector 
-            value={data.loanType as 'secured' | 'unsecured' || 'secured'} 
-            onChange={(value) => onUpdate({ loanType: value })}
+            value={((data.loanType || 'secured') as 'secured' | 'unsecured')} 
+            onChange={(value: 'secured' | 'unsecured') => onUpdate({ loanType: value })}
           />
         </div>
 

@@ -122,11 +122,12 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
       <Card className="p-6">
         <div className="space-y-6">
           <div className="space-y-2">
-            <CoachingTooltip message="Your academic background helps us match you with the best lenders and determine your eligibility">
+            <div className="flex items-center gap-1">
               <Label htmlFor="highestQualification">
                 Highest Qualification <span className="text-destructive">*</span>
               </Label>
-            </CoachingTooltip>
+              <CoachingTooltip content="Your academic background helps us match you with the best lenders and determine your eligibility" />
+            </div>
             <Select
               value={data.highestQualification}
               onValueChange={(value) => handleChange('highestQualification', value)}
@@ -158,11 +159,12 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <CoachingTooltip message="Your 10th grade percentage. Higher marks improve eligibility (worth up to 10 points)">
+                  <div className="flex items-center gap-1">
                     <Label htmlFor="tenthPercentage">
                       10th Percentage <span className="text-destructive">*</span>
                     </Label>
-                  </CoachingTooltip>
+                    <CoachingTooltip content="Your 10th grade percentage. Higher marks improve eligibility (worth up to 10 points)" />
+                  </div>
                   <Input
                     id="tenthPercentage"
                     type="number"
@@ -184,11 +186,12 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                 </div>
 
                 <div className="space-y-2">
-                  <CoachingTooltip message="Your 12th grade percentage. Higher marks improve eligibility (worth up to 15 points)">
+                  <div className="flex items-center gap-1">
                     <Label htmlFor="twelfthPercentage">
                       12th Percentage <span className="text-destructive">*</span>
                     </Label>
-                  </CoachingTooltip>
+                    <CoachingTooltip content="Your 12th grade percentage. Higher marks improve eligibility (worth up to 15 points)" />
+                  </div>
                   <Input
                     id="twelfthPercentage"
                     type="number"
@@ -217,9 +220,10 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
               <Label>Bachelor's Performance (worth up to 15 points)</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <CoachingTooltip message="Your bachelor's degree percentage">
+                  <div className="flex items-center gap-1">
                     <Label htmlFor="bachelorsPercentage">Percentage</Label>
-                  </CoachingTooltip>
+                    <CoachingTooltip content="Your bachelor's degree percentage" />
+                  </div>
                   <Input
                     id="bachelorsPercentage"
                     type="number"
@@ -237,9 +241,10 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                 </div>
 
                 <div className="space-y-2">
-                  <CoachingTooltip message="Or enter your CGPA (out of 10)">
+                  <div className="flex items-center gap-1">
                     <Label htmlFor="bachelorsCgpa">CGPA</Label>
-                  </CoachingTooltip>
+                    <CoachingTooltip content="Or enter your CGPA (out of 10)" />
+                  </div>
                   <Input
                     id="bachelorsCgpa"
                     type="number"

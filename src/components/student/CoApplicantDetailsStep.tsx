@@ -17,7 +17,7 @@ interface CoApplicantDetailsStepProps {
   onPrev: () => void;
 }
 
-export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) {
+const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateField = (field: string, value: any): string | null => {
@@ -129,11 +129,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <CoachingTooltip content={COACHING_MESSAGES.coApplicantName}>
-                <Label htmlFor="coApplicantName">
-                  Co-Applicant Name <span className="text-destructive">*</span>
-                </Label>
-              </CoachingTooltip>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="coApplicantName">
+                Co-Applicant Name <span className="text-destructive">*</span>
+              </Label>
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantName} />
+            </div>
               <Input
                 id="coApplicantName"
                 placeholder="Full legal name"
@@ -146,11 +147,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
             </div>
 
             <div className="space-y-2">
-              <CoachingTooltip content={COACHING_MESSAGES.coApplicantRelationship}>
-                <Label htmlFor="coApplicantRelationship">
-                  Relationship <span className="text-destructive">*</span>
-                </Label>
-              </CoachingTooltip>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="coApplicantRelationship">
+                Relationship <span className="text-destructive">*</span>
+              </Label>
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantRelationship} />
+            </div>
               <Select
                 value={data.coApplicantRelationship || ''}
                 onValueChange={(value) => handleChange('coApplicantRelationship', value)}
@@ -174,11 +176,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <CoachingTooltip content={COACHING_MESSAGES.coApplicantPhone}>
-                <Label htmlFor="coApplicantPhone">
-                  Phone Number <span className="text-destructive">*</span>
-                </Label>
-              </CoachingTooltip>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="coApplicantPhone">
+                Phone Number <span className="text-destructive">*</span>
+              </Label>
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantPhone} />
+            </div>
               <Input
                 id="coApplicantPhone"
                 type="tel"
@@ -196,11 +199,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
             </div>
 
             <div className="space-y-2">
-              <CoachingTooltip content={COACHING_MESSAGES.coApplicantEmail}>
-                <Label htmlFor="coApplicantEmail">
-                  Email <span className="text-destructive">*</span>
-                </Label>
-              </CoachingTooltip>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="coApplicantEmail">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <CoachingTooltip content={COACHING_MESSAGES.coApplicantEmail} />
+            </div>
               <Input
                 id="coApplicantEmail"
                 type="email"
@@ -215,11 +219,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
           </div>
 
           <div className="space-y-2">
-            <CoachingTooltip content="Employment type affects loan eligibility scoring (worth up to 25 points)">
-              <Label htmlFor="coApplicantEmploymentType">
-                Employment Type <span className="text-destructive">*</span>
-              </Label>
-            </CoachingTooltip>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="coApplicantEmploymentType">
+              Employment Type <span className="text-destructive">*</span>
+            </Label>
+            <CoachingTooltip content="Employment type affects loan eligibility scoring (worth up to 25 points)" />
+          </div>
             <Select
               value={data.coApplicantEmploymentType || ''}
               onValueChange={(value: any) => handleChange('coApplicantEmploymentType', value)}
@@ -241,11 +246,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
           </div>
 
           <div className="space-y-2">
-            <CoachingTooltip content="Monthly take-home salary. Higher income significantly improves approval chances (worth up to 40 points)">
-              <Label htmlFor="coApplicantMonthlySalary">
-                Monthly Salary <span className="text-destructive">*</span>
-              </Label>
-            </CoachingTooltip>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="coApplicantMonthlySalary">
+              Monthly Salary <span className="text-destructive">*</span>
+            </Label>
+            <CoachingTooltip content="Monthly take-home salary. Higher income significantly improves approval chances (worth up to 40 points)" />
+          </div>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -280,9 +286,10 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <CoachingTooltip content="Occupation/job title (optional, but helpful for lender assessment)">
+              <div className="flex items-center gap-1">
                 <Label htmlFor="coApplicantOccupation">Occupation</Label>
-              </CoachingTooltip>
+                <CoachingTooltip content="Occupation/job title (optional, but helpful for lender assessment)" />
+              </div>
               <Input
                 id="coApplicantOccupation"
                 placeholder="e.g., Software Engineer"
@@ -293,9 +300,10 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
 
             {data.coApplicantEmploymentType === 'salaried' && (
               <div className="space-y-2">
-                <CoachingTooltip content="Employer/company name (helps with verification)">
+                <div className="flex items-center gap-1">
                   <Label htmlFor="coApplicantEmployer">Employer Name</Label>
-                </CoachingTooltip>
+                  <CoachingTooltip content="Employer/company name (helps with verification)" />
+                </div>
                 <Input
                   id="coApplicantEmployer"
                   placeholder="e.g., TCS, Infosys"
@@ -306,9 +314,10 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
             )}
 
             <div className="space-y-2">
-              <CoachingTooltip content="Years in current employment (optional)">
+              <div className="flex items-center gap-1">
                 <Label htmlFor="coApplicantEmploymentDuration">Employment Duration (years)</Label>
-              </CoachingTooltip>
+                <CoachingTooltip content="Years in current employment (optional)" />
+              </div>
               <Input
                 id="coApplicantEmploymentDuration"
                 type="number"
@@ -322,11 +331,12 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
           </div>
 
           <div className="space-y-2">
-            <CoachingTooltip content={COACHING_MESSAGES.coApplicantPinCode}>
-              <Label htmlFor="coApplicantPinCode">
-                PIN Code <span className="text-destructive">*</span>
-              </Label>
-            </CoachingTooltip>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="coApplicantPinCode">
+              PIN Code <span className="text-destructive">*</span>
+            </Label>
+            <CoachingTooltip content={COACHING_MESSAGES.coApplicantPinCode} />
+          </div>
             <Input
               id="coApplicantPinCode"
               placeholder="6-digit PIN code"
@@ -353,4 +363,6 @@ export function CoApplicantDetailsStep({ data, onUpdate, onNext, onPrev }: CoApp
       </div>
     </form>
   );
-}
+};
+
+export default CoApplicantDetailsStep;
