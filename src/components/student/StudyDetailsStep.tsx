@@ -38,6 +38,23 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
     return null;
   };
 
+  const validateIntakeDate = (month?: number, year?: number): string | null => {
+    if (!month || !year) {
+      return 'Please select intake month and year';
+    }
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 0-indexed to 1-indexed
+    
+    // Check if intake date is in the future
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      return 'Intake date must be in the future';
+    }
+    
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -51,6 +68,11 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
     const loanError = validateLoanAmount(data.loanAmount || 0);
     if (loanError) {
       newErrors.loanAmount = loanError;
+    }
+    
+    const intakeError = validateIntakeDate(data.intakeMonth, data.intakeYear);
+    if (intakeError) {
+      newErrors.intake = intakeError;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -156,15 +178,18 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
         </div>
 
         {/* Intake Date */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <Label htmlFor="intakeMonth">Intake Month *</Label>
-              <CoachingTooltip content={COACHING_MESSAGES.intakeMonth} />
-            </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-1">
+            <Label>Intake Date *</Label>
+            <CoachingTooltip content={COACHING_MESSAGES.intakeMonth} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select 
               value={data.intakeMonth?.toString() || ''} 
-              onValueChange={(value) => onUpdate({ intakeMonth: parseInt(value) })}
+              onValueChange={(value) => {
+                onUpdate({ intakeMonth: parseInt(value) });
+                setErrors(prev => ({ ...prev, intake: '' }));
+              }}
               required
             >
               <SelectTrigger>
@@ -178,13 +203,13 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="intakeYear">Intake Year *</Label>
             <Select 
               value={data.intakeYear?.toString() || ''} 
-              onValueChange={(value) => onUpdate({ intakeYear: parseInt(value) })}
+              onValueChange={(value) => {
+                onUpdate({ intakeYear: parseInt(value) });
+                setErrors(prev => ({ ...prev, intake: '' }));
+              }}
               required
             >
               <SelectTrigger>
@@ -199,6 +224,12 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
               </SelectContent>
             </Select>
           </div>
+          {errors.intake && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errors.intake}</AlertDescription>
+            </Alert>
+          )}
         </div>
 
         {/* Loan Amount */}

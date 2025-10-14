@@ -62,8 +62,8 @@ export const academicBackgroundSchema = z.object({
   tests: z.array(testScoreSchema).max(10).optional(),
 });
 
-// Study Details Schema
-export const studyDetailsSchema = z.object({
+// Study Details Schema - Base schema without refinements
+const studyDetailsBaseSchema = z.object({
   universities: z.array(z.string())
     .min(VALIDATION_RULES.UNIVERSITIES.MIN_COUNT, ERROR_MESSAGES.UNIVERSITIES_MIN)
     .max(VALIDATION_RULES.UNIVERSITIES.MAX_COUNT, ERROR_MESSAGES.UNIVERSITIES_MAX),
@@ -76,6 +76,9 @@ export const studyDetailsSchema = z.object({
     .min(VALIDATION_RULES.LOAN_AMOUNT.MIN, ERROR_MESSAGES.LOAN_AMOUNT_TOO_LOW)
     .max(VALIDATION_RULES.LOAN_AMOUNT.MAX, ERROR_MESSAGES.LOAN_AMOUNT_TOO_HIGH),
 });
+
+// Export with type for external use
+export const studyDetailsSchema = studyDetailsBaseSchema;
 
 // Co-Applicant Details Schema
 export const coApplicantDetailsSchema = z.object({
@@ -99,11 +102,26 @@ export const coApplicantDetailsSchema = z.object({
     .regex(VALIDATION_RULES.POSTAL_CODE.PATTERN, ERROR_MESSAGES.POSTAL_CODE_INVALID),
 });
 
-// Complete Application Schema
+// Complete Application Schema - merge first, then apply refinements
 export const studentApplicationSchema = personalDetailsSchema
   .merge(academicBackgroundSchema)
-  .merge(studyDetailsSchema)
-  .merge(coApplicantDetailsSchema);
+  .merge(studyDetailsBaseSchema)
+  .merge(coApplicantDetailsSchema)
+  .refine((data) => {
+    // Validate that intake date is in the future
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    if (data.intakeYear < currentYear || 
+        (data.intakeYear === currentYear && data.intakeMonth < currentMonth)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: 'Intake date must be in the future',
+    path: ['intakeMonth'],
+  });
 
 // Export type inference
 export type PersonalDetailsInput = z.infer<typeof personalDetailsSchema>;

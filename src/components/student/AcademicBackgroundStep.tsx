@@ -111,7 +111,7 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
 
   const addTest = () => {
     if (tests.length >= 10) return;
-    const newTests = [...tests, { testType: 'TOEFL' as const, testScore: 0 }];
+    const newTests = [...tests, { testType: 'TOEFL' as const, testScore: undefined }];
     setTests(newTests);
     onUpdate({ tests: newTests });
   };
@@ -179,9 +179,9 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
       newErrors.bachelorsPercentage = 'Please provide either percentage or CGPA';
     }
 
-    // Validate test scores
+    // Validate test scores - only validate if score is actually entered
     tests.forEach((test, index) => {
-      if (test.testScore) {
+      if (test.testScore && test.testScore > 0) {
         const error = validateTestScore(test.testType, test.testScore);
         if (error) newErrors[`testScore-${index}`] = error;
       }
