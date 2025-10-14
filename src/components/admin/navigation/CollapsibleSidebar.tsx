@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  Home,
+  LayoutDashboard,
+  FileText,
   Users,
   Handshake,
-  Building2,
-  FileText,
-  BarChart3,
-  User,
-  Settings,
+  UserCog,
+  Shield,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -18,20 +16,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface NavItem {
   label: string;
-  icon: typeof Home;
+  icon: typeof LayoutDashboard;
   href: string;
   badge?: number;
 }
 
 const navigationItems: NavItem[] = [
-  { label: 'Dashboard', icon: Home, href: '/admin' },
-  { label: 'Leads', icon: Users, href: '/admin?tab=leads' },
+  { label: 'Overview', icon: LayoutDashboard, href: '/admin' },
+  { label: 'Leads', icon: FileText, href: '/admin?tab=leads' },
   { label: 'Partners', icon: Handshake, href: '/admin?tab=partners' },
-  { label: 'Lenders', icon: Building2, href: '/admin?tab=lenders' },
-  { label: 'Documents', icon: FileText, href: '/admin?tab=documents' },
-  { label: 'Analytics', icon: BarChart3, href: '/admin?tab=analytics' },
-  { label: 'Users', icon: User, href: '/admin?tab=users' },
-  { label: 'Settings', icon: Settings, href: '/admin?tab=settings' },
+  { label: 'Users', icon: UserCog, href: '/admin?tab=users' },
+  { label: 'Audit Log', icon: Shield, href: '/admin?tab=audit' },
 ];
 
 interface CollapsibleSidebarProps {

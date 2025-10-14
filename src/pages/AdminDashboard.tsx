@@ -6,16 +6,13 @@ import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
 import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
 import { DocumentVerificationModal } from "@/components/admin/DocumentVerificationModal";
-import { useStatusManager } from "@/hooks/useStatusManager";
 import { AdminDashboardLayout } from '@/components/admin/dashboard/AdminDashboardLayout';
 import { DashboardOverview } from '@/components/admin/dashboard/DashboardOverview';
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import UserManagementTab from "@/components/admin/UserManagementTab";
 import { LenderManagementTab } from "@/components/admin/LenderManagementTab";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
-import { AdminDocumentManager } from "@/components/admin/AdminDocumentManager";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 import { RefactoredLead } from "@/types/refactored-lead";
 
 interface AdminKPIs {
@@ -29,10 +26,9 @@ interface AdminKPIs {
 
 const AdminDashboard = () => {
   const { toast } = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { leads: allLeads, loading: isLoading, refetch } = useRefactoredLeads();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [searchParams] = useSearchParams();
+  const { user, appUser } = useAuth();
+  const { leads: allLeads, refetch } = useRefactoredLeads();
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [statusUpdateLead, setStatusUpdateLead] = useState<RefactoredLead | null>(null);
   const [isLeadSheetOpen, setIsLeadSheetOpen] = useState(false);
@@ -104,14 +100,10 @@ const AdminDashboard = () => {
     fetchAdminKPIs();
   }, []);
 
-  const handleSearch = (query: string) => {
-    setSearchTerm(query);
-  };
-
   const activeTab = searchParams.get('tab') || 'overview';
 
   return (
-    <AdminDashboardLayout onSearch={handleSearch}>
+    <AdminDashboardLayout>
       {activeTab === 'overview' && (
         <DashboardOverview 
           allLeads={allLeads}
@@ -128,11 +120,18 @@ const AdminDashboard = () => {
         />
       )}
 
-      {activeTab !== 'overview' && (
-        <div className="p-6 text-center text-muted-foreground">
-          This tab is being migrated. Please use the Overview tab for now.
-        </div>
+      {activeTab === 'leads' && <LeadsTab />}
+
+      {activeTab === 'users' && user && appUser && (
+        <UserManagementTab 
+          currentUserRole={appUser.role as 'admin' | 'super_admin'}
+          currentUserId={user.id}
+        />
       )}
+
+      {activeTab === 'partners' && <LenderManagementTab />}
+
+      {activeTab === 'audit' && <AuditLogViewer />}
 
       {/* Lead Detail Sheet */}
       <LeadDetailSheet
