@@ -42,7 +42,8 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
     
     const newErrors: Record<string, string> = {};
     
-    if (!data.universities || data.universities.length === 0) {
+    const validUniversities = (data.universities || []).filter(u => u && u.trim());
+    if (validUniversities.length === 0) {
       newErrors.universities = 'Please select at least one university';
     }
     

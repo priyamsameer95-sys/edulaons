@@ -52,6 +52,17 @@ export const cleanTestScores = (tests?: Array<any>) => {
 };
 
 /**
+ * Clean and filter universities - remove empty or whitespace-only strings
+ */
+export const cleanUniversities = (universities?: string[]) => {
+  if (!universities || !Array.isArray(universities)) return [];
+  
+  const cleaned = universities.filter(uni => uni && uni.trim().length > 0);
+  
+  return cleaned;
+};
+
+/**
  * Transform application data to edge function payload
  */
 export const transformToEdgeFunctionPayload = (
@@ -79,7 +90,7 @@ export const transformToEdgeFunctionPayload = (
     tests: cleanTestScores(data.tests),
     
     // Study fields
-    universities: data.universities,
+    universities: cleanUniversities(data.universities),
     country: data.studyDestination,
     course_name: data.courseName,
     loan_type: data.loanType,

@@ -28,8 +28,10 @@ export function UniversitySelector({
 
   const removeUniversity = React.useCallback((index: number) => {
     if (universities.length > 1) {
-      const newUniversities = universities.filter((_, i) => i !== index);
-      onChange(newUniversities);
+      const newUniversities = universities
+        .filter((_, i) => i !== index)
+        .filter(u => u && u.trim()); // Clean empty strings
+      onChange(newUniversities.length > 0 ? newUniversities : ['']);
     }
   }, [universities, onChange]);
 
