@@ -251,18 +251,19 @@ serve(async (req) => {
     console.log('✅ [create-lead] Lead created:', lead.id);
 
     // Step 7: Create academic test records if provided
-    const testScores = [];
-    if (body.gmat_score) testScores.push({ student_id: student.id, test_type: 'GMAT', score: body.gmat_score });
-    if (body.gre_score) testScores.push({ student_id: student.id, test_type: 'GRE', score: body.gre_score });
-    if (body.toefl_score) testScores.push({ student_id: student.id, test_type: 'TOEFL', score: body.toefl_score });
-    if (body.pte_score) testScores.push({ student_id: student.id, test_type: 'PTE', score: body.pte_score });
-    if (body.ielts_score) testScores.push({ student_id: student.id, test_type: 'IELTS', score: body.ielts_score });
-
-    if (testScores.length > 0) {
+    if (body.tests && Array.isArray(body.tests) && body.tests.length > 0) {
       console.log('📊 [create-lead] Creating test scores...');
+      const testRecords = body.tests.map((test: any) => ({
+        student_id: student.id,
+        test_type: test.testType,
+        score: test.testScore,
+        certificate_number: test.testCertificateNumber || null,
+        test_date: test.testDate || null
+      }));
+      
       const { error: testError } = await supabaseAdmin
         .from('academic_tests')
-        .insert(testScores);
+        .insert(testRecords);
       
       if (testError) {
         console.warn('⚠️ [create-lead] Test scores creation failed:', testError);

@@ -75,17 +75,29 @@ const ReviewStep = ({ data, onSubmit, onPrev, isSubmitting }: ReviewStepProps) =
               </>
             )}
             
-            {data.testType && (
+            {data.tests && data.tests.length > 0 && (
               <>
-                <span className="text-muted-foreground">Test Type:</span>
-                <span className="font-medium">{data.testType}</span>
-              </>
-            )}
-            
-            {data.testScore && (
-              <>
-                <span className="text-muted-foreground">Test Score:</span>
-                <span className="font-medium">{data.testScore}</span>
+                <span className="text-muted-foreground col-span-2 font-semibold mt-2">Test Scores:</span>
+                {data.tests.map((test, index) => (
+                  <div key={index} className="col-span-2 pl-4 border-l-2 border-muted">
+                    <div className="grid grid-cols-2 gap-2">
+                      <span className="text-muted-foreground">Test {index + 1}:</span>
+                      <span className="font-medium">{test.testType} - {test.testScore}</span>
+                      {test.testCertificateNumber && (
+                        <>
+                          <span className="text-muted-foreground text-xs">Certificate:</span>
+                          <span className="text-xs">{test.testCertificateNumber}</span>
+                        </>
+                      )}
+                      {test.testDate && (
+                        <>
+                          <span className="text-muted-foreground text-xs">Date:</span>
+                          <span className="text-xs">{test.testDate}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </>
             )}
           </div>

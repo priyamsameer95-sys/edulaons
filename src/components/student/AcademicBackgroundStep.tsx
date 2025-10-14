@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CoachingTooltip } from './CoachingTooltip';
 import { QUALIFICATIONS, ACADEMIC_VALIDATION, TEST_TYPES } from '@/constants/studentApplication';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
-import { Info, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Info, Award, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 
 interface AcademicBackgroundStepProps {
   data: StudentApplicationData;
@@ -19,7 +19,8 @@ interface AcademicBackgroundStepProps {
 
 export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: AcademicBackgroundStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showTestScores, setShowTestScores] = useState(false);
+  const [showTestScores, setShowTestScores] = useState((data.tests?.length || 0) > 0);
+  const [tests, setTests] = useState(data.tests || []);
 
   const validateField = (name: string, value: any): string => {
     if (name === 'tenthPercentage' && value) {
@@ -46,12 +47,14 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
         return `Must be between 0-${ACADEMIC_VALIDATION.bachelors_cgpa.max}`;
       }
     }
-    if (name === 'testScore' && value && data.testType) {
-      const num = parseFloat(value);
-      const validation = ACADEMIC_VALIDATION.test_scores[data.testType];
-      if (isNaN(num) || num < validation.min || num > validation.max) {
-        return `${data.testType} score must be between ${validation.min}-${validation.max}`;
-      }
+    return '';
+  };
+
+  const validateTestScore = (testType: string, score: number): string => {
+    const validation = ACADEMIC_VALIDATION.test_scores[testType as keyof typeof ACADEMIC_VALIDATION.test_scores];
+    if (!validation) return '';
+    if (isNaN(score) || score < validation.min || score > validation.max) {
+      return `${testType} score must be between ${validation.min}-${validation.max}`;
     }
     return '';
   };
@@ -60,6 +63,29 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
     onUpdate({ [name]: value });
     const error = validateField(name, value);
     setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const addTest = () => {
+    if (tests.length >= 10) return;
+    const newTests = [...tests, { testType: 'TOEFL' as const, testScore: 0 }];
+    setTests(newTests);
+    onUpdate({ tests: newTests });
+  };
+
+  const removeTest = (index: number) => {
+    const newTests = tests.filter((_, i) => i !== index);
+    setTests(newTests);
+    onUpdate({ tests: newTests });
+    if (newTests.length === 0) {
+      setShowTestScores(false);
+    }
+  };
+
+  const updateTest = (index: number, field: string, value: any) => {
+    const newTests = [...tests];
+    newTests[index] = { ...newTests[index], [field]: value };
+    setTests(newTests);
+    onUpdate({ tests: newTests });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -93,10 +119,13 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
       newErrors.bachelorsPercentage = 'Please provide either percentage or CGPA';
     }
 
-    if (data.testType && data.testScore) {
-      const error = validateField('testScore', data.testScore);
-      if (error) newErrors.testScore = error;
-    }
+    // Validate test scores
+    tests.forEach((test, index) => {
+      if (test.testScore) {
+        const error = validateTestScore(test.testType, test.testScore);
+        if (error) newErrors[`testScore-${index}`] = error;
+      }
+    });
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -109,8 +138,10 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
   const showSchoolMarks = ['12th', 'diploma', 'bachelors', 'masters', 'phd'].includes(data.highestQualification);
   const showBachelorsMarks = ['bachelors', 'masters', 'phd'].includes(data.highestQualification);
 
-  const getScoreIndicator = (score: number, max: number) => {
-    const percentage = (score / max) * 100;
+  const getScoreIndicator = (testType: string, score: number) => {
+    const validation = ACADEMIC_VALIDATION.test_scores[testType as keyof typeof ACADEMIC_VALIDATION.test_scores];
+    if (!validation) return null;
+    const percentage = (score / validation.max) * 100;
     if (percentage >= 80) return { color: 'text-green-600', label: 'Excellent' };
     if (percentage >= 60) return { color: 'text-blue-600', label: 'Good' };
     if (percentage >= 40) return { color: 'text-yellow-600', label: 'Average' };
@@ -179,8 +210,8 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                     <p className="text-sm text-destructive">{errors.tenthPercentage}</p>
                   )}
                   {data.tenthPercentage && !errors.tenthPercentage && (
-                    <p className={`text-sm ${getScoreIndicator(data.tenthPercentage, 100).color}`}>
-                      {getScoreIndicator(data.tenthPercentage, 100).label} score
+                    <p className="text-sm text-green-600">
+                      Good score
                     </p>
                   )}
                 </div>
@@ -206,8 +237,8 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                     <p className="text-sm text-destructive">{errors.twelfthPercentage}</p>
                   )}
                   {data.twelfthPercentage && !errors.twelfthPercentage && (
-                    <p className={`text-sm ${getScoreIndicator(data.twelfthPercentage, 100).color}`}>
-                      {getScoreIndicator(data.twelfthPercentage, 100).label} score
+                    <p className="text-sm text-green-600">
+                      Good score
                     </p>
                   )}
                 </div>
@@ -261,82 +292,122 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
             </div>
           )}
 
-          <div className="border-t pt-6 space-y-4">
+          {/* Test Scores Section (Optional) */}
+          <div className="space-y-4 pt-6 border-t">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-primary" />
-                <Label>Test Scores (Optional, but can add up to 10 points!)</Label>
+              <div>
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  Test Scores (Optional, but can add up to 10 points!)
+                  <CoachingTooltip content="Adding test scores like IELTS, TOEFL, GRE can improve your loan eligibility" />
+                </h3>
+                <p className="text-sm text-muted-foreground">Add up to 10 standardized test scores</p>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setShowTestScores(!showTestScores)}
+                onClick={() => {
+                  setShowTestScores(!showTestScores);
+                  if (!showTestScores && tests.length === 0) {
+                    addTest();
+                  }
+                }}
               >
-                {showTestScores ? 'Hide' : 'Add Test Scores'}
+                {showTestScores ? 'Hide' : 'Show'}
               </Button>
             </div>
 
             {showTestScores && (
-              <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="testType">Test Type</Label>
-                    <Select
-                      value={data.testType || ''}
-                      onValueChange={(value: any) => handleChange('testType', value)}
-                    >
-                      <SelectTrigger id="testType">
-                        <SelectValue placeholder="Select test" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TEST_TYPES.map((test) => (
-                          <SelectItem key={test.value} value={test.value}>
-                            {test.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="testScore">Score</Label>
-                    <Input
-                      id="testScore"
-                      type="number"
-                      step="0.1"
-                      placeholder={data.testType ? `Enter ${data.testType} score` : 'Select test type first'}
-                      value={data.testScore || ''}
-                      onChange={(e) => handleChange('testScore', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      disabled={!data.testType}
-                    />
-                    {errors.testScore && (
-                      <p className="text-sm text-destructive">{errors.testScore}</p>
+              <div className="space-y-4">
+                {tests.map((test, index) => (
+                  <div key={index} className="space-y-4 p-4 border rounded-lg bg-muted/50 relative">
+                    {tests.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={() => removeTest(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     )}
-                  </div>
-                </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`testType-${index}`}>Test Type</Label>
+                        <Select
+                          value={test.testType || ''}
+                          onValueChange={(value: any) => updateTest(index, 'testType', value)}
+                        >
+                          <SelectTrigger id={`testType-${index}`}>
+                            <SelectValue placeholder="Select test type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TEST_TYPES.map((t) => (
+                              <SelectItem key={t.value} value={t.value}>
+                                {t.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="testCertificateNumber">Certificate Number (Optional)</Label>
-                    <Input
-                      id="testCertificateNumber"
-                      placeholder="e.g., 12/AB/CD/1234"
-                      value={data.testCertificateNumber || ''}
-                      onChange={(e) => handleChange('testCertificateNumber', e.target.value)}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`testScore-${index}`}>Score</Label>
+                        <Input
+                          id={`testScore-${index}`}
+                          type="number"
+                          value={test.testScore || ''}
+                          onChange={(e) => updateTest(index, 'testScore', parseFloat(e.target.value))}
+                          placeholder="Enter test score"
+                        />
+                        {errors[`testScore-${index}`] && (
+                          <p className="text-sm text-destructive">{errors[`testScore-${index}`]}</p>
+                        )}
+                        {test.testScore && !errors[`testScore-${index}`] && getScoreIndicator(test.testType, test.testScore) && (
+                          <p className={`text-sm ${getScoreIndicator(test.testType, test.testScore)?.color}`}>
+                            {getScoreIndicator(test.testType, test.testScore)?.label} score
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="testDate">Test Date (Optional)</Label>
-                    <Input
-                      id="testDate"
-                      type="date"
-                      value={data.testDate || ''}
-                      onChange={(e) => handleChange('testDate', e.target.value)}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`testCertificateNumber-${index}`}>Certificate Number (Optional)</Label>
+                        <Input
+                          id={`testCertificateNumber-${index}`}
+                          value={test.testCertificateNumber || ''}
+                          onChange={(e) => updateTest(index, 'testCertificateNumber', e.target.value)}
+                          placeholder="e.g., 12/AB/CD/1234"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`testDate-${index}`}>Test Date (Optional)</Label>
+                        <Input
+                          id={`testDate-${index}`}
+                          type="date"
+                          value={test.testDate || ''}
+                          onChange={(e) => updateTest(index, 'testDate', e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
+
+                {tests.length < 10 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addTest}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Another Test Score ({tests.length}/10)
+                  </Button>
+                )}
               </div>
             )}
           </div>

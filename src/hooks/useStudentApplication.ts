@@ -23,11 +23,13 @@ export interface StudentApplicationData {
   bachelorsPercentage?: number;
   bachelorsCgpa?: number;
   
-  // Test Scores (Optional)
-  testType?: 'IELTS' | 'TOEFL' | 'GRE' | 'GMAT' | 'PTE' | 'SAT';
-  testScore?: number;
-  testCertificateNumber?: string;
-  testDate?: string;
+  // Test Scores (Optional) - Array of up to 10 tests
+  tests?: Array<{
+    testType: 'IELTS' | 'TOEFL' | 'GRE' | 'GMAT' | 'PTE' | 'SAT';
+    testScore: number;
+    testCertificateNumber?: string;
+    testDate?: string;
+  }>;
   
   // Study Details
   universities: string[];
@@ -147,10 +149,7 @@ export const useStudentApplication = () => {
           twelfth_percentage: applicationData.twelfthPercentage,
           bachelors_percentage: applicationData.bachelorsPercentage,
           bachelors_cgpa: applicationData.bachelorsCgpa,
-          test_type: applicationData.testType,
-          test_score: applicationData.testScore,
-          test_certificate_number: applicationData.testCertificateNumber,
-          test_date: applicationData.testDate,
+          tests: applicationData.tests, // Send tests array
           co_applicant_name: applicationData.coApplicantName!,
           co_applicant_relationship: applicationData.coApplicantRelationship!,
           co_applicant_monthly_salary: applicationData.coApplicantMonthlySalary!,
