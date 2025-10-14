@@ -2,6 +2,7 @@
  * Helper functions for student application data transformation
  */
 import type { StudentApplicationData, EdgeFunctionPayload } from '@/types/student-application';
+import { getCountryNameFromCode } from './countryMapping';
 
 /**
  * Clean phone number - remove +91 prefix and non-digits
@@ -91,7 +92,7 @@ export const transformToEdgeFunctionPayload = (
     
     // Study fields
     universities: cleanUniversities(data.universities),
-    country: data.studyDestination,
+    country: getCountryNameFromCode(data.studyDestination),
     course_name: data.courseName,
     loan_type: data.loanType,
     intake_month: data.intakeMonth,

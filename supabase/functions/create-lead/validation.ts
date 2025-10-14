@@ -55,6 +55,26 @@ export function separateUniversities(universities: string[]) {
 }
 
 /**
+ * Country code mapping for validation
+ */
+const COUNTRY_MAPPING: Record<string, string> = {
+  'USA': 'United States',
+  'UK': 'United Kingdom',
+  'Canada': 'Canada',
+  'Australia': 'Australia',
+  'Germany': 'Germany',
+  'Ireland': 'Ireland',
+  'New Zealand': 'New Zealand'
+};
+
+/**
+ * Normalize country code to full name
+ */
+export function normalizeCountry(country: string): string {
+  return COUNTRY_MAPPING[country] || country;
+}
+
+/**
  * Clean phone number - remove +91 and non-digits
  */
 export function cleanPhoneNumber(phone: string): string {

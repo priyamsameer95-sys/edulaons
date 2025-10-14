@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { getCountryNameFromCode } from "@/utils/countryMapping";
 
 interface University {
   id: string;
@@ -46,7 +47,9 @@ export const useUniversities = (country: string) => {
           .order('global_rank', { ascending: true, nullsFirst: false });
 
         if (country) {
-          query = query.eq('country', country);
+          // Convert country code to full name for database query
+          const countryName = getCountryNameFromCode(country);
+          query = query.eq('country', countryName);
         }
 
         const { data, error } = await query.limit(1000);

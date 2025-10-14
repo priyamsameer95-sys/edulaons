@@ -2,7 +2,7 @@
  * Database operations for create-lead edge function
  */
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { cleanPhoneNumber, isUUID, separateUniversities } from './validation.ts';
+import { cleanPhoneNumber, isUUID, separateUniversities, normalizeCountry } from './validation.ts';
 
 /**
  * Validate universities match the study destination
@@ -27,8 +27,11 @@ export async function validateUniversities(
     throw new Error(`Failed to validate universities: ${error.message}`);
   }
   
+  // Normalize country code to full name for comparison
+  const normalizedCountry = normalizeCountry(country);
+  
   const invalidUniversities = dbUniversities?.filter(
-    (uni: any) => uni.country.toLowerCase() !== country.toLowerCase()
+    (uni: any) => uni.country.toLowerCase() !== normalizedCountry.toLowerCase()
   );
   
   if (invalidUniversities && invalidUniversities.length > 0) {
