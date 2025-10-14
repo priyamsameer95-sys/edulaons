@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useStudentApplication, StudentApplicationData } from '@/hooks/useStudentApplication';
 import PersonalDetailsStep from './PersonalDetailsStep';
+import AcademicBackgroundStep from './AcademicBackgroundStep';
 import StudyDetailsStep from './StudyDetailsStep';
 import CoApplicantDetailsStep from './CoApplicantDetailsStep';
 import ReviewStep from './ReviewStep';
@@ -11,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 
 const steps = [
   { title: 'Personal Details', description: 'Tell us about yourself' },
+  { title: 'Academic Background', description: 'Your education history' },
   { title: 'Study Details', description: 'Your education plans' },
   { title: 'Co-Applicant', description: 'Guardian information' },
   { title: 'Review', description: 'Confirm your details' },
@@ -58,6 +60,9 @@ const StudentApplicationFlow = () => {
         postalCode: '400001',
         nationality: 'Indian',
         highestQualification: 'bachelors',
+        tenthPercentage: 85,
+        twelfthPercentage: 88,
+        bachelorsPercentage: 75,
         universities: [], // Will be filled manually from dropdown
         
         studyDestination: 'USA',
@@ -79,7 +84,7 @@ const StudentApplicationFlow = () => {
   return (
     <div className="space-y-6">
       {/* Test Data Button */}
-      {currentStep < 4 && (
+      {currentStep < 5 && (
         <div className="flex justify-end">
           <Button 
             onClick={handleFillTestData} 
@@ -147,6 +152,15 @@ const StudentApplicationFlow = () => {
           )}
 
           {currentStep === 1 && (
+            <AcademicBackgroundStep
+              data={applicationData as StudentApplicationData}
+              onUpdate={updateApplicationData}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+
+          {currentStep === 2 && (
             <StudyDetailsStep
               data={applicationData}
               onUpdate={updateApplicationData}
@@ -155,16 +169,16 @@ const StudentApplicationFlow = () => {
             />
           )}
 
-        {currentStep === 2 && (
-          <CoApplicantDetailsStep
-            data={applicationData as StudentApplicationData}
-            onUpdate={updateApplicationData}
-            onNext={nextStep}
-            onPrev={prevStep}
-          />
-        )}
-
           {currentStep === 3 && (
+            <CoApplicantDetailsStep
+              data={applicationData as StudentApplicationData}
+              onUpdate={updateApplicationData}
+              onNext={nextStep}
+              onPrev={prevStep}
+            />
+          )}
+
+          {currentStep === 4 && (
             <ReviewStep
               data={applicationData}
               onSubmit={handleSubmit}
@@ -173,7 +187,7 @@ const StudentApplicationFlow = () => {
             />
           )}
 
-          {currentStep === 4 && submissionResult && (
+          {currentStep === 5 && submissionResult && (
             <SuccessStep
               caseId={submissionResult.lead?.case_id || submissionResult.case_id}
               leadId={submissionResult.lead?.id}

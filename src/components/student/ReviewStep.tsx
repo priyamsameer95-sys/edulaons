@@ -43,6 +43,57 @@ const ReviewStep = ({ data, onSubmit, onPrev, isSubmitting }: ReviewStepProps) =
 
       <Card>
         <CardHeader>
+          <CardTitle>Academic Background</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="grid grid-cols-2 gap-2">
+            {data.tenthPercentage && (
+              <>
+                <span className="text-muted-foreground">10th Percentage:</span>
+                <span className="font-medium">{data.tenthPercentage}%</span>
+              </>
+            )}
+            
+            {data.twelfthPercentage && (
+              <>
+                <span className="text-muted-foreground">12th Percentage:</span>
+                <span className="font-medium">{data.twelfthPercentage}%</span>
+              </>
+            )}
+            
+            {data.bachelorsPercentage && (
+              <>
+                <span className="text-muted-foreground">Bachelor's Percentage:</span>
+                <span className="font-medium">{data.bachelorsPercentage}%</span>
+              </>
+            )}
+            
+            {data.bachelorsCgpa && (
+              <>
+                <span className="text-muted-foreground">Bachelor's CGPA:</span>
+                <span className="font-medium">{data.bachelorsCgpa}</span>
+              </>
+            )}
+            
+            {data.testType && (
+              <>
+                <span className="text-muted-foreground">Test Type:</span>
+                <span className="font-medium">{data.testType}</span>
+              </>
+            )}
+            
+            {data.testScore && (
+              <>
+                <span className="text-muted-foreground">Test Score:</span>
+                <span className="font-medium">{data.testScore}</span>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Study Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">

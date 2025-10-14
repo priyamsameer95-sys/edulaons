@@ -356,3 +356,5 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
     </form>
   );
 }
+
+export default AcademicBackgroundStep;
