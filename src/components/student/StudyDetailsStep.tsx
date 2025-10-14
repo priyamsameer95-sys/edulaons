@@ -9,6 +9,7 @@ import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
 import { LoanTypeSelector } from './LoanTypeSelector';
 import { UniversitySelector } from '@/components/ui/university-selector';
+import { CourseCombobox } from '@/components/ui/course-combobox';
 import { STUDY_DESTINATIONS, COACHING_MESSAGES, LOAN_AMOUNT_RANGES, MIN_LOAN_AMOUNT } from '@/constants/studentApplication';
 import { Info, AlertCircle } from 'lucide-react';
 
@@ -117,17 +118,29 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
         <div className="space-y-2">
           <div className="flex items-center gap-1">
             <Label htmlFor="courseName">Course/Program Name</Label>
-            <CoachingTooltip content="Enter the name of the degree program you're planning to pursue (e.g., Master of Computer Science, MBA in Finance)" />
+            <CoachingTooltip content="Select your course from the list or enter a custom name. We'll match you with lenders who support your program." />
           </div>
-          <Input
-            id="courseName"
-            type="text"
+          
+          <CourseCombobox
+            universityId={data.universities?.[0]}
             value={data.courseName || ''}
-            onChange={(e) => onUpdate({ courseName: e.target.value })}
-            placeholder="e.g., Master of Science in Data Science"
-            maxLength={200}
+            onChange={(value) => onUpdate({ courseName: value })}
+            placeholder="Search courses or enter custom name..."
+            disabled={!data.universities?.[0]}
           />
-          <p className="text-xs text-muted-foreground">Optional - helps lenders understand your study plan</p>
+          
+          {!data.universities?.[0] && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Select a university first to see available courses
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <p className="text-xs text-muted-foreground">
+            Optional - Select from database or enter custom course name
+          </p>
         </div>
 
         {/* Loan Type */}
