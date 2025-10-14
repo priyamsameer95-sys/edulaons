@@ -24,14 +24,14 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
-  { label: 'Dashboard', icon: Home, href: '/admin/v2' },
-  { label: 'Leads', icon: Users, href: '/admin/v2?tab=leads' },
-  { label: 'Partners', icon: Handshake, href: '/admin/v2?tab=partners' },
-  { label: 'Lenders', icon: Building2, href: '/admin/v2?tab=lenders' },
-  { label: 'Documents', icon: FileText, href: '/admin/v2?tab=documents' },
-  { label: 'Analytics', icon: BarChart3, href: '/admin/v2?tab=analytics' },
-  { label: 'Users', icon: User, href: '/admin/v2?tab=users' },
-  { label: 'Settings', icon: Settings, href: '/admin/v2?tab=settings' },
+  { label: 'Dashboard', icon: Home, href: '/admin' },
+  { label: 'Leads', icon: Users, href: '/admin?tab=leads' },
+  { label: 'Partners', icon: Handshake, href: '/admin?tab=partners' },
+  { label: 'Lenders', icon: Building2, href: '/admin?tab=lenders' },
+  { label: 'Documents', icon: FileText, href: '/admin?tab=documents' },
+  { label: 'Analytics', icon: BarChart3, href: '/admin?tab=analytics' },
+  { label: 'Users', icon: User, href: '/admin?tab=users' },
+  { label: 'Settings', icon: Settings, href: '/admin?tab=settings' },
 ];
 
 interface CollapsibleSidebarProps {
@@ -46,8 +46,8 @@ export const CollapsibleSidebar = ({ className, collapsed: externalCollapsed, on
   const location = useLocation();
 
   const isActive = (href: string) => {
-    if (href === '/admin/v2') {
-      return location.pathname === '/admin/v2' && !location.search;
+    if (href === '/admin') {
+      return location.pathname === '/admin' && !location.search;
     }
     const tabMatch = href.match(/tab=([^&]+)/);
     if (tabMatch) {

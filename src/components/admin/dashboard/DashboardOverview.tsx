@@ -1,147 +1,142 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { KPICard } from './KPICard';
 import { LeadPipelineChart } from './LeadPipelineChart';
 import { EnhancedLeadTable } from './EnhancedLeadTable';
-import { GeographicDistribution } from './GeographicDistribution';
 import { SmartFiltersPanel } from './SmartFiltersPanel';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, TrendingUp, Users, DollarSign, FileCheck } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { GeographicDistribution } from './GeographicDistribution';
+import { AlertCircle, Bell, ChevronRight } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RefactoredLead } from '@/types/refactored-lead';
 
-export const DashboardOverview = () => {
+interface DashboardOverviewProps {
+  allLeads: RefactoredLead[];
+  adminKPIs: any;
+  isLoadingKPIs: boolean;
+  onViewLead: (lead: RefactoredLead) => void;
+  onUpdateStatus: (lead: RefactoredLead) => void;
+}
+
+export const DashboardOverview = ({ 
+  allLeads, 
+  adminKPIs, 
+  isLoadingKPIs,
+  onViewLead,
+  onUpdateStatus 
+}: DashboardOverviewProps) => {
+  const totalLeads = allLeads.length;
+  const activeLeads = allLeads.filter(l => l.status !== 'rejected' && l.status !== 'approved').length;
+  const approvedLeads = allLeads.filter(l => l.status === 'approved').length;
+  const conversionRate = totalLeads > 0 ? ((approvedLeads / totalLeads) * 100).toFixed(1) : '0';
+
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
+      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome back!</h1>
-          <p className="text-muted-foreground mt-1">
-            Here's what's happening with your education loans today.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back, Admin</h1>
+          <p className="text-muted-foreground mt-1">Here's what's happening with your loan applications</p>
         </div>
-        <Button size="lg" className="gap-2">
-          <FileCheck className="h-4 w-4" />
+        <Button variant="outline" size="sm">
+          <Bell className="h-4 w-4 mr-2" />
           Run Sanity Check
         </Button>
       </div>
 
-      {/* Critical Actions Alert */}
-      <Alert className="border-destructive/50 bg-destructive/5">
-        <AlertCircle className="h-4 w-4 text-destructive" />
+      {/* Alert for critical actions */}
+      <Alert className="border-destructive bg-destructive/10">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Attention Required</AlertTitle>
         <AlertDescription className="flex items-center justify-between">
-          <span className="font-medium">
-            <span className="text-destructive">11 actions</span> require your immediate attention
-          </span>
+          <span>You have pending actions that need immediate attention</span>
           <Button variant="destructive" size="sm">
             View All
+            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </AlertDescription>
       </Alert>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <KPICard
           title="Total Leads"
-          value="1,247"
-          subtitle="Active applications"
-          trend={{
-            value: 15,
-            direction: 'up',
-            label: 'vs last week',
-          }}
+          value={isLoadingKPIs ? "..." : totalLeads.toString()}
+          subtitle="All applications"
           progress={75}
         />
-        
         <KPICard
-          title="Total Items"
-          value="1,256"
-          subtitle="Documents pending"
-          trend={{
-            value: -29,
-            direction: 'down',
-            label: 'trades',
-          }}
-          progress={62}
+          title="Active Leads"
+          value={isLoadingKPIs ? "..." : activeLeads.toString()}
+          subtitle="In progress"
+          progress={65}
         />
-        
         <KPICard
-          title="Average Sales"
-          value="₹7.54M"
-          subtitle="Monthly revenue"
-          trend={{
-            value: 2.8,
-            direction: 'up',
-            label: 'Since last week',
-          }}
+          title="Approved"
+          value={isLoadingKPIs ? "..." : approvedLeads.toString()}
+          subtitle="Successfully converted"
           progress={85}
         />
-        
         <KPICard
           title="Conversion Rate"
-          value="42.3%"
-          subtitle="Lead to approval"
-          trend={{
-            value: -2.1,
-            direction: 'down',
-            label: 'vs last month',
-          }}
-          progress={42}
+          value={isLoadingKPIs ? "..." : `${conversionRate}%`}
+          subtitle="Approval percentage"
+          progress={parseInt(conversionRate)}
         />
       </div>
 
-      {/* Main Content Grid */}
+      {/* Main Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - 2/3 width */}
+        {/* Left Column - Charts and Tables */}
         <div className="lg:col-span-2 space-y-6">
           {/* Lead Pipeline Chart */}
-          <LeadPipelineChart />
+          <div className="lg:col-span-2">
+            <LeadPipelineChart leads={allLeads} />
+          </div>
 
           {/* Enhanced Lead Table */}
-          <EnhancedLeadTable />
+          <div className="lg:col-span-2">
+            <EnhancedLeadTable 
+              leads={allLeads}
+              onViewLead={onViewLead}
+              onUpdateStatus={onUpdateStatus}
+            />
+          </div>
         </div>
 
-        {/* Right Column - 1/3 width */}
+        {/* Right Column - Filters and Distribution */}
         <div className="space-y-6">
-          {/* Smart Filters */}
+          {/* Smart Filters Panel */}
           <SmartFiltersPanel />
 
           {/* Geographic Distribution */}
-          <GeographicDistribution />
+          <GeographicDistribution leads={allLeads} />
 
-          {/* Priority Actions */}
+          {/* Priority Actions Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <AlertCircle className="h-5 w-5 text-destructive" />
                 Requires Attention
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[
-                  { icon: FileCheck, label: 'Documents Pending Verification', count: 5, color: 'text-destructive' },
-                  { icon: TrendingUp, label: 'Leads Stuck >7 Days', count: 3, color: 'text-warning' },
-                  { icon: Users, label: 'New Student First Logins', count: 2, color: 'text-primary' },
-                  { icon: DollarSign, label: 'Data Sanity Issues', count: 1, color: 'text-muted-foreground' },
-                ].map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className={`h-5 w-5 ${item.color}`} />
-                        <span className="text-sm font-medium">{item.label}</span>
-                      </div>
-                      <span className={`text-sm font-bold ${item.color}`}>
-                        {item.count}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <Button variant="outline" className="w-full mt-4">
+            <CardContent className="space-y-3">
+              {[
+                { label: 'Documents Pending', count: 8, priority: 'high' },
+                { label: 'Leads Stuck >7 Days', count: 5, priority: 'medium' },
+                { label: 'New Partner Signups', count: 3, priority: 'low' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className={`text-sm font-bold ${
+                    item.priority === 'high' ? 'text-destructive' :
+                    item.priority === 'medium' ? 'text-warning' :
+                    'text-primary'
+                  }`}>
+                    {item.count}
+                  </span>
+                </div>
+              ))}
+              <Button variant="outline" className="w-full mt-2">
                 View All Issues
               </Button>
             </CardContent>
