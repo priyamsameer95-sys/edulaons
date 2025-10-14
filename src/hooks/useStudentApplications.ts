@@ -85,7 +85,7 @@ export const useStudentApplications = () => {
 
       logger.info('[useStudentApplications] Found student ID:', studentData.id);
 
-      // Simplified query without explicit foreign key names - let RLS handle permissions
+      // Query with explicit foreign key relationship to avoid ambiguity
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -94,12 +94,12 @@ export const useStudentApplications = () => {
           co_applicants(name, relationship, salary),
           lenders(name, code),
           partners(name, email),
-          lead_universities(
+          lead_universities!fk_lead_universities_lead_id(
             universities(id, name, country, city)
           )
         `)
         .eq('student_id', studentData.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false});
 
       if (leadsError) {
         logger.error('[useStudentApplications] Error fetching leads:', leadsError);
