@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils';
 
 interface AdminDashboardLayoutProps {
   children: ReactNode;
+  onSearch?: (query: string) => void;
 }
 
-export const AdminDashboardLayout = ({ children }: AdminDashboardLayoutProps) => {
+export const AdminDashboardLayout = ({ children, onSearch }: AdminDashboardLayoutProps) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
@@ -21,6 +22,7 @@ export const AdminDashboardLayout = ({ children }: AdminDashboardLayoutProps) =>
       {/* Top Navigation */}
       <TopNavigationBar
         sidebarCollapsed={sidebarCollapsed}
+        onSearch={onSearch}
       />
 
       {/* Main Content */}

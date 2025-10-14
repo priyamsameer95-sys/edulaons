@@ -1,276 +1,317 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  MoreVertical, 
-  Eye, 
-  Edit, 
-} from 'lucide-react';
-import { RefactoredLead } from '@/types/refactored-lead';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ActiveFilters } from '@/pages/AdminDashboard';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search, MoreVertical, Eye, Edit, Trash, CheckCircle } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
-interface EnhancedLeadTableProps {
-  leads: RefactoredLead[];
-  globalFilters?: ActiveFilters;
-  onViewLead: (lead: RefactoredLead) => void;
-  onUpdateStatus: (lead: RefactoredLead) => void;
+interface Lead {
+  id: string;
+  studentName: string;
+  email: string;
+  status: 'new' | 'in_progress' | 'approved' | 'rejected';
+  documents: { uploaded: number; total: number };
+  avatar?: string;
 }
 
-const statusColors: Record<string, string> = {
-  new: 'bg-blue-100 text-blue-800 border-blue-200',
-  contacted: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  document_review: 'bg-purple-100 text-purple-800 border-purple-200',
-  approved: 'bg-green-100 text-green-800 border-green-200',
-  rejected: 'bg-red-100 text-red-800 border-red-200',
-  withdrawn: 'bg-gray-100 text-gray-800 border-gray-200',
+// Sample data
+const sampleLeads: Lead[] = [
+  {
+    id: '1',
+    studentName: 'Rajesh Kumar',
+    email: 'rajesh@gmail.com',
+    status: 'in_progress',
+    documents: { uploaded: 3, total: 5 },
+  },
+  {
+    id: '2',
+    studentName: 'Priya Shah',
+    email: 'priya@gmail.com',
+    status: 'approved',
+    documents: { uploaded: 5, total: 5 },
+  },
+  {
+    id: '3',
+    studentName: 'Amit Patel',
+    email: 'amit@gmail.com',
+    status: 'new',
+    documents: { uploaded: 1, total: 5 },
+  },
+  {
+    id: '4',
+    studentName: 'Sneha Reddy',
+    email: 'sneha@gmail.com',
+    status: 'in_progress',
+    documents: { uploaded: 4, total: 5 },
+  },
+  {
+    id: '5',
+    studentName: 'Vikram Singh',
+    email: 'vikram@gmail.com',
+    status: 'rejected',
+    documents: { uploaded: 5, total: 5 },
+  },
+];
+
+const statusColors = {
+  new: 'bg-primary/10 text-primary border-primary/20',
+  in_progress: 'bg-warning/10 text-warning border-warning/20',
+  approved: 'bg-success/10 text-success border-success/20',
+  rejected: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const statusLabels: Record<string, string> = {
+const statusLabels = {
   new: 'New',
-  contacted: 'Contacted',
   in_progress: 'In Progress',
-  document_review: 'Document Review',
   approved: 'Approved',
   rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
 };
 
-export const EnhancedLeadTable = ({ leads, globalFilters, onViewLead, onUpdateStatus }: EnhancedLeadTableProps) => {
+export const EnhancedLeadTable = () => {
+  const [leads, setLeads] = useState(sampleLeads);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Filter leads based on search, local status filter, and global filters
-  const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      // Local search
-      const matchesSearch = 
-        lead.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.case_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.student?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Local status filter
-      const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
-      
-      // Global filters
-      const matchesGlobalStatus = !globalFilters?.status?.length || 
-        globalFilters.status.includes(lead.status);
-      
-      const matchesGlobalDocStatus = !globalFilters?.documents_status?.length || 
-        globalFilters.documents_status.includes(lead.documents_status);
-      
-      const matchesGlobalDestination = !globalFilters?.study_destination?.length || 
-        globalFilters.study_destination.includes(lead.study_destination);
-      
-      const matchesGlobalLoanAmount = !globalFilters?.loan_amount?.length || 
-        globalFilters.loan_amount.some(range => {
-          const amount = Number(lead.loan_amount);
-          switch(range) {
-            case '0-10L': return amount < 1000000;
-            case '10L-20L': return amount >= 1000000 && amount < 2000000;
-            case '20L-30L': return amount >= 2000000 && amount < 3000000;
-            case '30L+': return amount >= 3000000;
-            default: return true;
-          }
-        });
-      
-      return matchesSearch && matchesStatus && matchesGlobalStatus && 
-             matchesGlobalDocStatus && matchesGlobalDestination && matchesGlobalLoanAmount;
-    });
-  }, [leads, searchTerm, filterStatus, globalFilters]);
+  const filteredLeads = leads.filter((lead) => {
+    const matchesSearch =
+      lead.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
-  const handleSelectAll = () => {
-    if (selectedLeads.length === filteredLeads.length) {
-      setSelectedLeads([]);
-    } else {
-      setSelectedLeads(filteredLeads.map(lead => lead.id));
-    }
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedLeads(checked ? filteredLeads.map((l) => l.id) : []);
   };
 
-  const handleSelectLead = (leadId: string) => {
-    setSelectedLeads(prev => 
-      prev.includes(leadId) 
-        ? prev.filter(id => id !== leadId)
-        : [...prev, leadId]
+  const handleSelectLead = (leadId: string, checked: boolean) => {
+    setSelectedLeads(
+      checked
+        ? [...selectedLeads, leadId]
+        : selectedLeads.filter((id) => id !== leadId)
     );
   };
 
   const getInitials = (name: string) => {
-    return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
-  };
-
-  const getDocumentProgress = (lead: RefactoredLead) => {
-    switch (lead.documents_status) {
-      case 'verified': return 100;
-      case 'uploaded': return 75;
-      case 'resubmission_required': return 40;
-      case 'pending': return 20;
-      case 'rejected': return 0;
-      default: return 0;
-    }
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
   };
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <CardTitle>Recent Leads</CardTitle>
+          
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            {/* Search */}
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email, case ID..."
+                placeholder="Search leads..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="pl-9"
               />
             </div>
+
+            {/* Status Filter */}
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="new">New</SelectItem>
-                <SelectItem value="contacted">Contacted</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="document_review">Document Review</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="withdrawn">Withdrawn</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
+        {/* Bulk Actions */}
         {selectedLeads.length > 0 && (
-          <div className="flex items-center gap-2 mt-4 p-3 bg-muted rounded-lg">
-            <span className="text-sm font-medium">{selectedLeads.length} selected</span>
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg animate-fade-in">
+            <span className="text-sm font-medium">
+              {selectedLeads.length} selected
+            </span>
             <Button size="sm" variant="outline">
-              Update Status
+              Approve
+            </Button>
+            <Button size="sm" variant="outline">
+              Reject
             </Button>
             <Button size="sm" variant="outline">
               Assign Lender
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setSelectedLeads([])}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedLeads([])}
+            >
               Clear
             </Button>
           </div>
         )}
       </CardHeader>
-
+      
       <CardContent>
-        <table className="w-full">
-          <thead className="border-b">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                <Checkbox 
-                  checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Student</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Documents</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filteredLeads.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                  No leads found
-                </td>
-              </tr>
-            ) : (
-              filteredLeads.slice(0, 10).map((lead) => (
-                <tr key={lead.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <Checkbox 
-                      checked={selectedLeads.includes(lead.id)}
-                      onCheckedChange={() => handleSelectLead(lead.id)}
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {getInitials(lead.student?.name || 'Unknown')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{lead.student?.name || 'Unknown'}</div>
-                        <div className="text-sm text-muted-foreground">{lead.student?.email || 'N/A'}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge 
-                      variant="outline" 
-                      className={statusColors[lead.status] || statusColors.new}
-                    >
-                      {statusLabels[lead.status] || lead.status}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground capitalize">{lead.documents_status.replace('_', ' ')}</span>
-                        <span className="font-medium">{getDocumentProgress(lead)}%</span>
-                      </div>
-                      <Progress value={getDocumentProgress(lead)} className="h-2" />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onViewLead(lead)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onUpdateStatus(lead)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Update Status
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        {filteredLeads.length > 10 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing 10 of {filteredLeads.length} leads
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">Previous</Button>
-              <Button variant="outline" size="sm">Next</Button>
+        <div className="border rounded-lg overflow-hidden">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 gap-4 p-4 bg-muted/50 border-b font-medium text-sm">
+            <div className="col-span-1 flex items-center">
+              <Checkbox
+                checked={selectedLeads.length === filteredLeads.length}
+                onCheckedChange={handleSelectAll}
+              />
             </div>
+            <div className="col-span-4">Student</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-3">Documents</div>
+            <div className="col-span-2 text-right">Actions</div>
           </div>
-        )}
+
+          {/* Table Body */}
+          <div className="divide-y">
+            {filteredLeads.map((lead) => (
+              <div
+                key={lead.id}
+                className="grid grid-cols-12 gap-4 p-4 hover:bg-muted/30 transition-colors"
+              >
+                {/* Checkbox */}
+                <div className="col-span-1 flex items-center">
+                  <Checkbox
+                    checked={selectedLeads.includes(lead.id)}
+                    onCheckedChange={(checked) =>
+                      handleSelectLead(lead.id, checked as boolean)
+                    }
+                  />
+                </div>
+
+                {/* Student Info */}
+                <div className="col-span-4 flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {getInitials(lead.studentName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{lead.studentName}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {lead.email}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="col-span-2 flex items-center">
+                  <Badge
+                    variant="outline"
+                    className={cn('font-medium', statusColors[lead.status])}
+                  >
+                    {statusLabels[lead.status]}
+                  </Badge>
+                </div>
+
+                {/* Documents Progress */}
+                <div className="col-span-3 flex items-center">
+                  <div className="flex items-center gap-2">
+                    {lead.documents.uploaded === lead.documents.total ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-success" />
+                        <span className="text-sm font-medium text-success">
+                          {lead.documents.uploaded}/{lead.documents.total}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[100px]">
+                          <div
+                            className="h-full bg-warning transition-all"
+                            style={{
+                              width: `${
+                                (lead.documents.uploaded / lead.documents.total) *
+                                100
+                              }%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {lead.documents.uploaded}/{lead.documents.total}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="col-span-2 flex items-center justify-end gap-2">
+                  <Button size="icon" variant="ghost" className="h-8 w-8">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredLeads.length} of {leads.length} leads
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm">
+              Next
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

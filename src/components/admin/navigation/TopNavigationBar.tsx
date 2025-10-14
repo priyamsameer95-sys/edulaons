@@ -27,9 +27,10 @@ import { cn } from '@/lib/utils';
 
 interface TopNavigationBarProps {
   sidebarCollapsed?: boolean;
+  onSearch?: (query: string) => void;
 }
 
-export const TopNavigationBar = ({ sidebarCollapsed }: TopNavigationBarProps) => {
+export const TopNavigationBar = ({ sidebarCollapsed, onSearch }: TopNavigationBarProps) => {
   const { signOut, appUser } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,7 +39,7 @@ export const TopNavigationBar = ({ sidebarCollapsed }: TopNavigationBarProps) =>
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    // Search functionality can be added here if needed in the future
+    onSearch?.(query);
   };
 
   const handleSignOut = async () => {
