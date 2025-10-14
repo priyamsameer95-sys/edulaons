@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CoachingTooltip } from './CoachingTooltip';
-import { QUALIFICATIONS, ACADEMIC_VALIDATION, TEST_TYPES } from '@/constants/studentApplication';
+import { QUALIFICATIONS, ACADEMIC_VALIDATION, TEST_TYPES, TEST_CATEGORIES } from '@/constants/studentApplication';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { Info, Award, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 
@@ -59,6 +59,50 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
     return '';
   };
 
+  // Get tests eligible for student's qualification
+  const getEligibleTests = () => {
+    if (!data.highestQualification) return TEST_TYPES;
+    
+    return TEST_TYPES.filter(test => 
+      (test.eligibleFor as readonly string[]).includes(data.highestQualification)
+    );
+  };
+
+  // Get tests available (not already added)
+  const getAvailableTests = (currentIndex?: number) => {
+    const eligibleTests = getEligibleTests();
+    const addedTestTypes = tests
+      .map((t, idx) => idx === currentIndex ? null : t.testType)
+      .filter(Boolean);
+    
+    return eligibleTests.filter(test => 
+      !addedTestTypes.includes(test.value as any)
+    );
+  };
+
+  // Check if language test already added
+  const hasLanguageTest = (excludeIndex?: number) => {
+    return tests.some((t, idx) => 
+      idx !== excludeIndex && TEST_CATEGORIES.language.includes(t.testType as any)
+    );
+  };
+
+  // Validate language test conflicts
+  const validateLanguageTestConflict = (newTestType: string, currentIndex: number): string => {
+    const isLanguageTest = TEST_CATEGORIES.language.includes(newTestType as any);
+    
+    if (!isLanguageTest) return '';
+    
+    if (hasLanguageTest(currentIndex)) {
+      const existingLanguageTest = tests.find((t, idx) => 
+        idx !== currentIndex && TEST_CATEGORIES.language.includes(t.testType as any)
+      );
+      return `You already have ${existingLanguageTest?.testType}. You only need ONE English proficiency test.`;
+    }
+    
+    return '';
+  };
+
   const handleChange = (name: string, value: any) => {
     onUpdate({ [name]: value });
     const error = validateField(name, value);
@@ -83,6 +127,22 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
 
   const updateTest = (index: number, field: string, value: any) => {
     const newTests = [...tests];
+    
+    // If changing test type, validate conflicts
+    if (field === 'testType') {
+      const conflictError = validateLanguageTestConflict(value, index);
+      if (conflictError) {
+        setErrors(prev => ({ ...prev, [`testType-${index}`]: conflictError }));
+        return;
+      } else {
+        setErrors(prev => {
+          const updated = { ...prev };
+          delete updated[`testType-${index}`];
+          return updated;
+        });
+      }
+    }
+    
     newTests[index] = { ...newTests[index], [field]: value };
     setTests(newTests);
     onUpdate({ tests: newTests });
@@ -319,6 +379,24 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
 
             {showTestScores && (
               <div className="space-y-4">
+                {!data.highestQualification && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Please select your highest qualification first to see relevant test options.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {data.highestQualification && getEligibleTests().length === 0 && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      No standardized tests are typically required for your qualification level.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 {tests.map((test, index) => (
                   <div key={index} className="space-y-4 p-4 border rounded-lg bg-muted/50 relative">
                     {tests.length > 1 && (
@@ -344,13 +422,16 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                             <SelectValue placeholder="Select test type" />
                           </SelectTrigger>
                           <SelectContent>
-                            {TEST_TYPES.map((t) => (
+                            {getAvailableTests(index).map((t) => (
                               <SelectItem key={t.value} value={t.value}>
                                 {t.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        {errors[`testType-${index}`] && (
+                          <p className="text-sm text-destructive">{errors[`testType-${index}`]}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -397,7 +478,7 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                   </div>
                 ))}
 
-                {tests.length < 10 && (
+                {tests.length < 10 && getAvailableTests().length > tests.length && (
                   <Button
                     type="button"
                     variant="outline"
@@ -405,8 +486,17 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Another Test Score ({tests.length}/10)
+                    Add Another Test Score ({tests.length}/{Math.min(10, getEligibleTests().length)})
                   </Button>
+                )}
+
+                {getAvailableTests().length === tests.length && tests.length > 0 && tests.length < 10 && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      You've added all available test types for your qualification.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             )}

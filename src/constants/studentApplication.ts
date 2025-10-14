@@ -135,11 +135,70 @@ export const EMPLOYMENT_TYPES = [
   { value: 'business_owner', label: 'Business Owner' }
 ] as const;
 
+/**
+ * Test Eligibility Rules:
+ * 
+ * - Language Tests (IELTS, TOEFL, PTE):
+ *   - Student can only add ONE language test
+ *   - Available for all qualification levels
+ * 
+ * - SAT:
+ *   - Only for students applying for Bachelor's or below
+ *   - NOT shown for Masters/PhD students
+ * 
+ * - GRE/GMAT:
+ *   - Only for students applying for Masters/PhD
+ *   - NOT shown for Bachelor's or below
+ * 
+ * - No Duplicates:
+ *   - Same test type cannot be added twice
+ */
 export const TEST_TYPES = [
-  { value: 'IELTS', label: 'IELTS (0-9)', max: 9 },
-  { value: 'TOEFL', label: 'TOEFL (0-120)', max: 120 },
-  { value: 'GRE', label: 'GRE (260-340)', max: 340 },
-  { value: 'GMAT', label: 'GMAT (200-800)', max: 800 },
-  { value: 'PTE', label: 'PTE (10-90)', max: 90 },
-  { value: 'SAT', label: 'SAT (400-1600)', max: 1600 }
+  { 
+    value: 'IELTS', 
+    label: 'IELTS (0-9)', 
+    max: 9,
+    category: 'language' as const,
+    eligibleFor: ['bachelors', 'masters', 'phd', 'diploma', '12th'] as const
+  },
+  { 
+    value: 'TOEFL', 
+    label: 'TOEFL (0-120)', 
+    max: 120,
+    category: 'language' as const,
+    eligibleFor: ['bachelors', 'masters', 'phd', 'diploma', '12th'] as const
+  },
+  { 
+    value: 'PTE', 
+    label: 'PTE (10-90)', 
+    max: 90,
+    category: 'language' as const,
+    eligibleFor: ['bachelors', 'masters', 'phd', 'diploma', '12th'] as const
+  },
+  { 
+    value: 'GRE', 
+    label: 'GRE (260-340)', 
+    max: 340,
+    category: 'aptitude' as const,
+    eligibleFor: ['masters', 'phd'] as const
+  },
+  { 
+    value: 'GMAT', 
+    label: 'GMAT (200-800)', 
+    max: 800,
+    category: 'aptitude' as const,
+    eligibleFor: ['masters', 'phd'] as const
+  },
+  { 
+    value: 'SAT', 
+    label: 'SAT (400-1600)', 
+    max: 1600,
+    category: 'aptitude' as const,
+    eligibleFor: ['bachelors', '12th'] as const
+  }
 ] as const;
+
+export const TEST_CATEGORIES = {
+  language: ['IELTS', 'TOEFL', 'PTE'],
+  aptitude: ['GRE', 'GMAT', 'SAT']
+} as const;
