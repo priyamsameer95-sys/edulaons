@@ -112,6 +112,23 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
           </Select>
         </div>
 
+        {/* Course/Program Name */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1">
+            <Label htmlFor="courseName">Course/Program Name</Label>
+            <CoachingTooltip content="Enter the name of the degree program you're planning to pursue (e.g., Master of Computer Science, MBA in Finance)" />
+          </div>
+          <Input
+            id="courseName"
+            type="text"
+            value={data.courseName || ''}
+            onChange={(e) => onUpdate({ courseName: e.target.value })}
+            placeholder="e.g., Master of Science in Data Science"
+            maxLength={200}
+          />
+          <p className="text-xs text-muted-foreground">Optional - helps lenders understand your study plan</p>
+        </div>
+
         {/* Loan Type */}
         <div className="space-y-2">
           <div className="flex items-center gap-1">

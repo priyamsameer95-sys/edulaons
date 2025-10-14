@@ -168,7 +168,17 @@ serve(async (req) => {
       email: studentEmail || `${cleanPhone}@temp.placeholder`,
       phone: cleanPhone,
       postal_code: body.student_pin_code.trim(),
-      country: 'India'
+      country: 'India',
+      date_of_birth: body.date_of_birth || null,
+      gender: body.gender || null,
+      city: body.city || null,
+      state: body.state || null,
+      nationality: body.nationality || 'Indian',
+      highest_qualification: body.highest_qualification || null,
+      tenth_percentage: body.tenth_percentage || null,
+      twelfth_percentage: body.twelfth_percentage || null,
+      bachelors_percentage: body.bachelors_percentage || null,
+      bachelors_cgpa: body.bachelors_cgpa || null
     };
 
     const { data: student, error: studentError } = await supabaseAdmin
@@ -237,6 +247,13 @@ serve(async (req) => {
     console.log('📋 [create-lead] Creating lead...');
     
     const caseId = `EDU-${Date.now()}`;
+
+    // Store course name in metadata if provided
+    const metadata: any = {};
+    if (body.course_name && body.course_name.trim()) {
+      metadata.course_name = body.course_name.trim();
+      console.log('📚 [create-lead] Course name:', body.course_name.trim());
+    }
 
     const leadData = {
       case_id: caseId,

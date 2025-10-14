@@ -34,6 +34,7 @@ export interface StudentApplicationData {
   // Study Details
   universities: string[];
   studyDestination: string;
+  courseName?: string;
   loanType: 'secured' | 'unsecured';
   intakeMonth: number;
   intakeYear: number;
@@ -163,6 +164,7 @@ export const useStudentApplication = () => {
           amount_requested: applicationData.loanAmount!,
           loan_type: applicationData.loanType!,
           country: applicationData.studyDestination!,
+          course_name: applicationData.courseName,
           intake_month: applicationData.intakeMonth!,
           intake_year: applicationData.intakeYear!,
           universities: applicationData.universities!,
