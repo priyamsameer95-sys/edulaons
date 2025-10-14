@@ -4,7 +4,9 @@ import { useStudentApplications } from "@/hooks/useStudentApplications";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
+import { EnhancedEmptyState } from "@/components/ui/enhanced-empty-state";
 import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
@@ -60,10 +62,28 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-lg font-semibold">Loading your applications...</p>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-between mb-8">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -75,60 +95,65 @@ const StudentDashboard = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Error Loading Applications</h2>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <div className="space-y-2">
-              <Button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  refetch();
-                }} 
-                className="w-full"
-              >
-                Try Again
-              </Button>
-              <Button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate('/login');
-                }} 
-                variant="outline" 
-                className="w-full"
-              >
-                Go to Login
-              </Button>
-              <Button 
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    await signOut();
-                    navigate('/login');
-                  } catch (err) {
-                    console.error('Sign out error:', err);
-                  }
-                }} 
-                variant="outline" 
-                className="w-full"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+        <EnhancedEmptyState
+          variant="error"
+          icon={AlertCircle}
+          title="Oops! Something went wrong"
+          description={error}
+          supportingText="Don't worry, your data is safe. This is usually a temporary issue."
+          primaryAction={{
+            label: "Try Again",
+            onClick: refetch,
+            icon: Loader2
+          }}
+          secondaryAction={{
+            label: "Sign Out & Login Again",
+            onClick: async () => {
+              await signOut();
+              navigate('/login');
+            },
+            variant: 'outline'
+          }}
+        />
       </div>
     );
   }
 
   if (!hasApplications) {
     return (
-      <div className="min-h-screen bg-muted/30">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <StudentApplicationFlow />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="container mx-auto px-4 py-12 max-w-5xl">
+          {/* Header with logout */}
+          <div className="flex justify-end mb-8">
+            <Button variant="outline" onClick={async () => {
+              await signOut();
+              navigate('/login');
+            }}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+
+          {/* Welcome Section */}
+          <EnhancedEmptyState
+            variant="welcome"
+            icon={GraduationCap}
+            title="Welcome to Your Education Loan Journey! 🎓"
+            description="You're just a few steps away from securing funding for your dream university."
+            supportingText="Our streamlined application process takes only 10-15 minutes to complete."
+            primaryAction={{
+              label: "Start Your Application",
+              onClick: () => setShowApplicationForm(true),
+              icon: FileText
+            }}
+            features={[
+              { icon: CheckCircle2, text: "Quick 5-step application" },
+              { icon: Clock, text: "Fast approval process" },
+              { icon: User, text: "Multiple lender options" },
+              { icon: Upload, text: "Secure document upload" }
+            ]}
+          />
         </div>
       </div>
     );

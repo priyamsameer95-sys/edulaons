@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EnhancedEmptyState } from "@/components/ui/enhanced-empty-state";
 import { Download, FileText, BadgeIndianRupee } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -165,18 +166,15 @@ export const PayoutsTab = () => {
                   ))
                 ) : payouts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12">
-                      <div className="flex flex-col items-center space-y-3">
-                        <div className="rounded-full bg-muted/20 p-4">
-                          <BadgeIndianRupee className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-medium">No disbursements yet</p>
-                          <p className="text-sm text-muted-foreground">
-                            Payouts will appear here once loans are successfully disbursed
-                          </p>
-                        </div>
-                      </div>
+                    <TableCell colSpan={7} className="p-0">
+                      <EnhancedEmptyState
+                        variant="no-data"
+                        icon={BadgeIndianRupee}
+                        title="No Disbursed Payouts Yet"
+                        description="Once your loan is approved and disbursed, you'll see the details here."
+                        supportingText="Track your loan disbursal timeline and payment schedules in one place."
+                        className="my-8"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

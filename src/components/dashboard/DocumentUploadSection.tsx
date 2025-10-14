@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
+import { EnhancedEmptyState } from "@/components/ui/enhanced-empty-state";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -337,11 +338,14 @@ export const DocumentUploadSection = ({
         
       {/* Empty State */}
       {documentTypes.length === 0 && (
-        <div className="px-4 py-12 text-center">
-          <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-base font-semibold text-foreground mb-1">No documents configured</h3>
-          <p className="text-sm text-muted-foreground">Contact support to set up document requirements</p>
-        </div>
+        <EnhancedEmptyState
+          variant="no-data"
+          icon={FileText}
+          title="No Documents Required Yet"
+          description="Your document checklist will appear here once your application is submitted."
+          supportingText="Don't worry - we'll guide you through exactly what documents you need to upload."
+          className="my-8"
+        />
       )}
     </div>
   );
