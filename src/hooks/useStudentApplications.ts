@@ -85,7 +85,7 @@ export const useStudentApplications = () => {
 
       logger.info('[useStudentApplications] Found student ID:', studentData.id);
 
-      // Query with explicit foreign key relationship to avoid ambiguity
+      // Query with explicit foreign key relationships to avoid ambiguity
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
@@ -95,7 +95,7 @@ export const useStudentApplications = () => {
           lenders(name, code),
           partners(name, email),
           lead_universities!fk_lead_universities_lead_id(
-            universities(id, name, country, city)
+            universities!fk_lead_universities_university(id, name, country, city)
           )
         `)
         .eq('student_id', studentData.id)
