@@ -9,6 +9,9 @@ import ReviewStep from './ReviewStep';
 import SuccessStep from './SuccessStep';
 import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const steps = [
   { title: 'Personal Details', description: 'Tell us about yourself' },
@@ -31,6 +34,8 @@ const StudentApplicationFlow = () => {
   } = useStudentApplication();
 
   const [submissionResult, setSubmissionResult] = useState<any>(null);
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   const handleSubmit = async () => {
     const result = await submitApplication();
@@ -83,17 +88,42 @@ const StudentApplicationFlow = () => {
 
   return (
     <div className="space-y-6">
-      {/* Test Data Button */}
+      {/* Header with navigation */}
       {currentStep < 5 && (
-        <div className="flex justify-end">
-          <Button 
-            onClick={handleFillTestData} 
-            variant="outline" 
-            size="sm"
-            type="button"
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (window.confirm('Are you sure you want to exit? Your progress will be lost.')) {
+                window.location.href = '/student';
+              }
+            }}
           >
-            Fill Test Data
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
           </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleFillTestData} 
+              variant="outline" 
+              size="sm"
+              type="button"
+            >
+              Fill Test Data
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to logout?')) {
+                  await signOut();
+                  navigate('/login');
+                }
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       )}
 
