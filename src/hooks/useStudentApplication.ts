@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import type { StudentApplicationData } from '@/types/student-application';
 import { transformToEdgeFunctionPayload } from '@/utils/studentApplicationHelpers';
 import { studentApplicationSchema } from '@/lib/validation/studentValidation';
+import { useLocalStorage } from './useLocalStorage';
 
 const STORAGE_KEY = 'student_application_draft';
 
