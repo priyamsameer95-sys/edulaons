@@ -114,18 +114,35 @@ const Login = () => {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <Card className="w-full max-w-md shadow-lg border">
-        <CardHeader className="text-center space-y-4 pb-6">
-          <div className="mx-auto w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
-            <GraduationCap className="w-7 h-7 text-primary-foreground" />
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
+      {/* Branded background pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+      
+      <Card className="w-full max-w-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border relative z-10">
+        <CardHeader className="text-center space-y-6 pb-8 pt-8">
+          {/* Brand Logo */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(217,91%,55%)] to-[hsl(262,83%,58%)] rounded-2xl blur-xl opacity-40" />
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[hsl(217,91%,55%)] to-[hsl(262,83%,58%)] flex items-center justify-center shadow-lg">
+                <GraduationCap className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            
+            {/* Brand Name */}
+            <div className="space-y-1">
+              <h1 className="text-3xl font-brand font-bold text-foreground tracking-tight">
+                EduLoan<span className="text-[hsl(217,91%,55%)]">Pro</span>
+              </h1>
+              <p className="text-sm text-muted-foreground font-medium">
+                Your Education Finance Partner
+              </p>
+            </div>
           </div>
-          <div className="space-y-2">
-            <CardTitle className="text-3xl font-bold text-foreground">
-              Student Loan Portal
-            </CardTitle>
+          
+          <div className="pt-2">
             <CardDescription className="text-base">
-              Manage your loan applications and track your progress
+              Empowering students with smart loan solutions
             </CardDescription>
           </div>
         </CardHeader>
