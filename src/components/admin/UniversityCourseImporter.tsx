@@ -42,7 +42,7 @@ export function UniversityCourseImporter() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportSummary | null>(null);
   const [options, setOptions] = useState<ImportOptions>({
-    skipExistingUniversities: true,
+    skipExistingUniversities: false,
     skipDuplicateCourses: true,
     defaultCountry: 'Not Specified',
     defaultCity: 'Not Specified',
