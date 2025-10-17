@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle, FileCheck, Shield } from 'lucide-react';
+import { Users, FileText, TrendingUp, DollarSign, Building2, LogOut, Plus, Search, PieChart, Trophy, BarChart3, Clock, CheckCircle, FileCheck, Shield, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -37,6 +37,7 @@ import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminActionsDrawer } from '@/components/admin/AdminActionsDrawer';
 import { AdminActivityBoard } from '@/components/admin/AdminActivityBoard';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
+import { UniversityCourseImporter } from '@/components/admin/UniversityCourseImporter';
 
 interface AdminKPIs {
   totalLeads: number;
@@ -645,7 +646,7 @@ const AdminDashboard = () => {
             {/* Tabs Section */}
             <div ref={tabsRef}>
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-6' : 'grid-cols-5'} max-w-5xl`}>
+                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-7' : 'grid-cols-5'} max-w-6xl`}>
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -667,10 +668,16 @@ const AdminDashboard = () => {
                   Users
                 </TabsTrigger>
                 {appUser?.role === 'super_admin' && (
-                  <TabsTrigger value="audit" className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Audit
-                  </TabsTrigger>
+                  <>
+                    <TabsTrigger value="import" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Data Import
+                    </TabsTrigger>
+                    <TabsTrigger value="audit" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Audit
+                    </TabsTrigger>
+                  </>
                 )}
               </TabsList>
 
@@ -1065,9 +1072,15 @@ const AdminDashboard = () => {
               </TabsContent>
 
               {appUser.role === 'super_admin' && (
-                <TabsContent value="audit" className="space-y-6 mt-6">
-                  <AuditLogViewer />
-                </TabsContent>
+                <>
+                  <TabsContent value="import" className="space-y-6 mt-6">
+                    <UniversityCourseImporter />
+                  </TabsContent>
+                  
+                  <TabsContent value="audit" className="space-y-6 mt-6">
+                    <AuditLogViewer />
+                  </TabsContent>
+                </>
               )}
             </Tabs>
             </div>
