@@ -114,12 +114,12 @@ const Login = () => {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 sm:px-8 md:px-12 py-12 relative overflow-hidden">
       {/* Branded background pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
       
-      <Card className="w-full max-w-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border relative z-10">
-        <CardHeader className="text-center space-y-6 pb-8 pt-8">
+      <Card className="w-full max-w-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border relative z-10 mx-auto">
+        <CardHeader className="text-center space-y-6 pb-8 pt-10 px-8">
           {/* Brand Logo */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
@@ -146,7 +146,7 @@ const Login = () => {
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-8 pb-8">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-11">
               <TabsTrigger value="signin">
