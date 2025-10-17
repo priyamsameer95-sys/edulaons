@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, GraduationCap, Mail, Lock, Shield, Info, CheckCircle2 } from 'lucide-react';
+import { Loader2, GraduationCap, Mail, Lock, Shield, Info, CheckCircle2, Zap, FileCheck, TrendingUp } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import DashboardRouter from '@/components/DashboardRouter';
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -114,11 +114,89 @@ const Login = () => {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 sm:px-8 md:px-12 py-12 relative overflow-hidden">
-      {/* Branded background pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
-      
-      <Card className="w-full max-w-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border relative z-10 mx-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+      {/* LEFT SIDE - BRANDING PANEL */}
+      <div className="hidden lg:flex flex-col justify-center items-center p-12 bg-gradient-to-br from-[hsl(217,91%,55%)] to-[hsl(262,83%,58%)] relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+        
+        {/* Content */}
+        <div className="relative z-10 max-w-md space-y-12 text-white">
+          {/* Brand */}
+          <div className="space-y-4">
+            <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl">
+              <GraduationCap className="w-10 h-10 text-white" />
+            </div>
+            <div>
+              <h1 className="text-5xl font-brand font-bold tracking-tight">
+                EduLoan<span className="text-white/90">Pro</span>
+              </h1>
+              <p className="text-xl text-white/90 mt-3 font-medium">
+                Empowering Your Education Journey
+              </p>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Smart Loan Matching</h3>
+                <p className="text-white/80 text-sm">Get matched with the best lenders based on your profile and needs</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <FileCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Real-time Tracking</h3>
+                <p className="text-white/80 text-sm">Monitor your application status and get instant updates at every stage</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Shield className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Secure & Private</h3>
+                <p className="text-white/80 text-sm">Bank-grade encryption keeps your documents and data completely safe</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Fast Approval</h3>
+                <p className="text-white/80 text-sm">Streamlined process designed to get you approved quickly and efficiently</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust indicator */}
+          <div className="pt-8 border-t border-white/20">
+            <p className="text-white/70 text-sm">
+              Trusted by <span className="font-semibold text-white">10,000+</span> students across the country
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE - LOGIN FORM */}
+      <div className="flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-background relative overflow-hidden">
+        {/* Subtle background pattern for right side */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+        
+        <Card className="w-full max-w-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] border relative z-10">
         <CardHeader className="text-center space-y-6 pb-8 pt-10 px-8">
           {/* Brand Logo */}
           <div className="flex flex-col items-center gap-3">
@@ -345,7 +423,8 @@ const Login = () => {
             </TabsContent>
           </Tabs>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
