@@ -25,6 +25,8 @@ import { useRefactoredLeads } from '@/hooks/useRefactoredLeads';
 import { RefactoredLead } from '@/types/refactored-lead';
 import { assertAdminRole } from '@/utils/roleCheck';
 import { AdminErrorBoundary } from '@/components/admin/AdminErrorBoundary';
+import { useSearchParams } from 'react-router-dom';
+import { DatabaseCleanupPanel } from '@/components/admin/DatabaseCleanupPanel';
 
 import { PartnerLeaderboard } from '@/components/gamification/PartnerLeaderboard';
 import { AdminActionRequired } from '@/components/gamification/AdminActionRequired';
@@ -70,6 +72,14 @@ interface LoanAmountComparison {
 }
 
 const AdminDashboard = () => {
+  const [searchParams] = useSearchParams();
+  const showCleanup = searchParams.get('cleanup') === 'true';
+  
+  // If cleanup mode, render cleanup panel only
+  if (showCleanup) {
+    return <DatabaseCleanupPanel />;
+  }
+
   const { signOut, appUser } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
