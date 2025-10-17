@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, GraduationCap } from 'lucide-react';
+import { Loader2, GraduationCap, Mail, Lock, Shield, Info, CheckCircle2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import DashboardRouter from '@/components/DashboardRouter';
 import { LoadingButton } from '@/components/ui/loading-button';
 
@@ -113,57 +114,61 @@ const Login = () => {
 
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-3xl" />
-      </div>
-
-      <Card className="relative w-full max-w-md shadow-xl border-border/50 backdrop-blur-sm bg-card/95">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <Card className="w-full max-w-md shadow-lg border">
         <CardHeader className="text-center space-y-4 pb-6">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/20">
+          <div className="mx-auto w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
             <GraduationCap className="w-7 h-7 text-primary-foreground" />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold text-foreground">
               Student Loan Portal
             </CardTitle>
             <CardDescription className="text-base">
-              Sign in or create your account to get started
+              Manage your loan applications and track your progress
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50">
-              <TabsTrigger value="signin" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsList className="grid w-full grid-cols-2 h-11">
+              <TabsTrigger value="signin">
                 Sign In
               </TabsTrigger>
-              <TabsTrigger value="signup" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TabsTrigger value="signup">
                 Sign Up
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="signin" className="mt-6">
+            <TabsContent value="signin" className="mt-6 space-y-5">
+              <Alert className="bg-muted/50 border-muted-foreground/20">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Returning students: Sign in to track your loan applications and view status updates
+                </AlertDescription>
+              </Alert>
+
               <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
+                  <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
                     Email Address
                   </Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="your.email@example.com"
                     value={formData.email}
                     onChange={handleInputChange}
                     required
                     className="h-11"
                   />
+                  <p className="text-xs text-muted-foreground">We'll never share your email with anyone</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
+                  <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
                     Password
                   </Label>
                   <Input
@@ -179,16 +184,36 @@ const Login = () => {
                 </div>
                 <LoadingButton 
                   type="submit" 
-                  className="w-full h-11 font-medium shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all" 
+                  className="w-full h-11 font-medium" 
                   loading={isLoading}
                   loadingText="Signing in..."
                 >
                   Sign In
                 </LoadingButton>
+                <p className="text-xs text-center text-muted-foreground">
+                  First time here? Switch to Sign Up to create an account
+                </p>
               </form>
+
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t">
+                <Shield className="h-4 w-4" />
+                <span>Your data is encrypted and secure</span>
+              </div>
             </TabsContent>
 
-            <TabsContent value="signup" className="mt-6">
+            <TabsContent value="signup" className="mt-6 space-y-5">
+              <Alert className="bg-primary/5 border-primary/20">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm">
+                  <strong>Create your account to:</strong>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    <li>✓ Track all your loan applications in one place</li>
+                    <li>✓ Get real-time updates on application status</li>
+                    <li>✓ Upload and manage documents securely</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name" className="text-sm font-medium">
@@ -221,35 +246,46 @@ const Login = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-sm font-medium">
+                  <Label htmlFor="signup-email" className="text-sm font-medium flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
                     Email Address
                   </Label>
                   <Input
                     id="signup-email"
                     name="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="your.email@example.com"
                     value={signUpData.email}
                     onChange={handleSignUpInputChange}
                     required
                     className="h-11"
                   />
+                  <p className="text-xs text-muted-foreground">You'll receive a verification email after signing up</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-sm font-medium">
+                  <Label htmlFor="signup-password" className="text-sm font-medium flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
                     Password
                   </Label>
                   <Input
                     id="signup-password"
                     name="password"
                     type="password"
-                    placeholder="Minimum 6 characters"
+                    placeholder="Create a secure password"
                     value={signUpData.password}
                     onChange={handleSignUpInputChange}
                     required
                     minLength={6}
                     className="h-11"
                   />
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Password requirements:</p>
+                    <ul className="text-xs text-muted-foreground space-y-0.5">
+                      <li className={signUpData.password.length >= 6 ? "text-green-600" : ""}>
+                        {signUpData.password.length >= 6 ? "✓" : "•"} At least 6 characters
+                      </li>
+                    </ul>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
@@ -265,19 +301,30 @@ const Login = () => {
                     required
                     className="h-11"
                   />
+                  {signUpData.confirmPassword && signUpData.password !== signUpData.confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords don't match</p>
+                  )}
+                  {signUpData.confirmPassword && signUpData.password === signUpData.confirmPassword && (
+                    <p className="text-xs text-green-600">✓ Passwords match</p>
+                  )}
                 </div>
                 <LoadingButton 
                   type="submit" 
-                  className="w-full h-11 font-medium shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all mt-6" 
+                  className="w-full h-11 font-medium mt-6" 
                   loading={isLoading}
                   loadingText="Creating account..."
                 >
                   Create Account
                 </LoadingButton>
-                <p className="text-xs text-muted-foreground text-center pt-2">
-                  By signing up, you'll receive an email verification link
+                <p className="text-xs text-center text-muted-foreground">
+                  Already have an account? Switch to Sign In
                 </p>
               </form>
+
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t">
+                <Shield className="h-4 w-4" />
+                <span>Your data is encrypted and secure</span>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
