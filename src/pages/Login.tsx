@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, GraduationCap } from 'lucide-react';
 import DashboardRouter from '@/components/DashboardRouter';
+import { LoadingButton } from '@/components/ui/loading-button';
 
 const Login = () => {
   const { user, loading, signIn, signUp } = useAuth();
@@ -113,37 +113,59 @@ const Login = () => {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome to Student Loan Portal</CardTitle>
-          <CardDescription>
-            Sign in or create your account to get started
-          </CardDescription>
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-accent/10 to-transparent rounded-full blur-3xl" />
+      </div>
+
+      <Card className="relative w-full max-w-md shadow-xl border-border/50 backdrop-blur-sm bg-card/95">
+        <CardHeader className="text-center space-y-4 pb-6">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/20">
+            <GraduationCap className="w-7 h-7 text-primary-foreground" />
+          </div>
+          <div className="space-y-2">
+            <CardTitle className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Student Loan Portal
+            </CardTitle>
+            <CardDescription className="text-base">
+              Sign in or create your account to get started
+            </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50">
+              <TabsTrigger value="signin" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger value="signup" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                Sign Up
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+            <TabsContent value="signin" className="mt-6">
+              <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email Address
+                  </Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleInputChange}
                     required
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
                   <Input
                     id="password"
                     name="password"
@@ -152,91 +174,107 @@ const Login = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
+                    className="h-11"
                   />
                 </div>
-                <Button 
+                <LoadingButton 
                   type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
+                  className="w-full h-11 font-medium shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all" 
+                  loading={isLoading}
+                  loadingText="Signing in..."
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
-                </Button>
+                </LoadingButton>
               </form>
             </TabsContent>
 
-            <TabsContent value="signup">
+            <TabsContent value="signup" className="mt-6">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name" className="text-sm font-medium">
+                    Full Name
+                  </Label>
                   <Input
                     id="signup-name"
                     name="name"
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder="John Doe"
                     value={signUpData.name}
                     onChange={handleSignUpInputChange}
                     required
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <Label htmlFor="signup-phone" className="text-sm font-medium">
+                    Phone Number
+                  </Label>
                   <Input
                     id="signup-phone"
                     name="phone"
                     type="tel"
-                    placeholder="Enter your phone number"
+                    placeholder="+1 (555) 000-0000"
                     value={signUpData.phone}
                     onChange={handleSignUpInputChange}
                     required
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="text-sm font-medium">
+                    Email Address
+                  </Label>
                   <Input
                     id="signup-email"
                     name="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="you@example.com"
                     value={signUpData.email}
                     onChange={handleSignUpInputChange}
                     required
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="text-sm font-medium">
+                    Password
+                  </Label>
                   <Input
                     id="signup-password"
                     name="password"
                     type="password"
-                    placeholder="Create a password (min 6 characters)"
+                    placeholder="Minimum 6 characters"
                     value={signUpData.password}
                     onChange={handleSignUpInputChange}
                     required
                     minLength={6}
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
+                    Confirm Password
+                  </Label>
                   <Input
                     id="signup-confirm-password"
                     name="confirmPassword"
                     type="password"
-                    placeholder="Confirm your password"
+                    placeholder="Re-enter your password"
                     value={signUpData.confirmPassword}
                     onChange={handleSignUpInputChange}
                     required
+                    className="h-11"
                   />
                 </div>
-                <Button 
+                <LoadingButton 
                   type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
+                  className="w-full h-11 font-medium shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all mt-6" 
+                  loading={isLoading}
+                  loadingText="Creating account..."
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Account
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
+                </LoadingButton>
+                <p className="text-xs text-muted-foreground text-center pt-2">
                   By signing up, you'll receive an email verification link
                 </p>
               </form>
