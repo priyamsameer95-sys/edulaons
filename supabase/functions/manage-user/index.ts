@@ -85,11 +85,11 @@ serve(async (req) => {
         throw new Error('Only super admins can create admin users');
       }
 
-      // Create auth user
+      // Create auth user (no email verification required)
       const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
+        email_confirm: false,
       });
 
       if (createError) throw createError;
