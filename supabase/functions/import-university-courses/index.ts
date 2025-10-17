@@ -152,21 +152,29 @@ Deno.serve(async (req) => {
     const uniqueUniversityNames = extractUniqueUniversities(courses);
     console.log(`Found ${uniqueUniversityNames.length} unique universities`);
 
-    // Step 2: Check existing universities
-    const { data: existingUniversities, error: fetchError } = await supabase
-      .from('universities')
-      .select('id, name')
-      .in('name', uniqueUniversityNames);
+    // Step 2: Check existing universities in batches to avoid URL length limits
+    const existingUniversityMap = new Map<string, string>();
+    const UNIVERSITY_BATCH_SIZE = 100; // Fetch 100 universities at a time
+    
+    for (let i = 0; i < uniqueUniversityNames.length; i += UNIVERSITY_BATCH_SIZE) {
+      const batch = uniqueUniversityNames.slice(i, i + UNIVERSITY_BATCH_SIZE);
+      console.log(`Fetching universities batch ${Math.floor(i/UNIVERSITY_BATCH_SIZE) + 1}/${Math.ceil(uniqueUniversityNames.length/UNIVERSITY_BATCH_SIZE)}`);
+      
+      const { data: batchUniversities, error: fetchError } = await supabase
+        .from('universities')
+        .select('id, name')
+        .in('name', batch);
 
-    if (fetchError) {
-      throw new Error(`Failed to fetch universities: ${fetchError.message}`);
+      if (fetchError) {
+        throw new Error(`Failed to fetch universities batch: ${fetchError.message}`);
+      }
+
+      (batchUniversities || []).forEach(u => {
+        existingUniversityMap.set(u.name.toLowerCase(), u.id);
+      });
     }
 
-    const existingUniversityMap = new Map(
-      (existingUniversities || []).map(u => [u.name.toLowerCase(), u.id])
-    );
-
-    console.log(`${existingUniversities?.length || 0} universities already exist`);
+    console.log(`${existingUniversityMap.size} universities already exist`);
 
     // Step 3: Create missing universities
     const newUniversities: UniversityRow[] = [];
