@@ -123,21 +123,27 @@ serve(async (req) => {
 
       if (createError) throw createError;
 
-      // Create app_users record
-      const { error: insertError } = await supabaseClient
+      // Upsert app_users record (handles case where trigger might have already created it)
+      const { error: upsertError } = await supabaseClient
         .from('app_users')
-        .insert({
+        .upsert({
           id: newUser.user.id,
           email,
+          role: role, // Use the actual requested role
           partner_id: role === 'partner' ? partner_id : null,
           is_active: true,
+        }, {
+          onConflict: 'id'
         });
 
-      if (insertError) {
+      if (upsertError) {
+        console.error('[manage-user] Upsert error:', upsertError);
         // Rollback: delete auth user
         await supabaseClient.auth.admin.deleteUser(newUser.user.id);
-        throw insertError;
+        throw upsertError;
       }
+
+      console.log(`[manage-user] App user record created/updated for ${email}`);
 
       // Grant role using the secure grant_user_role function
       const { error: roleError } = await supabaseClient
