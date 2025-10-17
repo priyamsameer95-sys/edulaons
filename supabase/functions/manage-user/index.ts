@@ -68,17 +68,46 @@ serve(async (req) => {
     console.log(`[manage-user] Action: ${action} by ${requestUser.email} (${requestUserRole})`);
 
     if (action === 'create') {
-      // Validate email
-      const { data: existingUser } = await supabaseClient
+      // Check if user exists in auth.users
+      const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
+      const existingAuthUser = authUsers?.users.find(u => u.email === email);
+
+      // Check if user exists in app_users
+      const { data: existingAppUser } = await supabaseClient
         .from('app_users')
-        .select('email')
+        .select('id, email')
         .eq('email', email)
         .maybeSingle();
 
-      if (existingUser) {
-        await logAudit(supabaseClient, 'create', requestUser.id, null, email, null, { role }, null, false, 'Email already exists', req);
+      // Handle different scenarios
+      if (existingAuthUser && existingAppUser) {
+        // User exists in both - genuine duplicate
+        await logAudit(supabaseClient, 'create', requestUser.id, null, email, null, { role }, null, false, 'User already exists in both auth and database', req);
         throw new Error('User with this email already exists');
       }
+
+      if (!existingAuthUser && existingAppUser) {
+        // Orphaned record - clean it up first
+        console.log(`[manage-user] Cleaning orphaned app_users record for ${email}`);
+        
+        // Delete from user_roles
+        await supabaseClient
+          .from('user_roles')
+          .delete()
+          .eq('user_id', existingAppUser.id);
+        
+        // Delete from app_users
+        await supabaseClient
+          .from('app_users')
+          .delete()
+          .eq('id', existingAppUser.id);
+        
+        console.log(`[manage-user] Orphaned record cleaned, proceeding with user creation`);
+      }
+
+      // If we reach here, either:
+      // - User doesn't exist at all (proceed)
+      // - Orphaned record was cleaned (proceed)
 
       // Only super_admin can create admin users
       if ((role === 'admin' || role === 'super_admin') && requestUserRole !== 'super_admin') {
