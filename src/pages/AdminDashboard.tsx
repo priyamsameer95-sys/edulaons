@@ -647,7 +647,7 @@ const AdminDashboard = () => {
             {/* Tabs Section */}
             <div ref={tabsRef}>
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className={`grid w-full ${appUser?.role === 'super_admin' ? 'grid-cols-8' : 'grid-cols-5'} max-w-6xl`}>
+                <TabsList className="grid w-full grid-cols-3 max-w-2xl">
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <PieChart className="h-4 w-4" />
                   Overview
@@ -656,34 +656,10 @@ const AdminDashboard = () => {
                   <Building2 className="h-4 w-4" />
                   Partners
                 </TabsTrigger>
-                <TabsTrigger value="lenders" className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Lenders
-                </TabsTrigger>
                 <TabsTrigger value="leads" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+                  <FileText className="h-4 w-4" />
                   Leads
                 </TabsTrigger>
-                <TabsTrigger value="users" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Users
-                </TabsTrigger>
-                {appUser?.role === 'super_admin' && (
-                  <>
-                    <TabsTrigger value="import" className="flex items-center gap-2">
-                      <Upload className="h-4 w-4" />
-                      Data Import
-                    </TabsTrigger>
-                    <TabsTrigger value="performance" className="flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Performance
-                    </TabsTrigger>
-                    <TabsTrigger value="audit" className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Audit
-                    </TabsTrigger>
-                  </>
-                )}
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6 mt-6">

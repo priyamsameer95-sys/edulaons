@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Users, Shield, LogOut, Plus, LayoutDashboard, Building2, DollarSign } from 'lucide-react';
+import { Menu, Users, Shield, LogOut, Plus, LayoutDashboard, Building2, DollarSign, Upload, Zap, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -102,24 +102,12 @@ export function AdminActionsDrawer({
               variant="ghost" 
               className={cn(
                 "w-full justify-start transition-colors",
-                activeTab === 'lenders' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
-              )}
-              onClick={() => handleTabChange('lenders')}
-            >
-              <DollarSign className="mr-3 h-4 w-4" />
-              Lenders
-            </Button>
-
-            <Button 
-              variant="ghost" 
-              className={cn(
-                "w-full justify-start transition-colors",
                 activeTab === 'leads' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
               )}
               onClick={() => handleTabChange('leads')}
             >
-              <Users className="mr-3 h-4 w-4" />
-              All Leads
+              <FileText className="mr-3 h-4 w-4" />
+              Leads
             </Button>
           </div>
 
@@ -133,6 +121,18 @@ export function AdminActionsDrawer({
               variant="ghost" 
               className={cn(
                 "w-full justify-start transition-colors",
+                activeTab === 'lenders' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+              )}
+              onClick={() => handleTabChange('lenders')}
+            >
+              <DollarSign className="mr-3 h-4 w-4" />
+              Lender Management
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start transition-colors",
                 activeTab === 'users' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
               )}
               onClick={() => handleTabChange('users')}
@@ -140,21 +140,54 @@ export function AdminActionsDrawer({
               <Users className="mr-3 h-4 w-4" />
               User Management
             </Button>
-            
-            {userRole === 'super_admin' && (
-              <Button 
-                variant="ghost" 
-                className={cn(
-                  "w-full justify-start transition-colors",
-                  activeTab === 'audit' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
-                )}
-                onClick={() => handleTabChange('audit')}
-              >
-                <Shield className="mr-3 h-4 w-4" />
-                Audit Logs
-              </Button>
-            )}
           </div>
+
+          <Separator />
+
+          {/* System - Super Admin Only */}
+          {userRole === 'super_admin' && (
+            <>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">System</p>
+                
+                <Button 
+                  variant="ghost" 
+                  className={cn(
+                    "w-full justify-start transition-colors",
+                    activeTab === 'import' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                  )}
+                  onClick={() => handleTabChange('import')}
+                >
+                  <Upload className="mr-3 h-4 w-4" />
+                  Data Import
+                </Button>
+
+                <Button 
+                  variant="ghost" 
+                  className={cn(
+                    "w-full justify-start transition-colors",
+                    activeTab === 'performance' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                  )}
+                  onClick={() => handleTabChange('performance')}
+                >
+                  <Zap className="mr-3 h-4 w-4" />
+                  Performance
+                </Button>
+
+                <Button 
+                  variant="ghost" 
+                  className={cn(
+                    "w-full justify-start transition-colors",
+                    activeTab === 'audit' ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                  )}
+                  onClick={() => handleTabChange('audit')}
+                >
+                  <Shield className="mr-3 h-4 w-4" />
+                  Audit Logs
+                </Button>
+              </div>
+            </>
+          )}
 
           <Separator />
 
