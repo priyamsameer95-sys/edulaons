@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Papa from 'https://esm.sh/papaparse@5.4.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,7 @@ interface CourseRow {
   program_duration?: string;
   tuition_fees?: string;
   starting_month?: string;
+  __row_number?: number; // Track row number for error reporting
 }
 
 interface ImportSummary {
@@ -41,38 +43,54 @@ interface ImportSummary {
   processingTime: number;
 }
 
-// Parse CSV content
-function parseCSV(csvContent: string): CourseRow[] {
-  const lines = csvContent.trim().split('\n');
-  if (lines.length < 2) return [];
+// Parse CSV content using PapaParse for proper handling of quotes, commas, and special characters
+function parseCSV(csvContent: string): { courses: CourseRow[], errors: Array<{ row: number; message: string }> } {
+  const parseErrors: Array<{ row: number; message: string }> = [];
+  
+  const result: any = Papa.parse(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header: string) => {
+      const normalized = header.trim().toLowerCase();
+      if (normalized.includes('university') || normalized.includes('institution')) return 'university_name';
+      if (normalized.includes('degree') || normalized.includes('qualification')) return 'degree';
+      if (normalized.includes('stream') || normalized.includes('field') || normalized.includes('discipline')) return 'stream_name';
+      if (normalized.includes('program') || normalized.includes('course name') || normalized.includes('programme')) return 'program_name';
+      if (normalized.includes('study level') || normalized.includes('level') || normalized.includes('program level')) return 'study_level';
+      if (normalized.includes('intensity')) return 'course_intensity';
+      if (normalized.includes('mode')) return 'study_mode';
+      if (normalized.includes('duration')) return 'program_duration';
+      if (normalized.includes('fees') || normalized.includes('tuition') || normalized.includes('cost')) return 'tuition_fees';
+      if (normalized.includes('month') || normalized.includes('start')) return 'starting_month';
+      return header;
+    },
+    transform: (value: string) => value?.trim() || '',
+  });
 
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const rows: CourseRow[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim());
-    if (values.length !== headers.length) continue;
-
-    const row: any = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index];
-    });
-
-    rows.push({
-      university_name: row['university_name'] || '',
-      degree: row['degree'] || '',
-      stream_name: row['stream_name'] || '',
-      program_name: row['program_name'] || '',
-      study_level: row['study_level'] || row['studylevel'] || '',
-      course_intensity: row['course_intensity'] || row['courseintensity'],
-      study_mode: row['study_mode'] || row['studymode'],
-      program_duration: row['program_duration'] || row['programduration'],
-      tuition_fees: row['tuition_fees'] || row['tutition_fees'] || row['tution_fees'],
-      starting_month: row['starting_month'] || row['startingmonth'],
+  if (result.errors && result.errors.length > 0) {
+    result.errors.forEach((error: any) => {
+      parseErrors.push({
+        row: error.row || 0,
+        message: `CSV parsing error: ${error.message}`
+      });
     });
   }
 
-  return rows;
+  const courses = ((result.data || []) as any[]).map((row, index) => ({
+    university_name: row.university_name || '',
+    degree: row.degree || '',
+    stream_name: row.stream_name || '',
+    program_name: row.program_name || '',
+    study_level: row.study_level || '',
+    course_intensity: row.course_intensity || null,
+    study_mode: row.study_mode || null,
+    program_duration: row.program_duration || null,
+    tuition_fees: row.tuition_fees || null,
+    starting_month: row.starting_month || null,
+    __row_number: index + 2,
+  }));
+
+  return { courses, errors: parseErrors };
 }
 
 // Extract unique universities
@@ -116,11 +134,15 @@ Deno.serve(async (req) => {
 
     // Read and parse CSV
     const csvContent = await file.text();
-    const courses = parseCSV(csvContent);
+    const { courses, errors: parseErrors } = parseCSV(csvContent);
     
     console.log(`Parsed ${courses.length} courses from CSV`);
 
-    const errors: ImportSummary['errors'] = [];
+    const errors: ImportSummary['errors'] = [...parseErrors.map(e => ({
+      row: e.row,
+      field: 'csv_parsing',
+      message: e.message
+    }))];
     let universitiesCreated = 0;
     let universitiesSkipped = 0;
     let coursesCreated = 0;
@@ -228,39 +250,93 @@ Deno.serve(async (req) => {
         program_duration: course.program_duration || null,
         tuition_fees: course.tuition_fees || null,
         starting_month: course.starting_month || null,
+        __row_number: course.__row_number,
       });
     }
 
-    console.log(`Inserting ${coursesToInsert.length} courses in batches of ${BATCH_SIZE}...`);
+    console.log(`Inserting ${coursesToInsert.length} courses with row-level error tracking...`);
 
-    // Insert courses in batches
-    for (let i = 0; i < coursesToInsert.length; i += BATCH_SIZE) {
-      const batch = coursesToInsert.slice(i, i + BATCH_SIZE);
+    // Process courses individually for precise error handling
+    const SMALL_BATCH = 50;
+    for (let i = 0; i < coursesToInsert.length; i += SMALL_BATCH) {
+      const batch = coursesToInsert.slice(i, i + SMALL_BATCH);
+      console.log(`Processing batch ${Math.floor(i/SMALL_BATCH) + 1}/${Math.ceil(coursesToInsert.length/SMALL_BATCH)}`);
       
-      const { data, error: insertError } = await supabase
-        .from('courses')
-        .insert(batch)
-        .select('id');
+      for (const course of batch) {
+        try {
+          const { data, error: insertError } = await supabase
+            .from('courses')
+            .insert({
+              university_id: course.university_id,
+              degree: course.degree,
+              stream_name: course.stream_name,
+              program_name: course.program_name,
+              study_level: course.study_level,
+              course_intensity: course.course_intensity,
+              study_mode: course.study_mode,
+              program_duration: course.program_duration,
+              tuition_fees: course.tuition_fees,
+              starting_month: course.starting_month,
+            })
+            .select('id');
 
-      if (insertError) {
-        console.error(`Batch ${i / BATCH_SIZE + 1} error:`, insertError);
-        
-        // Handle duplicate key violations
-        if (insertError.code === '23505') {
-          console.log(`Skipping ${batch.length} duplicate courses in batch ${i / BATCH_SIZE + 1}`);
-          coursesFailed += batch.length;
-        } else {
+          if (insertError) {
+            if (insertError.code === '23505') {
+              if (options.skipDuplicateCourses) {
+                coursesCreated++;
+              } else {
+                coursesFailed++;
+                errors.push({
+                  row: course.__row_number || 0,
+                  field: 'unique_constraint',
+                  message: `Duplicate: ${course.program_name} at ${course.university_id}`
+                });
+              }
+            } else if (insertError.code === '23503') {
+              coursesFailed++;
+              errors.push({
+                row: course.__row_number || 0,
+                field: 'university_id',
+                message: `Invalid university reference: ${insertError.message}`
+              });
+            } else if (insertError.code === '23502') {
+              coursesFailed++;
+              errors.push({
+                row: course.__row_number || 0,
+                field: 'required_field',
+                message: `Missing required field: ${insertError.message}`
+              });
+            } else if (insertError.code === '22001') {
+              coursesFailed++;
+              errors.push({
+                row: course.__row_number || 0,
+                field: 'field_length',
+                message: `Field too long: ${insertError.message}`
+              });
+            } else {
+              coursesFailed++;
+              errors.push({
+                row: course.__row_number || 0,
+                field: 'database',
+                message: `Error (${insertError.code}): ${insertError.message}`
+              });
+            }
+          } else {
+            coursesCreated++;
+          }
+        } catch (err) {
+          coursesFailed++;
+          const errorMessage = err instanceof Error ? err.message : String(err);
           errors.push({
-            row: i,
-            field: 'batch',
-            message: `Batch insert failed: ${insertError.message}`,
+            row: course.__row_number || 0,
+            field: 'exception',
+            message: `Unexpected error: ${errorMessage}`
           });
-          coursesFailed += batch.length;
         }
-      } else {
-        const inserted = data?.length || 0;
-        coursesCreated += inserted;
-        console.log(`Batch ${i / BATCH_SIZE + 1}: Inserted ${inserted} courses`);
+      }
+      
+      if (i + SMALL_BATCH < coursesToInsert.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
