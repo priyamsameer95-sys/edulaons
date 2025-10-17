@@ -86,7 +86,31 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-6">
-        {/* Universities */}
+        {/* Study Destination - MUST BE FIRST */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1">
+            <Label htmlFor="studyDestination">Study Destination *</Label>
+            <CoachingTooltip content={COACHING_MESSAGES.studyDestination} />
+          </div>
+          <Select 
+            value={data.studyDestination || ''} 
+            onValueChange={(value) => {
+              onUpdate({ studyDestination: value, universities: [] });
+            }}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select country" />
+            </SelectTrigger>
+            <SelectContent>
+              {STUDY_DESTINATIONS.map((dest) => (
+                <SelectItem key={dest} value={dest}>{dest}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Universities - Depends on destination */}
         <div className="space-y-2">
           <div className="flex items-center gap-1">
             <Label>Select Universities (up to 3) *</Label>
@@ -109,31 +133,6 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
               </AlertDescription>
             </Alert>
           )}
-        </div>
-
-
-        {/* Study Destination */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="studyDestination">Study Destination *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.studyDestination} />
-          </div>
-          <Select 
-            value={data.studyDestination || ''} 
-            onValueChange={(value) => {
-              onUpdate({ studyDestination: value, universities: [] });
-            }}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select country" />
-            </SelectTrigger>
-            <SelectContent>
-              {STUDY_DESTINATIONS.map((dest) => (
-                <SelectItem key={dest} value={dest}>{dest}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Course/Program Name */}

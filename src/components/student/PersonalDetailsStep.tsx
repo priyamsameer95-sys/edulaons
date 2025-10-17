@@ -207,7 +207,7 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" size="lg">Next: Study Details</Button>
+        <Button type="submit" size="lg">Next: Academic Background</Button>
       </div>
     </form>
   );

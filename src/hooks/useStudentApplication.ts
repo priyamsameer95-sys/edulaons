@@ -55,7 +55,7 @@ export const useStudentApplication = () => {
 
   const nextStep = () => {
     setCurrentStep(prev => {
-      const newStep = Math.min(prev + 1, 4);
+      const newStep = Math.min(prev + 1, 5);
       // Save step to localStorage
       try {
         const current = localStorage.getItem(STORAGE_KEY);
