@@ -295,10 +295,10 @@ Deno.serve(async (req) => {
       const batch = coursesToInsert.slice(i, i + SMALL_BATCH);
       console.log(`Processing batch ${Math.floor(i/SMALL_BATCH) + 1}/${Math.ceil(coursesToInsert.length/SMALL_BATCH)}`);
       
-      // Try bulk insert first (fast path for clean data)
+      // Try bulk upsert with ignoreDuplicates to skip conflicts gracefully
       const { data: bulkData, error: bulkError } = await supabase
         .from('courses')
-        .insert(batch.map(c => ({
+        .upsert(batch.map(c => ({
           university_id: c.university_id,
           degree: c.degree,
           stream_name: c.stream_name,
@@ -309,18 +309,22 @@ Deno.serve(async (req) => {
           program_duration: c.program_duration,
           tuition_fees: c.tuition_fees,
           starting_month: c.starting_month,
-        })))
+        })), {
+          onConflict: 'university_id,program_name,study_level,degree',
+          ignoreDuplicates: true
+        })
         .select('id');
       
       if (!bulkError) {
-        // Entire batch succeeded!
-        coursesCreated += batch.length;
-        console.log(`✓ Batch inserted successfully (${batch.length} courses)`);
+        // Batch succeeded - count actual inserts
+        const insertedCount = bulkData?.length || 0;
+        coursesCreated += insertedCount;
+        console.log(`✓ Batch processed: ${insertedCount} new courses inserted, ${batch.length - insertedCount} duplicates skipped`);
         continue; // Skip to next batch
       }
       
-      // Bulk insert failed - fall back to individual inserts for precise error tracking
-      console.log(`Batch insert failed (${bulkError.code}), processing ${batch.length} rows individually...`);
+      // Bulk upsert failed - fall back to individual inserts for precise error tracking
+      console.log(`Batch upsert failed (${bulkError.code}), processing ${batch.length} rows individually...`);
       
       for (const course of batch) {
         try {
