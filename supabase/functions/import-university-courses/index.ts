@@ -295,31 +295,28 @@ Deno.serve(async (req) => {
       const batch = coursesToInsert.slice(i, i + SMALL_BATCH);
       console.log(`Processing batch ${Math.floor(i/SMALL_BATCH) + 1}/${Math.ceil(coursesToInsert.length/SMALL_BATCH)}`);
       
-      // Try bulk upsert with ignoreDuplicates to skip conflicts gracefully
-      const { data: bulkData, error: bulkError } = await supabase
-        .from('courses')
-        .upsert(batch.map(c => ({
-          university_id: c.university_id,
-          degree: c.degree,
-          stream_name: c.stream_name,
-          program_name: c.program_name,
-          study_level: c.study_level,
-          course_intensity: c.course_intensity,
-          study_mode: c.study_mode,
-          program_duration: c.program_duration,
-          tuition_fees: c.tuition_fees,
-          starting_month: c.starting_month,
-        })), {
-          onConflict: 'university_id,program_name,study_level,degree',
-          ignoreDuplicates: true
-        })
-        .select('id');
+      // Use database function for batch insert with proper duplicate handling
+      const { data: insertedCount, error: bulkError } = await supabase
+        .rpc('batch_insert_courses_ignore_duplicates', {
+          course_data: batch.map(c => ({
+            university_id: c.university_id,
+            degree: c.degree,
+            stream_name: c.stream_name,
+            program_name: c.program_name,
+            study_level: c.study_level,
+            course_intensity: c.course_intensity,
+            study_mode: c.study_mode,
+            program_duration: c.program_duration,
+            tuition_fees: c.tuition_fees,
+            starting_month: c.starting_month,
+          }))
+        });
       
       if (!bulkError) {
-        // Batch succeeded - count actual inserts
-        const insertedCount = bulkData?.length || 0;
-        coursesCreated += insertedCount;
-        console.log(`✓ Batch processed: ${insertedCount} new courses inserted, ${batch.length - insertedCount} duplicates skipped`);
+        // Batch succeeded - database function returns count of actual inserts
+        const actualInserted = insertedCount || 0;
+        coursesCreated += actualInserted;
+        console.log(`✓ Batch processed: ${actualInserted} new courses inserted, ${batch.length - actualInserted} duplicates skipped`);
         continue; // Skip to next batch
       }
       

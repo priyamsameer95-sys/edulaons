@@ -1690,6 +1690,10 @@ export type Database = {
       }
     }
     Functions: {
+      batch_insert_courses_ignore_duplicates: {
+        Args: { course_data: Json[] }
+        Returns: number
+      }
       calculate_co_applicant_score: {
         Args: { p_co_applicant_id: string; p_lender_id: string }
         Returns: {
