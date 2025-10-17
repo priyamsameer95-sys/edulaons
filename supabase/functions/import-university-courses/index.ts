@@ -264,11 +264,63 @@ Deno.serve(async (req) => {
 
     console.log(`Inserting ${coursesToInsert.length} courses with row-level error tracking...`);
 
-    // Process courses individually for precise error handling
-    const SMALL_BATCH = 50;
+    // Process courses with hybrid batch processing (fast bulk insert + fallback to individual)
+    const SMALL_BATCH = 500; // Increased from 50 for better performance
+    const MAX_PROCESSING_TIME = 55000; // 55 seconds (leave 5s buffer before 60s timeout)
+    
     for (let i = 0; i < coursesToInsert.length; i += SMALL_BATCH) {
+      // Check if we're approaching timeout
+      if (Date.now() - startTime > MAX_PROCESSING_TIME) {
+        console.log('⚠️ Approaching timeout, returning partial results');
+        return new Response(
+          JSON.stringify({
+            success: true,
+            partial: true,
+            message: `Processed ${coursesCreated} of ${coursesToInsert.length} courses. Please re-run import to continue from row ${i + 1}.`,
+            summary: {
+              universitiesCreated,
+              universitiesSkipped,
+              coursesCreated,
+              coursesFailed,
+              coursesRemaining: coursesToInsert.length - i,
+              totalProcessed: coursesCreated + coursesFailed,
+            },
+            errors,
+            processingTime: Date.now() - startTime,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const batch = coursesToInsert.slice(i, i + SMALL_BATCH);
       console.log(`Processing batch ${Math.floor(i/SMALL_BATCH) + 1}/${Math.ceil(coursesToInsert.length/SMALL_BATCH)}`);
+      
+      // Try bulk insert first (fast path for clean data)
+      const { data: bulkData, error: bulkError } = await supabase
+        .from('courses')
+        .insert(batch.map(c => ({
+          university_id: c.university_id,
+          degree: c.degree,
+          stream_name: c.stream_name,
+          program_name: c.program_name,
+          study_level: c.study_level,
+          course_intensity: c.course_intensity,
+          study_mode: c.study_mode,
+          program_duration: c.program_duration,
+          tuition_fees: c.tuition_fees,
+          starting_month: c.starting_month,
+        })))
+        .select('id');
+      
+      if (!bulkError) {
+        // Entire batch succeeded!
+        coursesCreated += batch.length;
+        console.log(`✓ Batch inserted successfully (${batch.length} courses)`);
+        continue; // Skip to next batch
+      }
+      
+      // Bulk insert failed - fall back to individual inserts for precise error tracking
+      console.log(`Batch insert failed (${bulkError.code}), processing ${batch.length} rows individually...`);
       
       for (const course of batch) {
         try {
@@ -341,10 +393,6 @@ Deno.serve(async (req) => {
             message: `Unexpected error: ${errorMessage}`
           });
         }
-      }
-      
-      if (i + SMALL_BATCH < coursesToInsert.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
