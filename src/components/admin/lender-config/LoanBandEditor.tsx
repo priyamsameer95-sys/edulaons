@@ -70,7 +70,23 @@ export const LoanBandEditor = ({ bands, onChange, maxLoanAmount = 5000000 }: Loa
       <CardHeader>
         <CardTitle>Loan Amount Bands by Student Score</CardTitle>
         <CardDescription>
-          Configure the eligible loan amount range for each student score tier. The percentages represent what portion of the maximum loan amount ({formatAmount(maxLoanAmount)}) students can receive based on their overall score.
+          <div className="space-y-2">
+            <p>Configure the eligible loan percentage based on student score.</p>
+            
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm font-semibold text-yellow-900">⚠️ How Loan Calculation Works:</p>
+              <p className="text-sm text-yellow-800 mt-1">
+                Percentages apply to the <strong>LOWER</strong> of:
+              </p>
+              <ul className="list-disc list-inside text-sm text-yellow-800 ml-2 mt-1">
+                <li>Student's requested loan amount</li>
+                <li>Lender's maximum loan amount ({formatAmount(maxLoanAmount)})</li>
+              </ul>
+              <p className="text-xs text-yellow-700 mt-2 italic">
+                Example: Student requests ₹40L, lender max is ₹1Cr → Base = ₹40L → Score 85% (Good band) → Offer ₹28L-₹36L (70-90% of ₹40L)
+              </p>
+            </div>
+          </div>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -125,12 +141,25 @@ export const LoanBandEditor = ({ bands, onChange, maxLoanAmount = 5000000 }: Loa
                   </div>
                   
                   <div className="p-3 bg-background rounded-md border">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      💡 <strong>Example:</strong> Max loan amount = {formatAmount(maxLoanAmount)}
+                    <p className="text-sm text-muted-foreground mb-2">
+                      💡 <strong>Calculation Examples:</strong>
                     </p>
-                    <p className="text-sm font-semibold text-foreground">
-                      → Student receives: {formatAmount(minAmount)} to {formatAmount(maxAmount)}
-                    </p>
+                    
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Student requests ₹40L (below max):</span>
+                        <p className="font-semibold text-foreground">
+                          → Base = ₹40L → Offer: {formatAmount(4000000 * band.min_percent / 100)} to {formatAmount(4000000 * band.max_percent / 100)}
+                        </p>
+                      </div>
+                      
+                      <div className="text-sm border-t pt-2">
+                        <span className="text-muted-foreground">Student requests ₹1.5Cr (above max {formatAmount(maxLoanAmount)}):</span>
+                        <p className="font-semibold text-foreground">
+                          → Base = {formatAmount(maxLoanAmount)} (capped) → Offer: {formatAmount(minAmount)} to {formatAmount(maxAmount)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </>
               )}

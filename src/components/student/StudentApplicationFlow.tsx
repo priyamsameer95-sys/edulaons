@@ -221,6 +221,7 @@ const StudentApplicationFlow = () => {
             <SuccessStep
               caseId={submissionResult.lead?.case_id || submissionResult.case_id}
               leadId={submissionResult.lead?.id}
+              requestedAmount={submissionResult.lead?.requested_amount || applicationData.loanAmount}
               recommendedLenders={submissionResult.recommended_lenders || []}
             />
           )}

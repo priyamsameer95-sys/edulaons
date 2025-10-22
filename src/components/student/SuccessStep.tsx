@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +12,7 @@ import LenderCard from './LenderCard';
 interface SuccessStepProps {
   caseId: string;
   leadId?: string;
+  requestedAmount?: number;
   recommendedLenders: Array<{
     lender_id: string;
     lender_name: string;
@@ -34,13 +37,38 @@ interface SuccessStepProps {
     required_documents: string[] | null;
     compatibility_score: number;
     is_preferred: boolean;
+    eligibility_score?: number;
+    university_score?: number;
+    student_score?: number;
+    co_applicant_score?: number;
+    approval_status?: 'approved' | 'rejected' | 'pending';
+    rejection_reason?: string | null;
+    eligible_loan_min?: number | null;
+    eligible_loan_max?: number | null;
+    rate_tier?: string | null;
+    loan_band_percentage?: string | null;
+    university_breakdown?: any;
+    student_breakdown?: any;
+    co_applicant_breakdown?: any;
   }>;
 }
 
-const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) => {
+const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  
+  const assignedLender = recommendedLenders[0]; // First lender is the assigned one
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const handleLenderSelection = async (lenderId: string) => {
     if (!leadId) {
@@ -87,8 +115,112 @@ const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) =
         </div>
       </div>
 
+      {/* Eligibility Card */}
+      {assignedLender?.eligibility_score !== undefined && requestedAmount && (
+        <Card className="border-primary/20 bg-primary/5 animate-fade-in" style={{ animationDelay: '400ms' }}>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {assignedLender.approval_status === 'approved' ? '✅' : '⚠️'} 
+              Your Loan Eligibility with {assignedLender.lender_name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">You Requested</p>
+                <p className="text-2xl font-bold">{formatCurrency(requestedAmount)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Eligibility Score</p>
+                <p className="text-2xl font-bold text-primary">
+                  {Math.round(assignedLender.eligibility_score)}/100
+                </p>
+              </div>
+            </div>
+            
+            {assignedLender.approval_status === 'approved' ? (
+              <>
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription>
+                    <strong className="text-green-700">Congratulations! You're Approved</strong>
+                    <p className="text-lg font-bold text-green-700 mt-2">
+                      Eligible Loan: {formatCurrency(assignedLender.eligible_loan_min || 0)} - {formatCurrency(assignedLender.eligible_loan_max || 0)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This is {assignedLender.loan_band_percentage} of your requested amount, based on your profile strength
+                    </p>
+                    {assignedLender.interest_rate_min && assignedLender.interest_rate_max && (
+                      <p className="text-sm text-green-700 mt-2">
+                        💰 Expected Interest Rate: {assignedLender.interest_rate_min}% - {assignedLender.interest_rate_max}% p.a.
+                      </p>
+                    )}
+                  </AlertDescription>
+                </Alert>
+                
+                {assignedLender.eligible_loan_max && assignedLender.eligible_loan_max < requestedAmount && (
+                  <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-sm text-yellow-800">
+                      💡 <strong>Note:</strong> Your eligible amount is ₹{((requestedAmount - assignedLender.eligible_loan_max) / 100000).toFixed(1)}L lower than requested.
+                      You may need to arrange the difference from other sources (family contribution, scholarships, etc.)
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
+            ) : (
+              <Alert variant="destructive" className="bg-red-50 border-red-200">
+                <XCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  <strong>Not eligible with this lender</strong>
+                  <p className="mt-1">{assignedLender.rejection_reason || 'Does not meet minimum eligibility criteria'}</p>
+                  <p className="mt-2 text-sm">💬 Don't worry! Our team will review your application and suggest alternative lenders.</p>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowBreakdown(!showBreakdown)}
+              className="w-full"
+            >
+              {showBreakdown ? 'Hide' : 'Show'} Score Breakdown
+            </Button>
+            
+            {showBreakdown && (
+              <div className="space-y-3 pt-3 border-t">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">University Score:</span>
+                    <span className="font-semibold text-lg">{Math.round(assignedLender.university_score || 0)}/100</span>
+                  </div>
+                  <Progress value={assignedLender.university_score || 0} className="h-2" />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Academic Score:</span>
+                    <span className="font-semibold text-lg">{Math.round(assignedLender.student_score || 0)}/100</span>
+                  </div>
+                  <Progress value={assignedLender.student_score || 0} className="h-2" />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Co-Applicant Score:</span>
+                    <span className="font-semibold text-lg">{Math.round(assignedLender.co_applicant_score || 0)}/100</span>
+                  </div>
+                  <Progress value={assignedLender.co_applicant_score || 0} className="h-2" />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recommended Lenders Section */}
-      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '400ms' }}>
+      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '500ms' }}>
         <div className="space-y-2">
           <h2 className="text-2xl font-bold">Select Your Preferred Lender</h2>
           <p className="text-muted-foreground">
