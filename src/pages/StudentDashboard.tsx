@@ -7,13 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
 import { EnhancedEmptyState } from "@/components/ui/enhanced-empty-state";
-import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut } from "lucide-react";
+import { GraduationCap, FileText, CheckCircle2, Clock, Loader2, XCircle, AlertCircle, Upload, Eye, Calendar, DollarSign, MapPin, User, ArrowLeft, LogOut, BookOpen, Award, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/utils/formatters";
 import type { StudentApplication } from "@/hooks/useStudentApplications";
+import { StudentApplicationCard } from "@/components/student/dashboard/StudentApplicationCard";
+import { cn } from "@/lib/utils";
 
 const StudentDashboard = () => {
   const { user, signOut } = useAuth();
@@ -135,25 +137,59 @@ const StudentDashboard = () => {
             </Button>
           </div>
 
-          {/* Welcome Section */}
-          <EnhancedEmptyState
-            variant="welcome"
-            icon={GraduationCap}
-            title="Welcome to Your Education Loan Journey! 🎓"
-            description="You're just a few steps away from securing funding for your dream university."
-            supportingText="Our streamlined application process takes only 10-15 minutes to complete."
-            primaryAction={{
-              label: "Start Your Application",
-              onClick: () => setShowApplicationForm(true),
-              icon: FileText
-            }}
-            features={[
-              { icon: CheckCircle2, text: "Quick 5-step application" },
-              { icon: Clock, text: "Fast approval process" },
-              { icon: User, text: "Multiple lender options" },
-              { icon: Upload, text: "Secure document upload" }
-            ]}
-          />
+          {/* Floating background icons */}
+          <div className="relative mb-12">
+            <GraduationCap className="absolute top-10 left-10 w-12 h-12 text-primary/10 animate-gentle-pulse" />
+            <BookOpen className="absolute top-20 right-20 w-10 h-10 text-primary/10 animate-gentle-pulse" style={{ animationDelay: '0.5s' }} />
+            <Award className="absolute bottom-10 left-1/4 w-8 h-8 text-primary/10 animate-gentle-pulse" style={{ animationDelay: '1s' }} />
+
+            {/* Stats banner */}
+            <div className="premium-card rounded-2xl p-8 mb-8 animate-fade-in border-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div className="stagger-fade-1">
+                  <Award className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <div className="text-4xl font-bold animate-shimmer bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    10,000+
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Students Funded</div>
+                </div>
+                <div className="stagger-fade-2">
+                  <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <div className="text-4xl font-bold animate-shimmer bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    ₹500Cr+
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Loans Disbursed</div>
+                </div>
+                <div className="stagger-fade-3">
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <div className="text-4xl font-bold animate-shimmer bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    95%
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Approval Rate</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Welcome Section */}
+            <EnhancedEmptyState
+              variant="welcome"
+              icon={GraduationCap}
+              title="Welcome to Your Education Loan Journey! 🎓"
+              description="You're just a few steps away from securing funding for your dream university."
+              supportingText="Our streamlined application process takes only 10-15 minutes to complete."
+              primaryAction={{
+                label: "Start Your Application",
+                onClick: () => setShowApplicationForm(true),
+                icon: FileText
+              }}
+              features={[
+                { icon: CheckCircle2, text: "Quick 5-step application" },
+                { icon: Clock, text: "Fast approval process" },
+                { icon: User, text: "Multiple lender options" },
+                { icon: Upload, text: "Secure document upload" }
+              ]}
+            />
+          </div>
         </div>
       </div>
     );
@@ -393,141 +429,72 @@ const StudentDashboard = () => {
 
   // Show list of applications
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">My Applications</h1>
-          <p className="text-muted-foreground">Track and manage your education loan applications</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowApplicationForm(true)} size="lg">
-            <FileText className="mr-2 h-4 w-4" />
-            Start New Application
-          </Button>
-          <Button 
-            onClick={async () => {
-              await signOut();
-              navigate('/login');
-            }} 
-            variant="outline" 
-            size="lg"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {applications.map((app) => {
-          const progress = calculateProgress(app.status, app.documents_status);
-          const needsAction = app.documents_status === 'pending' || app.documents_status === 'resubmission_required';
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto py-8 px-4 max-w-7xl">
+        {/* Gradient Hero Header */}
+        <div className="relative bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground rounded-2xl p-8 mb-8 overflow-hidden animate-fade-in shadow-lg">
+          {/* Animated background elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-gentle-pulse" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl animate-gentle-pulse" style={{ animationDelay: '1s' }} />
           
-          return (
-            <Card 
-              key={app.id} 
-              className={`cursor-pointer hover:shadow-lg transition-all ${needsAction ? 'border-primary border-2' : ''}`}
-              onClick={() => setSelectedApplication(app)}
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="animate-fade-in">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                  Welcome back! 👋
+                </h1>
+                <p className="text-primary-foreground/90 text-base md:text-lg">
+                  {applications.length === 1 && "You have 1 application in progress"}
+                  {applications.length > 1 && `You have ${applications.length} applications - you're making great progress! 🚀`}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button 
+                  onClick={() => setShowApplicationForm(true)} 
+                  size="lg"
+                  className="bg-white text-primary hover:bg-white/90 shadow-lg hover-lift"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Start New Application
+                </Button>
+                <Button 
+                  onClick={async () => {
+                    await signOut();
+                    navigate('/login');
+                  }} 
+                  variant="outline" 
+                  size="lg"
+                  className="border-white/30 text-white hover:bg-white/10"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Applications Grid with Stagger Animation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {applications.map((app, index) => (
+            <div 
+              key={app.id}
+              className={cn(
+                index === 0 && "stagger-fade-1",
+                index === 1 && "stagger-fade-2",
+                index === 2 && "stagger-fade-3",
+                index === 3 && "stagger-fade-4",
+                index === 4 && "stagger-fade-5",
+                index === 5 && "stagger-fade-6"
+              )}
             >
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <div className="space-y-1 flex-1">
-                    <CardTitle className="text-lg">Application #{app.case_id}</CardTitle>
-                    <CardDescription className="text-xs">
-                      Started {new Date(app.created_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric',
-                        year: 'numeric' 
-                      })}
-                    </CardDescription>
-                  </div>
-                  {needsAction && (
-                    <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">
-                      Action Needed
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Badge variant={
-                    app.status === 'approved' ? 'default' :
-                    app.status === 'rejected' ? 'destructive' :
-                    'secondary'
-                  }>
-                    {getStatusIcon(app.status)}
-                    <span className="ml-1 capitalize">
-                      {app.status === 'in_progress' ? 'Under Review' : app.status.replace('_', ' ')}
-                    </span>
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Progress */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Completion</span>
-                    <span className="text-sm font-semibold text-primary">{progress}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {progress < 50 ? 'Keep going! You got this 💪' : progress < 100 ? 'Almost there! 🚀' : 'Complete! 🎉'}
-                  </p>
-                </div>
-
-                {/* Key Details */}
-                <div className="space-y-2 text-sm pt-2 border-t">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Loan Amount
-                    </span>
-                    <span className="font-semibold">{formatCurrency(app.loan_amount)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Destination
-                    </span>
-                    <span className="font-semibold">{app.study_destination}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Intake
-                    </span>
-                    <span className="font-semibold">
-                      {new Date(2000, app.intake_month - 1).toLocaleString('default', { month: 'short' })} {app.intake_year}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Documents
-                    </span>
-                    <Badge 
-                      variant="outline" 
-                      className={getDocumentStatusColor(app.documents_status)}
-                    >
-                      {app.documents_status === 'pending' ? 'Not Started' : 
-                       app.documents_status === 'uploaded' ? 'Under Review' :
-                       app.documents_status === 'verified' ? 'Verified ✓' :
-                       app.documents_status === 'resubmission_required' ? 'Resubmit' : 
-                       app.documents_status}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Action Hint */}
-                {needsAction && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-orange-600 font-medium">
-                      👉 {app.documents_status === 'pending' ? 'Upload documents to move forward' : 'Resubmit required documents'}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+              <StudentApplicationCard
+                application={app}
+                onClick={() => setSelectedApplication(app)}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
