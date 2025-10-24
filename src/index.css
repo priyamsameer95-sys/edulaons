@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -198,6 +200,64 @@
   .validation-icon {
     @apply absolute right-3 top-1/2 -translate-y-1/2;
   }
+  
+  /* Premium Card Effects */
+  .premium-card {
+    background: linear-gradient(135deg, 
+      hsl(var(--card) / 0.95) 0%, 
+      hsl(var(--card) / 0.85) 100%
+    );
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .premium-card:hover {
+    border-color: hsl(var(--primary) / 0.3);
+    box-shadow: 0 8px 32px hsl(var(--primary) / 0.12);
+    transform: translateY(-2px);
+  }
+  
+  /* Glassmorphism */
+  .glass {
+    background: hsl(var(--background) / 0.7);
+    backdrop-filter: blur(10px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.2);
+  }
+  
+  /* Achievement Badge */
+  .achievement-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold;
+    background: linear-gradient(135deg, 
+      hsl(var(--primary) / 0.1) 0%, 
+      hsl(var(--primary) / 0.05) 100%
+    );
+    border: 1px solid hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+    animation: badge-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  /* Milestone Tracker */
+  .milestone-line {
+    @apply absolute top-5 left-5 right-5 h-0.5 bg-muted z-0;
+  }
+  
+  .milestone-line-progress {
+    @apply h-full bg-primary transition-all duration-500 ease-out;
+  }
+  
+  /* Score Gauge */
+  .score-gauge-bg {
+    stroke: hsl(var(--muted));
+  }
+  
+  .score-gauge-fill {
+    stroke: hsl(var(--primary));
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
 }
 
 @layer utilities {
@@ -305,6 +365,45 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes success-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes badge-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.success-pulse {
+  animation: success-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
 }
 
 .animate-fade-in {
