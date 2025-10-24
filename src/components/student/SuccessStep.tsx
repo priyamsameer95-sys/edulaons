@@ -2,12 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Share2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LenderCard from './LenderCard';
+import { ConfettiAnimation } from './ConfettiAnimation';
 
 interface SuccessStepProps {
   caseId: string;
@@ -97,20 +98,34 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     }
   };
 
+  const [showConfetti, setShowConfetti] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowConfetti(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="space-y-8 pb-8">
+      {/* Confetti Animation */}
+      {showConfetti && <ConfettiAnimation />}
+
       {/* Success Icon and Message */}
       <div className="text-center space-y-6 animate-fade-in">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10 animate-scale-in">
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10 animate-scale-in animate-glow">
           <CheckCircle2 className="h-14 w-14 text-success animate-scale-in" style={{ animationDelay: '100ms' }} />
         </div>
         <div className="space-y-3">
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '200ms' }}>
-            Application Submitted Successfully!
+          <div className="text-6xl mb-4 animate-scale-in" style={{ animationDelay: '150ms' }}>🎉</div>
+          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '200ms' }}>
+            Congratulations! Application Submitted
           </h2>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-lg border border-border/50 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <p className="text-lg text-muted-foreground animate-fade-in" style={{ animationDelay: '250ms' }}>
+            Your loan application has been successfully submitted
+          </p>
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 rounded-lg border border-border/50 animate-fade-in hover-lift" style={{ animationDelay: '300ms' }}>
             <p className="text-sm text-muted-foreground">Your Case ID:</p>
-            <span className="font-mono font-semibold text-lg text-foreground">{caseId}</span>
+            <span className="font-mono font-bold text-xl text-primary animate-shimmer">{caseId}</span>
           </div>
         </div>
       </div>
@@ -268,19 +283,70 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
         )}
       </div>
 
-      {/* Next Steps */}
-      <div className="text-center space-y-5 animate-fade-in" style={{ animationDelay: '600ms' }}>
-        <div className="max-w-md mx-auto p-4 bg-primary/5 border border-primary/10 rounded-lg">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            📋 Next, upload your documents in the <span className="font-semibold text-foreground">Checklist tab</span> to complete your application
-          </p>
+      {/* What Happens Next Timeline */}
+      <div className="max-w-2xl mx-auto space-y-4 animate-fade-in" style={{ animationDelay: '600ms' }}>
+        <h3 className="text-xl font-bold text-center">What Happens Next?</h3>
+        <div className="space-y-3">
+          <div className="flex gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10 stagger-fade-4">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
+            <div>
+              <p className="font-semibold">Within 24 hours: Lender Review</p>
+              <p className="text-sm text-muted-foreground">Our partner lenders will review your application</p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10 stagger-fade-5">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
+            <div>
+              <p className="font-semibold">Upload Documents</p>
+              <p className="text-sm text-muted-foreground">Complete your application by uploading required documents</p>
+            </div>
+          </div>
+          <div className="flex gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10 stagger-fade-6">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
+            <div>
+              <p className="font-semibold">Get Approved</p>
+              <p className="text-sm text-muted-foreground">Receive your loan approval and fund your education!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="text-center space-y-4 animate-fade-in" style={{ animationDelay: '700ms' }}>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Button 
+            variant="outline"
+            size="lg"
+            className="gap-2 hover-lift"
+            onClick={() => {
+              const text = `Just applied for my education loan! Case ID: ${caseId}`;
+              if (navigator.share) {
+                navigator.share({ text });
+              } else {
+                navigator.clipboard.writeText(text);
+                toast.success('Copied to clipboard!');
+              }
+            }}
+          >
+            <Share2 className="h-4 w-4" />
+            Share Achievement
+          </Button>
+          <Button 
+            variant="outline"
+            size="lg"
+            className="gap-2 hover-lift"
+            onClick={() => toast.info('PDF download feature coming soon!')}
+          >
+            <Download className="h-4 w-4" />
+            Download Summary
+          </Button>
         </div>
         <Button 
           onClick={() => navigate('/student')} 
           size="lg"
-          className="px-8 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+          className="px-12 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover-lift"
         >
-          Go to Dashboard
+          Go to Dashboard →
         </Button>
       </div>
     </div>

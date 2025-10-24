@@ -453,14 +453,30 @@
   animation: stagger-fade-in 0.5s ease-out 0.4s both;
 }
 
+.stagger-fade-5 {
+  animation: stagger-fade-in 0.5s ease-out 0.5s both;
+}
+
+.stagger-fade-6 {
+  animation: stagger-fade-in 0.5s ease-out 0.6s both;
+}
+
 /* Smooth hover transitions */
 .hover-lift {
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px hsl(var(--primary) / 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px hsl(var(--primary) / 0.25);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
 }
 
 /* Empty state entrance animation */
@@ -488,13 +504,16 @@
   .stagger-fade-2,
   .stagger-fade-3,
   .stagger-fade-4,
+  .stagger-fade-5,
+  .stagger-fade-6,
   .animate-empty-state-enter {
     animation: none;
     opacity: 1;
     transform: none;
   }
   
-  .hover-lift:hover {
+  .hover-lift:hover,
+  .hover-scale:hover {
     transform: none;
   }
 }

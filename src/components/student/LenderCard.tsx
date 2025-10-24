@@ -73,10 +73,10 @@ const LenderCard = ({ lender, isSelected, onSelect, isUpdating }: LenderCardProp
 
   return (
     <Card 
-      className={`transition-all duration-300 ${
+      className={`transition-all duration-300 hover-lift premium-card ${
         isSelected 
-          ? 'border-2 border-primary bg-primary/5 shadow-lg' 
-          : 'border-2 border-border hover:border-primary/30 hover:shadow-md'
+          ? 'border-2 border-primary bg-primary/5 shadow-lg animate-glow' 
+          : 'border-2 border-border hover:border-primary/30'
       } ${isUpdating ? 'opacity-50' : ''}`}
     >
       {/* Header */}

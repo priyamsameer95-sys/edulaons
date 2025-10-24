@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
-import { GENDERS, QUALIFICATIONS, COACHING_MESSAGES, VALIDATION_PATTERNS, MIN_AGE } from '@/constants/studentApplication';
-import { AlertCircle } from 'lucide-react';
+import { FloatingLabelInput } from './FloatingLabelInput';
+import { GENDERS, COACHING_MESSAGES, VALIDATION_PATTERNS, MIN_AGE } from '@/constants/studentApplication';
+import { User, UserCircle2 } from 'lucide-react';
 
 interface PersonalDetailsStepProps {
   data: Partial<StudentApplicationData>;
@@ -69,145 +68,127 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
     onNext();
   };
 
+  const completedFields = ['name', 'phone', 'dateOfBirth', 'gender', 'city', 'state', 'postalCode']
+    .filter(field => data[field as keyof typeof data]).length;
+  const totalFields = 7;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="name">Full Name *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.name} />
-          </div>
-          <Input
-            id="name"
-            value={data.name || ''}
-            onChange={(e) => handleChange('name', e.target.value)}
-            placeholder="As per passport/ID"
-            className={errors.name ? 'border-destructive' : ''}
-          />
-          {errors.name && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.name}
-            </p>
-          )}
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+      {/* Progress indicator */}
+      <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 stagger-fade-1">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Profile Completion</span>
+          <span className="text-sm text-muted-foreground">{completedFields}/{totalFields} fields</span>
         </div>
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary transition-all duration-500"
+            style={{ width: `${(completedFields / totalFields) * 100}%` }}
+          />
+        </div>
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="phone">Phone Number *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.phone} />
-          </div>
-          <Input
-            id="phone"
-            type="tel"
-            value={data.phone || ''}
-            onChange={(e) => {
-              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-              handleChange('phone', cleaned);
-            }}
-            placeholder="10-digit mobile number"
-            maxLength={10}
-            className={errors.phone ? 'border-destructive' : ''}
-          />
-          {errors.phone && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.phone}
-            </p>
-          )}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-fade-2">
+        <FloatingLabelInput
+          label="Full Name"
+          value={data.name || ''}
+          onChange={(e) => handleChange('name', e.target.value)}
+          placeholder=" "
+          error={errors.name}
+          isValid={!errors.name && !!data.name}
+          helperText="As per passport/ID"
+          required
+        />
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.dob} />
-          </div>
-          <Input
-            id="dateOfBirth"
-            type="date"
-            value={data.dateOfBirth || ''}
-            onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-            max={new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE)).toISOString().split('T')[0]}
-            className={errors.dateOfBirth ? 'border-destructive' : ''}
-          />
-          {errors.dateOfBirth && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.dateOfBirth}
-            </p>
-          )}
-        </div>
+        <FloatingLabelInput
+          label="Phone Number"
+          type="tel"
+          value={data.phone || ''}
+          onChange={(e) => {
+            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+            handleChange('phone', cleaned);
+          }}
+          placeholder=" "
+          maxLength={10}
+          error={errors.phone}
+          isValid={!errors.phone && !!data.phone && data.phone.length === 10}
+          helperText="10-digit mobile number"
+          required
+        />
+
+        <FloatingLabelInput
+          label="Date of Birth"
+          type="date"
+          value={data.dateOfBirth || ''}
+          onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+          max={new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE)).toISOString().split('T')[0]}
+          error={errors.dateOfBirth}
+          isValid={!errors.dateOfBirth && !!data.dateOfBirth}
+          helperText={`Must be at least ${MIN_AGE} years old`}
+          required
+        />
 
         <div className="space-y-2">
           <div className="flex items-center gap-1">
             <Label htmlFor="gender">Gender *</Label>
             <CoachingTooltip content={COACHING_MESSAGES.gender} />
           </div>
-          <Select value={data.gender || ''} onValueChange={(value) => onUpdate({ gender: value })} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select gender" />
-            </SelectTrigger>
-            <SelectContent>
-              {GENDERS.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-3 gap-2">
+            {GENDERS.map(({ value, label }) => (
+              <Button
+                key={value}
+                type="button"
+                variant={data.gender === value ? 'default' : 'outline'}
+                className="h-12 flex items-center justify-center gap-2"
+                onClick={() => onUpdate({ gender: value })}
+              >
+                {value === 'male' && <User className="h-4 w-4" />}
+                {value === 'female' && <UserCircle2 className="h-4 w-4" />}
+                {value === 'other' && <UserCircle2 className="h-4 w-4" />}
+                {label}
+              </Button>
+            ))}
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="city">City *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.city} />
-          </div>
-          <Input
-            id="city"
-            value={data.city || ''}
-            onChange={(e) => onUpdate({ city: e.target.value })}
-            required
-            placeholder="e.g., Mumbai"
-          />
-        </div>
+        <FloatingLabelInput
+          label="City"
+          value={data.city || ''}
+          onChange={(e) => onUpdate({ city: e.target.value })}
+          placeholder=" "
+          isValid={!!data.city}
+          helperText="Your current city"
+          required
+        />
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="state">State *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.state} />
-          </div>
-          <Input
-            id="state"
-            value={data.state || ''}
-            onChange={(e) => onUpdate({ state: e.target.value })}
-            required
-            placeholder="e.g., Maharashtra"
-          />
-        </div>
+        <FloatingLabelInput
+          label="State"
+          value={data.state || ''}
+          onChange={(e) => onUpdate({ state: e.target.value })}
+          placeholder=" "
+          isValid={!!data.state}
+          helperText="Your state/province"
+          required
+        />
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="postalCode">Postal Code *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.postalCode} />
-          </div>
-          <Input
-            id="postalCode"
-            value={data.postalCode || ''}
-            onChange={(e) => handleChange('postalCode', e.target.value)}
-            placeholder="6-digit PIN code"
-            maxLength={6}
-            className={errors.postalCode ? 'border-destructive' : ''}
-          />
-          {errors.postalCode && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.postalCode}
-            </p>
-          )}
-        </div>
+        <FloatingLabelInput
+          label="Postal Code"
+          value={data.postalCode || ''}
+          onChange={(e) => handleChange('postalCode', e.target.value)}
+          placeholder=" "
+          maxLength={6}
+          error={errors.postalCode}
+          isValid={!errors.postalCode && !!data.postalCode && data.postalCode.length === 6}
+          helperText="6-digit PIN code"
+          required
+        />
 
       </div>
 
-      <div className="flex justify-end">
-        <Button type="submit" size="lg">Next: Academic Background</Button>
+      <div className="flex justify-end stagger-fade-3">
+        <Button type="submit" size="lg" className="min-w-[200px] hover-lift">
+          Next: Academic Background →
+        </Button>
       </div>
     </form>
   );
