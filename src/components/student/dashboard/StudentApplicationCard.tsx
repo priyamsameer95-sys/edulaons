@@ -42,22 +42,22 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
   return (
     <Card 
       className={cn(
-        "cursor-pointer bg-card border border-border rounded-xl group",
+        "cursor-pointer bg-card border border-border rounded-lg group",
         "transition-shadow duration-200",
         "hover:shadow-lg",
-        needsAction && "border-l-4 border-l-amber-500",
-        application.status === 'approved' && !needsAction && "border-l-4 border-l-emerald-500",
-        application.status === 'rejected' && !needsAction && "border-l-4 border-l-red-500"
+        needsAction && "border-l-2 border-l-amber-500",
+        application.status === 'approved' && !needsAction && "border-l-2 border-l-emerald-500",
+        application.status === 'rejected' && !needsAction && "border-l-2 border-l-red-500"
       )}
       onClick={onClick}
     >
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-foreground">
+            <CardTitle className="text-base font-semibold text-foreground">
               Application #{application.case_id}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Started {formatDate(application.created_at)}
             </p>
           </div>
@@ -70,26 +70,24 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground font-medium">Progress</span>
-            <span className="font-semibold text-foreground">{progress}%</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Progress</span>
+          <div className="flex-1 bg-muted rounded-full h-1.5">
             <div 
               className={cn(
-                "h-2 rounded-full transition-all",
+                "h-1.5 rounded-full transition-all",
                 progress < 50 ? "bg-amber-500" : progress < 100 ? "bg-blue-500" : "bg-emerald-500"
               )}
               style={{ width: `${progress}%` }}
             />
           </div>
+          <span className="text-xs font-semibold text-foreground whitespace-nowrap">{progress}%</span>
         </div>
 
         {/* Details Grid */}
-        <div className="space-y-3 pt-4 border-t border-border">
+        <div className="space-y-2 pt-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground flex items-center gap-2">
               <DollarSign className="h-4 w-4" />

@@ -59,9 +59,9 @@ const StudentDashboard = () => {
   if (loading) {
     return (
       <StudentLayout>
-        <div className="space-y-8">
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          <Skeleton className="h-28 w-full rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3].map(i => (
               <Card key={i} className="bg-card border border-border rounded-xl">
                 <CardHeader>
@@ -285,13 +285,13 @@ const StudentDashboard = () => {
   // Main dashboard view - Simple list
   return (
     <StudentLayout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Page Header */}
-        <header className="bg-card rounded-xl border border-border p-8">
+        <header className="bg-card rounded-lg border border-border p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">My Applications</h1>
-              <p className="text-muted-foreground text-base">
+              <h1 className="text-2xl font-bold text-foreground mb-1">My Applications</h1>
+              <p className="text-muted-foreground text-sm">
                 Track your education loan applications
               </p>
             </div>
@@ -318,10 +318,10 @@ const StudentDashboard = () => {
 
         {/* Applications List */}
         <section>
-          <h2 className="text-xl font-semibold text-foreground mb-4">
+          <h2 className="text-lg font-semibold text-foreground mb-4">
             {applications.length === 1 ? 'Your Application' : `All Applications (${applications.length})`}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {applications.map((app) => (
               <StudentApplicationCard
                 key={app.id}

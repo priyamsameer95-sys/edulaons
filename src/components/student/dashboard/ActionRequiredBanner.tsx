@@ -18,45 +18,39 @@ export const ActionRequiredBanner = ({
   const resubmissions = pendingActions.filter(app => app.documents_status === 'resubmission_required');
 
   return (
-    <Card className="border-l-4 border-l-warning bg-warning-light/30">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-warning/10">
-            <AlertCircle className="h-6 w-6 text-warning" />
-          </div>
+    <Card className="border-l-2 border-l-amber-500 bg-amber-50">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
               Action Required
             </h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-3">
               {pendingActions.length} application{pendingActions.length > 1 ? 's need' : ' needs'} your attention
             </p>
-            <div className="space-y-2">
-              {pendingUploads.length > 0 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Upload className="h-4 w-4 text-warning" />
-                  <span className="text-foreground">
+            {(pendingUploads.length > 0 || resubmissions.length > 0) && (
+              <ul className="space-y-1 mb-3 text-sm text-foreground list-disc list-inside">
+                {pendingUploads.length > 0 && (
+                  <li>
                     <strong>{pendingUploads.length}</strong> application{pendingUploads.length > 1 ? 's' : ''} waiting for document upload
-                  </span>
-                </div>
-              )}
-              {resubmissions.length > 0 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <FileWarning className="h-4 w-4 text-warning" />
-                  <span className="text-foreground">
+                  </li>
+                )}
+                {resubmissions.length > 0 && (
+                  <li>
                     <strong>{resubmissions.length}</strong> document{resubmissions.length > 1 ? 's need' : ' needs'} resubmission
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+                  </li>
+                )}
+              </ul>
+            )}
+            <div className="flex flex-wrap gap-2">
               {pendingActions.slice(0, 3).map(app => (
                 <Button
                   key={app.id}
                   variant="outline"
                   size="sm"
                   onClick={() => onViewApplication(app)}
-                  className="border-warning/20 hover:bg-warning/10"
+                  className="border-amber-200 hover:bg-amber-100 text-foreground"
                 >
                   View #{app.case_id}
                 </Button>
