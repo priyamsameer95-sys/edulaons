@@ -61,121 +61,91 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all duration-300 premium-card hover-lift border-l-4 group",
-        needsAction ? "border-l-red-500 animate-glow" : 
-        application.status === 'approved' ? "border-l-green-500" :
-        application.status === 'rejected' ? "border-l-red-400" :
-        "border-l-blue-500"
+        "cursor-pointer transition-all duration-200 hover:shadow-md bg-white border border-gray-200 group",
+        needsAction && "border-l-4 border-l-orange-500",
+        application.status === 'approved' && !needsAction && "border-l-4 border-l-green-500",
+        application.status === 'rejected' && !needsAction && "border-l-4 border-l-red-500"
       )}
       onClick={onClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            {needsAction && (
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-gentle-pulse" />
-            )}
-            <div>
-              <CardTitle className="text-base font-bold group-hover:text-primary transition-colors">
-                Application #{application.case_id}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Started {formatDate(application.created_at)}
-              </p>
-            </div>
+          <div>
+            <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
+              Application #{application.case_id}
+            </CardTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Started {formatDate(application.created_at)}
+            </p>
           </div>
           {needsAction && (
-            <Badge variant="destructive" className="animate-scale-in text-xs">
+            <Badge variant="destructive" className="text-xs">
               <AlertCircle className="h-3 w-3 mr-1" />
-              Action Needed
+              Action Required
             </Badge>
           )}
         </div>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Circular Progress Section */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-          <div className="flex-1 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Completion</p>
-            <p className="text-2xl font-bold text-primary">{progress}%</p>
-            <p className="text-xs text-muted-foreground">
-              {getMotivationalMessage(progress)}
-            </p>
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Progress</span>
+            <span className="font-semibold text-gray-900">{progress}%</span>
           </div>
-          
-          {/* SVG Circular Progress */}
-          <div className="relative w-20 h-20 flex-shrink-0">
-            <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                className="stroke-muted fill-none"
-                strokeWidth="8"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                className={cn(
-                  "fill-none transition-all duration-1000 ease-out",
-                  getProgressColor(progress)
-                )}
-                strokeWidth="8"
-                strokeDasharray={strokeDasharray}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-              {progress}%
-            </span>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={cn(
+                "h-2 rounded-full transition-all duration-500",
+                progress < 50 ? "bg-orange-500" : progress < 100 ? "bg-blue-500" : "bg-green-500"
+              )}
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
 
         {/* Details Grid */}
-        <div className="space-y-2.5 pt-2 border-t">
+        <div className="space-y-3 pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary/70" />
+            <span className="text-gray-600 flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-gray-400" />
               Loan Amount
             </span>
-            <span className="font-bold text-primary">
+            <span className="font-semibold text-gray-900">
               {formatCurrency(application.loan_amount)}
             </span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary/70" />
+            <span className="text-gray-600 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-400" />
               Destination
             </span>
-            <span className="font-semibold">{application.study_destination}</span>
+            <span className="font-medium text-gray-900">{application.study_destination}</span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary/70" />
+            <span className="text-gray-600 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-400" />
               Intake
             </span>
-            <span>{intakeDate}</span>
+            <span className="text-gray-900">{intakeDate}</span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary/70" />
+            <span className="text-gray-600 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-gray-400" />
               Documents
             </span>
             <StatusBadge status={application.documents_status} type="document" />
           </div>
         </div>
 
-        {/* Action CTA */}
+        {/* Action Button */}
         {needsAction && (
           <Button 
-            className="w-full mt-2 animate-scale-in" 
-            variant="destructive"
+            className="w-full mt-2" 
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -183,7 +153,7 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
             }}
           >
             <Upload className="h-4 w-4 mr-2" />
-            Upload documents to continue
+            Upload Documents
           </Button>
         )}
       </CardContent>
