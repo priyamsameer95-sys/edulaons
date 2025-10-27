@@ -308,14 +308,6 @@ const StudentDashboard = () => {
           </div>
         </header>
 
-        {/* Action Required Banner */}
-        {pendingActions.length > 0 && (
-          <ActionRequiredBanner 
-            pendingActions={pendingActions}
-            onViewApplication={setSelectedApplication}
-          />
-        )}
-
         {/* Applications List */}
         <section>
           <h2 className="text-lg font-semibold text-foreground mb-4">
