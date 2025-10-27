@@ -72,11 +72,11 @@ const StudentDashboard = () => {
   if (loading) {
     return (
       <StudentLayout>
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-64" />
+        <div className="space-y-8">
+          <Skeleton className="h-32 w-full rounded-xl" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
-              <Card key={i} className="bg-white border border-gray-200 shadow-sm">
+              <Card key={i} className="bg-white border border-slate-200 rounded-xl">
                 <CardHeader>
                   <Skeleton className="h-6 w-32 mb-2" />
                   <Skeleton className="h-4 w-24" />
@@ -159,16 +159,16 @@ const StudentDashboard = () => {
 
           {/* Status Banner */}
           <Card className={`border-l-4 bg-white ${
-            selectedApplication.status === 'approved' ? 'border-l-green-500' :
+            selectedApplication.status === 'approved' ? 'border-l-emerald-500' :
             selectedApplication.status === 'rejected' ? 'border-l-red-500' :
-            needsAction ? 'border-l-orange-500' :
+            needsAction ? 'border-l-amber-500' :
             'border-l-blue-500'
           }`}>
             <CardContent className="pt-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Application #{selectedApplication.case_id}</h2>
-                  <p className="text-gray-600 text-lg">
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Application #{selectedApplication.case_id}</h2>
+                  <p className="text-slate-600 text-lg">
                     {selectedApplication.status === 'approved' && '🎉 Congratulations! Your loan is approved'}
                     {selectedApplication.status === 'rejected' && 'Your application needs attention'}
                     {needsAction && '📄 Action Required: Upload your documents to proceed'}
@@ -180,7 +180,7 @@ const StudentDashboard = () => {
                   <div className="text-3xl font-bold text-primary mb-1">
                     {formatCurrency(selectedApplication.loan_amount)}
                   </div>
-                  <div className="text-sm text-gray-500">Loan Amount</div>
+                  <div className="text-sm text-slate-500">Loan Amount</div>
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -202,15 +202,15 @@ const StudentDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Progress Card */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900">Progress</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Progress</h3>
                     <span className="text-2xl font-bold text-primary">{progress}%</span>
                   </div>
                   <Progress value={progress} className="h-3" />
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-slate-600">
                     {progress < 25 && "Great start! Let's upload your documents"}
                     {progress >= 25 && progress < 50 && "You're making good progress! 🚀"}
                     {progress >= 50 && progress < 75 && "You're halfway there! Keep going 🎉"}
@@ -222,9 +222,9 @@ const StudentDashboard = () => {
             </Card>
 
             {/* Quick Actions */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
                 <div className="space-y-2">
                   {needsAction && (
                     <Button className="w-full" onClick={() => navigate(`/student/documents/${selectedApplication.id}`)}>
@@ -256,58 +256,58 @@ const StudentDashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Loan Details */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-slate-900">
                   <DollarSign className="h-5 w-5" />
                   Loan Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600">Amount Requested</p>
-                  <p className="font-semibold text-lg text-gray-900">{formatCurrency(selectedApplication.loan_amount)}</p>
+                  <p className="text-sm text-slate-600">Amount Requested</p>
+                  <p className="font-semibold text-lg text-slate-900">{formatCurrency(selectedApplication.loan_amount)}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-sm text-gray-600">Loan Type</p>
-                  <p className="font-medium text-gray-900 capitalize">{selectedApplication.loan_type}</p>
+                  <p className="text-sm text-slate-600">Loan Type</p>
+                  <p className="font-medium text-slate-900 capitalize">{selectedApplication.loan_type}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-sm text-gray-600">Assigned Lender</p>
-                  <p className="font-medium text-gray-900">{selectedApplication.lender.name}</p>
+                  <p className="text-sm text-slate-600">Assigned Lender</p>
+                  <p className="font-medium text-slate-900">{selectedApplication.lender.name}</p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Study Details */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-slate-900">
                   <MapPin className="h-5 w-5" />
                   Study Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600">Study Destination</p>
-                  <p className="font-semibold text-lg text-gray-900">{selectedApplication.study_destination}</p>
+                  <p className="text-sm text-slate-600">Study Destination</p>
+                  <p className="font-semibold text-lg text-slate-900">{selectedApplication.study_destination}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-sm text-gray-600">Intake</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="text-sm text-slate-600">Intake</p>
+                  <p className="font-medium text-slate-900">
                     {new Date(selectedApplication.intake_year, selectedApplication.intake_month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </p>
                 </div>
                 <Separator />
                 {selectedApplication.universities && selectedApplication.universities.length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-600 mb-2">Selected Universities</p>
+                    <p className="text-sm text-slate-600 mb-2">Selected Universities</p>
                     <div className="space-y-1">
                       {selectedApplication.universities.map(uni => (
-                        <p key={uni.id} className="font-medium text-sm text-gray-900">
+                        <p key={uni.id} className="font-medium text-sm text-slate-900">
                           📍 {uni.name}, {uni.city}
                         </p>
                       ))}
@@ -318,27 +318,27 @@ const StudentDashboard = () => {
             </Card>
 
             {/* Student Info */}
-            <Card className="bg-white border border-gray-200 shadow-sm">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-slate-900">
                   <User className="h-5 w-5" />
                   Student Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600">Name</p>
-                  <p className="font-medium text-gray-900">{selectedApplication.student.name}</p>
+                  <p className="text-sm text-slate-600">Name</p>
+                  <p className="font-medium text-slate-900">{selectedApplication.student.name}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium text-sm text-gray-900">{selectedApplication.student.email}</p>
+                  <p className="text-sm text-slate-600">Email</p>
+                  <p className="font-medium text-sm text-slate-900">{selectedApplication.student.email}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-sm text-gray-600">Phone</p>
-                  <p className="font-medium text-gray-900">{selectedApplication.student.phone}</p>
+                  <p className="text-sm text-slate-600">Phone</p>
+                  <p className="font-medium text-slate-900">{selectedApplication.student.phone}</p>
                 </div>
               </CardContent>
             </Card>
@@ -352,19 +352,20 @@ const StudentDashboard = () => {
   // Main dashboard view - list all applications
   return (
     <StudentLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Page Header */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">My Applications</h1>
+              <p className="text-slate-600 text-base">
                 Track and manage your education loan applications
               </p>
             </div>
             <Button 
               size="lg" 
               onClick={() => setShowApplicationForm(true)}
+              className="h-11 px-6"
             >
               <PlusCircle className="mr-2 h-5 w-5" />
               New Application
@@ -372,18 +373,15 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Applications Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Applications</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {applications.map((app) => (
-              <StudentApplicationCard
-                key={app.id}
-                application={app}
-                onClick={() => setSelectedApplication(app)}
-              />
-            ))}
-          </div>
+        {/* Applications Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {applications.map((app) => (
+            <StudentApplicationCard
+              key={app.id}
+              application={app}
+              onClick={() => setSelectedApplication(app)}
+            />
+          ))}
         </div>
       </div>
     </StudentLayout>

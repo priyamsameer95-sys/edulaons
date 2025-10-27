@@ -61,9 +61,11 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md bg-white border border-gray-200 group",
-        needsAction && "border-l-4 border-l-orange-500",
-        application.status === 'approved' && !needsAction && "border-l-4 border-l-green-500",
+        "cursor-pointer bg-white border border-slate-200 rounded-xl group",
+        "transition-shadow duration-200",
+        "hover:shadow-lg",
+        needsAction && "border-l-4 border-l-amber-500",
+        application.status === 'approved' && !needsAction && "border-l-4 border-l-emerald-500",
         application.status === 'rejected' && !needsAction && "border-l-4 border-l-red-500"
       )}
       onClick={onClick}
@@ -71,15 +73,15 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
+            <CardTitle className="text-lg font-semibold text-slate-900">
               Application #{application.case_id}
             </CardTitle>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               Started {formatDate(application.created_at)}
             </p>
           </div>
           {needsAction && (
-            <Badge variant="destructive" className="text-xs">
+            <Badge variant="destructive" className="text-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50">
               <AlertCircle className="h-3 w-3 mr-1" />
               Action Required
             </Badge>
@@ -91,14 +93,14 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Progress</span>
-            <span className="font-semibold text-gray-900">{progress}%</span>
+            <span className="text-slate-600 font-medium">Progress</span>
+            <span className="font-semibold text-slate-900">{progress}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-slate-100 rounded-full h-2">
             <div 
               className={cn(
-                "h-2 rounded-full transition-all duration-500",
-                progress < 50 ? "bg-orange-500" : progress < 100 ? "bg-blue-500" : "bg-green-500"
+                "h-2 rounded-full",
+                progress < 50 ? "bg-amber-500" : progress < 100 ? "bg-blue-500" : "bg-emerald-500"
               )}
               style={{ width: `${progress}%` }}
             />
@@ -106,36 +108,36 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
         </div>
 
         {/* Details Grid */}
-        <div className="space-y-3 pt-4 border-t border-gray-200">
+        <div className="space-y-3 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-gray-400" />
+            <span className="text-slate-600 flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-slate-400" />
               Loan Amount
             </span>
-            <span className="font-semibold text-gray-900">
+            <span className="font-semibold text-slate-900">
               {formatCurrency(application.loan_amount)}
             </span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-400" />
+            <span className="text-slate-600 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-slate-400" />
               Destination
             </span>
-            <span className="font-medium text-gray-900">{application.study_destination}</span>
+            <span className="font-medium text-slate-900">{application.study_destination}</span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" />
+            <span className="text-slate-600 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-slate-400" />
               Intake
             </span>
-            <span className="text-gray-900">{intakeDate}</span>
+            <span className="text-slate-900">{intakeDate}</span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-gray-400" />
+            <span className="text-slate-600 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-slate-400" />
               Documents
             </span>
             <StatusBadge status={application.documents_status} type="document" />

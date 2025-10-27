@@ -4,98 +4,83 @@
 @tailwind components;
 @tailwind utilities;
 
-/* World-Class Education Loan Application - Design System */
+/* Professional B2C Design System - Clean & Minimal */
 
 @layer base {
   :root {
-    /* Base colors - Clean, professional */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* B2C Color Palette - Professional & Trustworthy */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
 
     /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 215 25% 15%;
 
     /* Interactive elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 215 25% 15%;
 
-    /* Primary brand - Professional Blue */
+    /* Primary - Trust Blue */
     --primary: 217 91% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 45%;
-    --primary-light: 217 91% 95%;
-    
-    /* Brand colors */
-    --brand-primary: 217 91% 55%;
-    --brand-secondary: 262 83% 58%;
-    --brand-accent: 142 71% 45%;
-    
-    /* Brand gradients */
-    --gradient-brand: linear-gradient(135deg, hsl(217 91% 55%), hsl(262 83% 58%));
-    --gradient-brand-subtle: linear-gradient(180deg, hsl(217 91% 55% / 0.05), transparent);
-    
-    /* Shadows for branding */
-    --shadow-brand: 0 4px 20px hsl(217 91% 55% / 0.15);
-    --shadow-brand-lg: 0 10px 40px hsl(217 91% 55% / 0.2);
+    --primary-hover: 217 91% 48%;
 
-    /* Secondary - Clean gray */
-    --secondary: 220 13% 95%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - Neutral Gray */
+    --secondary: 214 15% 96%;
+    --secondary-foreground: 215 25% 15%;
 
     /* Muted elements */
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 214 15% 95%;
+    --muted-foreground: 215 10% 46%;
 
-    /* Accent - Focus purple */
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Subtle highlight */
+    --accent: 214 15% 96%;
+    --accent-foreground: 215 25% 15%;
 
-    /* Status colors - WCAG AA compliant */
-    --success: 142 71% 35%;
+    /* Status colors - B2C Friendly */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 71% 95%;
-    --warning: 38 92% 45%;
+    --success-light: 142 76% 96%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --warning-light: 38 92% 95%;
-    --destructive: 0 72% 51%;
+    --warning-light: 38 100% 96%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 72% 97%;
+    --destructive-light: 0 93% 97%;
 
     /* Borders and inputs */
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
+    --border: 214 15% 88%;
+    --input: 214 15% 88%;
     --input-focus: 217 91% 55%;
     --ring: 217 91% 55%;
 
-    /* Spacing system (8px base unit) */
-    --spacing-xs: 0.25rem;     /* 4px */
-    --spacing-sm: 0.5rem;      /* 8px */
-    --spacing-md: 1rem;        /* 16px */
-    --spacing-lg: 1.5rem;      /* 24px */
-    --spacing-xl: 2rem;        /* 32px */
-    --spacing-2xl: 3rem;       /* 48px */
-    --spacing-3xl: 4rem;       /* 64px */
+    /* Spacing system (8px grid) */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
 
     /* Typography scale */
-    --font-size-xs: 0.75rem;    /* 12px */
-    --font-size-sm: 0.875rem;   /* 14px */
-    --font-size-base: 1rem;     /* 16px */
-    --font-size-lg: 1.125rem;   /* 18px */
-    --font-size-xl: 1.25rem;    /* 20px */
-    --font-size-2xl: 1.5rem;    /* 24px */
-    --font-size-3xl: 2rem;      /* 32px */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
 
-    /* Radius */
-    --radius: 0.5rem;
-    --radius-sm: 0.375rem;
-    --radius-lg: 0.75rem;
+    /* Radius - Softer corners */
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-lg: 1rem;
     --radius-full: 9999px;
 
-    /* Transitions */
+    /* Transitions - Simple only */
     --transition-fast: 150ms ease-out;
     --transition-base: 200ms ease-out;
-    --transition-slow: 300ms ease-out;
 
     --sidebar-background: 0 0% 98%;
 
@@ -177,7 +162,7 @@
 }
 
 @layer components {
-  /* Form field with validation states */
+  /* Form validation states */
   .field-valid {
     @apply border-success;
   }
@@ -196,79 +181,21 @@
     @apply border-t border-border my-6;
   }
 
-  /* Inline validation icon */
-  .validation-icon {
-    @apply absolute right-3 top-1/2 -translate-y-1/2;
+  /* Professional Card - No animations */
+  .professional-card {
+    @apply bg-card border border-border rounded-xl shadow-sm;
+    transition: box-shadow var(--transition-base);
   }
   
-  /* Premium Card Effects */
-  .premium-card {
-    background: linear-gradient(135deg, 
-      hsl(var(--card) / 0.95) 0%, 
-      hsl(var(--card) / 0.85) 100%
-    );
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border) / 0.5);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .premium-card:hover {
-    border-color: hsl(var(--primary) / 0.3);
-    box-shadow: 0 8px 32px hsl(var(--primary) / 0.12);
-    transform: translateY(-2px);
-  }
-  
-  /* Glassmorphism */
-  .glass {
-    background: hsl(var(--background) / 0.7);
-    backdrop-filter: blur(10px) saturate(180%);
-    border: 1px solid hsl(var(--border) / 0.2);
-  }
-  
-  /* Achievement Badge */
-  .achievement-badge {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold;
-    background: linear-gradient(135deg, 
-      hsl(var(--primary) / 0.1) 0%, 
-      hsl(var(--primary) / 0.05) 100%
-    );
-    border: 1px solid hsl(var(--primary) / 0.2);
-    color: hsl(var(--primary));
-    animation: badge-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  
-  /* Milestone Tracker */
-  .milestone-line {
-    @apply absolute top-5 left-5 right-5 h-0.5 bg-muted z-0;
-  }
-  
-  .milestone-line-progress {
-    @apply h-full bg-primary transition-all duration-500 ease-out;
-  }
-  
-  /* Score Gauge */
-  .score-gauge-bg {
-    stroke: hsl(var(--muted));
-  }
-  
-  .score-gauge-fill {
-    stroke: hsl(var(--primary));
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: rotate(-90deg);
-    transform-origin: center;
+  .professional-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 }
 
 @layer utilities {
-  /* Touch targets - minimum 44x44px */
+  /* Touch targets */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
-  }
-
-  /* Smooth transitions */
-  .transition-smooth {
-    transition: all var(--transition-base);
   }
 
   /* Focus ring */
@@ -277,6 +204,7 @@
   }
 }
 
+/* Minimal keyframes - Loading states only */
 @keyframes fall {
   0% {
     transform: translateY(0) rotate(0deg);
@@ -290,209 +218,6 @@
 
 .animate-fall {
   animation: fall linear forwards;
-}
-
-/* Student Application Flow Animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes spin-in {
-  from {
-    transform: rotate(-180deg) scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: rotate(0deg) scale(1);
-    opacity: 1;
-  }
-}
-
-/* Admin Portal Animations */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-@keyframes slide-in-from-right {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 8px currentColor;
-  }
-  50% {
-    box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
-  }
-}
-
-@keyframes stagger-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes success-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.02);
-  }
-}
-
-@keyframes badge-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes gentle-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.success-pulse {
-  animation: success-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.animate-gentle-pulse {
-  animation: gentle-pulse 2s ease-in-out infinite;
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.animate-spin-in {
-  animation: spin-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.animate-shimmer {
-  animation: shimmer 2s linear infinite;
-  background: linear-gradient(
-    90deg,
-    hsl(var(--muted)) 0%,
-    hsl(var(--muted-foreground) / 0.1) 50%,
-    hsl(var(--muted)) 100%
-  );
-  background-size: 1000px 100%;
-}
-
-.animate-slide-in-right {
-  animation: slide-in-from-right 0.5s ease-out forwards;
-}
-
-.animate-glow {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-.stagger-fade-1 {
-  animation: stagger-fade-in 0.5s ease-out 0.1s both;
-}
-
-.stagger-fade-2 {
-  animation: stagger-fade-in 0.5s ease-out 0.2s both;
-}
-
-.stagger-fade-3 {
-  animation: stagger-fade-in 0.5s ease-out 0.3s both;
-}
-
-.stagger-fade-4 {
-  animation: stagger-fade-in 0.5s ease-out 0.4s both;
-}
-
-.stagger-fade-5 {
-  animation: stagger-fade-in 0.5s ease-out 0.5s both;
-}
-
-.stagger-fade-6 {
-  animation: stagger-fade-in 0.5s ease-out 0.6s both;
-}
-
-/* Smooth hover transitions */
-.hover-lift {
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px hsl(var(--primary) / 0.25);
-}
-
-.hover-scale {
-  transition: transform 0.2s ease;
-}
-
-.hover-scale:hover {
-  transform: scale(1.05);
-}
-
-/* Empty state entrance animation */
-@keyframes empty-state-enter {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-empty-state-enter {
-  animation: empty-state-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* Respect reduced motion preference */
