@@ -43,9 +43,6 @@ export const SupportButton = () => {
               </a>
             </Button>
             <Button className="w-full justify-start" variant="outline">
-              💬 Live Chat (Coming Soon)
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
               📚 Help Center & FAQs
             </Button>
           </div>
