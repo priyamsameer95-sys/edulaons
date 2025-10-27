@@ -1,53 +1,34 @@
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Phone, BookOpen } from "lucide-react";
 
 export const SupportButton = () => {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
-    <>
-      <Button
-        size="lg"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
-        onClick={() => setIsOpen(true)}
-        aria-label="Get support"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>How can we help you?</DialogTitle>
-            <DialogDescription>
-              Our support team is here to assist you with your loan application.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 pt-4">
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <a href="mailto:support@eduloanpro.com">
-                📧 Email Support
-              </a>
-            </Button>
-            <Button className="w-full justify-start" variant="outline" asChild>
-              <a href="tel:+911234567890">
-                📞 Call Us: +91 123 456 7890
-              </a>
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              📚 Help Center & FAQs
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Card className="bg-card border border-border rounded-lg">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-foreground">How can we help you?</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Our support team is here to assist you with your loan application.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button className="w-full justify-start" variant="outline" asChild>
+          <a href="mailto:support@eduloanpro.com">
+            <Mail className="h-4 w-4 mr-2" />
+            Email Support
+          </a>
+        </Button>
+        <Button className="w-full justify-start" variant="outline" asChild>
+          <a href="tel:+911234567890">
+            <Phone className="h-4 w-4 mr-2" />
+            Call Us: +91 123 456 7890
+          </a>
+        </Button>
+        <Button className="w-full justify-start" variant="outline">
+          <BookOpen className="h-4 w-4 mr-2" />
+          Help Center & FAQs
+        </Button>
+      </CardContent>
+    </Card>
   );
 };

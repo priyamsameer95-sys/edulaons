@@ -77,7 +77,6 @@ const StudentDashboard = () => {
             ))}
           </div>
         </div>
-        <SupportButton />
       </StudentLayout>
     );
   }
@@ -98,7 +97,6 @@ const StudentDashboard = () => {
             onClick: refetch,
           }}
         />
-        <SupportButton />
       </StudentLayout>
     );
   }
@@ -107,7 +105,6 @@ const StudentDashboard = () => {
     return (
       <StudentLayout>
         <ImprovedEmptyState onStartApplication={() => setShowApplicationForm(true)} />
-        <SupportButton />
       </StudentLayout>
     );
   }
@@ -277,7 +274,6 @@ const StudentDashboard = () => {
             </Card>
           </div>
         </div>
-        <SupportButton />
       </StudentLayout>
     );
   }
@@ -309,22 +305,26 @@ const StudentDashboard = () => {
         </header>
 
         {/* Applications List */}
-        <section>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            {applications.length === 1 ? 'Your Application' : `All Applications (${applications.length})`}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {applications.map((app) => (
-              <StudentApplicationCard
-                key={app.id}
-                application={app}
-                onClick={() => setSelectedApplication(app)}
-              />
-            ))}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">
+              {applications.length === 1 ? 'Your Application' : `All Applications (${applications.length})`}
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {applications.map((app) => (
+                <StudentApplicationCard
+                  key={app.id}
+                  application={app}
+                  onClick={() => setSelectedApplication(app)}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <SupportButton />
           </div>
         </section>
       </div>
-      <SupportButton />
     </StudentLayout>
   );
 };
