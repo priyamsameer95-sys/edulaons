@@ -33,35 +33,16 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
     return 25;
   };
 
-  const getMotivationalMessage = (progress: number) => {
-    if (progress < 25) return "Keep going! You got this 💪";
-    if (progress < 50) return "You're making good progress! 🚀";
-    if (progress < 75) return "You're halfway there! 🎉";
-    if (progress < 100) return "Almost done! Waiting on review";
-    return "Success! Your dream is one step closer 🎓";
-  };
-
-  const getProgressColor = (progress: number) => {
-    if (progress < 25) return "stroke-red-500";
-    if (progress < 50) return "stroke-orange-500";
-    if (progress < 75) return "stroke-blue-500";
-    return "stroke-green-500";
-  };
-
   const progress = getProgress(application.status, application.documents_status);
   const needsAction = application.documents_status === 'pending' || application.documents_status === 'resubmission_required';
   const intakeDate = application.intake_month && application.intake_year 
     ? `${application.intake_month}/${application.intake_year}` 
     : 'TBD';
 
-  const circumference = 2 * Math.PI * 45;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
   return (
     <Card 
       className={cn(
-        "cursor-pointer bg-white border border-slate-200 rounded-xl group",
+        "cursor-pointer bg-card border border-border rounded-xl group",
         "transition-shadow duration-200",
         "hover:shadow-lg",
         needsAction && "border-l-4 border-l-amber-500",
@@ -73,15 +54,15 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">
+            <CardTitle className="text-lg font-semibold text-foreground">
               Application #{application.case_id}
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Started {formatDate(application.created_at)}
             </p>
           </div>
           {needsAction && (
-            <Badge variant="destructive" className="text-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50">
+            <Badge variant="destructive" className="text-xs">
               <AlertCircle className="h-3 w-3 mr-1" />
               Action Required
             </Badge>
@@ -93,13 +74,13 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600 font-medium">Progress</span>
-            <span className="font-semibold text-slate-900">{progress}%</span>
+            <span className="text-muted-foreground font-medium">Progress</span>
+            <span className="font-semibold text-foreground">{progress}%</span>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-2">
             <div 
               className={cn(
-                "h-2 rounded-full",
+                "h-2 rounded-full transition-all",
                 progress < 50 ? "bg-amber-500" : progress < 100 ? "bg-blue-500" : "bg-emerald-500"
               )}
               style={{ width: `${progress}%` }}
@@ -108,36 +89,36 @@ export const StudentApplicationCard = ({ application, onClick }: StudentApplicat
         </div>
 
         {/* Details Grid */}
-        <div className="space-y-3 pt-4 border-t border-slate-100">
+        <div className="space-y-3 pt-4 border-t border-border">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-slate-400" />
+            <span className="text-muted-foreground flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
               Loan Amount
             </span>
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-foreground">
               {formatCurrency(application.loan_amount)}
             </span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600 flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-slate-400" />
+            <span className="text-muted-foreground flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
               Destination
             </span>
-            <span className="font-medium text-slate-900">{application.study_destination}</span>
+            <span className="font-medium text-foreground">{application.study_destination}</span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-slate-400" />
+            <span className="text-muted-foreground flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
               Intake
             </span>
-            <span className="text-slate-900">{intakeDate}</span>
+            <span className="text-foreground">{intakeDate}</span>
           </div>
           
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-slate-400" />
+            <span className="text-muted-foreground flex items-center gap-2">
+              <FileText className="h-4 w-4" />
               Documents
             </span>
             <StatusBadge status={application.documents_status} type="document" />
