@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudentApplications } from "@/hooks/useStudentApplications";
+import { useApplicationSearch } from "@/hooks/useApplicationSearch";
+import { useApplicationStats } from "@/hooks/useApplicationStats";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +18,13 @@ import type { StudentApplication } from "@/hooks/useStudentApplications";
 import { StudentApplicationCard } from "@/components/student/dashboard/StudentApplicationCard";
 import { StudentLayout } from "@/components/student/layout/StudentLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DashboardSummary } from "@/components/student/dashboard/DashboardSummary";
+import { ActionRequiredBanner } from "@/components/student/dashboard/ActionRequiredBanner";
+import { ApplicationFilters } from "@/components/student/dashboard/ApplicationFilters";
+import { QuickActionsPanel } from "@/components/student/dashboard/QuickActionsPanel";
+import { RecommendedActions } from "@/components/student/dashboard/RecommendedActions";
+import { ImprovedEmptyState } from "@/components/student/dashboard/ImprovedEmptyState";
+import { updateMetaTags, pageSEO } from "@/utils/seo";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,7 +40,26 @@ const StudentDashboard = () => {
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
 
+  // Stats and search
+  const stats = useApplicationStats(applications);
+  const {
+    filteredApplications,
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    sortBy,
+    setSortBy,
+    clearFilters,
+    hasActiveFilters,
+  } = useApplicationSearch(applications);
+
   const hasApplications = applications.length > 0;
+
+  // Update meta tags for SEO
+  useEffect(() => {
+    updateMetaTags(pageSEO.studentDashboard);
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -117,15 +145,7 @@ const StudentDashboard = () => {
   if (!hasApplications) {
     return (
       <StudentLayout>
-        <EmptyState
-          icon={GraduationCap}
-          title="Start Your Education Loan Journey"
-          description="You haven't started any applications yet. Begin your journey to securing funding for your dream university."
-          action={{
-            label: "Start New Application",
-            onClick: () => setShowApplicationForm(true),
-          }}
-        />
+        <ImprovedEmptyState onStartApplication={() => setShowApplicationForm(true)} />
       </StudentLayout>
     );
   }
@@ -352,13 +372,17 @@ const StudentDashboard = () => {
   // Main dashboard view - list all applications
   return (
     <StudentLayout>
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div className="bg-white rounded-xl border border-slate-200 p-8">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg">
+        Skip to main content
+      </a>
+      
+      <div className="space-y-8" id="main-content" role="main">
+        {/* Page Header with SEO-friendly heading hierarchy */}
+        <header className="bg-card rounded-xl border border-border p-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-2">My Applications</h1>
-              <p className="text-slate-600 text-base">
+              <h1 className="text-3xl font-bold text-foreground mb-2">My Applications</h1>
+              <p className="text-muted-foreground text-base">
                 Track and manage your education loan applications
               </p>
             </div>
@@ -366,22 +390,99 @@ const StudentDashboard = () => {
               size="lg" 
               onClick={() => setShowApplicationForm(true)}
               className="h-11 px-6"
+              aria-label="Start a new loan application"
             >
-              <PlusCircle className="mr-2 h-5 w-5" />
+              <PlusCircle className="mr-2 h-5 w-5" aria-hidden="true" />
               New Application
             </Button>
           </div>
-        </div>
+        </header>
 
-        {/* Applications Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {applications.map((app) => (
-            <StudentApplicationCard
-              key={app.id}
-              application={app}
-              onClick={() => setSelectedApplication(app)}
+        {/* Dashboard Summary Stats */}
+        <section aria-labelledby="dashboard-summary">
+          <h2 id="dashboard-summary" className="sr-only">Dashboard Overview</h2>
+          <DashboardSummary
+            totalApplications={stats.totalApplications}
+            activeApplications={stats.activeApplications}
+            approvedApplications={stats.approvedApplications}
+            totalLoanAmount={stats.totalLoanAmount}
+          />
+        </section>
+
+        {/* Action Required Banner */}
+        {stats.pendingActions.length > 0 && (
+          <section aria-labelledby="action-required">
+            <h2 id="action-required" className="sr-only">Actions Required</h2>
+            <ActionRequiredBanner
+              pendingActions={stats.pendingActions}
+              onViewApplication={setSelectedApplication}
             />
-          ))}
+          </section>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Recommended Actions */}
+            <section aria-labelledby="recommended-actions">
+              <h2 id="recommended-actions" className="sr-only">Recommended Next Steps</h2>
+              <RecommendedActions
+                applications={applications}
+                onViewApplication={setSelectedApplication}
+              />
+            </section>
+
+            {/* Search and Filter */}
+            <section aria-labelledby="applications-section">
+              <h2 id="applications-section" className="text-2xl font-bold text-foreground mb-4">
+                Your Applications
+              </h2>
+              <ApplicationFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                onClearFilters={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+                resultCount={filteredApplications.length}
+              />
+            </section>
+
+            {/* Applications Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredApplications.map((app) => (
+                <StudentApplicationCard
+                  key={app.id}
+                  application={app}
+                  onClick={() => setSelectedApplication(app)}
+                />
+              ))}
+            </div>
+
+            {filteredApplications.length === 0 && applications.length > 0 && (
+              <EmptyState
+                icon={FileText}
+                title="No applications found"
+                description="Try adjusting your search or filter criteria"
+                action={{
+                  label: "Clear Filters",
+                  onClick: clearFilters,
+                  variant: "outline",
+                }}
+              />
+            )}
+          </div>
+
+          {/* Sidebar - Quick Actions */}
+          <aside className="lg:col-span-1" aria-labelledby="quick-actions">
+            <h2 id="quick-actions" className="sr-only">Quick Actions</h2>
+            <QuickActionsPanel
+              onNewApplication={() => setShowApplicationForm(true)}
+              pendingActionsCount={stats.pendingActions.length}
+            />
+          </aside>
         </div>
       </div>
     </StudentLayout>
