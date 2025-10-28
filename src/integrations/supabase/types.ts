@@ -1740,22 +1740,13 @@ export type Database = {
           total_loan_amount: number
         }[]
       }
-      get_student_id_by_email: {
-        Args: { _email: string }
-        Returns: string
-      }
-      get_user_partner: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_student_id_by_email: { Args: { _email: string }; Returns: string }
+      get_user_partner: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      get_user_streak: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
+      get_user_streak: { Args: { user_uuid: string }; Returns: number }
       grant_user_role: {
         Args: {
           _granted_by: string
@@ -1771,14 +1762,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_student_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_current_user_admin: { Args: never; Returns: boolean }
+      is_student_user: { Args: never; Returns: boolean }
       log_admin_action: {
         Args: {
           _action: string
@@ -1789,18 +1774,9 @@ export type Database = {
         }
         Returns: string
       }
-      migrate_existing_leads: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      migrate_existing_leads_safe: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      refresh_partner_statistics: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      migrate_existing_leads: { Args: never; Returns: undefined }
+      migrate_existing_leads_safe: { Args: never; Returns: undefined }
+      refresh_partner_statistics: { Args: never; Returns: undefined }
       revoke_user_role: {
         Args: {
           _revoked_by: string
