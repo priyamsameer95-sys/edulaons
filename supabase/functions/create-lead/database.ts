@@ -203,12 +203,44 @@ export async function createCoApplicant(
  * Get default lender
  */
 export async function getDefaultLender(
-  supabaseAdmin: SupabaseClient
+  supabaseAdmin: SupabaseClient,
+  studyDestination?: string,
+  universityIds?: string[]
 ): Promise<any> {
+  // Phase 3: Intelligent lender assignment based on university preferences
+  if (studyDestination && universityIds && universityIds.length > 0) {
+    console.log('🎯 Looking for lender preferences for universities...');
+    
+    const { data: preferences } = await supabaseAdmin
+      .from('university_lender_preferences')
+      .select('lender_id, compatibility_score, is_preferred')
+      .in('university_id', universityIds)
+      .eq('study_destination', studyDestination)
+      .eq('is_preferred', true)
+      .order('compatibility_score', { ascending: false })
+      .limit(1);
+    
+    if (preferences && preferences.length > 0) {
+      const { data: preferredLender } = await supabaseAdmin
+        .from('lenders')
+        .select('id, name')
+        .eq('id', preferences[0].lender_id)
+        .eq('is_active', true)
+        .single();
+      
+      if (preferredLender) {
+        console.log('✅ Found preferred lender:', preferredLender.name);
+        return preferredLender;
+      }
+    }
+  }
+  
+  // Fallback: Get lender with best overall performance (using display_order as proxy)
   const { data: lender, error } = await supabaseAdmin
     .from('lenders')
     .select('id, name')
     .eq('is_active', true)
+    .order('display_order', { ascending: true })
     .limit(1)
     .single();
   
@@ -216,6 +248,7 @@ export async function getDefaultLender(
     throw new Error('No active lender configured in system');
   }
   
+  console.log('✅ Using default lender:', lender.name);
   return lender;
 }
 

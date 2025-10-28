@@ -110,9 +110,10 @@ serve(async (req) => {
     const coApplicant = await createCoApplicant(supabaseAdmin, body);
     console.log('✅ Co-applicant created:', coApplicant.id);
 
-    // Get lender
+    // Get lender with intelligent assignment
     console.log('🏦 Getting lender...');
-    const lender = await getDefaultLender(supabaseAdmin);
+    const { uuids: universityUuids } = separateUniversities(body.universities || []);
+    const lender = await getDefaultLender(supabaseAdmin, body.country, universityUuids);
     console.log('✅ Lender found:', lender.name);
 
     // Create lead
@@ -209,49 +210,67 @@ serve(async (req) => {
     
     console.log(`✅ Found ${recommendedLenders.length} recommended lenders`);
     
-    // Fetch eligibility score for the assigned lender
-    console.log('📊 Fetching eligibility score for assigned lender...');
-    const { data: eligibilityScore, error: eligibilityError } = await supabaseAdmin
-      .from('eligibility_scores')
-      .select('*')
-      .eq('lead_id', lead.id)
-      .eq('lender_id', lender.id)
-      .single();
-
-    if (eligibilityError) {
-      console.warn('⚠️ No eligibility score found yet:', eligibilityError.message);
-    } else {
-      console.log('✅ Eligibility score fetched:', eligibilityScore.overall_score);
-    }
-
-    // Add eligibility to the assigned lender in recommended list
-    if (eligibilityScore && recommendedLenders.length > 0) {
-      const assignedLenderIndex = recommendedLenders.findIndex(
-        (l: any) => l.lender_id === lender.id
-      );
-      
-      if (assignedLenderIndex >= 0) {
-        recommendedLenders[assignedLenderIndex] = {
-          ...recommendedLenders[assignedLenderIndex],
-          eligibility_score: eligibilityScore.overall_score,
-          university_score: eligibilityScore.university_score,
-          student_score: eligibilityScore.student_score,
-          co_applicant_score: eligibilityScore.co_applicant_score,
-          approval_status: eligibilityScore.approval_status,
-          rejection_reason: eligibilityScore.rejection_reason,
-          eligible_loan_min: eligibilityScore.eligible_loan_min,
-          eligible_loan_max: eligibilityScore.eligible_loan_max,
-          rate_tier: eligibilityScore.rate_tier,
-          interest_rate_min: eligibilityScore.interest_rate_min,
-          interest_rate_max: eligibilityScore.interest_rate_max,
-          loan_band_percentage: eligibilityScore.loan_band_percentage,
-          university_breakdown: eligibilityScore.university_breakdown,
-          student_breakdown: eligibilityScore.student_breakdown,
-          co_applicant_breakdown: eligibilityScore.co_applicant_breakdown
-        };
-        console.log('✅ Eligibility data added to assigned lender');
+    // Phase 4: Pre-calculate eligibility for top 3 recommended lenders
+    console.log('🔥 Phase 4: Pre-calculating eligibility for top 3 lenders...');
+    const topLenders = recommendedLenders.slice(0, 3);
+    
+    for (const lenderData of topLenders) {
+      try {
+        console.log(`⚙️ Calculating eligibility for ${lenderData.lender_name}...`);
+        
+        // Manually call calculate_eligibility_score for each lender
+        const { data: calculatedId, error: calcError } = await supabaseAdmin
+          .rpc('calculate_eligibility_score', { 
+            p_lead_id: lead.id
+          });
+        
+        if (calcError) {
+          console.warn(`⚠️ Failed to calculate for ${lenderData.lender_name}:`, calcError.message);
+          continue;
+        }
+        
+        // Fetch the calculated score
+        const { data: eligibilityScore } = await supabaseAdmin
+          .from('eligibility_scores')
+          .select('*')
+          .eq('lead_id', lead.id)
+          .eq('lender_id', lenderData.lender_id)
+          .single();
+        
+        if (eligibilityScore) {
+          // Add eligibility data to the lender in recommended list
+          const lenderIndex = recommendedLenders.findIndex(
+            (l: any) => l.lender_id === lenderData.lender_id
+          );
+          
+          if (lenderIndex >= 0) {
+            recommendedLenders[lenderIndex] = {
+              ...recommendedLenders[lenderIndex],
+              eligibility_score: eligibilityScore.overall_score,
+              university_score: eligibilityScore.university_score,
+              student_score: eligibilityScore.student_score,
+              co_applicant_score: eligibilityScore.co_applicant_score,
+              approval_status: eligibilityScore.approval_status,
+              rejection_reason: eligibilityScore.rejection_reason,
+              eligible_loan_min: eligibilityScore.eligible_loan_min,
+              eligible_loan_max: eligibilityScore.eligible_loan_max,
+              rate_tier: eligibilityScore.rate_tier,
+              interest_rate_min: eligibilityScore.interest_rate_min,
+              interest_rate_max: eligibilityScore.interest_rate_max,
+              loan_band_percentage: eligibilityScore.loan_band_percentage,
+              university_breakdown: eligibilityScore.university_breakdown,
+              student_breakdown: eligibilityScore.student_breakdown,
+              co_applicant_breakdown: eligibilityScore.co_applicant_breakdown
+            };
+            console.log(`✅ Eligibility added for ${lenderData.lender_name}: ${eligibilityScore.overall_score}/100`);
+          }
+        }
+      } catch (err: any) {
+        console.error(`❌ Error calculating for ${lenderData.lender_name}:`, err.message);
       }
     }
+    
+    console.log('✅ Phase 4 complete: Pre-calculated top 3 lenders');
     
     console.log('🎉 Application submission completed successfully');
 

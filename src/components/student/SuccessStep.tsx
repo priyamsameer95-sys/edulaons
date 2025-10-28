@@ -81,6 +81,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     setIsUpdating(true);
 
     try {
+      // Update the selected lender in database
       const { error } = await supabase
         .from('leads_new')
         .update({ lender_id: lenderId })
@@ -89,6 +90,9 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       if (error) throw error;
 
       toast.success('Lender preference updated successfully!');
+      
+      // Note: Eligibility data for this lender should already be pre-calculated
+      // and is available in the recommendedLenders array
     } catch (error) {
       console.error('Error updating lender:', error);
       toast.error('Failed to update lender preference');
@@ -237,9 +241,14 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       {/* Recommended Lenders Section */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '500ms' }}>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold">Select Your Preferred Lender</h2>
+          <h2 className="text-2xl font-bold">Compare Lenders</h2>
           <p className="text-muted-foreground">
-            We've matched you with the best lenders based on your profile. Review their offerings and select your preferred choice.
+            We've pre-calculated your eligibility with multiple lenders. Compare their terms and select your preferred lender.
+            {recommendedLenders.some(l => l.eligibility_score) && (
+              <span className="block mt-1 text-sm text-primary">
+                ✨ Your eligibility scores are shown on each card for easy comparison
+              </span>
+            )}
           </p>
         </div>
 
