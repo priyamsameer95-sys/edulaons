@@ -9,6 +9,7 @@ import { Plus, FileText, TrendingUp, CheckCircle, DollarSign, LogOut, Settings, 
 import ShareButton from "@/components/ShareButton";
 import { LeadsTab } from "@/components/dashboard/LeadsTab";
 import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
+import { ProcessFlowGuide } from "@/components/dashboard/ProcessFlowGuide";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -346,6 +347,21 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
               <span>Real-time sync</span>
             </div>
           </div>
+
+          {/* Process Flow Guide - Onboarding Helper */}
+          <ProcessFlowGuide
+            partnerName={partner?.name}
+            currentStep={2}
+            completedSteps={[1]}
+            totalLeads={kpis.totalLeads}
+            onActionClick={(action) => {
+              if (action === 'upload_documents') {
+                setActiveTab('leads');
+              } else if (action === 'view_payouts') {
+                setActiveTab('payouts');
+              }
+            }}
+          />
 
           {/* Tabs Section - Full Width */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
