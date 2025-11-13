@@ -104,32 +104,32 @@ export const ProcessFlowGuide = ({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       {/* Header Section */}
       <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background shadow-lg">
-        <CardHeader className="text-center space-y-4 pb-8">
+        <CardHeader className="text-center space-y-3 pb-4">
           <div className="inline-flex items-center gap-2 mx-auto">
-            <span className="text-4xl">🎉</span>
-            <h2 className="text-3xl font-bold">
+            <span className="text-2xl">🎉</span>
+            <h2 className="text-xl font-bold">
               Welcome{partnerName ? `, ${partnerName}` : ''}! Here's What Happens Next
             </h2>
           </div>
-          <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+          <p className="text-muted-foreground text-sm max-w-3xl mx-auto">
             Thank you for submitting the lead. Our Relationship Manager will connect with you{' '}
             <span className="font-semibold text-primary">within 2 hours</span> to begin the journey.
           </p>
           
           {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <Badge variant="outline" className="gap-2 py-2 px-4">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs">
               <span>✓</span>
               <span>2-hour response guarantee</span>
             </Badge>
-            <Badge variant="outline" className="gap-2 py-2 px-4">
+            <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs">
               <span>✓</span>
               <span>98% success rate</span>
             </Badge>
-            <Badge variant="outline" className="gap-2 py-2 px-4">
+            <Badge variant="outline" className="gap-1.5 py-1 px-3 text-xs">
               <span>✓</span>
               <span>24/7 RM support</span>
             </Badge>
@@ -137,11 +137,11 @@ export const ProcessFlowGuide = ({
         </CardHeader>
 
         {/* Process Steps */}
-        <CardContent className="px-6 pb-8">
+        <CardContent className="px-4 pb-4">
           {/* Desktop: Horizontal Layout */}
-          <div className="hidden lg:grid lg:grid-cols-7 gap-4 relative">
+          <div className="hidden lg:grid lg:grid-cols-7 gap-3 relative">
             {/* Connecting lines */}
-            <div className="absolute top-12 left-0 right-0 h-0.5 bg-border -z-10" />
+            <div className="absolute top-8 left-0 right-0 h-0.5 bg-border -z-10" />
             
             {steps.map((step) => (
               <ProcessStepCard
@@ -155,7 +155,7 @@ export const ProcessFlowGuide = ({
           </div>
 
           {/* Tablet: 2 rows */}
-          <div className="hidden md:grid lg:hidden grid-cols-4 gap-4">
+          <div className="hidden md:grid lg:hidden grid-cols-4 gap-3">
             {steps.slice(0, 4).map((step) => (
               <ProcessStepCard
                 key={step.stepNumber}
@@ -165,7 +165,7 @@ export const ProcessFlowGuide = ({
                 onCtaClick={step.ctaLabel ? () => handleCtaClick(step.stepNumber) : undefined}
               />
             ))}
-            <div className="col-span-4 grid grid-cols-3 gap-4 mt-4">
+            <div className="col-span-4 grid grid-cols-3 gap-3 mt-3">
               {steps.slice(4).map((step) => (
                 <ProcessStepCard
                   key={step.stepNumber}
@@ -179,8 +179,8 @@ export const ProcessFlowGuide = ({
           </div>
 
           {/* Mobile: Vertical Timeline */}
-          <div className="md:hidden space-y-4 relative">
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border -z-10" />
+          <div className="md:hidden space-y-3 relative">
+            <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border -z-10" />
             {steps.map((step) => (
               <ProcessStepCard
                 key={step.stepNumber}
@@ -193,12 +193,12 @@ export const ProcessFlowGuide = ({
           </div>
 
           {/* Timeline Summary */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">Average Timeline:</span> 14 days to disbursal
             </p>
-            <div className="mt-2 flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            <div className="mt-1 flex items-center justify-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
               <span className="text-xs text-muted-foreground">
                 Your progress will be tracked in real-time
               </span>

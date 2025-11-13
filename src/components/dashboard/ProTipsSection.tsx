@@ -42,23 +42,23 @@ export const ProTipsSection = ({ onUploadClick, onPayoutsClick }: ProTipsSection
   ];
 
   return (
-    <div className="mt-8">
-      <h3 className="text-lg font-semibold mb-4 text-center">💡 Pro Tips</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="mt-4">
+      <h3 className="text-base font-semibold mb-3 text-center">💡 Pro Tips</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {tips.map((tip, index) => {
           const Icon = tip.icon;
           return (
             <Card key={index} className="hover:shadow-md transition-all hover:border-primary/30">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-medium flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <Icon className="h-3.5 w-3.5 text-primary" />
                   </div>
                   {tip.title}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <ul className="text-xs text-muted-foreground space-y-2">
+              <CardContent className="space-y-2">
+                <ul className="text-xs text-muted-foreground space-y-1.5">
                   {tip.items.map((item, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-primary mt-0.5">•</span>
@@ -70,7 +70,7 @@ export const ProTipsSection = ({ onUploadClick, onPayoutsClick }: ProTipsSection
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full"
+                    className="w-full text-xs"
                     onClick={tip.onClick}
                   >
                     {tip.action}

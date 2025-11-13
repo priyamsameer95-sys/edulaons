@@ -31,7 +31,7 @@ export const ProcessStepCard = ({
   return (
     <div
       className={cn(
-        "relative flex flex-col items-center text-center p-6 rounded-lg border-2 transition-all duration-300 group",
+        "relative flex flex-col items-center text-center p-3 rounded-lg border-2 transition-all duration-300 group",
         isActive && "border-primary bg-primary/5 shadow-lg scale-105",
         isCompleted && "border-success/30 bg-success/5",
         !isActive && !isCompleted && "border-border/50 bg-card hover:border-primary/30 hover:shadow-md"
@@ -41,7 +41,7 @@ export const ProcessStepCard = ({
       <Badge
         variant={isCompleted ? "default" : isActive ? "default" : "secondary"}
         className={cn(
-          "absolute -top-3 -left-3 h-7 w-7 rounded-full flex items-center justify-center font-bold",
+          "absolute -top-2 -left-2 h-6 w-6 rounded-full flex items-center justify-center font-bold text-xs",
           isCompleted && "bg-success text-success-foreground",
           isActive && "animate-pulse"
         )}
@@ -52,7 +52,7 @@ export const ProcessStepCard = ({
       {/* Icon */}
       <div
         className={cn(
-          "h-16 w-16 rounded-full flex items-center justify-center mb-4 transition-all",
+          "h-12 w-12 rounded-full flex items-center justify-center mb-2 transition-all",
           isActive && "bg-primary/20 ring-4 ring-primary/20",
           isCompleted && "bg-success/20",
           !isActive && !isCompleted && "bg-muted group-hover:bg-primary/10"
@@ -60,7 +60,7 @@ export const ProcessStepCard = ({
       >
         <Icon
           className={cn(
-            "h-8 w-8",
+            "h-6 w-6",
             isActive && "text-primary",
             isCompleted && "text-success",
             !isActive && !isCompleted && "text-muted-foreground"
@@ -69,13 +69,13 @@ export const ProcessStepCard = ({
       </div>
 
       {/* Title */}
-      <h3 className="font-semibold text-base mb-2">{title}</h3>
+      <h3 className="font-semibold text-sm mb-1">{title}</h3>
 
       {/* Description */}
-      <p className="text-sm text-muted-foreground mb-3 min-h-[3rem]">{description}</p>
+      <p className="text-xs text-muted-foreground mb-2 min-h-[2.5rem]">{description}</p>
 
       {/* Timeline Badge */}
-      <Badge variant="outline" className="mb-2">
+      <Badge variant="outline" className="mb-1.5 text-xs py-0.5 px-2">
         ⏱️ {timeline}
       </Badge>
 
@@ -93,7 +93,7 @@ export const ProcessStepCard = ({
           size="sm"
           variant="default"
           onClick={onCtaClick}
-          className="mt-4 w-full"
+          className="mt-3 w-full text-xs"
         >
           {ctaLabel}
         </Button>
