@@ -1,4 +1,3 @@
-import { Card, CardContent } from '@/components/ui/card';
 import {
   CheckCircle,
   Bell,
@@ -7,16 +6,13 @@ import {
   Users,
   FileCheck,
   TrendingUp,
+  ArrowRight,
 } from 'lucide-react';
-import { ProcessStepCard } from './ProcessStepCard';
+import { cn } from '@/lib/utils';
 
 interface ProcessFlowGuideProps {
-  leadId?: string;
   currentStep?: number;
   completedSteps?: number[];
-  partnerName?: string;
-  onActionClick?: (action: string) => void;
-  variant?: 'default' | 'compact';
   totalLeads?: number;
 }
 
@@ -26,13 +22,13 @@ export const ProcessFlowGuide = ({
   totalLeads = 0,
 }: ProcessFlowGuideProps) => {
   const steps = [
-    { stepNumber: 1, icon: CheckCircle, title: 'Lead Created' },
-    { stepNumber: 2, icon: Bell, title: 'Student Notified' },
-    { stepNumber: 3, icon: Upload, title: 'Upload Docs' },
-    { stepNumber: 4, icon: ClipboardCheck, title: 'RM Verifies' },
-    { stepNumber: 5, icon: Users, title: 'Coordination' },
-    { stepNumber: 6, icon: FileCheck, title: 'File Logged' },
-    { stepNumber: 7, icon: TrendingUp, title: 'Processing' },
+    { id: 1, icon: CheckCircle, title: 'Lead Created' },
+    { id: 2, icon: Bell, title: 'Student Notified' },
+    { id: 3, icon: Upload, title: 'Upload Docs' },
+    { id: 4, icon: ClipboardCheck, title: 'RM Verifies' },
+    { id: 5, icon: Users, title: 'Coordination' },
+    { id: 6, icon: FileCheck, title: 'File Logged' },
+    { id: 7, icon: TrendingUp, title: 'Processing' },
   ];
 
   // Only show for partners with fewer than 5 leads (onboarding helper)
@@ -41,52 +37,60 @@ export const ProcessFlowGuide = ({
   }
 
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="p-4">
-        {/* Simple Header */}
-        <div className="text-sm text-muted-foreground mb-4 text-center">
-          Process Flow: Lead → Student → Documents → Verification → Coordination → Submission → Approval
-        </div>
+    <div className="border rounded-lg bg-card shadow-sm p-4">
+      {/* Header */}
+      <div className="text-sm text-muted-foreground mb-4 text-center font-medium">
+        Process Flow
+      </div>
 
-        {/* Desktop Layout: Single Row */}
-        <div className="hidden md:grid md:grid-cols-7 gap-3">
-          {steps.map((step) => (
-            <ProcessStepCard
-              key={step.stepNumber}
-              {...step}
-              isActive={step.stepNumber === currentStep}
-              isCompleted={completedSteps.includes(step.stepNumber)}
-            />
-          ))}
-        </div>
+      {/* Steps Container */}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          const isActive = step.id === currentStep;
+          const isCompleted = completedSteps.includes(step.id);
 
-        {/* Tablet Layout: Two Rows */}
-        <div className="hidden sm:grid md:hidden grid-cols-4 gap-3">
-          {steps.map((step) => (
-            <ProcessStepCard
-              key={step.stepNumber}
-              {...step}
-              isActive={step.stepNumber === currentStep}
-              isCompleted={completedSteps.includes(step.stepNumber)}
-            />
-          ))}
-        </div>
-
-        {/* Mobile Layout: Horizontal Scroll */}
-        <div className="sm:hidden overflow-x-auto pb-2">
-          <div className="flex gap-3 min-w-max">
-            {steps.map((step) => (
-              <div key={step.stepNumber} className="w-24">
-                <ProcessStepCard
-                  {...step}
-                  isActive={step.stepNumber === currentStep}
-                  isCompleted={completedSteps.includes(step.stepNumber)}
-                />
+          return (
+            <div key={step.id} className="flex items-center gap-3">
+              {/* Step */}
+              <div className="flex flex-col items-center gap-1.5 min-w-[80px]">
+                <div
+                  className={cn(
+                    'h-10 w-10 rounded-full flex items-center justify-center transition-all',
+                    isActive && 'bg-primary/20 ring-2 ring-primary/30',
+                    isCompleted && 'bg-green-100 dark:bg-green-950',
+                    !isActive && !isCompleted && 'bg-muted'
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 transition-colors',
+                      isActive && 'text-primary',
+                      isCompleted && 'text-green-600 dark:text-green-400',
+                      !isActive && !isCompleted && 'text-muted-foreground'
+                    )}
+                  />
+                </div>
+                <span
+                  className={cn(
+                    'text-xs font-medium text-center leading-tight',
+                    isActive && 'text-foreground',
+                    isCompleted && 'text-green-600 dark:text-green-400',
+                    !isActive && !isCompleted && 'text-muted-foreground'
+                  )}
+                >
+                  {step.title}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+
+              {/* Arrow Separator (hidden on last step and mobile) */}
+              {index < steps.length - 1 && (
+                <ArrowRight className="h-4 w-4 text-muted-foreground/30 hidden md:block shrink-0" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
