@@ -350,17 +350,9 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
 
           {/* Process Flow Guide - Onboarding Helper */}
           <ProcessFlowGuide
-            partnerName={partner?.name}
             currentStep={2}
             completedSteps={[1]}
             totalLeads={kpis.totalLeads}
-            onActionClick={(action) => {
-              if (action === 'upload_documents') {
-                setActiveTab('leads');
-              } else if (action === 'view_payouts') {
-                setActiveTab('payouts');
-              }
-            }}
           />
 
           {/* Tabs Section - Full Width */}
