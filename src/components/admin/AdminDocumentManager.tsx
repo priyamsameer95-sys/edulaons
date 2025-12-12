@@ -207,29 +207,23 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                           {document.document_types?.name} • {document.document_types?.category}
                         </div>
 
-                        {/* AI Details for flagged docs */}
+                        {/* AI Details - compact inline */}
                         {isAIFlagged && (
-                          <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-xs space-y-1">
-                            {document.ai_detected_type && document.ai_detected_type !== document.document_types?.name && (
-                              <div className="flex gap-2">
-                                <span className="text-muted-foreground">AI detected:</span>
-                                <span className="font-medium text-amber-700 dark:text-amber-400">{document.ai_detected_type}</span>
-                              </div>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                            {document.ai_detected_type && (
+                              <span className="font-medium">{document.ai_detected_type}</span>
                             )}
-                            {document.ai_confidence_score !== null && (
-                              <div className="flex gap-2">
-                                <span className="text-muted-foreground">Confidence:</span>
-                                <span className={`font-medium ${
-                                  (document.ai_confidence_score || 0) >= 75 ? 'text-green-600' :
-                                  (document.ai_confidence_score || 0) >= 50 ? 'text-amber-600' :
-                                  'text-red-600'
-                                }`}>{document.ai_confidence_score}%</span>
-                              </div>
+                            {document.ai_confidence_score != null && (
+                              <Badge variant="outline" className={`text-[10px] py-0 h-4 ${
+                                document.ai_confidence_score >= 75 ? "text-green-600 border-green-300" :
+                                document.ai_confidence_score >= 50 ? "text-amber-600 border-amber-300" :
+                                "text-red-600 border-red-300"
+                              }`}>
+                                {document.ai_confidence_score}%
+                              </Badge>
                             )}
                             {document.ai_validation_notes && (
-                              <div className="text-amber-700 dark:text-amber-400 mt-1">
-                                {document.ai_validation_notes}
-                              </div>
+                              <span className="text-amber-600 dark:text-amber-400">• {document.ai_validation_notes}</span>
                             )}
                           </div>
                         )}

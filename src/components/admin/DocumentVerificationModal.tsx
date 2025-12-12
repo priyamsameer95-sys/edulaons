@@ -38,11 +38,7 @@ export function DocumentVerificationModal({
   const { toast } = useToast();
 
   // Pre-populate admin notes with AI findings if available
-  useEffect(() => {
-    if (document?.ai_validation_notes && !adminNotes) {
-      setAdminNotes(`AI Notes: ${document.ai_validation_notes}`);
-    }
-  }, [document]);
+  // Don't pre-fill admin notes - let admin write their own comments
 
   const handleVerification = async () => {
     if (!document) return;
@@ -101,70 +97,53 @@ export function DocumentVerificationModal({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* AI Validation Details Section */}
+          {/* AI Validation - Compact single line */}
           {document?.ai_validation_status && document.ai_validation_status !== 'pending' && (
-            <div className={`p-4 rounded-lg border ${
-              document.ai_validation_status === 'validated' 
-                ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' 
-                : document.ai_validation_status === 'rejected'
-                ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
-                : 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
-            }`}>
-              <div className="flex items-center gap-2 mb-3">
-                <Bot className={`h-4 w-4 ${
-                  document.ai_validation_status === 'validated' ? 'text-green-600' :
-                  document.ai_validation_status === 'rejected' ? 'text-red-600' : 'text-amber-600'
-                }`} />
-                <span className="font-medium text-sm">AI Validation Results</span>
-                <Badge className={`ml-auto text-[10px] ${
-                  document.ai_validation_status === 'validated' 
-                    ? 'bg-green-500 text-white' 
-                    : document.ai_validation_status === 'rejected'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-amber-500 text-white'
-                }`}>
-                  {document.ai_validation_status === 'validated' && <CheckCircle className="h-3 w-3 mr-1" />}
-                  {document.ai_validation_status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
-                  {document.ai_validation_status === 'manual_review' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                  {document.ai_validation_status}
-                </Badge>
-              </div>
+            <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/50 rounded-lg border text-sm">
+              <Bot className="h-4 w-4 text-muted-foreground shrink-0" />
               
-              <div className="space-y-2 text-sm">
-                {document.ai_detected_type && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Detected Type:</span>
-                    <span className="font-medium">{document.ai_detected_type}</span>
-                  </div>
-                )}
-                {document.ai_confidence_score !== null && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Confidence:</span>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        document.ai_confidence_score >= 75 ? 'border-green-500 text-green-600' :
-                        document.ai_confidence_score >= 50 ? 'border-amber-500 text-amber-600' :
-                        'border-red-500 text-red-600'
-                      }`}
-                    >
-                      {document.ai_confidence_score}%
-                    </Badge>
-                  </div>
-                )}
-                {document.ai_quality_assessment && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Quality:</span>
-                    <span className="capitalize">{document.ai_quality_assessment}</span>
-                  </div>
-                )}
-                {document.ai_validation_notes && (
-                  <div className="mt-2 p-2 bg-background/50 rounded text-xs">
-                    <span className="text-muted-foreground">AI Notes: </span>
-                    {document.ai_validation_notes}
-                  </div>
-                )}
-              </div>
+              {/* Status badge */}
+              {document.ai_validation_status === 'validated' && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30">
+                  <CheckCircle className="h-3 w-3 mr-1" />OK
+                </Badge>
+              )}
+              {document.ai_validation_status === 'rejected' && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30">
+                  <XCircle className="h-3 w-3 mr-1" />Rejected
+                </Badge>
+              )}
+              {document.ai_validation_status === 'manual_review' && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30">
+                  <AlertTriangle className="h-3 w-3 mr-1" />Review
+                </Badge>
+              )}
+
+              {/* Inline details */}
+              {document.ai_detected_type && (
+                <span className="text-muted-foreground text-xs">
+                  {document.ai_detected_type}
+                </span>
+              )}
+              
+              {document.ai_confidence_score != null && (
+                <Badge variant="outline" className={`text-xs ${
+                  document.ai_confidence_score >= 75 ? "bg-green-50 text-green-700 dark:bg-green-950/30" :
+                  document.ai_confidence_score >= 50 ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30" :
+                  "bg-red-50 text-red-700 dark:bg-red-950/30"
+                }`}>
+                  {document.ai_confidence_score}%
+                </Badge>
+              )}
+
+              {document.ai_quality_assessment && (
+                <span className="text-muted-foreground text-xs capitalize">{document.ai_quality_assessment}</span>
+              )}
+
+              {/* Notes inline */}
+              {document.ai_validation_notes && (
+                <span className="text-xs text-muted-foreground">• {document.ai_validation_notes}</span>
+              )}
             </div>
           )}
 
