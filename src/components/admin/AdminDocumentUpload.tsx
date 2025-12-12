@@ -407,31 +407,29 @@ export function AdminDocumentUpload({
     return null;
   };
 
-  // Image preview modal
+  // Image preview modal - using Dialog for proper stacking context
   const renderPreviewModal = () => {
-    if (!showPreview || !previewUrl) return null;
+    if (!previewUrl) return null;
     
     return (
-      <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="relative bg-card rounded-lg shadow-lg max-w-3xl max-h-[90vh] overflow-hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPreview(false)}
-            className="absolute top-2 right-2 z-10"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden p-0">
           <div className="p-4">
-            <p className="text-sm font-medium mb-2">{selectedFile?.name}</p>
-            <img 
-              src={previewUrl} 
-              alt="Document preview" 
-              className="max-h-[70vh] max-w-full object-contain rounded"
-            />
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-sm font-medium truncate pr-8">
+                {selectedFile?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center">
+              <img 
+                src={previewUrl} 
+                alt="Document preview" 
+                className="max-h-[70vh] max-w-full object-contain rounded"
+              />
+            </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     );
   };
 
