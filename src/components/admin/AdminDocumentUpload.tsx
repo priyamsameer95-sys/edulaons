@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -9,20 +8,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Upload, Check, Loader2, HelpCircle, Eye, FileImage, FileText } from 'lucide-react';
-import { ValidationStatusDisplay } from './ValidationStatusDisplay';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Upload, Loader2 } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import {
+  DocumentTypeSelector,
+  FileDropZone,
+  DocumentPreviewModal,
+  ValidationStatusDisplay,
+  validateFileSize,
+  validateFileFormat
+} from './document-upload';
 
 interface AdminDocumentUploadProps {
   open: boolean;
@@ -30,22 +29,6 @@ interface AdminDocumentUploadProps {
   leadId: string;
   onUploadComplete: () => void;
 }
-
-// Document type help text mapping
-const DOCUMENT_HELP_TEXT: Record<string, string> = {
-  'PAN Copy': 'Upload a clear copy of your PAN card. Ensure the PAN number and photo are clearly visible, not blurred or cropped.',
-  'Aadhaar Copy': 'Upload front and back of Aadhaar card. Ensure the Aadhaar number, photo, and address are readable.',
-  'Passport': 'Upload the photo page of your passport. Ensure passport number, photo, and validity dates are visible.',
-  'Photo': 'Upload a recent passport-size photo with white background. Face should be clearly visible.',
-  'English Proficiency Test Result': 'Upload your IELTS/TOEFL/PTE score card. Ensure all scores and test date are visible.',
-  'Offer Letter / Condition Letter': 'Upload the official offer or conditional offer letter from your university.',
-  'Income Proof': 'Upload salary slips (last 3 months) or ITR for business income.',
-  'Bank Statement': 'Upload last 6 months bank statement. Ensure account number and transactions are visible.',
-  'Property Documents': 'Upload property valuation report, ownership documents, or encumbrance certificate.',
-};
-
-const MAX_FILE_SIZE_MB = 10;
-const ACCEPTED_FORMATS = ['PDF', 'JPG', 'JPEG', 'PNG'];
 
 export function AdminDocumentUpload({
   open,
@@ -59,29 +42,16 @@ export function AdminDocumentUpload({
   const [adminOverride, setAdminOverride] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+
   const { documentTypes } = useDocumentTypes();
   const { toast } = useToast();
   const { validateDocument, isValidating, validationResult, resetValidation } = useDocumentValidation();
 
-  // Group document types by category
-  const groupedDocumentTypes = useMemo(() => {
-    if (!documentTypes) return {};
-    return documentTypes.reduce((acc, type) => {
-      const category = type.category || 'Other';
-      if (!acc[category]) acc[category] = [];
-      acc[category].push(type);
-      return acc;
-    }, {} as Record<string, typeof documentTypes>);
-  }, [documentTypes]);
-
-  // Get selected document type info
-  const selectedDocTypeInfo = useMemo(() => {
-    if (!documentTypes || !selectedDocumentType) return null;
-    return documentTypes.find(t => t.id === selectedDocumentType);
+  // Get selected document type name
+  const selectedDocTypeName = useMemo(() => {
+    if (!documentTypes || !selectedDocumentType) return '';
+    return documentTypes.find(t => t.id === selectedDocumentType)?.name || '';
   }, [documentTypes, selectedDocumentType]);
-
-  const selectedDocTypeName = selectedDocTypeInfo?.name || '';
 
   // Generate preview URL for images
   useEffect(() => {
@@ -110,26 +80,9 @@ export function AdminDocumentUpload({
       setAdminOverride(false);
       setPreviewUrl(null);
       setShowPreview(false);
-      setIsDragging(false);
       resetValidation();
     }
   }, [open, resetValidation]);
-
-  const validateFileSize = (file: File): string | null => {
-    const sizeMB = file.size / 1024 / 1024;
-    if (sizeMB > MAX_FILE_SIZE_MB) {
-      return `File size (${sizeMB.toFixed(2)} MB) exceeds maximum allowed (${MAX_FILE_SIZE_MB} MB)`;
-    }
-    return null;
-  };
-
-  const validateFileFormat = (file: File): string | null => {
-    const ext = file.name.split('.').pop()?.toUpperCase();
-    if (!ext || !ACCEPTED_FORMATS.includes(ext)) {
-      return `Invalid format. Accepted: ${ACCEPTED_FORMATS.join(', ')}`;
-    }
-    return null;
-  };
 
   const processFile = useCallback((file: File) => {
     const sizeError = validateFileSize(file);
@@ -145,31 +98,10 @@ export function AdminDocumentUpload({
     setSelectedFile(file);
   }, [toast]);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) processFile(file);
-  };
-
-  // Drag and drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
-  }, [processFile]);
+  const handleFileRemove = useCallback(() => {
+    setSelectedFile(null);
+    resetValidation();
+  }, [resetValidation]);
 
   // Determine if upload should be allowed
   const canUpload = useMemo(() => {
@@ -211,7 +143,6 @@ export function AdminDocumentUpload({
         return;
       }
 
-      // Include AI validation data in the database record
       const { error: dbError } = await supabase
         .from('lead_documents')
         .insert({
@@ -266,76 +197,6 @@ export function AdminDocumentUpload({
     }
   };
 
-  // Get help text for selected document type
-  const getHelpText = (docName: string) => {
-    return DOCUMENT_HELP_TEXT[docName] || 'Upload a clear, legible copy of this document.';
-  };
-
-  // Format detailed validation feedback
-  const getDetailedFeedback = () => {
-    if (!validationResult) return null;
-    const { redFlags, qualityAssessment, notes } = validationResult;
-    
-    const issues: string[] = [];
-    
-    if (redFlags?.includes('blurry') || qualityAssessment === 'poor') {
-      issues.push('The document appears blurry. Please upload a clearer version.');
-    }
-    if (redFlags?.includes('edited')) {
-      issues.push('This document appears to have been edited or modified.');
-    }
-    if (redFlags?.includes('cropped') || redFlags?.includes('incomplete')) {
-      issues.push('Parts of the document appear to be cropped or missing.');
-    }
-    if (redFlags?.includes('low_quality')) {
-      issues.push('Image quality is low. Try scanning or photographing in better lighting.');
-    }
-    if (notes?.toLowerCase().includes('pii') || notes?.toLowerCase().includes('blurred')) {
-      issues.push('Personal information fields appear obscured or unreadable.');
-    }
-    
-    return issues.length > 0 ? issues : null;
-  };
-
-  // Render validation status using extracted component
-  const renderValidationStatus = () => (
-    <ValidationStatusDisplay
-      isValidating={isValidating}
-      validationResult={validationResult}
-      selectedFile={selectedFile}
-      selectedDocumentType={selectedDocumentType}
-      adminOverride={adminOverride}
-      onAdminOverride={() => setAdminOverride(true)}
-      getDetailedFeedback={getDetailedFeedback}
-    />
-  );
-
-  // Image preview modal - using Dialog for proper stacking context
-  const renderPreviewModal = () => {
-    if (!previewUrl) return null;
-    
-    return (
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden p-0">
-          <div className="p-4">
-            <DialogHeader className="pb-2">
-              <DialogTitle className="text-sm font-medium truncate pr-8">
-                {selectedFile?.name}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex items-center justify-center">
-              <img 
-                src={previewUrl} 
-                alt="Document preview" 
-                className="max-h-[70vh] max-w-full object-contain rounded"
-              />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
   return (
     <TooltipProvider>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -348,177 +209,28 @@ export function AdminDocumentUpload({
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Document Type Selection */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label>Select Document Type</Label>
-                {selectedDocTypeInfo && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-xs">{getHelpText(selectedDocTypeInfo.name)}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-              <ScrollArea className="h-[180px] rounded-md border p-3">
-                <div className="space-y-4">
-                  {Object.entries(groupedDocumentTypes).map(([category, types]) => (
-                    <div key={category}>
-                      <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
-                        {category}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {types.map((type) => (
-                          <Tooltip key={type.id}>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedDocumentType(type.id)}
-                                className={cn(
-                                  "flex items-center gap-2 rounded-md border p-2 text-left text-sm transition-colors hover:bg-muted",
-                                  selectedDocumentType === type.id
-                                    ? "border-primary bg-primary/10"
-                                    : "border-border"
-                                )}
-                              >
-                                {selectedDocumentType === type.id && (
-                                  <Check className="h-3 w-3 text-primary flex-shrink-0" />
-                                )}
-                                <span className={cn(
-                                  "truncate",
-                                  selectedDocumentType !== type.id && "ml-5"
-                                )}>
-                                  {type.name}
-                                  {type.required && (
-                                    <span className="text-destructive ml-1">*</span>
-                                  )}
-                                </span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs">
-                              <p className="text-xs">{getHelpText(type.name)}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              {selectedDocTypeInfo && (
-                <p className="text-xs text-muted-foreground">{getHelpText(selectedDocTypeInfo.name)}</p>
-              )}
-            </div>
+            <DocumentTypeSelector
+              documentTypes={documentTypes}
+              selectedDocumentType={selectedDocumentType}
+              onSelect={setSelectedDocumentType}
+            />
 
-            {/* File Upload Section */}
-            <div className="space-y-2">
-              <Label htmlFor="file-upload">Select File</Label>
-              
-              {/* File format and size info */}
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <FileText className="h-3 w-3" />
-                  Formats: {ACCEPTED_FORMATS.join(', ')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <FileImage className="h-3 w-3" />
-                  Max size: {MAX_FILE_SIZE_MB} MB
-                </span>
-              </div>
+            <FileDropZone
+              selectedFile={selectedFile}
+              previewUrl={previewUrl}
+              onFileSelect={processFile}
+              onFileRemove={handleFileRemove}
+              onPreviewClick={() => setShowPreview(true)}
+            />
 
-              {/* Drag and drop zone */}
-              <div 
-                className={cn(
-                  "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-                  isDragging ? "border-primary bg-primary/5" : "border-border",
-                  "hover:border-primary/50"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <input
-                  id="file-upload"
-                  type="file"
-                  onChange={handleFileSelect}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="hidden"
-                />
-                
-                {selectedFile ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2">
-                      {selectedFile.type.startsWith('image/') ? (
-                        <FileImage className="h-6 w-6 text-primary" />
-                      ) : (
-                        <FileText className="h-6 w-6 text-primary" />
-                      )}
-                      <div className="text-left">
-                        <p className="text-sm font-medium truncate max-w-[250px]">{selectedFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      {previewUrl && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowPreview(true)}
-                          className="text-xs"
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Preview
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                        className="text-xs"
-                      >
-                        Change File
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedFile(null);
-                          resetValidation();
-                        }}
-                        className="text-xs text-muted-foreground"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <Upload className={cn(
-                      "h-8 w-8 mx-auto mb-2",
-                      isDragging ? "text-primary" : "text-muted-foreground"
-                    )} />
-                    <p className="text-sm text-muted-foreground">
-                      {isDragging ? 'Drop your file here' : 'Drag & drop your file here, or'}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                      className="mt-2"
-                    >
-                      Browse Files
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {renderValidationStatus()}
-            </div>
+            <ValidationStatusDisplay
+              isValidating={isValidating}
+              validationResult={validationResult}
+              hasFile={!!selectedFile}
+              hasDocumentType={!!selectedDocumentType}
+              adminOverride={adminOverride}
+              onAdminOverride={() => setAdminOverride(true)}
+            />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
@@ -545,8 +257,13 @@ export function AdminDocumentUpload({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {renderPreviewModal()}
+
+      <DocumentPreviewModal
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        previewUrl={previewUrl}
+        fileName={selectedFile?.name}
+      />
     </TooltipProvider>
   );
 }

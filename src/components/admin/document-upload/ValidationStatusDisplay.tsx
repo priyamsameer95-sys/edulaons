@@ -5,23 +5,47 @@ import { ValidationResult } from '@/hooks/useDocumentValidation';
 interface ValidationStatusDisplayProps {
   isValidating: boolean;
   validationResult: ValidationResult | null;
-  selectedFile: File | null;
-  selectedDocumentType: string | null;
+  hasFile: boolean;
+  hasDocumentType: boolean;
   adminOverride: boolean;
   onAdminOverride: () => void;
-  getDetailedFeedback?: () => string[];
+}
+
+// Generate detailed feedback from validation result
+function getDetailedFeedback(validationResult: ValidationResult | null): string[] {
+  if (!validationResult) return [];
+  const { redFlags, qualityAssessment, notes } = validationResult;
+  
+  const issues: string[] = [];
+  
+  if (redFlags?.includes('blurry') || qualityAssessment === 'poor') {
+    issues.push('The document appears blurry. Please upload a clearer version.');
+  }
+  if (redFlags?.includes('edited')) {
+    issues.push('This document appears to have been edited or modified.');
+  }
+  if (redFlags?.includes('cropped') || redFlags?.includes('incomplete')) {
+    issues.push('Parts of the document appear to be cropped or missing.');
+  }
+  if (redFlags?.includes('low_quality')) {
+    issues.push('Image quality is low. Try scanning or photographing in better lighting.');
+  }
+  if (notes?.toLowerCase().includes('pii') || notes?.toLowerCase().includes('blurred')) {
+    issues.push('Personal information fields appear obscured or unreadable.');
+  }
+  
+  return issues;
 }
 
 export function ValidationStatusDisplay({
   isValidating,
   validationResult,
-  selectedFile,
-  selectedDocumentType,
+  hasFile,
+  hasDocumentType,
   adminOverride,
   onAdminOverride,
-  getDetailedFeedback
 }: ValidationStatusDisplayProps) {
-  if (!selectedFile || !selectedDocumentType) return null;
+  if (!hasFile || !hasDocumentType) return null;
 
   if (isValidating) {
     return (
@@ -35,7 +59,7 @@ export function ValidationStatusDisplay({
   if (!validationResult) return null;
 
   const { validationStatus, detectedType, expectedType, confidence, notes, redFlags } = validationResult;
-  const detailedIssues = getDetailedFeedback?.() || [];
+  const detailedIssues = getDetailedFeedback(validationResult);
 
   if (validationStatus === 'validated') {
     return (
