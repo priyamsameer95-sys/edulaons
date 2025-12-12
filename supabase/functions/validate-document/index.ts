@@ -60,36 +60,22 @@ serve(async (req) => {
       );
     }
 
-    // Build the vision prompt
-    const systemPrompt = `You are a document verification specialist for a loan application system. Analyze uploaded documents to verify they match the expected document type.
+    // Build the vision prompt - CONCISE output
+    const systemPrompt = `You are a document verification AI. Analyze if the uploaded image matches: ${expectedDocumentType}
 
-IMPORTANT RULES:
-1. Be strict about document type matching - a random selfie is NOT a passport photo
-2. Look for official document features: headers, stamps, official text, document numbers
-3. Assess image quality for readability
-4. Flag any suspicious elements
-
-Return ONLY a valid JSON object with these exact fields:
+Return ONLY valid JSON:
 {
-  "detected_type": "string - one of: passport, aadhaar, pan_card, voter_id, driving_license, bank_statement, salary_slip, offer_letter, property_deed, photo, mark_sheet, degree_certificate, admission_letter, visa, itr, unknown",
-  "confidence": number between 0-100,
-  "quality": "one of: good, acceptable, poor, unreadable",
-  "is_relevant": boolean - does this match the expected document type?,
-  "red_flags": ["array of any issues: edited, cropped, screenshot, watermarked, blurry, partial, wrong_document"],
-  "reasoning": "brief explanation of your assessment"
-}`;
+  "detected_type": "passport|aadhaar|pan_card|voter_id|driving_license|bank_statement|salary_slip|offer_letter|property_deed|photo|mark_sheet|degree_certificate|admission_letter|visa|itr|unknown",
+  "confidence": 0-100,
+  "quality": "good|acceptable|poor|unreadable",
+  "is_relevant": true/false,
+  "red_flags": ["edited","blurry","screenshot","partial","wrong_type"],
+  "reasoning": "MAX 12 WORDS. Format: STATUS | issue. Examples: 'OK | Clear PAN card' or 'EDITED | Fields blurred out' or 'WRONG | Selfie not passport'"
+}
 
-    const userPrompt = `Analyze this uploaded document image. 
-    
-Expected document type: ${expectedDocumentType}
+Be strict - random photos are NOT documents.`;
 
-Determine:
-1. What type of document is this actually?
-2. Does it match the expected type "${expectedDocumentType}"?
-3. Is the quality good enough to read and verify?
-4. Are there any red flags (editing, screenshots, watermarks, etc.)?
-
-Be STRICT - if someone uploads a random photo instead of an official document, reject it.`;
+    const userPrompt = `Expected: ${expectedDocumentType}. What is this document? Is it valid? Quality? Any issues?`;
 
     console.log(`Validating document. Expected type: ${expectedDocumentType}`);
 
@@ -214,7 +200,7 @@ Be STRICT - if someone uploads a random photo instead of an official document, r
     const quality = aiResult.quality || 'acceptable';
     const redFlags = aiResult.red_flags || [];
 
-    // Determine validation status
+    // Determine validation status - keep notes SHORT
     let validationStatus: 'validated' | 'rejected' | 'manual_review';
     let isValid = true;
     let notes = aiResult.reasoning || '';
@@ -222,18 +208,19 @@ Be STRICT - if someone uploads a random photo instead of an official document, r
     if (!typeMatches) {
       validationStatus = 'rejected';
       isValid = false;
-      notes = `Expected ${expectedDocumentType} but detected ${aiResult.detected_type}. ${notes}`;
+      notes = `WRONG TYPE | Expected ${expectedDocumentType}, got ${aiResult.detected_type}`;
     } else if (quality === 'unreadable' || quality === 'poor') {
       validationStatus = 'manual_review';
-      notes = `Document quality is ${quality}. ${notes}`;
+      notes = `POOR QUALITY | ${quality}`;
     } else if (redFlags.length > 0 && redFlags.some((f: string) => ['edited', 'screenshot', 'partial'].includes(f))) {
       validationStatus = 'manual_review';
-      notes = `Red flags detected: ${redFlags.join(', ')}. ${notes}`;
+      notes = `${redFlags.join(', ').toUpperCase()} | ${notes}`;
     } else if (confidence < 60) {
       validationStatus = 'manual_review';
-      notes = `Low confidence (${confidence}%). ${notes}`;
+      notes = `LOW CONFIDENCE | ${confidence}%`;
     } else {
       validationStatus = 'validated';
+      notes = notes || 'OK';
     }
 
     const result: ValidationResult = {
