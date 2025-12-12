@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, LayoutList, Building, Settings, RefreshCw, Users } from 'lucide-react';
+import { LogOut, LayoutList, Building, Settings, RefreshCw, Users, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRefactoredLeads } from '@/hooks/useRefactoredLeads';
 import { RefactoredLead } from '@/types/refactored-lead';
@@ -19,6 +19,7 @@ import { StatsSidebar } from '@/components/admin/dashboard/StatsSidebar';
 import { SettingsTab } from '@/components/admin/dashboard/SettingsTab';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab';
+import { AdminNewLeadModal } from '@/components/admin/AdminNewLeadModal';
 
 // Existing modals
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
@@ -49,6 +50,8 @@ const AdminDashboardV2 = () => {
   const [showDocVerificationModal, setShowDocVerificationModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [allPartners, setAllPartners] = useState<Array<{ id: string; name: string }>>([]);
   const [activeTab, setActiveTab] = useState('queue');
 
   // Extract unique partners from leads
@@ -97,6 +100,19 @@ const AdminDashboardV2 = () => {
       totalLoanAmount: allLeads.reduce((sum, l) => sum + l.loan_amount, 0),
     };
   }, [allLeads]);
+
+  // Fetch all partners for the Add Lead modal
+  useEffect(() => {
+    const fetchPartners = async () => {
+      const { data } = await supabase
+        .from('partners')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      if (data) setAllPartners(data);
+    };
+    fetchPartners();
+  }, []);
 
   // Handlers
   const handleViewLead = (lead: RefactoredLead) => {
@@ -229,15 +245,21 @@ const AdminDashboardV2 = () => {
               </div>
 
               <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
-                <SmartFilterBar
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  statusFilter={statusFilter}
-                  onStatusChange={setStatusFilter}
-                  partnerFilter={partnerFilter}
-                  onPartnerChange={setPartnerFilter}
-                  partners={partners}
-                />
+                <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+                  <SmartFilterBar
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    statusFilter={statusFilter}
+                    onStatusChange={setStatusFilter}
+                    partnerFilter={partnerFilter}
+                    onPartnerChange={setPartnerFilter}
+                    partners={partners}
+                  />
+                  <Button size="sm" onClick={() => setShowNewLeadModal(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Lead
+                  </Button>
+                </div>
                 
                 {/* Bulk Actions Bar */}
                 {selectedLeads.length > 0 && (
@@ -352,6 +374,16 @@ const AdminDashboardV2 = () => {
             }}
           />
         )}
+
+        {/* Admin New Lead Modal */}
+        <AdminNewLeadModal
+          open={showNewLeadModal}
+          onOpenChange={setShowNewLeadModal}
+          onSuccess={() => {
+            refetchLeads();
+          }}
+          partners={allPartners}
+        />
       </div>
     </AdminErrorBoundary>
   );
