@@ -43,7 +43,12 @@ export const TopNavigationBar = ({ sidebarCollapsed, onSearch }: TopNavigationBa
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      // Session may already be expired - that's fine, just redirect
+      console.log('Sign out completed (session may have been expired)');
+    }
     navigate('/login');
   };
 
