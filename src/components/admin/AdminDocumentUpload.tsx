@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -9,17 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Upload } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Upload, Check } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface AdminDocumentUploadProps {
   open: boolean;
@@ -39,6 +34,17 @@ export function AdminDocumentUpload({
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('');
   const { documentTypes } = useDocumentTypes();
   const { toast } = useToast();
+
+  // Group document types by category
+  const groupedDocumentTypes = useMemo(() => {
+    if (!documentTypes) return {};
+    return documentTypes.reduce((acc, type) => {
+      const category = type.category || 'Other';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(type);
+      return acc;
+    }, {} as Record<string, typeof documentTypes>);
+  }, [documentTypes]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -60,12 +66,10 @@ export function AdminDocumentUpload({
     try {
       setLoading(true);
 
-      // Generate unique filename
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `lead-documents/${leadId}/${fileName}`;
 
-      // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('lead-documents')
         .upload(filePath, selectedFile);
@@ -80,7 +84,6 @@ export function AdminDocumentUpload({
         return;
       }
 
-      // Save document record to database
       const { error: dbError } = await supabase
         .from('lead_documents')
         .insert({
@@ -92,17 +95,12 @@ export function AdminDocumentUpload({
           file_size: selectedFile.size,
           mime_type: selectedFile.type,
           uploaded_by: 'admin',
-          verification_status: 'uploaded' // Admin uploads still require review
+          verification_status: 'uploaded'
         });
 
       if (dbError) {
         console.error('Database insert error:', dbError);
-        
-        // Clean up uploaded file if database insert fails
-        await supabase.storage
-          .from('lead-documents')
-          .remove([filePath]);
-          
+        await supabase.storage.from('lead-documents').remove([filePath]);
         toast({
           title: 'Error',
           description: 'Failed to save document record',
@@ -134,7 +132,7 @@ export function AdminDocumentUpload({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Upload Document for Student</DialogTitle>
           <DialogDescription>
@@ -144,19 +142,46 @@ export function AdminDocumentUpload({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="document-type">Document Type</Label>
-            <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent className="bg-background border shadow-lg z-50">
-                {documentTypes?.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name} - {type.category}
-                  </SelectItem>
+            <Label>Select Document Type</Label>
+            <ScrollArea className="h-[200px] rounded-md border p-3">
+              <div className="space-y-4">
+                {Object.entries(groupedDocumentTypes).map(([category, types]) => (
+                  <div key={category}>
+                    <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                      {category}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {types.map((type) => (
+                        <button
+                          key={type.id}
+                          type="button"
+                          onClick={() => setSelectedDocumentType(type.id)}
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border p-2 text-left text-sm transition-colors hover:bg-muted",
+                            selectedDocumentType === type.id
+                              ? "border-primary bg-primary/10"
+                              : "border-border"
+                          )}
+                        >
+                          {selectedDocumentType === type.id && (
+                            <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                          )}
+                          <span className={cn(
+                            "truncate",
+                            selectedDocumentType !== type.id && "ml-5"
+                          )}>
+                            {type.name}
+                            {type.required && (
+                              <span className="text-destructive ml-1">*</span>
+                            )}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            </ScrollArea>
           </div>
 
           <div className="space-y-2">
