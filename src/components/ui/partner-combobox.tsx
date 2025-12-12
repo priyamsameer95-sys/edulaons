@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +31,28 @@ interface PartnerComboboxProps {
   className?: string;
 }
 
+// Helper to highlight search term in text
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  
+  return (
+    <>
+      {parts.map((part, i) => 
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 export function PartnerCombobox({
   partners,
   value,
@@ -41,6 +63,7 @@ export function PartnerCombobox({
 }: PartnerComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   // Get recent partners from localStorage
   const [recentPartnerIds, setRecentPartnerIds] = React.useState<string[]>(() => {
@@ -58,6 +81,7 @@ export function PartnerCombobox({
     const newValue = partnerId === value ? null : partnerId;
     onChange(newValue);
     setOpen(false);
+    setSearchQuery('');
 
     // Update recent partners
     if (newValue) {
@@ -65,6 +89,11 @@ export function PartnerCombobox({
       setRecentPartnerIds(updated);
       localStorage.setItem('recentPartners', JSON.stringify(updated));
     }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    inputRef.current?.focus();
   };
 
   // Filter partners based on search
@@ -92,6 +121,7 @@ export function PartnerCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-label="Select a partner"
           disabled={disabled}
           className={cn(
             'w-full justify-between font-normal',
@@ -101,7 +131,8 @@ export function PartnerCombobox({
         >
           {selectedPartner ? (
             <span className="truncate">
-              {selectedPartner.partner_code} - {selectedPartner.name}
+              {selectedPartner.name}
+              <span className="ml-2 text-xs text-muted-foreground">({selectedPartner.partner_code})</span>
             </span>
           ) : (
             placeholder
@@ -109,13 +140,27 @@ export function PartnerCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className="w-[350px] p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder="Search partners..." 
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
+          <div className="relative">
+            <CommandInput 
+              ref={inputRef}
+              placeholder="Search by name or code..." 
+              value={searchQuery}
+              onValueChange={setSearchQuery}
+              className="pr-8"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <CommandList>
             <CommandEmpty>No partner found.</CommandEmpty>
             
@@ -127,6 +172,7 @@ export function PartnerCombobox({
                     key={`recent-${partner.id}`}
                     value={partner.id}
                     onSelect={() => handleSelect(partner.id)}
+                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(
@@ -134,22 +180,23 @@ export function PartnerCombobox({
                         value === partner.id ? 'opacity-100' : 'opacity-0'
                       )}
                     />
-                    <span className="font-mono text-xs text-muted-foreground mr-2">
+                    <span className="truncate font-medium">{partner.name}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
                       {partner.partner_code}
                     </span>
-                    <span className="truncate">{partner.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
 
             {/* All partners section */}
-            <CommandGroup heading={searchQuery ? 'Results' : 'All Partners'}>
+            <CommandGroup heading={searchQuery ? `Results (${filteredPartners.length})` : 'All Partners'}>
               {filteredPartners.slice(0, 50).map((partner) => (
                 <CommandItem
                   key={partner.id}
                   value={partner.id}
                   onSelect={() => handleSelect(partner.id)}
+                  className="cursor-pointer"
                 >
                   <Check
                     className={cn(
@@ -157,15 +204,17 @@ export function PartnerCombobox({
                       value === partner.id ? 'opacity-100' : 'opacity-0'
                     )}
                   />
-                  <span className="font-mono text-xs text-muted-foreground mr-2">
-                    {partner.partner_code}
+                  <span className="truncate font-medium">
+                    <HighlightedText text={partner.name} query={searchQuery} />
                   </span>
-                  <span className="truncate">{partner.name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    <HighlightedText text={partner.partner_code} query={searchQuery} />
+                  </span>
                 </CommandItem>
               ))}
               {filteredPartners.length > 50 && (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
-                  +{filteredPartners.length - 50} more - type to filter
+                  +{filteredPartners.length - 50} more — type to filter
                 </div>
               )}
             </CommandGroup>
