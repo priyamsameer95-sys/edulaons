@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminDashboardV2 from "./pages/AdminDashboardV2";
 import StudentDashboard from "./pages/StudentDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -73,15 +72,8 @@ const App = () => (
             } 
           />
           
-          {/* Admin Dashboard V2 - New Design (Phase 1 Demo) */}
-          <Route 
-            path="/admin/v2" 
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboardV2 />
-              </ProtectedRoute>
-            } 
-          />
+          {/* Redirect old v2 route to main admin */}
+          <Route path="/admin/v2" element={<Navigate to="/admin" replace />} />
           
           {/* Student Dashboard */}
           <Route 
