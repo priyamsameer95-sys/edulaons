@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { User, GraduationCap, Users, ChevronDown, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { cn, convertNumberToWords } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { UniversitySelector } from '@/components/ui/university-selector';
 import { MonthYearPicker } from '@/components/ui/month-year-picker';
@@ -109,7 +109,6 @@ function FieldWrapper({
 export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: AdminNewLeadModalProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [amountInWords, setAmountInWords] = useState('');
   const [coApplicantOpen, setCoApplicantOpen] = useState(true);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({});
@@ -150,7 +149,6 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
       co_applicant_relationship: '',
       co_applicant_pin_code: '',
     });
-    setAmountInWords('');
     setErrors({});
     setTouched({});
   };
@@ -215,6 +213,20 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
     }
   };
 
+  // Format number with Indian comma separators (e.g., 25,00,000)
+  const formatIndianNumber = (num: string): string => {
+    const n = num.replace(/,/g, '');
+    if (!n || isNaN(Number(n))) return '';
+    const x = n.split('.');
+    let lastThree = x[0].slice(-3);
+    const otherNumbers = x[0].slice(0, -3);
+    if (otherNumbers !== '') {
+      lastThree = ',' + lastThree;
+    }
+    const formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+    return x.length > 1 ? formatted + '.' + x[1] : formatted;
+  };
+
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
@@ -222,13 +234,15 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
+  };
 
-    if (field === 'amount_requested') {
-      const num = parseFloat(value);
-      if (!isNaN(num) && num > 0) {
-        setAmountInWords(convertNumberToWords(num));
-      } else {
-        setAmountInWords('');
+  const handleAmountChange = (displayValue: string) => {
+    // Remove commas to get raw number
+    const rawValue = displayValue.replace(/,/g, '');
+    if (rawValue === '' || /^\d*$/.test(rawValue)) {
+      setFormData((prev) => ({ ...prev, amount_requested: rawValue }));
+      if (errors.amount_requested) {
+        setErrors((prev) => ({ ...prev, amount_requested: null }));
       }
     }
   };
@@ -633,18 +647,17 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
                 error={errors.amount_requested}
                 touched={touched.amount_requested}
                 isValid={!!formData.amount_requested && !validateField('amount_requested', formData.amount_requested)}
-                helperText={amountInWords || 'Min: ₹1 Lakh • Max: ₹1 Crore'}
+                helperText="Min: ₹1 Lakh • Max: ₹1 Crore"
                 id="amount_requested"
               >
                 <Input
                   id="amount_requested"
-                  type="number"
-                  value={formData.amount_requested}
-                  onChange={(e) => handleInputChange('amount_requested', e.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatIndianNumber(formData.amount_requested)}
+                  onChange={(e) => handleAmountChange(e.target.value)}
                   onBlur={() => handleBlur('amount_requested')}
-                  placeholder="2500000"
-                  min={100000}
-                  max={10000000}
+                  placeholder="25,00,000"
                   aria-required="true"
                   aria-invalid={!!errors.amount_requested}
                   aria-describedby={errors.amount_requested ? 'amount_requested-error' : undefined}
