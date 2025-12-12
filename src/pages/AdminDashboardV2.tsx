@@ -1,18 +1,17 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, LayoutList, Building, Settings, RefreshCw, Users, Plus } from 'lucide-react';
+import { LogOut, LayoutList, Building, Settings, RefreshCw, Users, Plus, Command } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useRefactoredLeads } from '@/hooks/useRefactoredLeads';
-import { RefactoredLead } from '@/types/refactored-lead';
+import { usePaginatedLeads, PaginatedLead } from '@/hooks/usePaginatedLeads';
 import { assertAdminRole } from '@/utils/roleCheck';
 import { AdminErrorBoundary } from '@/components/admin/AdminErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // New components
-import { PriorityActionBar } from '@/components/admin/dashboard/PriorityActionBar';
+import { ViewTabs, DEFAULT_VIEWS, ViewConfig } from '@/components/admin/dashboard/ViewTabs';
 import { SmartFilterBar } from '@/components/admin/dashboard/SmartFilterBar';
 import { LeadQueueTable } from '@/components/admin/dashboard/LeadQueueTable';
 import { StatsSidebar } from '@/components/admin/dashboard/StatsSidebar';
@@ -20,6 +19,8 @@ import { SettingsTab } from '@/components/admin/dashboard/SettingsTab';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab';
 import { AdminNewLeadModal } from '@/components/admin/AdminNewLeadModal';
+import { CommandPalette } from '@/components/admin/CommandPalette';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Existing modals
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
@@ -31,19 +32,30 @@ import { supabase } from '@/integrations/supabase/client';
 const AdminDashboardV2 = () => {
   const { signOut, appUser } = useAuth();
   const { toast } = useToast();
-  const { leads: allLeads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
+  
+  // Paginated leads hook - server-side pagination
+  const { 
+    leads, 
+    totalCount, 
+    page, 
+    pageSize, 
+    totalPages, 
+    isLoading, 
+    setPage, 
+    setPageSize, 
+    setFilters, 
+    filters, 
+    refetch 
+  } = usePaginatedLeads(50);
 
-  // Filter state
-  const [priorityFilter, setPriorityFilter] = useState<'all' | 'new' | 'docs' | 'follow-up'>('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [partnerFilter, setPartnerFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  // View state
+  const [activeView, setActiveView] = useState('all');
 
   // Selection state for bulk actions
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
 
   // Modal state
-  const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<PaginatedLead | null>(null);
   const [showLeadDetailSheet, setShowLeadDetailSheet] = useState(false);
   const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
   const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
@@ -51,62 +63,27 @@ const AdminDashboardV2 = () => {
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
-  const [allPartners, setAllPartners] = useState<Array<{ id: string; name: string }>>([]);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [allPartners, setAllPartners] = useState<Array<{ id: string; name: string; partner_code: string }>>([]);
   const [activeTab, setActiveTab] = useState('queue');
 
-  // Extract unique partners from leads
-  const partners = useMemo(() => {
-    const partnerMap = new Map<string, { id: string; name: string }>();
-    allLeads.forEach((lead) => {
-      if (lead.partner) {
-        partnerMap.set(lead.partner.id, { id: lead.partner.id, name: lead.partner.name });
-      }
-    });
-    return Array.from(partnerMap.values());
-  }, [allLeads]);
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onCommandK: () => setShowCommandPalette(true),
+    onCommandN: () => setShowNewLeadModal(true),
+    onEscape: () => {
+      setShowCommandPalette(false);
+      setShowNewLeadModal(false);
+    },
+    enabled: true,
+  });
 
-  // Filter leads based on all filters
-  const filteredLeads = useMemo(() => {
-    return allLeads.filter((lead) => {
-      // Priority filter
-      if (priorityFilter === 'new' && lead.status !== 'new') return false;
-      if (priorityFilter === 'docs' && lead.documents_status !== 'uploaded') return false;
-
-      // Status filter
-      if (statusFilter !== 'all' && lead.status !== statusFilter) return false;
-
-      // Partner filter
-      if (partnerFilter !== 'all' && lead.partner_id !== partnerFilter) return false;
-
-      // Search
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesStudent = lead.student?.name?.toLowerCase().includes(searchLower);
-        const matchesEmail = lead.student?.email?.toLowerCase().includes(searchLower);
-        const matchesCaseId = lead.case_id?.toLowerCase().includes(searchLower);
-        if (!matchesStudent && !matchesEmail && !matchesCaseId) return false;
-      }
-
-      return true;
-    });
-  }, [allLeads, priorityFilter, statusFilter, partnerFilter, searchTerm]);
-
-  // Stats for sidebar
-  const stats = useMemo(() => {
-    return {
-      totalLeads: allLeads.length,
-      newLeads: allLeads.filter((l) => l.status === 'new').length,
-      approvedLeads: allLeads.filter((l) => l.status === 'approved').length,
-      totalLoanAmount: allLeads.reduce((sum, l) => sum + l.loan_amount, 0),
-    };
-  }, [allLeads]);
-
-  // Fetch all partners for the Add Lead modal
+  // Fetch all partners for filters and Add Lead modal
   useEffect(() => {
     const fetchPartners = async () => {
       const { data } = await supabase
         .from('partners')
-        .select('id, name')
+        .select('id, name, partner_code')
         .eq('is_active', true)
         .order('name');
       if (data) setAllPartners(data);
@@ -114,18 +91,41 @@ const AdminDashboardV2 = () => {
     fetchPartners();
   }, []);
 
+  // Handle view change - apply filters from view config
+  const handleViewChange = useCallback((viewId: string) => {
+    setActiveView(viewId);
+    const view = DEFAULT_VIEWS.find(v => v.id === viewId);
+    if (view) {
+      setFilters({
+        status: view.filters.status || null,
+        partnerId: view.filters.partnerId || null,
+      });
+    }
+    setSelectedLeads([]);
+  }, [setFilters]);
+
+  // Stats for sidebar (using totalCount from server)
+  const stats = useMemo(() => {
+    return {
+      totalLeads: totalCount,
+      newLeads: 0, // Would need separate queries for accurate counts
+      approvedLeads: 0,
+      totalLoanAmount: leads.reduce((sum, l) => sum + l.loan_amount, 0),
+    };
+  }, [totalCount, leads]);
+
   // Handlers
-  const handleViewLead = (lead: RefactoredLead) => {
+  const handleViewLead = (lead: PaginatedLead) => {
     setSelectedLead(lead);
     setShowLeadDetailSheet(true);
   };
 
-  const handleUpdateStatus = (lead: RefactoredLead) => {
+  const handleUpdateStatus = (lead: PaginatedLead) => {
     setSelectedLead(lead);
     setShowStatusUpdateModal(true);
   };
 
-  const handleVerifyDocs = async (lead: RefactoredLead) => {
+  const handleVerifyDocs = async (lead: PaginatedLead) => {
     try {
       const { data: documents } = await supabase
         .from('lead_documents')
@@ -150,31 +150,16 @@ const AdminDashboardV2 = () => {
   };
 
   const handleStatusUpdated = () => {
-    refetchLeads();
+    refetch();
     setShowStatusUpdateModal(false);
     setSelectedLead(null);
     toast({ title: 'Status Updated', description: 'Lead status has been updated successfully' });
   };
 
   const handleRefresh = () => {
-    refetchLeads();
+    refetch();
     toast({ title: 'Refreshed', description: 'Data has been refreshed' });
   };
-
-  // Loading state
-  if (leadsLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-6 py-8">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-96 w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Access check
   if (!appUser || !assertAdminRole(appUser.role)) {
@@ -203,6 +188,18 @@ const AdminDashboardV2 = () => {
               <p className="text-sm text-muted-foreground">Manage leads and partners</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowCommandPalette(true)}
+                className="gap-1.5"
+              >
+                <Command className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Search</span>
+                <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs">
+                  ⌘K
+                </kbd>
+              </Button>
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
@@ -215,8 +212,12 @@ const AdminDashboardV2 = () => {
           </div>
         </header>
 
-        {/* Priority Action Bar */}
-        <PriorityActionBar activeFilter={priorityFilter} onFilterChange={setPriorityFilter} />
+        {/* View Tabs - replaces PriorityActionBar */}
+        <ViewTabs 
+          views={DEFAULT_VIEWS} 
+          activeView={activeView} 
+          onViewChange={handleViewChange}
+        />
 
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden">
@@ -247,13 +248,13 @@ const AdminDashboardV2 = () => {
               <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
                 <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
                   <SmartFilterBar
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    statusFilter={statusFilter}
-                    onStatusChange={setStatusFilter}
-                    partnerFilter={partnerFilter}
-                    onPartnerChange={setPartnerFilter}
-                    partners={partners}
+                    searchTerm={filters.search}
+                    onSearchChange={(value) => setFilters({ search: value })}
+                    statusFilter={filters.status || 'all'}
+                    onStatusChange={(value) => setFilters({ status: value === 'all' ? null : value })}
+                    partnerFilter={filters.partnerId || 'all'}
+                    onPartnerChange={(value) => setFilters({ partnerId: value === 'all' ? null : value })}
+                    partners={allPartners}
                   />
                   <Button size="sm" onClick={() => setShowNewLeadModal(true)}>
                     <Plus className="mr-2 h-4 w-4" />
@@ -286,13 +287,20 @@ const AdminDashboardV2 = () => {
                 
                 <div className="flex-1 overflow-auto">
                   <LeadQueueTable
-                    leads={filteredLeads}
-                    loading={leadsLoading}
+                    leads={leads}
+                    loading={isLoading}
                     onViewLead={handleViewLead}
                     onUpdateStatus={handleUpdateStatus}
                     onVerifyDocs={handleVerifyDocs}
                     selectedLeads={selectedLeads}
                     onSelectionChange={setSelectedLeads}
+                    // Pagination props
+                    page={page}
+                    pageSize={pageSize}
+                    totalCount={totalCount}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
                   />
                 </div>
               </TabsContent>
@@ -300,7 +308,7 @@ const AdminDashboardV2 = () => {
               <TabsContent value="partners" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
                 <AdminPartnersTab 
                   onViewLeads={(partnerId) => {
-                    setPartnerFilter(partnerId);
+                    setFilters({ partnerId });
                     setActiveTab('queue');
                   }}
                 />
@@ -324,21 +332,36 @@ const AdminDashboardV2 = () => {
           <StatsSidebar stats={stats} />
         </div>
 
+        {/* Command Palette */}
+        <CommandPalette
+          open={showCommandPalette}
+          onOpenChange={setShowCommandPalette}
+          onNewLead={() => setShowNewLeadModal(true)}
+          onSelectLead={(leadId) => {
+            const lead = leads.find(l => l.id === leadId);
+            if (lead) handleViewLead(lead);
+          }}
+          onSelectPartner={(partnerId) => {
+            setFilters({ partnerId });
+            setActiveTab('queue');
+          }}
+        />
+
         {/* Modals */}
         {selectedLead && (
           <>
             <LeadDetailSheet
               open={showLeadDetailSheet}
               onOpenChange={setShowLeadDetailSheet}
-              lead={selectedLead}
+              lead={selectedLead as any}
               onLeadUpdated={handleStatusUpdated}
             />
             <EnhancedStatusUpdateModal
               open={showStatusUpdateModal}
               onOpenChange={setShowStatusUpdateModal}
               leadId={selectedLead.id}
-              currentStatus={selectedLead.status}
-              currentDocumentsStatus={selectedLead.documents_status}
+              currentStatus={selectedLead.status as any}
+              currentDocumentsStatus={selectedLead.documents_status as any}
               onStatusUpdated={handleStatusUpdated}
             />
           </>
@@ -350,7 +373,7 @@ const AdminDashboardV2 = () => {
           onOpenChange={setShowBulkStatusModal}
           leadIds={selectedLeads}
           onStatusUpdated={() => {
-            refetchLeads();
+            refetch();
             setSelectedLeads([]);
             setShowBulkStatusModal(false);
             toast({ title: 'Bulk Update Complete', description: `Updated ${selectedLeads.length} leads` });
@@ -369,7 +392,7 @@ const AdminDashboardV2 = () => {
             }}
             document={selectedDocument}
             onVerificationComplete={() => {
-              refetchLeads();
+              refetch();
               setShowDocVerificationModal(false);
             }}
           />
@@ -380,7 +403,7 @@ const AdminDashboardV2 = () => {
           open={showNewLeadModal}
           onOpenChange={setShowNewLeadModal}
           onSuccess={() => {
-            refetchLeads();
+            refetch();
           }}
           partners={allPartners}
         />

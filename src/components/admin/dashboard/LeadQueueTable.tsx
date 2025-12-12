@@ -1,22 +1,29 @@
-import { useState } from 'react';
-import { RefactoredLead } from '@/types/refactored-lead';
+import { PaginatedLead } from '@/hooks/usePaginatedLeads';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, FileCheck, MoreHorizontal, CheckSquare } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, FileCheck, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface LeadQueueTableProps {
-  leads: RefactoredLead[];
+  leads: PaginatedLead[];
   loading: boolean;
-  onViewLead: (lead: RefactoredLead) => void;
-  onUpdateStatus: (lead: RefactoredLead) => void;
-  onVerifyDocs: (lead: RefactoredLead) => void;
+  onViewLead: (lead: PaginatedLead) => void;
+  onUpdateStatus: (lead: PaginatedLead) => void;
+  onVerifyDocs: (lead: PaginatedLead) => void;
   selectedLeads: string[];
   onSelectionChange: (selectedIds: string[]) => void;
+  // Pagination props
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -67,7 +74,13 @@ export function LeadQueueTable({
   onUpdateStatus, 
   onVerifyDocs,
   selectedLeads,
-  onSelectionChange 
+  onSelectionChange,
+  page,
+  pageSize,
+  totalCount,
+  totalPages,
+  onPageChange,
+  onPageSizeChange,
 }: LeadQueueTableProps) {
   
   const allSelected = leads.length > 0 && selectedLeads.length === leads.length;
@@ -89,6 +102,10 @@ export function LeadQueueTable({
     }
   };
 
+  // Calculate display range
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalCount);
+
   if (loading) {
     return (
       <div className="p-4 space-y-3">
@@ -109,114 +126,165 @@ export function LeadQueueTable({
   }
 
   return (
-    <div className="overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="w-[40px]">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={handleSelectAll}
-                aria-label="Select all"
-                className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
-              />
-            </TableHead>
-            <TableHead className="w-[200px]">Student</TableHead>
-            <TableHead className="w-[120px]">Partner</TableHead>
-            <TableHead className="w-[100px]">Amount</TableHead>
-            <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="w-[100px]">Docs</TableHead>
-            <TableHead className="w-[80px]">Age</TableHead>
-            <TableHead className="w-[100px] text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leads.map((lead) => {
-            const isSelected = selectedLeads.includes(lead.id);
-            return (
-              <TableRow 
-                key={lead.id} 
-                className={`cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
-                onClick={() => onViewLead(lead)}
-              >
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={(checked) => handleSelectLead(lead.id, !!checked)}
-                    aria-label={`Select ${lead.student?.name || 'lead'}`}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-0.5">
-                    <p className="font-medium text-sm truncate max-w-[180px]">
-                      {lead.student?.name || 'Unknown'}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                      {lead.student?.email || lead.case_id}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs font-normal">
-                    {lead.partner?.name || 'Direct'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-medium text-sm">
-                  {formatAmount(lead.loan_amount)}
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs ${STATUS_COLORS[lead.status] || ''}`}
-                  >
-                    {STATUS_LABELS[lead.status] || lead.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs ${DOC_STATUS_COLORS[lead.documents_status] || ''}`}
-                  >
-                    {lead.documents_status === 'resubmission_required' ? 'Resubmit' : lead.documents_status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <span className={`text-xs font-medium ${getAgeColor(lead.created_at)}`}>
-                    {formatDistanceToNow(new Date(lead.created_at), { addSuffix: false })}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2"
-                      onClick={() => onViewLead(lead)}
+    <div className="flex flex-col h-full">
+      <div className="overflow-auto flex-1">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[40px]">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all"
+                  className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
+                />
+              </TableHead>
+              <TableHead className="w-[200px]">Student</TableHead>
+              <TableHead className="w-[120px]">Partner</TableHead>
+              <TableHead className="w-[100px]">Amount</TableHead>
+              <TableHead className="w-[100px]">Status</TableHead>
+              <TableHead className="w-[100px]">Docs</TableHead>
+              <TableHead className="w-[80px]">Age</TableHead>
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {leads.map((lead) => {
+              const isSelected = selectedLeads.includes(lead.id);
+              return (
+                <TableRow 
+                  key={lead.id} 
+                  className={`cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
+                  onClick={() => onViewLead(lead)}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleSelectLead(lead.id, !!checked)}
+                      aria-label={`Select ${lead.student?.name || 'lead'}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-0.5">
+                      <p className="font-medium text-sm truncate max-w-[180px]">
+                        {lead.student?.name || 'Unknown'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {lead.student?.email || lead.case_id}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {lead.partner?.name || 'Direct'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {formatAmount(lead.loan_amount)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${STATUS_COLORS[lead.status] || ''}`}
                     >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-7 px-2">
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onUpdateStatus(lead)}>
-                          Update Status
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onVerifyDocs(lead)}>
-                          Verify Documents
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                      {STATUS_LABELS[lead.status] || lead.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${DOC_STATUS_COLORS[lead.documents_status] || ''}`}
+                    >
+                      {lead.documents_status === 'resubmission_required' ? 'Resubmit' : lead.documents_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`text-xs font-medium ${getAgeColor(lead.created_at)}`}>
+                      {formatDistanceToNow(new Date(lead.created_at), { addSuffix: false })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2"
+                        onClick={() => onViewLead(lead)}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 px-2">
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onUpdateStatus(lead)}>
+                            Update Status
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onVerifyDocs(lead)}>
+                            Verify Documents
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Showing {startItem}-{endItem} of {totalCount.toLocaleString()} leads</span>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {/* Page size selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Per page:</span>
+            <Select value={pageSize.toString()} onValueChange={(v) => onPageSizeChange(parseInt(v))}>
+              <SelectTrigger className="w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Page navigation */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              className="h-8 px-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-2 min-w-[80px] text-center">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+              className="h-8 px-2"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
