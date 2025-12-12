@@ -24,9 +24,25 @@ export interface DocumentActionItem {
   days_waiting: number;
 }
 
+export interface AIFlaggedDocument {
+  id: string;
+  lead_id: string;
+  case_id: string;
+  student_name: string;
+  document_type_name: string;
+  ai_detected_type: string | null;
+  ai_confidence_score: number | null;
+  ai_quality_assessment: string | null;
+  ai_validation_notes: string | null;
+  ai_validation_status: string;
+  uploaded_at: string;
+  days_waiting: number;
+}
+
 export interface AdminActionStats {
   newLeadsCount: number;
   documentsAwaitingCount: number;
+  aiFlaggedCount: number;
   totalPendingValue: number;
 }
 
@@ -34,9 +50,11 @@ export function useAdminActionItems() {
   const { user, appUser } = useAuth();
   const [newLeads, setNewLeads] = useState<NewLeadItem[]>([]);
   const [documentsAwaiting, setDocumentsAwaiting] = useState<DocumentActionItem[]>([]);
+  const [aiFlaggedDocuments, setAIFlaggedDocuments] = useState<AIFlaggedDocument[]>([]);
   const [stats, setStats] = useState<AdminActionStats>({
     newLeadsCount: 0,
     documentsAwaitingCount: 0,
+    aiFlaggedCount: 0,
     totalPendingValue: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -130,6 +148,60 @@ export function useAdminActionItems() {
     }
   };
 
+  const fetchAIFlaggedDocuments = async () => {
+    try {
+      const { data, error: docsError } = await supabase
+        .from('lead_documents')
+        .select(`
+          id,
+          lead_id,
+          uploaded_at,
+          ai_validation_status,
+          ai_detected_type,
+          ai_confidence_score,
+          ai_quality_assessment,
+          ai_validation_notes,
+          leads_new!fk_lead_documents_lead (
+            case_id,
+            students!leads_new_student_id_fkey (name)
+          ),
+          document_types (name)
+        `)
+        .in('ai_validation_status', ['manual_review', 'rejected'])
+        .not('verification_status', 'in', '("verified","rejected")')
+        .order('uploaded_at', { ascending: true });
+
+      if (docsError) throw docsError;
+
+      const documents: AIFlaggedDocument[] = (data || []).map(doc => {
+        const daysWaiting = Math.floor(
+          (Date.now() - new Date(doc.uploaded_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        return {
+          id: doc.id,
+          lead_id: doc.lead_id,
+          case_id: doc.leads_new?.case_id || 'N/A',
+          student_name: doc.leads_new?.students?.name || 'N/A',
+          document_type_name: doc.document_types?.name || 'Unknown Document',
+          ai_detected_type: doc.ai_detected_type,
+          ai_confidence_score: doc.ai_confidence_score,
+          ai_quality_assessment: doc.ai_quality_assessment,
+          ai_validation_notes: doc.ai_validation_notes,
+          ai_validation_status: doc.ai_validation_status || 'pending',
+          uploaded_at: doc.uploaded_at,
+          days_waiting: daysWaiting,
+        };
+      });
+
+      setAIFlaggedDocuments(documents);
+      return documents;
+    } catch (err) {
+      console.error('Error fetching AI flagged documents:', err);
+      throw err;
+    }
+  };
+
   const fetchData = async () => {
     // Check authentication first
     if (!user || !appUser) {
@@ -149,7 +221,7 @@ export function useAdminActionItems() {
     setError(null);
     
     try {
-      // Fetch leads and documents separately to avoid one failure breaking both
+      // Fetch leads, documents, and AI-flagged docs separately
       const leadsPromise = fetchNewLeads().catch((err): NewLeadItem[] => {
         console.error('Error fetching leads:', err);
         return [];
@@ -160,11 +232,17 @@ export function useAdminActionItems() {
         return [];
       });
 
-      const [leads, docs] = await Promise.all([leadsPromise, docsPromise]);
+      const aiFlaggedPromise = fetchAIFlaggedDocuments().catch((err): AIFlaggedDocument[] => {
+        console.error('Error fetching AI flagged documents:', err);
+        return [];
+      });
+
+      const [leads, docs, aiFlagged] = await Promise.all([leadsPromise, docsPromise, aiFlaggedPromise]);
 
       console.log('✅ [useAdminActionItems] Fetched data:', { 
         leadsCount: leads.length, 
-        docsCount: docs.length 
+        docsCount: docs.length,
+        aiFlaggedCount: aiFlagged.length 
       });
 
       const totalPendingValue = leads.reduce((sum, lead) => sum + lead.loan_amount, 0);
@@ -172,6 +250,7 @@ export function useAdminActionItems() {
       setStats({
         newLeadsCount: leads.length,
         documentsAwaitingCount: docs.length,
+        aiFlaggedCount: aiFlagged.length,
         totalPendingValue,
       });
     } catch (err) {
@@ -232,6 +311,7 @@ export function useAdminActionItems() {
   return {
     newLeads,
     documentsAwaiting,
+    aiFlaggedDocuments,
     stats,
     loading,
     error,

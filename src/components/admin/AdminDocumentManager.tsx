@@ -11,7 +11,9 @@ import {
   Clock,
   FileText,
   User,
-  Shield
+  Shield,
+  Bot,
+  AlertTriangle
 } from 'lucide-react';
 import { useLeadDocuments } from '@/hooks/useLeadDocuments';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
@@ -31,6 +33,11 @@ interface LeadDocument {
   verification_status?: string;
   admin_notes?: string;
   verified_by?: string;
+  ai_validation_status?: string;
+  ai_detected_type?: string;
+  ai_confidence_score?: number;
+  ai_quality_assessment?: string;
+  ai_validation_notes?: string;
   document_types?: {
     name: string;
     category: string;
@@ -88,6 +95,39 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
     return uploadedBy === 'admin' ? Shield : User;
   };
 
+  const getAIStatusBadge = (document: LeadDocument) => {
+    if (!document.ai_validation_status || document.ai_validation_status === 'pending') {
+      return null;
+    }
+    
+    if (document.ai_validation_status === 'validated') {
+      return (
+        <Badge className="bg-green-500/10 text-green-600 border-green-300 text-[10px] px-1.5 py-0 h-5">
+          <Bot className="h-3 w-3 mr-1" />
+          AI OK
+        </Badge>
+      );
+    }
+    
+    if (document.ai_validation_status === 'rejected') {
+      return (
+        <Badge className="bg-red-500/10 text-red-600 border-red-300 text-[10px] px-1.5 py-0 h-5">
+          <Bot className="h-3 w-3 mr-1" />
+          <XCircle className="h-3 w-3 mr-1" />
+          Rejected
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge className="bg-amber-500/10 text-amber-600 border-amber-300 text-[10px] px-1.5 py-0 h-5">
+        <Bot className="h-3 w-3 mr-1" />
+        <AlertTriangle className="h-3 w-3 mr-1" />
+        Review
+      </Badge>
+    );
+  };
+
   if (loading) {
     return <div className="text-center py-4">Loading documents...</div>;
   }
@@ -124,11 +164,14 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
           documents.map((document: LeadDocument, index: number) => {
             const VerificationIcon = getVerificationIcon(document.verification_status || 'pending');
             const UploadedByIcon = getUploadedByIcon(document.uploaded_by || 'student');
+            const isAIFlagged = document.ai_validation_status === 'manual_review' || document.ai_validation_status === 'rejected';
             
             return (
               <Card 
                 key={document.id} 
-                className={`hover-lift transition-all stagger-fade-${Math.min(index + 1, 4) as 1 | 2 | 3 | 4}`}
+                className={`hover-lift transition-all stagger-fade-${Math.min(index + 1, 4) as 1 | 2 | 3 | 4} ${
+                  isAIFlagged ? 'border-amber-300 dark:border-amber-700' : ''
+                }`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -136,27 +179,60 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                       <div className={`p-2 rounded-lg ${
                         document.verification_status === 'verified' ? 'bg-success/10' :
                         document.verification_status === 'rejected' ? 'bg-destructive/10' :
+                        isAIFlagged ? 'bg-amber-500/10' :
                         'bg-warning/10'
                       }`}>
-                        <VerificationIcon className={`h-5 w-5 ${
-                          document.verification_status === 'verified' ? 'text-success' :
-                          document.verification_status === 'rejected' ? 'text-destructive' :
-                          'text-warning'
-                        }`} />
+                        {isAIFlagged ? (
+                          <Bot className="h-5 w-5 text-amber-500" />
+                        ) : (
+                          <VerificationIcon className={`h-5 w-5 ${
+                            document.verification_status === 'verified' ? 'text-success' :
+                            document.verification_status === 'rejected' ? 'text-destructive' :
+                            'text-warning'
+                          }`} />
+                        )}
                       </div>
                       
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <span className="font-semibold text-base">{document.original_filename}</span>
                           <UploadedByIcon className="h-4 w-4 text-muted-foreground" />
                           {document.uploaded_by === 'admin' && (
                             <Badge variant="outline" className="text-xs">Admin Upload</Badge>
                           )}
+                          {getAIStatusBadge(document)}
                         </div>
                         
                         <div className="text-sm text-muted-foreground mb-1">
                           {document.document_types?.name} • {document.document_types?.category}
                         </div>
+
+                        {/* AI Details for flagged docs */}
+                        {isAIFlagged && (
+                          <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded text-xs space-y-1">
+                            {document.ai_detected_type && document.ai_detected_type !== document.document_types?.name && (
+                              <div className="flex gap-2">
+                                <span className="text-muted-foreground">AI detected:</span>
+                                <span className="font-medium text-amber-700 dark:text-amber-400">{document.ai_detected_type}</span>
+                              </div>
+                            )}
+                            {document.ai_confidence_score !== null && (
+                              <div className="flex gap-2">
+                                <span className="text-muted-foreground">Confidence:</span>
+                                <span className={`font-medium ${
+                                  (document.ai_confidence_score || 0) >= 75 ? 'text-green-600' :
+                                  (document.ai_confidence_score || 0) >= 50 ? 'text-amber-600' :
+                                  'text-red-600'
+                                }`}>{document.ai_confidence_score}%</span>
+                              </div>
+                            )}
+                            {document.ai_validation_notes && (
+                              <div className="text-amber-700 dark:text-amber-400 mt-1">
+                                {document.ai_validation_notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         
                         {document.admin_notes && (
                           <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/50 rounded italic">
@@ -180,11 +256,11 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                         </Button>
                         
                         <Button
-                          variant="outline"
+                          variant={isAIFlagged ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleVerificationAction(document)}
                           title="Update Status"
-                          className="hover-lift"
+                          className={isAIFlagged ? "bg-amber-500 hover:bg-amber-600" : "hover-lift"}
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
