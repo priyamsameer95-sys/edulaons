@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.cleanup-auth-users]
 verify_jwt = true
+
+[functions.validate-document]
+verify_jwt = false
