@@ -1803,6 +1803,33 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_leads: {
+        Args: {
+          page_num?: number
+          page_size?: number
+          partner_filter?: string
+          search_query?: string
+          status_filter?: string
+        }
+        Returns: {
+          case_id: string
+          co_applicant_id: string
+          created_at: string
+          documents_status: Database["public"]["Enums"]["document_status_enum"]
+          id: string
+          intake_month: number
+          intake_year: number
+          lender_id: string
+          loan_amount: number
+          loan_type: Database["public"]["Enums"]["loan_type_enum"]
+          partner_id: string
+          status: Database["public"]["Enums"]["lead_status_enum"]
+          student_id: string
+          study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          total_count: number
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       app_role: "partner" | "admin" | "super_admin" | "student" | "kam"

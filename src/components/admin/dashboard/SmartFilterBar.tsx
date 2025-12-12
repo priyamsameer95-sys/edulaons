@@ -1,6 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
 import { Search } from 'lucide-react';
 
 interface SmartFilterBarProps {
@@ -10,7 +10,7 @@ interface SmartFilterBarProps {
   onStatusChange: (value: string) => void;
   partnerFilter: string;
   onPartnerChange: (value: string) => void;
-  partners: { id: string; name: string }[];
+  partners: PartnerOption[];
 }
 
 const STATUS_OPTIONS = [
@@ -33,52 +33,42 @@ export function SmartFilterBar({
   partners,
 }: SmartFilterBarProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-muted/30 border-b border-border">
-      {/* Status chips */}
-      <div className="flex items-center gap-1.5">
-        {STATUS_OPTIONS.slice(0, 5).map((status) => (
-          <Badge
-            key={status.value}
-            variant="outline"
-            className={`cursor-pointer text-xs transition-colors ${
-              statusFilter === status.value
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'hover:bg-muted bg-background'
-            }`}
-            onClick={() => onStatusChange(status.value)}
-          >
-            {status.label}
-          </Badge>
-        ))}
-      </div>
-
-      <div className="h-4 w-px bg-border" />
-
-      {/* Partner dropdown */}
-      <Select value={partnerFilter} onValueChange={onPartnerChange}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
-          <SelectValue placeholder="All Partners" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Partners</SelectItem>
-          {partners.map((partner) => (
-            <SelectItem key={partner.id} value={partner.id}>
-              {partner.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
+    <div className="flex items-center gap-3 flex-1">
       {/* Search */}
-      <div className="relative flex-1 max-w-xs ml-auto">
+      <div className="relative flex-1 max-w-xs">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
-          placeholder="Search leads..."
+          placeholder="Search by name, email, case ID..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-8 h-8 text-sm"
         />
       </div>
+
+      <div className="h-4 w-px bg-border" />
+
+      {/* Status dropdown */}
+      <Select value={statusFilter} onValueChange={onStatusChange}>
+        <SelectTrigger className="w-[130px] h-8 text-xs">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          {STATUS_OPTIONS.map((status) => (
+            <SelectItem key={status.value} value={status.value}>
+              {status.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Partner combobox - searchable for 500+ partners */}
+      <PartnerCombobox
+        partners={partners}
+        value={partnerFilter === 'all' ? null : partnerFilter}
+        onChange={(value) => onPartnerChange(value || 'all')}
+        placeholder="All Partners"
+        className="w-[180px] h-8 text-xs"
+      />
     </div>
   );
 }

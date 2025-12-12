@@ -12,6 +12,7 @@ import { cn, convertNumberToWords } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { UniversitySelector } from '@/components/ui/university-selector';
 import { MonthYearPicker } from '@/components/ui/month-year-picker';
+import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingButton } from '@/components/ui/loading-button';
 
@@ -19,7 +20,7 @@ interface AdminNewLeadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  partners: Array<{ id: string; name: string }>;
+  partners: PartnerOption[];
 }
 
 interface FormData {
@@ -249,20 +250,17 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Partner Selection */}
+          {/* Partner Selection - Now with searchable combobox */}
           <Card className="border-primary/30 bg-primary/5">
             <CardContent className="pt-4">
               <Label className="text-sm font-medium">Select Partner *</Label>
-              <Select value={formData.partner_id} onValueChange={(v) => handleInputChange('partner_id', v)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Choose a partner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {partners.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PartnerCombobox
+                partners={partners}
+                value={formData.partner_id || null}
+                onChange={(value) => handleInputChange('partner_id', value || '')}
+                placeholder="Search and select a partner..."
+                className="mt-1"
+              />
               <p className="text-xs text-muted-foreground mt-1">This lead will be attributed to the selected partner</p>
             </CardContent>
           </Card>
