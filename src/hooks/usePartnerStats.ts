@@ -6,9 +6,14 @@ export interface PartnerStats {
   id: string;
   name: string;
   partner_code: string;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  is_active: boolean;
+  created_at: string;
   totalLeads: number;
   activeLenders: number;
-  recentActivity: string;
+  recentActivity: string | null;
 }
 
 export const usePartnerStats = () => {
@@ -20,15 +25,10 @@ export const usePartnerStats = () => {
     try {
       setLoading(true);
 
-      // Fetch partners with their lead counts
+      // Fetch partners with all details
       const { data: partners, error: partnersError } = await supabase
         .from('partners')
-        .select(`
-          id,
-          name,
-          partner_code,
-          updated_at
-        `);
+        .select('id, name, partner_code, email, phone, address, is_active, created_at, updated_at');
 
       if (partnersError) throw partnersError;
 
@@ -51,8 +51,13 @@ export const usePartnerStats = () => {
         id: partner.id,
         name: partner.name,
         partner_code: partner.partner_code,
+        email: partner.email,
+        phone: partner.phone,
+        address: partner.address,
+        is_active: partner.is_active,
+        created_at: partner.created_at,
         totalLeads: leadCountMap.get(partner.id) || 0,
-        activeLenders: 1, // Simplified for now
+        activeLenders: 1,
         recentActivity: partner.updated_at,
       })) || [];
 
