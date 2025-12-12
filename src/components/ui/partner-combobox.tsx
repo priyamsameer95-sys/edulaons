@@ -35,13 +35,13 @@ interface PartnerComboboxProps {
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
   
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  const parts = text.split(regex);
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
   
   return (
     <>
       {parts.map((part, i) => 
-        regex.test(part) ? (
+        part.toLowerCase() === query.toLowerCase() ? (
           <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">
             {part}
           </mark>
@@ -63,7 +63,6 @@ export function PartnerCombobox({
 }: PartnerComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const inputRef = React.useRef<HTMLInputElement>(null);
 
   // Get recent partners from localStorage
   const [recentPartnerIds, setRecentPartnerIds] = React.useState<string[]>(() => {
@@ -93,7 +92,6 @@ export function PartnerCombobox({
 
   const clearSearch = () => {
     setSearchQuery('');
-    inputRef.current?.focus();
   };
 
   // Filter partners based on search
@@ -140,11 +138,10 @@ export function PartnerCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[350px] p-0" align="start">
+      <PopoverContent className="w-[350px] p-0 bg-popover border shadow-md" align="start">
         <Command shouldFilter={false}>
-          <div className="relative">
+          <div className="relative flex items-center border-b">
             <CommandInput 
-              ref={inputRef}
               placeholder="Search by name or code..." 
               value={searchQuery}
               onValueChange={setSearchQuery}
@@ -154,7 +151,7 @@ export function PartnerCombobox({
               <button
                 type="button"
                 onClick={clearSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
+                className="absolute right-2 p-1 rounded-sm hover:bg-muted text-muted-foreground hover:text-foreground"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
