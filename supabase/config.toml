@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.validate-document]
 verify_jwt = false
+
+[functions.setup-admin-user]
+verify_jwt = false
