@@ -321,7 +321,7 @@ export function AdminDocumentUpload({
             <CheckCircle className="h-4 w-4 text-green-600" />
             <span className="text-sm font-medium text-green-700 dark:text-green-400">Document verified</span>
             <span className="text-xs text-green-600 dark:text-green-500 ml-auto">
-              {Math.round(confidence * 100)}% confidence
+              {Math.round(confidence)}% confidence
             </span>
           </div>
           <p className="text-xs text-green-600 dark:text-green-500 mt-1">
