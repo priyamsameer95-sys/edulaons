@@ -1,18 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, File, X, CheckCircle, AlertCircle, Image, HelpCircle } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertCircle, Shield, ShieldAlert, ShieldCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useDocumentValidation, ValidationResult } from '@/hooks/useDocumentValidation';
 import { 
   DOCUMENT_ERROR_MESSAGES, 
-  formatFileSize, 
-  getFileTypeDescription, 
-  getFileSizeGuidance,
   transformBackendError 
 } from '@/utils/errorMessages';
 
@@ -31,9 +27,10 @@ interface UploadedFile {
   id: string;
   file: File;
   progress: number;
-  status: 'uploading' | 'completed' | 'error';
+  status: 'validating' | 'uploading' | 'completed' | 'error' | 'rejected';
   error?: string;
   url?: string;
+  validationResult?: ValidationResult;
 }
 
 interface EnhancedDocumentUploadProps {
@@ -43,6 +40,7 @@ interface EnhancedDocumentUploadProps {
   onUploadError: (error: string) => void;
   className?: string;
   disabled?: boolean;
+  enableAIValidation?: boolean;
 }
 
 export function EnhancedDocumentUpload({ 
@@ -51,14 +49,15 @@ export function EnhancedDocumentUpload({
   onUploadSuccess, 
   onUploadError,
   className,
-  disabled = false
+  disabled = false,
+  enableAIValidation = true
 }: EnhancedDocumentUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const { validateDocument } = useDocumentValidation();
 
   const validateFile = useCallback((file: File) => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     
-    // Check for suspicious or potentially harmful file extensions
     const suspiciousExtensions = ['exe', 'bat', 'com', 'scr', 'vbs', 'js', 'jar'];
     if (suspiciousExtensions.includes(fileExtension || '')) {
       return 'This file type is not allowed for security reasons. Please upload PDF or image files only.';
@@ -81,8 +80,62 @@ export function EnhancedDocumentUpload({
     return null;
   }, [documentType]);
 
-  const uploadFile = useCallback(async (file: File, fileId: string) => {
+  const uploadFile = useCallback(async (file: File, fileId: string, skipValidation = false) => {
+    let currentValidationResult: ValidationResult | null = null;
+    
     try {
+      // Step 1: AI Validation (for images only, if enabled)
+      if (enableAIValidation && !skipValidation && file.type.startsWith('image/')) {
+        setUploadedFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'validating' as const, progress: 0 } : f
+        ));
+
+        const validationResult = await validateDocument(file, documentType.name);
+        currentValidationResult = validationResult;
+        
+        if (validationResult) {
+          setUploadedFiles(prev => prev.map(f => 
+            f.id === fileId ? { ...f, validationResult } : f
+          ));
+
+          // Handle rejected documents
+          if (validationResult.validationStatus === 'rejected') {
+            const errorMessage = `Wrong document type: Expected ${documentType.name} but detected ${validationResult.detectedType}. ${validationResult.notes}`;
+            
+            setUploadedFiles(prev => prev.map(f => 
+              f.id === fileId ? { 
+                ...f, 
+                status: 'rejected' as const,
+                error: errorMessage,
+                validationResult
+              } : f
+            ));
+
+            toast({
+              variant: 'destructive',
+              title: 'Document Rejected',
+              description: errorMessage
+            });
+
+            onUploadError(errorMessage);
+            return;
+          }
+
+          // Show warning for manual review items but continue upload
+          if (validationResult.validationStatus === 'manual_review') {
+            toast({
+              title: 'Document needs review',
+              description: `${validationResult.notes || 'This document will be manually verified by our team.'}`,
+            });
+          }
+        }
+      }
+
+      // Step 2: Proceed with upload
+      setUploadedFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, status: 'uploading' as const } : f
+      ));
+
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       const storedFilename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
       const filePath = leadId ? `${leadId}/${storedFilename}` : `temp/${storedFilename}`;
@@ -135,7 +188,13 @@ export function EnhancedDocumentUpload({
             file_path: filePath,
             file_size: file.size,
             mime_type: file.type,
-            upload_status: 'uploaded'
+            upload_status: 'uploaded',
+            ai_validation_status: currentValidationResult?.validationStatus || 'pending',
+            ai_detected_type: currentValidationResult?.detectedType || null,
+            ai_confidence_score: currentValidationResult?.confidence || null,
+            ai_quality_assessment: currentValidationResult?.qualityAssessment || null,
+            ai_validation_notes: currentValidationResult?.notes || null,
+            ai_validated_at: currentValidationResult ? new Date().toISOString() : null
           })
           .select()
           .single();
@@ -143,7 +202,6 @@ export function EnhancedDocumentUpload({
         if (dbError) {
           console.error('Database error:', dbError);
           
-          // Parse specific database errors
           let errorMessage = transformBackendError(dbError);
           
           if (dbError.code === '23503') {
@@ -169,21 +227,23 @@ export function EnhancedDocumentUpload({
 
       onUploadSuccess(documentRecord || { file, url: publicUrl, filePath });
       
+      const isValidated = currentValidationResult?.validationStatus === 'validated';
+      
       toast({
-        title: '✅ Upload successful!',
-        description: `${file.name} has been uploaded and is ready for review.`
+        title: isValidated ? '✅ Verified & Uploaded!' : '✅ Upload successful!',
+        description: isValidated 
+          ? `${file.name} has been verified as ${documentType.name} and uploaded.`
+          : `${file.name} has been uploaded and is ready for review.`
       });
 
     } catch (error) {
       console.error('Upload error:', error);
       
-      // Parse and display user-friendly error messages
       let friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.UPLOAD_FAILED;
       
       if (error instanceof Error) {
         friendlyErrorMessage = error.message;
         
-        // Add helpful context for common errors
         if (error.message.includes('network') || error.message.includes('fetch')) {
           friendlyErrorMessage = DOCUMENT_ERROR_MESSAGES.NETWORK_ERROR;
         } else if (error.message.includes('timeout')) {
@@ -212,7 +272,7 @@ export function EnhancedDocumentUpload({
         description: friendlyErrorMessage
       });
     }
-  }, [leadId, documentType, onUploadSuccess, onUploadError]);
+  }, [leadId, documentType, onUploadSuccess, onUploadError, enableAIValidation, validateDocument]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach(file => {
@@ -232,7 +292,7 @@ export function EnhancedDocumentUpload({
         id: fileId,
         file,
         progress: 0,
-        status: 'uploading'
+        status: 'validating'
       };
 
       setUploadedFiles(prev => [...prev, uploadedFile]);
@@ -244,13 +304,13 @@ export function EnhancedDocumentUpload({
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  const retryUpload = (fileId: string) => {
+  const retryUpload = (fileId: string, skipValidation = false) => {
     const file = uploadedFiles.find(f => f.id === fileId);
     if (file) {
       setUploadedFiles(prev => prev.map(f => 
-        f.id === fileId ? { ...f, status: 'uploading', progress: 0, error: undefined } : f
+        f.id === fileId ? { ...f, status: 'validating', progress: 0, error: undefined, validationResult: undefined } : f
       ));
-      uploadFile(file.file, fileId);
+      uploadFile(file.file, fileId, skipValidation);
     }
   };
 
@@ -263,6 +323,46 @@ export function EnhancedDocumentUpload({
     disabled,
     multiple: false
   });
+
+  const getStatusIcon = (file: UploadedFile) => {
+    switch (file.status) {
+      case 'validating':
+        return <Shield className="h-3 w-3 flex-shrink-0 animate-pulse" />;
+      case 'completed':
+        return file.validationResult?.validationStatus === 'validated' 
+          ? <ShieldCheck className="h-3 w-3 flex-shrink-0" />
+          : <CheckCircle className="h-3 w-3 flex-shrink-0" />;
+      case 'rejected':
+        return <ShieldAlert className="h-3 w-3 flex-shrink-0" />;
+      case 'error':
+        return <AlertCircle className="h-3 w-3 flex-shrink-0" />;
+      case 'uploading':
+        return <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusText = (file: UploadedFile) => {
+    switch (file.status) {
+      case 'validating':
+        return 'Verifying...';
+      case 'uploading':
+        return `Uploading (${file.progress}%)`;
+      case 'completed':
+        return file.validationResult?.validationStatus === 'validated' 
+          ? 'Verified' 
+          : file.validationResult?.validationStatus === 'manual_review'
+          ? 'Uploaded (pending review)'
+          : 'Uploaded';
+      case 'rejected':
+        return 'Rejected';
+      case 'error':
+        return 'Failed';
+      default:
+        return '';
+    }
+  };
 
   return (
     <div className={cn('w-full', className)}>
@@ -300,19 +400,39 @@ export function EnhancedDocumentUpload({
               className={cn(
                 "flex items-center justify-between gap-3 p-2 rounded text-xs",
                 file.status === 'completed' && "bg-success/10 text-success",
+                file.status === 'rejected' && "bg-destructive/10 text-destructive",
                 file.status === 'error' && "bg-destructive/10 text-destructive",
+                file.status === 'validating' && "bg-primary/10 text-primary",
                 file.status === 'uploading' && "bg-primary/10 text-primary"
               )}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                {file.status === 'completed' && <CheckCircle className="h-3 w-3 flex-shrink-0" />}
-                {file.status === 'error' && <AlertCircle className="h-3 w-3 flex-shrink-0" />}
-                {file.status === 'uploading' && (
-                  <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                )}
+                {getStatusIcon(file)}
                 <span className="truncate">{file.file.name}</span>
-                {file.status === 'uploading' && <span className="flex-shrink-0">({file.progress}%)</span>}
+                <span className="flex-shrink-0 text-muted-foreground">
+                  {getStatusText(file)}
+                </span>
               </div>
+              
+              {file.status === 'rejected' && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => retryUpload(file.id, true)}
+                        className="h-6 px-2 text-xs"
+                      >
+                        Upload Anyway
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Skip AI verification and upload for manual review</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               
               {file.status === 'error' && (
                 <Button
@@ -335,6 +455,16 @@ export function EnhancedDocumentUpload({
               </Button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Validation Error Details */}
+      {uploadedFiles.some(f => f.status === 'rejected' && f.error) && (
+        <div className="mt-2 p-2 bg-destructive/5 border border-destructive/20 rounded text-xs text-destructive">
+          <p className="font-medium">Why was this rejected?</p>
+          <p className="mt-1 text-muted-foreground">
+            {uploadedFiles.find(f => f.status === 'rejected')?.error}
+          </p>
         </div>
       )}
     </div>

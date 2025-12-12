@@ -663,6 +663,12 @@ export type Database = {
       lead_documents: {
         Row: {
           admin_notes: string | null
+          ai_confidence_score: number | null
+          ai_detected_type: string | null
+          ai_quality_assessment: string | null
+          ai_validated_at: string | null
+          ai_validation_notes: string | null
+          ai_validation_status: string | null
           created_at: string | null
           document_type_id: string
           file_path: string
@@ -684,6 +690,12 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          ai_confidence_score?: number | null
+          ai_detected_type?: string | null
+          ai_quality_assessment?: string | null
+          ai_validated_at?: string | null
+          ai_validation_notes?: string | null
+          ai_validation_status?: string | null
           created_at?: string | null
           document_type_id: string
           file_path: string
@@ -705,6 +717,12 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          ai_confidence_score?: number | null
+          ai_detected_type?: string | null
+          ai_quality_assessment?: string | null
+          ai_validated_at?: string | null
+          ai_validation_notes?: string | null
+          ai_validation_status?: string | null
           created_at?: string | null
           document_type_id?: string
           file_path?: string
