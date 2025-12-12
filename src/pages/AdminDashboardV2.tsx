@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { LogOut, LayoutList, Building, Settings, RefreshCw } from 'lucide-react';
+import { LogOut, LayoutList, Building, Settings, RefreshCw, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRefactoredLeads } from '@/hooks/useRefactoredLeads';
 import { RefactoredLead } from '@/types/refactored-lead';
@@ -18,6 +18,7 @@ import { LeadQueueTable } from '@/components/admin/dashboard/LeadQueueTable';
 import { StatsSidebar } from '@/components/admin/dashboard/StatsSidebar';
 import { SettingsTab } from '@/components/admin/dashboard/SettingsTab';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
+import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab';
 
 // Existing modals
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
@@ -48,6 +49,7 @@ const AdminDashboardV2 = () => {
   const [showDocVerificationModal, setShowDocVerificationModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('queue');
 
   // Extract unique partners from leads
   const partners = useMemo(() => {
@@ -204,12 +206,16 @@ const AdminDashboardV2 = () => {
         <div className="flex flex-1 overflow-hidden">
           {/* Left: Main content area */}
           <main className="flex-1 flex flex-col overflow-hidden">
-            <Tabs defaultValue="queue" className="flex-1 flex flex-col h-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
               <div className="border-b px-4 bg-card">
                 <TabsList className="h-10 bg-transparent">
                   <TabsTrigger value="queue" className="gap-1.5 data-[state=active]:bg-background">
                     <LayoutList className="h-4 w-4" />
                     Lead Queue
+                  </TabsTrigger>
+                  <TabsTrigger value="partners" className="gap-1.5 data-[state=active]:bg-background">
+                    <Users className="h-4 w-4" />
+                    Partners
                   </TabsTrigger>
                   <TabsTrigger value="lenders" className="gap-1.5 data-[state=active]:bg-background">
                     <Building className="h-4 w-4" />
@@ -267,6 +273,15 @@ const AdminDashboardV2 = () => {
                     onSelectionChange={setSelectedLeads}
                   />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="partners" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
+                <AdminPartnersTab 
+                  onViewLeads={(partnerId) => {
+                    setPartnerFilter(partnerId);
+                    setActiveTab('queue');
+                  }}
+                />
               </TabsContent>
 
               <TabsContent value="lenders" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">

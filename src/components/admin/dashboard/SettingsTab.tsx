@@ -1,9 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AdminPartnersTab } from './AdminPartnersTab';
 import UserManagementTab from '../UserManagementTab';
 import { UniversityCourseImporter } from '../UniversityCourseImporter';
 import { AuditLogViewer } from '../AuditLogViewer';
-import { Users, Building2, Upload, FileText } from 'lucide-react';
+import { Users, Upload, FileText } from 'lucide-react';
 
 interface SettingsTabProps {
   isSuperAdmin: boolean;
@@ -13,12 +12,8 @@ interface SettingsTabProps {
 
 export function SettingsTab({ isSuperAdmin, currentUserRole, currentUserId }: SettingsTabProps) {
   return (
-    <Tabs defaultValue="partners" className="w-full">
+    <Tabs defaultValue="users" className="w-full">
       <TabsList className="mb-4">
-        <TabsTrigger value="partners" className="gap-1.5">
-          <Building2 className="h-4 w-4" />
-          Partners
-        </TabsTrigger>
         <TabsTrigger value="users" className="gap-1.5">
           <Users className="h-4 w-4" />
           Users
@@ -36,10 +31,6 @@ export function SettingsTab({ isSuperAdmin, currentUserRole, currentUserId }: Se
           </>
         )}
       </TabsList>
-
-      <TabsContent value="partners">
-        <AdminPartnersTab />
-      </TabsContent>
 
       <TabsContent value="users">
         <UserManagementTab 
