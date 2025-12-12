@@ -113,11 +113,8 @@ function getAgeColor(createdAt: string): string {
 }
 
 function isUrgent(lead: PaginatedLead): boolean {
-  const days = getAgeDays(lead.created_at);
-  // Urgent if: in_progress for > 30 days, or docs pending for > 14 days, or rejected/resubmit
+  // Urgent only if documents are rejected or need resubmission
   return (
-    (lead.status === 'in_progress' && days > 30) ||
-    (lead.documents_status === 'pending' && days > 14) ||
     lead.documents_status === 'rejected' ||
     lead.documents_status === 'resubmission_required'
   );
