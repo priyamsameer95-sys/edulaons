@@ -22,6 +22,7 @@ import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 // Existing modals
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
 import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStatusUpdateModal';
+import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,10 +37,14 @@ const AdminDashboardV2 = () => {
   const [partnerFilter, setPartnerFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Selection state for bulk actions
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+
   // Modal state
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [showLeadDetailSheet, setShowLeadDetailSheet] = useState(false);
   const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
+  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
   const [showDocVerificationModal, setShowDocVerificationModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
@@ -227,6 +232,30 @@ const AdminDashboardV2 = () => {
                   onPartnerChange={setPartnerFilter}
                   partners={partners}
                 />
+                
+                {/* Bulk Actions Bar */}
+                {selectedLeads.length > 0 && (
+                  <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
+                    <span className="text-sm font-medium">
+                      {selectedLeads.length} lead{selectedLeads.length > 1 ? 's' : ''} selected
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowBulkStatusModal(true)}
+                    >
+                      Bulk Update Status
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedLeads([])}
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+                
                 <div className="flex-1 overflow-auto">
                   <LeadQueueTable
                     leads={filteredLeads}
@@ -234,6 +263,8 @@ const AdminDashboardV2 = () => {
                     onViewLead={handleViewLead}
                     onUpdateStatus={handleUpdateStatus}
                     onVerifyDocs={handleVerifyDocs}
+                    selectedLeads={selectedLeads}
+                    onSelectionChange={setSelectedLeads}
                   />
                 </div>
               </TabsContent>
@@ -275,6 +306,19 @@ const AdminDashboardV2 = () => {
             />
           </>
         )}
+
+        {/* Bulk Status Update Modal */}
+        <BulkStatusUpdate
+          open={showBulkStatusModal}
+          onOpenChange={setShowBulkStatusModal}
+          leadIds={selectedLeads}
+          onStatusUpdated={() => {
+            refetchLeads();
+            setSelectedLeads([]);
+            setShowBulkStatusModal(false);
+            toast({ title: 'Bulk Update Complete', description: `Updated ${selectedLeads.length} leads` });
+          }}
+        />
 
         {showDocVerificationModal && selectedDocument && (
           <DocumentVerificationModal
