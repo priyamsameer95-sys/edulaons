@@ -231,28 +231,6 @@ export function LeadQueueTable({
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-col h-full">
-        {/* Status Legend */}
-        <div className="px-4 py-2 border-b bg-muted/30 flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <HelpCircle className="h-3 w-3" />
-            Legend:
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(STATUS_LABELS).slice(0, 5).map(([key, label]) => (
-              <Tooltip key={key}>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className={`text-xs cursor-help ${STATUS_COLORS[key]}`}>
-                    {label}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[200px]">
-                  <p className="text-xs">{STATUS_DESCRIPTIONS[key]}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-        </div>
-
         <div className="overflow-auto flex-1">
           <Table>
             <TableHeader>
