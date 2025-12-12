@@ -204,25 +204,25 @@ const AdminDashboardV2 = () => {
         <div className="flex flex-1 overflow-hidden">
           {/* Left: Main content area */}
           <main className="flex-1 flex flex-col overflow-hidden">
-            <Tabs defaultValue="queue" className="flex-1 flex flex-col">
-              <div className="border-b px-4">
-                <TabsList className="h-10">
-                  <TabsTrigger value="queue" className="gap-1.5">
+            <Tabs defaultValue="queue" className="flex-1 flex flex-col h-full">
+              <div className="border-b px-4 bg-card">
+                <TabsList className="h-10 bg-transparent">
+                  <TabsTrigger value="queue" className="gap-1.5 data-[state=active]:bg-background">
                     <LayoutList className="h-4 w-4" />
                     Lead Queue
                   </TabsTrigger>
-                  <TabsTrigger value="lenders" className="gap-1.5">
+                  <TabsTrigger value="lenders" className="gap-1.5 data-[state=active]:bg-background">
                     <Building className="h-4 w-4" />
                     Lenders
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="gap-1.5">
+                  <TabsTrigger value="settings" className="gap-1.5 data-[state=active]:bg-background">
                     <Settings className="h-4 w-4" />
                     Settings
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden">
+              <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
                 <SmartFilterBar
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
@@ -269,11 +269,11 @@ const AdminDashboardV2 = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="lenders" className="flex-1 overflow-auto p-4">
+              <TabsContent value="lenders" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
                 <LenderManagementTab />
               </TabsContent>
 
-              <TabsContent value="settings" className="flex-1 overflow-auto p-4">
+              <TabsContent value="settings" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
                 <SettingsTab
                   isSuperAdmin={isSuperAdmin}
                   currentUserRole={appUser.role as 'admin' | 'super_admin'}
