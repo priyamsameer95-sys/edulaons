@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, FileCheck, MoreHorizontal } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Eye, FileCheck, MoreHorizontal, CheckSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -14,6 +15,8 @@ interface LeadQueueTableProps {
   onViewLead: (lead: RefactoredLead) => void;
   onUpdateStatus: (lead: RefactoredLead) => void;
   onVerifyDocs: (lead: RefactoredLead) => void;
+  selectedLeads: string[];
+  onSelectionChange: (selectedIds: string[]) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -57,7 +60,35 @@ function formatAmount(amount: number): string {
   return `₹${amount.toLocaleString('en-IN')}`;
 }
 
-export function LeadQueueTable({ leads, loading, onViewLead, onUpdateStatus, onVerifyDocs }: LeadQueueTableProps) {
+export function LeadQueueTable({ 
+  leads, 
+  loading, 
+  onViewLead, 
+  onUpdateStatus, 
+  onVerifyDocs,
+  selectedLeads,
+  onSelectionChange 
+}: LeadQueueTableProps) {
+  
+  const allSelected = leads.length > 0 && selectedLeads.length === leads.length;
+  const someSelected = selectedLeads.length > 0 && selectedLeads.length < leads.length;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      onSelectionChange(leads.map(l => l.id));
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const handleSelectLead = (leadId: string, checked: boolean) => {
+    if (checked) {
+      onSelectionChange([...selectedLeads, leadId]);
+    } else {
+      onSelectionChange(selectedLeads.filter(id => id !== leadId));
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 space-y-3">
@@ -82,90 +113,108 @@ export function LeadQueueTable({ leads, loading, onViewLead, onUpdateStatus, onV
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
+            <TableHead className="w-[40px]">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={handleSelectAll}
+                aria-label="Select all"
+                className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
+              />
+            </TableHead>
             <TableHead className="w-[200px]">Student</TableHead>
             <TableHead className="w-[120px]">Partner</TableHead>
             <TableHead className="w-[100px]">Amount</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
             <TableHead className="w-[100px]">Docs</TableHead>
             <TableHead className="w-[80px]">Age</TableHead>
-            <TableHead className="w-[120px] text-right">Actions</TableHead>
+            <TableHead className="w-[100px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leads.map((lead) => (
-            <TableRow 
-              key={lead.id} 
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() => onViewLead(lead)}
-            >
-              <TableCell>
-                <div className="space-y-0.5">
-                  <p className="font-medium text-sm truncate max-w-[180px]">
-                    {lead.student?.name || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                    {lead.student?.email || lead.case_id}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="text-xs font-normal">
-                  {lead.partner?.name || 'Direct'}
-                </Badge>
-              </TableCell>
-              <TableCell className="font-medium text-sm">
-                {formatAmount(lead.loan_amount)}
-              </TableCell>
-              <TableCell>
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs ${STATUS_COLORS[lead.status] || ''}`}
-                >
-                  {STATUS_LABELS[lead.status] || lead.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs ${DOC_STATUS_COLORS[lead.documents_status] || ''}`}
-                >
-                  {lead.documents_status === 'resubmission_required' ? 'Resubmit' : lead.documents_status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <span className={`text-xs font-medium ${getAgeColor(lead.created_at)}`}>
-                  {formatDistanceToNow(new Date(lead.created_at), { addSuffix: false })}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2"
-                    onClick={() => onViewLead(lead)}
+          {leads.map((lead) => {
+            const isSelected = selectedLeads.includes(lead.id);
+            return (
+              <TableRow 
+                key={lead.id} 
+                className={`cursor-pointer hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}
+                onClick={() => onViewLead(lead)}
+              >
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) => handleSelectLead(lead.id, !!checked)}
+                    aria-label={`Select ${lead.student?.name || 'lead'}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-sm truncate max-w-[180px]">
+                      {lead.student?.name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                      {lead.student?.email || lead.case_id}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {lead.partner?.name || 'Direct'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium text-sm">
+                  {formatAmount(lead.loan_amount)}
+                </TableCell>
+                <TableCell>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${STATUS_COLORS[lead.status] || ''}`}
                   >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-7 px-2">
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onUpdateStatus(lead)}>
-                        Update Status
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onVerifyDocs(lead)}>
-                        Verify Documents
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                    {STATUS_LABELS[lead.status] || lead.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${DOC_STATUS_COLORS[lead.documents_status] || ''}`}
+                  >
+                    {lead.documents_status === 'resubmission_required' ? 'Resubmit' : lead.documents_status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span className={`text-xs font-medium ${getAgeColor(lead.created_at)}`}>
+                    {formatDistanceToNow(new Date(lead.created_at), { addSuffix: false })}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() => onViewLead(lead)}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-7 px-2">
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onUpdateStatus(lead)}>
+                          Update Status
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onVerifyDocs(lead)}>
+                          Verify Documents
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
