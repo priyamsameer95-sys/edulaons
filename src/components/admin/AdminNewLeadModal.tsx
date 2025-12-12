@@ -343,7 +343,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
         amount_requested: formData.amount_requested,
         co_applicant_name: formData.co_applicant_name,
         co_applicant_phone: formData.co_applicant_phone,
-        co_applicant_salary: formData.co_applicant_salary,
+        co_applicant_monthly_salary: formData.co_applicant_salary,
         co_applicant_relationship: formData.co_applicant_relationship,
         co_applicant_pin_code: formData.co_applicant_pin_code,
       };
