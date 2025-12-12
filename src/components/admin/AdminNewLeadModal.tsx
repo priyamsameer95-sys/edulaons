@@ -330,6 +330,9 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
           })
       );
 
+      // Parse intake_month "YYYY-MM" into separate year and month integers
+      const [intakeYear, intakeMonth] = formData.intake_month.split('-').map(Number);
+
       const payload = {
         partner_id: formData.partner_id,
         student_name: formData.student_name,
@@ -338,7 +341,8 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
         student_pin_code: formData.student_pin_code,
         country: formData.country,
         universities: processedUniversities,
-        intake_month: formData.intake_month,
+        intake_month: intakeMonth,
+        intake_year: intakeYear,
         loan_type: formData.loan_type,
         amount_requested: formData.amount_requested,
         co_applicant_name: formData.co_applicant_name,
