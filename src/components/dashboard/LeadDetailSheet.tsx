@@ -26,7 +26,8 @@ import {
   Phone,
   Mail,
   Upload,
-  Eye
+  Eye,
+  Users
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -38,6 +39,7 @@ import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStat
 import { StatusHistory } from "@/components/lead-status/StatusHistory";
 import { StatusProgressIndicator } from "@/components/lead-status/StatusProgressIndicator";
 import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal";
+import { PartnerAssignmentModal } from "@/components/admin/PartnerAssignmentModal";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
@@ -51,6 +53,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const [lenderAssignmentModalOpen, setLenderAssignmentModalOpen] = useState(false);
+  const [partnerAssignmentModalOpen, setPartnerAssignmentModalOpen] = useState(false);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
   
@@ -215,6 +218,39 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                       <p className="text-sm text-muted-foreground">
                         {lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/year` : 'N/A'}
                       </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                      <Users className="h-4 w-4 mr-2" />
+                      Partner
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">{lead.partners?.name || lead.partner?.name || 'Direct'}</p>
+                          {(lead.partners?.partner_code || lead.partner?.partner_code) && (
+                            <p className="text-sm text-muted-foreground">
+                              {lead.partners?.partner_code || lead.partner?.partner_code}
+                            </p>
+                          )}
+                        </div>
+                        {isAdmin() && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPartnerAssignmentModalOpen(true)}
+                            className="h-7 text-xs"
+                          >
+                            Change
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -651,6 +687,19 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
           currentLenderId={lead.lender_id}
           studyDestination={lead.study_destination}
           loanAmount={lead.loan_amount}
+          onSuccess={() => {
+            onLeadUpdated?.();
+          }}
+        />
+      )}
+
+      {/* Partner Assignment Modal */}
+      {isAdmin() && (
+        <PartnerAssignmentModal
+          open={partnerAssignmentModalOpen}
+          onOpenChange={setPartnerAssignmentModalOpen}
+          leadId={lead.id}
+          currentPartnerId={lead.partner_id}
           onSuccess={() => {
             onLeadUpdated?.();
           }}
