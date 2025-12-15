@@ -240,7 +240,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       // Normalize email before sending
       const normalizedEmail = normalizeEmail(formData.email);
       
-      const { data, error } = await supabase.functions.invoke('create-partner-with-auth', {
+      const response = await supabase.functions.invoke('create-partner-with-auth', {
         body: {
           name: formData.name.trim(),
           email: normalizedEmail,
@@ -251,10 +251,22 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
         }
       });
 
+      const { data, error } = response;
+      
       // Handle function invocation errors
       if (error) {
-        console.error('[CreatePartner] Function error:', error);
-        const apiError = parseApiError(error.message);
+        console.error('[CreatePartner] Function error:', error, 'Data:', data);
+        
+        // The actual error message is often in the data object for non-2xx responses
+        let errorMessage = 'Something went wrong';
+        
+        if (data && typeof data === 'object' && 'error' in data) {
+          errorMessage = (data as { error: string }).error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        const apiError = parseApiError(errorMessage);
         setTopLevelError(apiError.message);
         
         // Set field-specific error if applicable

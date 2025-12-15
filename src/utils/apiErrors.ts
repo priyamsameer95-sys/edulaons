@@ -88,7 +88,9 @@ export function parseApiError(error: unknown): ApiError {
   
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>;
-    const message = (err.message || err.error || err.msg) as string;
+    
+    // Try to extract nested error message from various structures
+    const message = extractErrorMessage(err);
     if (message) {
       return mapErrorMessage(message);
     }
@@ -98,6 +100,39 @@ export function parseApiError(error: unknown): ApiError {
     type: 'unknown',
     message: ERROR_COPY.UNKNOWN_ERROR,
   };
+}
+
+/**
+ * Extract error message from various response structures
+ */
+function extractErrorMessage(obj: Record<string, unknown>): string | null {
+  // Direct properties
+  const directProps = ['message', 'error', 'msg', 'detail', 'details'];
+  for (const prop of directProps) {
+    if (typeof obj[prop] === 'string' && obj[prop]) {
+      return obj[prop] as string;
+    }
+  }
+  
+  // Nested error object
+  if (typeof obj.error === 'object' && obj.error !== null) {
+    const nestedError = obj.error as Record<string, unknown>;
+    for (const prop of directProps) {
+      if (typeof nestedError[prop] === 'string' && nestedError[prop]) {
+        return nestedError[prop] as string;
+      }
+    }
+  }
+  
+  // Context object (Supabase FunctionsHttpError structure)
+  if (typeof obj.context === 'object' && obj.context !== null) {
+    const context = obj.context as Record<string, unknown>;
+    if (typeof context.error === 'string') {
+      return context.error;
+    }
+  }
+  
+  return null;
 }
 
 /**
