@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { COACHING_MESSAGES, RELATIONSHIPS, VALIDATION_PATTERNS, EMPLOYMENT_TYPES
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { Info, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatIndianNumber, amountToWords, parseFormattedNumber } from '@/utils/currencyFormatter';
 
 interface CoApplicantDetailsStepProps {
   data: StudentApplicationData;
@@ -19,6 +20,23 @@ interface CoApplicantDetailsStepProps {
 
 const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [salaryDisplay, setSalaryDisplay] = useState<string>(
+    data.coApplicantMonthlySalary ? formatIndianNumber(data.coApplicantMonthlySalary) : ''
+  );
+
+  // Calculate salary in words
+  const salaryInWords = useMemo(() => {
+    if (!data.coApplicantMonthlySalary || data.coApplicantMonthlySalary <= 0) return '';
+    return amountToWords(data.coApplicantMonthlySalary);
+  }, [data.coApplicantMonthlySalary]);
+
+  // Handle salary input with comma formatting
+  const handleSalaryChange = useCallback((value: string) => {
+    const formatted = formatIndianNumber(value);
+    setSalaryDisplay(formatted);
+    const numValue = parseFormattedNumber(value);
+    onUpdate({ coApplicantMonthlySalary: numValue || undefined });
+  }, [onUpdate]);
 
   const validateField = (field: string, value: any): string | null => {
     switch (field) {
@@ -253,34 +271,31 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
             <CoachingTooltip content="Monthly take-home salary. Higher income significantly improves approval chances (worth up to 40 points)" />
           </div>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
               <Input
                 id="coApplicantMonthlySalary"
-                type="number"
-                min="0"
-                step="1000"
-                placeholder="50000"
-                className="pl-9"
-                value={data.coApplicantMonthlySalary || ''}
-                onChange={(e) => handleChange('coApplicantMonthlySalary', e.target.value ? parseFloat(e.target.value) : undefined)}
+                type="text"
+                inputMode="numeric"
+                placeholder="50,000"
+                className="pl-7"
+                value={salaryDisplay}
+                onChange={(e) => handleSalaryChange(e.target.value)}
               />
             </div>
+            {salaryInWords && !errors.coApplicantMonthlySalary && (
+              <p className="text-sm text-muted-foreground">{salaryInWords}</p>
+            )}
             {errors.coApplicantMonthlySalary && (
               <p className="text-sm text-destructive">{errors.coApplicantMonthlySalary}</p>
             )}
             {data.coApplicantMonthlySalary && data.coApplicantMonthlySalary > 0 && !errors.coApplicantMonthlySalary && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Annual: ₹{(data.coApplicantMonthlySalary * 12).toLocaleString('en-IN')}
-                </p>
-                <Alert className="mt-2">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className={getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).color}>
-                    <span className="font-medium">{getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).range}:</span>{' '}
-                    {getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).label}
-                  </AlertDescription>
-                </Alert>
-              </>
+              <Alert className="mt-2">
+                <Info className="h-4 w-4" />
+                <AlertDescription className={getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).color}>
+                  <span className="font-medium">{getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).range}:</span>{' '}
+                  {getMonthlyIncomeIndicator(data.coApplicantMonthlySalary).label}
+                </AlertDescription>
+              </Alert>
             )}
           </div>
 
