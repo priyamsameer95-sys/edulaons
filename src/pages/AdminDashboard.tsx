@@ -27,6 +27,7 @@ import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
 import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStatusUpdateModal';
 import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
+import { CompleteLeadModal } from '@/components/partner/CompleteLeadModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboardV2 = () => {
@@ -64,6 +65,7 @@ const AdminDashboardV2 = () => {
   const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showCompleteLeadModal, setShowCompleteLeadModal] = useState(false);
   const [allPartners, setAllPartners] = useState<Array<{ id: string; name: string; partner_code: string }>>([]);
   const [activeTab, setActiveTab] = useState('queue');
 
@@ -154,6 +156,11 @@ const AdminDashboardV2 = () => {
     setShowStatusUpdateModal(false);
     setSelectedLead(null);
     toast({ title: 'Status Updated', description: 'Lead status has been updated successfully' });
+  };
+
+  const handleCompleteLead = (lead: PaginatedLead) => {
+    setSelectedLead(lead);
+    setShowCompleteLeadModal(true);
   };
 
   const handleRefresh = () => {
@@ -291,6 +298,7 @@ const AdminDashboardV2 = () => {
                     loading={isLoading}
                     onViewLead={handleViewLead}
                     onUpdateStatus={handleUpdateStatus}
+                    onCompleteLead={handleCompleteLead}
                     selectedLeads={selectedLeads}
                     onSelectionChange={setSelectedLeads}
                     // Pagination props
@@ -406,6 +414,22 @@ const AdminDashboardV2 = () => {
           }}
           partners={allPartners}
           defaultPartnerId={filters.partnerId}
+        />
+
+        {/* Complete Lead Modal for Quick Leads */}
+        <CompleteLeadModal
+          open={showCompleteLeadModal}
+          onClose={() => {
+            setShowCompleteLeadModal(false);
+            setSelectedLead(null);
+          }}
+          lead={selectedLead as any}
+          onSuccess={() => {
+            refetch();
+            setShowCompleteLeadModal(false);
+            setSelectedLead(null);
+            toast({ title: 'Lead Completed', description: 'Quick lead has been completed successfully' });
+          }}
         />
       </div>
     </AdminErrorBoundary>

@@ -18,6 +18,8 @@ export interface PaginatedLead {
   documents_status: string;
   created_at: string;
   updated_at: string;
+  is_quick_lead: boolean | null;
+  quick_lead_completed_at: string | null;
   // Joined data
   student?: {
     id: string;
