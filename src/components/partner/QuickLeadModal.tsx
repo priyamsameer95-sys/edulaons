@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UniversityCombobox } from "@/components/ui/university-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -28,8 +29,11 @@ interface QuickLeadModalProps {
 interface FormData {
   student_name: string;
   student_phone: string;
+  student_email: string;
   student_pin_code: string;
   country: string;
+  university_id: string;
+  loan_amount: string;
   co_applicant_relationship: string;
   co_applicant_monthly_salary: string;
 }
@@ -37,8 +41,11 @@ interface FormData {
 interface FormErrors {
   student_name?: string;
   student_phone?: string;
+  student_email?: string;
   student_pin_code?: string;
   country?: string;
+  university_id?: string;
+  loan_amount?: string;
   co_applicant_relationship?: string;
   co_applicant_monthly_salary?: string;
 }
@@ -64,8 +71,11 @@ const RELATIONSHIPS = [
 const initialFormData: FormData = {
   student_name: "",
   student_phone: "",
+  student_email: "",
   student_pin_code: "",
   country: "",
+  university_id: "",
+  loan_amount: "",
   co_applicant_relationship: "",
   co_applicant_monthly_salary: "",
 };
@@ -80,10 +90,24 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
   const handleInputChange = useCallback((field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error on change
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  }, [errors]);
+    setErrors(prev => ({ ...prev, [field]: undefined }));
+  }, []);
+
+  // Format currency with commas
+  const formatCurrency = useCallback((value: string): string => {
+    const num = value.replace(/,/g, '').replace(/\D/g, '');
+    if (!num) return '';
+    return parseInt(num).toLocaleString('en-IN');
+  }, []);
+
+  // Convert loan amount to words
+  const loanAmountInWords = useMemo(() => {
+    const num = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
+    if (num === 0) return '';
+    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+    if (num >= 100000) return `₹${(num / 100000).toFixed(2)} Lakh`;
+    return `₹${num.toLocaleString('en-IN')}`;
+  }, [formData.loan_amount]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -105,6 +129,14 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
       newErrors.student_phone = "Invalid number";
     }
 
+    // Email (optional but must be valid if provided)
+    if (formData.student_email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.student_email.trim())) {
+        newErrors.student_email = "Invalid email";
+      }
+    }
+
     // PIN code
     if (!formData.student_pin_code.trim()) {
       newErrors.student_pin_code = "Required";
@@ -115,6 +147,16 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
     // Country
     if (!formData.country) {
       newErrors.country = "Required";
+    }
+
+    // Loan Amount (required)
+    const loanAmount = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
+    if (!formData.loan_amount) {
+      newErrors.loan_amount = "Required";
+    } else if (loanAmount < 100000) {
+      newErrors.loan_amount = "Min ₹1 Lakh";
+    } else if (loanAmount > 10000000) {
+      newErrors.loan_amount = "Max ₹1 Crore";
     }
 
     // Relationship
@@ -144,8 +186,11 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
         body: {
           student_name: formData.student_name.trim(),
           student_phone: formData.student_phone.replace(/\D/g, ''),
+          student_email: formData.student_email.trim() || undefined,
           student_pin_code: formData.student_pin_code.trim(),
           country: formData.country,
+          university_id: formData.university_id || undefined,
+          loan_amount: parseInt(formData.loan_amount.replace(/,/g, '')),
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')),
         }
@@ -188,13 +233,6 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
     }
   };
 
-  // Format salary with commas
-  const formatSalary = (value: string): string => {
-    const num = value.replace(/,/g, '').replace(/\D/g, '');
-    if (!num) return '';
-    return parseInt(num).toLocaleString('en-IN');
-  };
-
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
@@ -220,7 +258,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-primary">⚡</span>
@@ -263,6 +301,24 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
             )}
           </div>
 
+          {/* Email */}
+          <div className="space-y-1.5">
+            <Label htmlFor="student_email" className="text-xs">
+              Email
+            </Label>
+            <Input
+              id="student_email"
+              type="email"
+              value={formData.student_email}
+              onChange={(e) => handleInputChange('student_email', e.target.value)}
+              placeholder="student@email.com"
+              className={errors.student_email ? 'border-destructive' : ''}
+            />
+            {errors.student_email && (
+              <p className="text-xs text-destructive">{errors.student_email}</p>
+            )}
+          </div>
+
           {/* PIN Code */}
           <div className="space-y-1.5">
             <Label htmlFor="student_pin_code" className="text-xs">
@@ -287,7 +343,11 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
             </Label>
             <Select
               value={formData.country}
-              onValueChange={(value) => handleInputChange('country', value)}
+              onValueChange={(value) => {
+                handleInputChange('country', value);
+                // Reset university when country changes
+                handleInputChange('university_id', '');
+              }}
             >
               <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select country" />
@@ -302,6 +362,46 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
             </Select>
             {errors.country && (
               <p className="text-xs text-destructive">{errors.country}</p>
+            )}
+          </div>
+
+          {/* University */}
+          <div className="space-y-1.5">
+            <Label htmlFor="university" className="text-xs">
+              University
+            </Label>
+            <UniversityCombobox
+              country={formData.country}
+              value={formData.university_id}
+              onChange={(value) => handleInputChange('university_id', value)}
+              placeholder="Select university"
+              disabled={!formData.country}
+            />
+            {errors.university_id && (
+              <p className="text-xs text-destructive">{errors.university_id}</p>
+            )}
+          </div>
+
+          {/* Loan Amount */}
+          <div className="space-y-1.5">
+            <Label htmlFor="loan_amount" className="text-xs">
+              Loan Amount *
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+              <Input
+                id="loan_amount"
+                value={formData.loan_amount}
+                onChange={(e) => handleInputChange('loan_amount', formatCurrency(e.target.value))}
+                placeholder="30,00,000"
+                className={`pl-7 ${errors.loan_amount ? 'border-destructive' : ''}`}
+              />
+            </div>
+            {loanAmountInWords && !errors.loan_amount && (
+              <p className="text-xs text-muted-foreground">{loanAmountInWords}</p>
+            )}
+            {errors.loan_amount && (
+              <p className="text-xs text-destructive">{errors.loan_amount}</p>
             )}
           </div>
 
@@ -330,17 +430,17 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
             )}
           </div>
 
-          {/* Salary */}
-          <div className="space-y-1.5">
+          {/* Salary - full width */}
+          <div className="col-span-2 space-y-1.5">
             <Label htmlFor="salary" className="text-xs">
-              Monthly Salary *
+              Co-Applicant Monthly Salary *
             </Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
               <Input
                 id="salary"
                 value={formData.co_applicant_monthly_salary}
-                onChange={(e) => handleInputChange('co_applicant_monthly_salary', formatSalary(e.target.value))}
+                onChange={(e) => handleInputChange('co_applicant_monthly_salary', formatCurrency(e.target.value))}
                 placeholder="50,000"
                 className={`pl-7 ${errors.co_applicant_monthly_salary ? 'border-destructive' : ''}`}
               />

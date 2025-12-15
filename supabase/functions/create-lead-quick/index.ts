@@ -16,6 +16,7 @@ const QUICK_LEAD_REQUIRED = [
   'student_phone', 
   'student_pin_code',
   'country',
+  'loan_amount',
   'co_applicant_relationship',
   'co_applicant_monthly_salary'
 ];
@@ -139,9 +140,10 @@ serve(async (req) => {
     }
 
     // Create student with minimal info
+    const studentEmail = body.student_email?.trim() || `${cleanPhone}@quicklead.placeholder`;
     const studentData = {
       name: body.student_name.trim(),
-      email: `${cleanPhone}@quicklead.placeholder`,
+      email: studentEmail,
       phone: cleanPhone,
       postal_code: body.student_pin_code.trim(),
       country: 'India',
@@ -197,15 +199,16 @@ serve(async (req) => {
     // Calculate intake
     const intake = getNextIntake();
 
-    // Create lead with defaults
+    // Create lead with provided loan amount
     const caseId = `EDU-${Date.now()}`;
+    const loanAmount = body.loan_amount || 3000000; // Use provided or default ₹30 lakhs
     const leadData = {
       case_id: caseId,
       student_id: student.id,
       co_applicant_id: coApplicant.id,
       partner_id: appUser.partner_id,
       lender_id: lender.id,
-      loan_amount: 3000000, // Default ₹30 lakhs
+      loan_amount: loanAmount,
       loan_type: 'unsecured', // Most common
       study_destination: body.country,
       intake_month: intake.month,
