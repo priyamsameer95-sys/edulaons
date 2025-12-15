@@ -906,10 +906,12 @@ export type Database = {
           id: string
           intake_month: number | null
           intake_year: number | null
+          is_quick_lead: boolean | null
           lender_id: string
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id: string | null
+          quick_lead_completed_at: string | null
           status: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at: string | null
           student_id: string
@@ -925,10 +927,12 @@ export type Database = {
           id?: string
           intake_month?: number | null
           intake_year?: number | null
+          is_quick_lead?: boolean | null
           lender_id: string
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
+          quick_lead_completed_at?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at?: string | null
           student_id: string
@@ -944,10 +948,12 @@ export type Database = {
           id?: string
           intake_month?: number | null
           intake_year?: number | null
+          is_quick_lead?: boolean | null
           lender_id?: string
           loan_amount?: number
           loan_type?: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
+          quick_lead_completed_at?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at?: string | null
           student_id?: string
