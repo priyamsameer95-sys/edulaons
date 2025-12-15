@@ -1746,6 +1746,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_email_exists_system_wide: {
+        Args: { check_email: string }
+        Returns: {
+          entity_id: string
+          entity_role: string
+          exists_in: string
+        }[]
+      }
       get_partner_lead_stats: {
         Args: { _partner_id: string }
         Returns: {
