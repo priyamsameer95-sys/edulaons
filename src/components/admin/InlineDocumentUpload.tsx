@@ -1,15 +1,14 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Upload, Loader2, X, FileText, CheckCircle, AlertTriangle, Bot } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { Upload, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
-import { useLeadDocuments } from '@/hooks/useLeadDocuments';
+import { useLeadDocuments, LeadDocument } from '@/hooks/useLeadDocuments';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { validateFileSize, validateFileFormat } from './document-upload';
-import { Badge } from '@/components/ui/badge';
-import { DocumentTypeSelector } from './document-upload/DocumentTypeSelector';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DocumentChecklistRow } from './document-upload/DocumentChecklistRow';
+import { DocumentPreviewDialog } from './document-upload/DocumentPreviewDialog';
 
 interface InlineDocumentUploadProps {
   leadId: string;
@@ -17,32 +16,55 @@ interface InlineDocumentUploadProps {
 }
 
 export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumentUploadProps) {
-  const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('');
-  const [adminOverride, setAdminOverride] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingDocTypeId, setUploadingDocTypeId] = useState<string | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<LeadDocument | null>(null);
 
   const { documentTypes } = useDocumentTypes();
   const { documents: uploadedDocuments, refetch: refetchDocuments } = useLeadDocuments(leadId);
   const { toast } = useToast();
-  const { validateDocument, isValidating, validationResult, resetValidation } = useDocumentValidation();
+  const { validateDocument, validationResult, resetValidation } = useDocumentValidation();
 
-  // Get selected document type name
-  const selectedDocTypeName = useMemo(() => {
-    if (!documentTypes || !selectedDocumentType) return '';
-    return documentTypes.find(t => t.id === selectedDocumentType)?.name || '';
-  }, [documentTypes, selectedDocumentType]);
+  // Group document types by category
+  const groupedTypes = useMemo(() => {
+    if (!documentTypes) return {};
+    return documentTypes.reduce((acc, type) => {
+      const category = type.category || 'Other';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(type);
+      return acc;
+    }, {} as Record<string, typeof documentTypes>);
+  }, [documentTypes]);
 
-  // Trigger validation when file and document type are both selected
-  useEffect(() => {
-    if (selectedFile && selectedDocTypeName) {
-      setAdminOverride(false);
-      validateDocument(selectedFile, selectedDocTypeName);
-    }
-  }, [selectedFile, selectedDocTypeName, validateDocument]);
+  // Get uploaded document for a specific type
+  const getUploadedDocument = useCallback((documentTypeId: string) => {
+    return uploadedDocuments?.find(d => d.document_type_id === documentTypeId);
+  }, [uploadedDocuments]);
 
-  const processFile = useCallback((file: File) => {
+  // Calculate progress stats
+  const progressStats = useMemo(() => {
+    if (!documentTypes || !uploadedDocuments) return null;
+    
+    const requiredDocs = documentTypes.filter(d => d.required);
+    const uploadedCount = uploadedDocuments.length;
+    const verifiedCount = uploadedDocuments.filter(d => d.verification_status === 'verified').length;
+    const rejectedCount = uploadedDocuments.filter(
+      d => d.verification_status === 'rejected' || d.ai_validation_status === 'rejected'
+    ).length;
+    const requiredUploaded = requiredDocs.filter(
+      d => uploadedDocuments.some(ud => ud.document_type_id === d.id)
+    ).length;
+
+    return {
+      totalRequired: requiredDocs.length,
+      requiredUploaded,
+      uploadedCount,
+      verifiedCount,
+      rejectedCount,
+    };
+  }, [documentTypes, uploadedDocuments]);
+
+  const handleUpload = async (file: File, documentTypeId: string) => {
+    // Validate file
     const sizeError = validateFileSize(file);
     if (sizeError) {
       toast({ title: 'File too large', description: sizeError, variant: 'destructive' });
@@ -53,59 +75,22 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
       toast({ title: 'Invalid format', description: formatError, variant: 'destructive' });
       return;
     }
-    setSelectedFile(file);
-  }, [toast]);
 
-  const handleFileRemove = useCallback(() => {
-    setSelectedFile(null);
-    resetValidation();
-  }, [resetValidation]);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-    e.target.value = '';
-  };
-
-  // Determine if upload should be allowed
-  const canUpload = useMemo(() => {
-    if (!selectedFile || !selectedDocumentType) return false;
-    if (isValidating) return false;
-    if (!validationResult) return false;
-    if (validationResult.validationStatus === 'rejected' && !adminOverride) return false;
-    return true;
-  }, [selectedFile, selectedDocumentType, isValidating, validationResult, adminOverride]);
-
-  const handleUpload = async () => {
-    if (!selectedFile || !selectedDocumentType) return;
-
+    const docTypeName = documentTypes?.find(t => t.id === documentTypeId)?.name || '';
+    
     try {
-      setLoading(true);
+      setUploadingDocTypeId(documentTypeId);
+      
+      // Validate with AI
+      const validation = await validateDocument(file, docTypeName);
 
-      const fileExt = selectedFile.name.split('.').pop();
+      const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `lead-documents/${leadId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('lead-documents')
-        .upload(filePath, selectedFile);
+        .upload(filePath, file);
 
       if (uploadError) {
         toast({ title: 'Error', description: 'Failed to upload file', variant: 'destructive' });
@@ -116,22 +101,20 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
         .from('lead_documents')
         .insert({
           lead_id: leadId,
-          document_type_id: selectedDocumentType,
-          original_filename: selectedFile.name,
+          document_type_id: documentTypeId,
+          original_filename: file.name,
           stored_filename: fileName,
           file_path: filePath,
-          file_size: selectedFile.size,
-          mime_type: selectedFile.type,
+          file_size: file.size,
+          mime_type: file.type,
           uploaded_by: 'admin',
           verification_status: 'uploaded',
-          ai_validation_status: validationResult?.validationStatus || 'pending',
-          ai_detected_type: validationResult?.detectedType || null,
-          ai_confidence_score: validationResult?.confidence || null,
-          ai_quality_assessment: validationResult?.qualityAssessment || null,
-          ai_validation_notes: adminOverride 
-            ? `Admin override: ${validationResult?.notes}` 
-            : validationResult?.notes || null,
-          ai_validated_at: validationResult ? new Date().toISOString() : null,
+          ai_validation_status: validation?.validationStatus || 'pending',
+          ai_detected_type: validation?.detectedType || null,
+          ai_confidence_score: validation?.confidence || null,
+          ai_quality_assessment: validation?.qualityAssessment || null,
+          ai_validation_notes: validation?.notes || null,
+          ai_validated_at: validation ? new Date().toISOString() : null,
         });
 
       if (dbError) {
@@ -140,161 +123,89 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
         return;
       }
 
-      toast({ title: 'Document uploaded', description: 'Ready for processing.' });
-      
-      // Reset form
-      setSelectedFile(null);
-      setSelectedDocumentType('');
-      setAdminOverride(false);
+      toast({ title: 'Document uploaded', description: `${docTypeName} uploaded successfully.` });
       resetValidation();
-      
       refetchDocuments();
       onUploadComplete();
     } catch (err) {
       console.error('Upload error:', err);
       toast({ title: 'Error', description: 'Upload failed', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      setUploadingDocTypeId(null);
     }
   };
 
-  const getValidationBadge = () => {
-    if (!selectedFile || !selectedDocumentType) return null;
-    if (isValidating) return (
-      <Badge variant="outline" className="text-muted-foreground">
-        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-        Validating...
-      </Badge>
-    );
-    if (!validationResult) return null;
-    
-    if (validationResult.validationStatus === 'validated') {
-      return (
-        <Badge className="bg-green-500/10 text-green-600 border-green-300">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          AI Verified
-        </Badge>
-      );
-    }
-    if (validationResult.validationStatus === 'rejected') {
-      return (
-        <Badge className="bg-red-500/10 text-red-600 border-red-300">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          {validationResult.notes}
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-amber-500/10 text-amber-600 border-amber-300">
-        <Bot className="h-3 w-3 mr-1" />
-        Needs Review
-      </Badge>
-    );
+  const handlePreview = (document: LeadDocument) => {
+    setPreviewDocument(document);
   };
-
-  // Convert to format expected by DocumentTypeSelector
-  const docTypesForSelector = useMemo(() => {
-    if (!documentTypes) return [];
-    return documentTypes.map(dt => ({
-      id: dt.id,
-      name: dt.name,
-      category: dt.category,
-      required: dt.required ?? false,
-    }));
-  }, [documentTypes]);
 
   return (
-    <div className="border rounded-lg p-4 bg-card">
-      <div className="flex items-center gap-2 mb-3">
-        <Upload className="h-4 w-4 text-muted-foreground" />
-        <span className="font-medium text-sm">Upload Document</span>
+    <div className="border rounded-lg bg-card">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center gap-2">
+          <Upload className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Documents</span>
+        </div>
+        {progressStats && (
+          <div className="flex items-center gap-3 text-xs">
+            {progressStats.rejectedCount > 0 && (
+              <span className="flex items-center gap-1 text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {progressStats.rejectedCount} need re-upload
+              </span>
+            )}
+            <span className="text-muted-foreground">
+              {progressStats.requiredUploaded}/{progressStats.totalRequired} required
+            </span>
+            {progressStats.verifiedCount > 0 && (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <CheckCircle className="h-3.5 w-3.5" />
+                {progressStats.verifiedCount} verified
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Document Type Selector - Inline Categorized Grid */}
-      <ScrollArea className="h-[220px] mb-4 border rounded-md">
-        <DocumentTypeSelector
-          documentTypes={docTypesForSelector}
-          selectedDocumentType={selectedDocumentType}
-          onSelect={setSelectedDocumentType}
-          uploadedDocuments={uploadedDocuments}
-        />
+      {/* Document List */}
+      <ScrollArea className="h-[350px]">
+        <div className="p-3 space-y-4">
+          {Object.entries(groupedTypes).map(([category, types]) => (
+            <div key={category}>
+              <h4 className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground mb-2 px-1">
+                <FileText className="h-3.5 w-3.5" />
+                {category}
+              </h4>
+              <div className="space-y-1.5">
+                {types.map((docType) => (
+                  <DocumentChecklistRow
+                    key={docType.id}
+                    documentType={{
+                      id: docType.id,
+                      name: docType.name,
+                      category: docType.category,
+                      required: docType.required ?? false,
+                    }}
+                    uploadedDocument={getUploadedDocument(docType.id)}
+                    onUpload={handleUpload}
+                    onPreview={handlePreview}
+                    isUploading={!!uploadingDocTypeId}
+                    uploadingDocTypeId={uploadingDocTypeId || undefined}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </ScrollArea>
 
-      {/* Selected document type indicator */}
-      {selectedDocumentType && (
-        <div className="mb-3 flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Selected:</span>
-          <Badge variant="secondary">{selectedDocTypeName}</Badge>
-        </div>
-      )}
-
-      {/* File Drop Zone + Upload */}
-      <div className="flex gap-3">
-        <div
-          className={`flex-1 border-2 border-dashed rounded-lg transition-colors ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
-          } ${selectedFile ? 'bg-muted/30' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          {selectedFile ? (
-            <div className="flex items-center justify-between px-3 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm truncate">{selectedFile.name}</span>
-                {getValidationBadge()}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 shrink-0"
-                onClick={handleFileRemove}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <label className="flex items-center justify-center gap-2 px-3 py-2 cursor-pointer">
-              <span className="text-sm text-muted-foreground">Drop file or</span>
-              <span className="text-sm text-primary font-medium">browse</span>
-              <input
-                type="file"
-                className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFileInput}
-              />
-            </label>
-          )}
-        </div>
-
-        <Button
-          onClick={handleUpload}
-          disabled={loading || !canUpload}
-          className="shrink-0"
-        >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Upload className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-
-      {/* Admin Override for rejected documents */}
-      {validationResult?.validationStatus === 'rejected' && !adminOverride && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-destructive">{validationResult.notes}</span>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-6 text-xs"
-            onClick={() => setAdminOverride(true)}
-          >
-            Upload Anyway
-          </Button>
-        </div>
-      )}
+      {/* Preview Dialog */}
+      <DocumentPreviewDialog
+        document={previewDocument}
+        open={!!previewDocument}
+        onOpenChange={(open) => !open && setPreviewDocument(null)}
+      />
     </div>
   );
 }
