@@ -17,7 +17,9 @@ import {
   ArrowUp,
   ArrowDown,
   Edit,
-  Clock
+  Clock,
+  Zap,
+  ClipboardCheck
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -44,6 +46,7 @@ interface LeadQueueTableProps {
   loading: boolean;
   onViewLead: (lead: PaginatedLead) => void;
   onUpdateStatus: (lead: PaginatedLead) => void;
+  onCompleteLead?: (lead: PaginatedLead) => void;
   selectedLeads: string[];
   onSelectionChange: (selectedIds: string[]) => void;
   page: number;
@@ -62,6 +65,7 @@ export function LeadQueueTable({
   loading, 
   onViewLead, 
   onUpdateStatus,
+  onCompleteLead,
   selectedLeads,
   onSelectionChange,
   page,
@@ -290,16 +294,34 @@ export function LeadQueueTable({
                     </TableCell>
                     <TableCell>
                       <div className="space-y-0.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <p className="font-medium text-sm truncate max-w-[200px]">
-                              {lead.student?.name || 'Unknown'}
-                            </p>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">{lead.student?.name || 'Unknown'}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <div className="flex items-center gap-1.5">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="font-medium text-sm truncate max-w-[180px]">
+                                {lead.student?.name || 'Unknown'}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">{lead.student?.name || 'Unknown'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          {lead.is_quick_lead && !lead.quick_lead_completed_at && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 gap-0.5"
+                                >
+                                  <Zap className="h-2.5 w-2.5" />
+                                  Quick
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Incomplete quick lead - needs additional details</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">
@@ -328,19 +350,35 @@ export function LeadQueueTable({
                       {formatLoanAmount(lead.loan_amount)}
                     </TableCell>
                     <TableCell>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs cursor-help ${STATUS_COLORS[lead.status] || ''}`}
-                          >
-                            {STATUS_LABELS[lead.status] || lead.status}
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{STATUS_DESCRIPTIONS[lead.status]}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      {lead.is_quick_lead && !lead.quick_lead_completed_at ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs cursor-help bg-amber-50 text-amber-700 border-amber-200"
+                            >
+                              Incomplete
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Quick lead needs additional details to be completed</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs cursor-help ${STATUS_COLORS[lead.status] || ''}`}
+                            >
+                              {STATUS_LABELS[lead.status] || lead.status}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">{STATUS_DESCRIPTIONS[lead.status]}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Tooltip>
@@ -405,6 +443,12 @@ export function LeadQueueTable({
                               <Edit className="h-3.5 w-3.5 mr-2" />
                               Update Status
                             </DropdownMenuItem>
+                            {lead.is_quick_lead && !lead.quick_lead_completed_at && onCompleteLead && (
+                              <DropdownMenuItem onClick={() => onCompleteLead(lead)}>
+                                <ClipboardCheck className="h-3.5 w-3.5 mr-2" />
+                                Complete Lead
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
