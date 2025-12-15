@@ -8,6 +8,8 @@ import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { CompactStatsBar } from "@/components/partner/CompactStatsBar";
 import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
 import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
+import { NewLeadSelector } from "@/components/partner/NewLeadSelector";
+import { QuickLeadModal } from "@/components/partner/QuickLeadModal";
 import { Partner } from "@/types/partner";
 import { RefactoredLead } from "@/types/refactored-lead";
 
@@ -19,12 +21,16 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const navigate = useNavigate();
   const { partnerCode } = useParams();
   const { signOut, isAdmin } = useAuth();
-  const { kpis, loading: kpisLoading } = usePartnerKPIs(partner?.id, isAdmin());
-  const { leads, loading: leadsLoading } = useRefactoredLeads();
+  const { kpis, loading: kpisLoading, refetch: refetchKPIs } = usePartnerKPIs(partner?.id, isAdmin());
+  const { leads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Modal states
+  const [showLeadSelector, setShowLeadSelector] = useState(false);
+  const [showQuickLead, setShowQuickLead] = useState(false);
 
   // Calculate pending docs count
   const pendingDocsCount = useMemo(() => {
@@ -65,7 +71,20 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   }, [leads, statusFilter, searchQuery]);
 
   const handleNewLead = () => {
+    setShowLeadSelector(true);
+  };
+
+  const handleQuickLeadSelect = () => {
+    setShowQuickLead(true);
+  };
+
+  const handleFullLeadSelect = () => {
     navigate(`/partner/${partnerCode}/new-lead`);
+  };
+
+  const handleQuickLeadSuccess = () => {
+    refetchLeads();
+    refetchKPIs();
   };
 
   const handleUploadDocs = (lead?: RefactoredLead) => {
@@ -140,6 +159,21 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
           onNewLead={handleNewLead}
         />
       </main>
+
+      {/* Lead Type Selector Modal */}
+      <NewLeadSelector
+        open={showLeadSelector}
+        onClose={() => setShowLeadSelector(false)}
+        onSelectQuick={handleQuickLeadSelect}
+        onSelectFull={handleFullLeadSelect}
+      />
+
+      {/* Quick Lead Modal */}
+      <QuickLeadModal
+        open={showQuickLead}
+        onClose={() => setShowQuickLead(false)}
+        onSuccess={handleQuickLeadSuccess}
+      />
     </div>
   );
 };
