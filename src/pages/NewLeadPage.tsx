@@ -241,13 +241,14 @@ const NewLeadPage = () => {
           student_pin_code: formData.student_pin_code,
           country: formData.country,
           universities: processedUniversities,
-          intake_month: formData.intake_month,
+          intake_month: parseInt(formData.intake_month.split('-')[1]),
+          intake_year: parseInt(formData.intake_month.split('-')[0]),
           loan_type: formData.loan_type,
           amount_requested: formData.amount_requested,
           co_applicant_name: formData.co_applicant_name,
           co_applicant_email: formData.co_applicant_email,
           co_applicant_phone: formData.co_applicant_phone,
-          co_applicant_salary: formData.co_applicant_salary,
+          co_applicant_monthly_salary: formData.co_applicant_salary,
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_pin_code: formData.co_applicant_pin_code
         }
