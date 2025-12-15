@@ -18,13 +18,25 @@ function getDetailedFeedback(validationResult: ValidationResult | null): string[
   
   const issues: string[] = [];
   
+  // Non-document issues (highest priority)
+  if (redFlags?.includes('not_a_document') || redFlags?.includes('random_photo')) {
+    issues.push('This does not appear to be a document. Please upload the actual document.');
+  }
+  if (redFlags?.includes('selfie')) {
+    issues.push('This appears to be a selfie or personal photo, not a document.');
+  }
+  if (redFlags?.includes('screenshot')) {
+    issues.push('Screenshots are not accepted. Please upload the original document or a clear photo.');
+  }
+  
+  // Quality issues
   if (redFlags?.includes('blurry') || qualityAssessment === 'poor') {
     issues.push('The document appears blurry. Please upload a clearer version.');
   }
   if (redFlags?.includes('edited')) {
     issues.push('This document appears to have been edited or modified.');
   }
-  if (redFlags?.includes('cropped') || redFlags?.includes('incomplete')) {
+  if (redFlags?.includes('cropped') || redFlags?.includes('partial') || redFlags?.includes('incomplete')) {
     issues.push('Parts of the document appear to be cropped or missing.');
   }
   if (redFlags?.includes('low_quality')) {
@@ -111,15 +123,24 @@ export function ValidationStatusDisplay({
   }
 
   if (validationStatus === 'rejected') {
+    // Determine rejection reason for header
+    const isNotDocument = redFlags?.some(f => ['not_a_document', 'random_photo', 'selfie'].includes(f));
+    const isUnknown = detectedType === 'unknown';
+    const headerText = isNotDocument 
+      ? 'Not a valid document' 
+      : isUnknown 
+        ? 'Document not recognized' 
+        : 'Wrong document type';
+
     return (
       <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md mt-3">
         <div className="flex items-center gap-2">
           <XCircle className="h-4 w-4 text-red-600" />
-          <span className="text-sm font-medium text-red-700 dark:text-red-400">Wrong document type</span>
+          <span className="text-sm font-medium text-red-700 dark:text-red-400">{headerText}</span>
         </div>
         <div className="mt-2 text-xs text-red-600 dark:text-red-500 space-y-1">
           <p><strong>Expected:</strong> {expectedType}</p>
-          <p><strong>Detected:</strong> {detectedType || 'Unknown document'}</p>
+          {!isNotDocument && !isUnknown && <p><strong>Detected:</strong> {detectedType || 'Unknown'}</p>}
         </div>
         {detailedIssues.length > 0 && (
           <ul className="mt-2 space-y-1">

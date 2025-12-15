@@ -60,20 +60,27 @@ serve(async (req) => {
       );
     }
 
-    // Build the vision prompt - CONCISE output
-    const systemPrompt = `You are a document verification AI. Analyze if the uploaded image matches: ${expectedDocumentType}
+    // Build the vision prompt - STRICT validation
+    const systemPrompt = `You are a STRICT document verification AI. Analyze if the uploaded image matches: ${expectedDocumentType}
+
+CRITICAL RULES:
+1. Random photos (selfies, objects, landscapes, people, animals) are NOT documents - set is_document: false
+2. Screenshots of documents should be flagged
+3. If you cannot clearly identify a known document type, set detected_type: "unknown"
+4. Be STRICT - only approve clear, legitimate documents
 
 Return ONLY valid JSON:
 {
   "detected_type": "passport|aadhaar|pan_card|voter_id|driving_license|bank_statement|salary_slip|offer_letter|property_deed|photo|mark_sheet|degree_certificate|admission_letter|visa|itr|unknown",
+  "is_document": true/false,
   "confidence": 0-100,
   "quality": "good|acceptable|poor|unreadable",
   "is_relevant": true/false,
-  "red_flags": ["edited","blurry","screenshot","partial","wrong_type"],
-  "reasoning": "MAX 12 WORDS. Format: STATUS | issue. Examples: 'OK | Clear PAN card' or 'EDITED | Fields blurred out' or 'WRONG | Selfie not passport'"
+  "red_flags": ["not_a_document","random_photo","selfie","screenshot","edited","blurry","partial","wrong_type"],
+  "reasoning": "MAX 12 WORDS. Format: STATUS | issue. Examples: 'OK | Clear PAN card' or 'REJECTED | Selfie not a document' or 'WRONG TYPE | Aadhaar instead of PAN'"
 }
 
-Be strict - random photos are NOT documents.`;
+REJECT: selfies, random photos, non-document images, screenshots, heavily edited documents.`;
 
     const userPrompt = `Expected: ${expectedDocumentType}. What is this document? Is it valid? Quality? Any issues?`;
 
@@ -190,37 +197,61 @@ Be strict - random photos are NOT documents.`;
     const normalizedExpectedType = expectedDocumentType.toLowerCase().replace(/[^a-z]/g, '_');
     const normalizedDetectedType = (aiResult.detected_type || 'unknown').toLowerCase().replace(/[^a-z]/g, '_');
     
-    // Check if types match (with some flexibility)
-    const typeMatches = normalizedDetectedType === normalizedExpectedType || 
-      normalizedDetectedType.includes(normalizedExpectedType) ||
-      normalizedExpectedType.includes(normalizedDetectedType) ||
-      aiResult.is_relevant === true;
-
     const confidence = aiResult.confidence || 0;
     const quality = aiResult.quality || 'acceptable';
     const redFlags = aiResult.red_flags || [];
+    const isDocument = aiResult.is_document !== false; // Default true for backwards compatibility
 
-    // Determine validation status - keep notes SHORT
+    // STRICT validation logic
     let validationStatus: 'validated' | 'rejected' | 'manual_review';
     let isValid = true;
     let notes = aiResult.reasoning || '';
 
-    if (!typeMatches) {
+    // Priority 1: Reject non-documents (selfies, random photos, objects)
+    if (!isDocument || redFlags.some((f: string) => ['not_a_document', 'random_photo', 'selfie'].includes(f))) {
+      validationStatus = 'rejected';
+      isValid = false;
+      notes = `NOT A DOCUMENT | This image is not a valid ${expectedDocumentType}. Please upload the actual document.`;
+    }
+    // Priority 2: Reject unknown/unidentifiable documents
+    else if (normalizedDetectedType === 'unknown') {
+      validationStatus = 'rejected';
+      isValid = false;
+      notes = `UNRECOGNIZED | Could not identify this as a valid document. Please upload a clear ${expectedDocumentType}.`;
+    }
+    // Priority 3: Reject wrong document type (STRICT - no is_relevant bypass)
+    else if (normalizedDetectedType !== normalizedExpectedType && 
+             !normalizedDetectedType.includes(normalizedExpectedType) &&
+             !normalizedExpectedType.includes(normalizedDetectedType)) {
       validationStatus = 'rejected';
       isValid = false;
       notes = `WRONG TYPE | Expected ${expectedDocumentType}, got ${aiResult.detected_type}`;
-    } else if (quality === 'unreadable' || quality === 'poor') {
+    }
+    // Priority 4: Reject very low confidence
+    else if (confidence < 40) {
+      validationStatus = 'rejected';
+      isValid = false;
+      notes = `LOW CONFIDENCE | Could not verify this document (${confidence}% confidence). Please upload a clearer image.`;
+    }
+    // Priority 5: Manual review for quality issues
+    else if (quality === 'unreadable' || quality === 'poor') {
       validationStatus = 'manual_review';
-      notes = `POOR QUALITY | ${quality}`;
-    } else if (redFlags.length > 0 && redFlags.some((f: string) => ['edited', 'screenshot', 'partial'].includes(f))) {
+      notes = `POOR QUALITY | Document is ${quality}. Please upload a clearer version.`;
+    }
+    // Priority 6: Manual review for edits/screenshots/partial
+    else if (redFlags.some((f: string) => ['edited', 'screenshot', 'partial'].includes(f))) {
       validationStatus = 'manual_review';
-      notes = `${redFlags.join(', ').toUpperCase()} | ${notes}`;
-    } else if (confidence < 60) {
+      notes = `${redFlags.filter((f: string) => ['edited', 'screenshot', 'partial'].includes(f)).join(', ').toUpperCase()} | Needs verification`;
+    }
+    // Priority 7: Manual review for medium-low confidence
+    else if (confidence < 60) {
       validationStatus = 'manual_review';
-      notes = `LOW CONFIDENCE | ${confidence}%`;
-    } else {
+      notes = `NEEDS REVIEW | ${confidence}% confidence`;
+    }
+    // Pass: Valid document
+    else {
       validationStatus = 'validated';
-      notes = notes || 'OK';
+      notes = notes || `OK | Valid ${expectedDocumentType}`;
     }
 
     const result: ValidationResult = {
