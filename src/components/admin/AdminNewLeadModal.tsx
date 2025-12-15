@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { User, GraduationCap, Users, ChevronDown, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { User, GraduationCap, Users, ChevronDown, Building2, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { UniversitySelector } from '@/components/ui/university-selector';
@@ -16,7 +17,7 @@ import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { VALIDATION_RULES, ERROR_MESSAGES } from '@/constants/validationRules';
-
+import { parseApiError, normalizeEmail, SUCCESS_COPY, getToastVariant } from '@/utils/apiErrors';
 interface AdminNewLeadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -112,7 +113,10 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
   const [coApplicantOpen, setCoApplicantOpen] = useState(true);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({});
-
+  const [topLevelError, setTopLevelError] = useState<string | null>(null);
+  
+  // Prevent double-submit
+  const submitRef = useRef(false);
   const [formData, setFormData] = useState<FormData>({
     partner_id: '',
     student_name: '',
@@ -151,6 +155,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
     });
     setErrors({});
     setTouched({});
+    setTopLevelError(null);
   };
 
   // Validate a single field
@@ -228,11 +233,23 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Normalize email
+    if (field === 'student_email') {
+      processedValue = value.toLowerCase().trim();
+    }
+    
+    setFormData((prev) => ({ ...prev, [field]: processedValue }));
     
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+    
+    // Clear top-level error when user makes changes
+    if (topLevelError) {
+      setTopLevelError(null);
     }
   };
 
@@ -307,9 +324,18 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double-submit
+    if (submitRef.current || loading) return;
+    
+    // Clear previous top-level error
+    setTopLevelError(null);
+    
     if (!validateAllFields()) return;
 
+    submitRef.current = true;
     setLoading(true);
+    
     try {
       // Process universities
       const processedUniversities = await Promise.all(
@@ -333,11 +359,14 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
       // Parse intake_month "YYYY-MM" into separate year and month integers
       const [intakeYear, intakeMonth] = formData.intake_month.split('-').map(Number);
 
+      // Normalize email before sending
+      const normalizedEmail = formData.student_email ? normalizeEmail(formData.student_email) : undefined;
+
       const payload = {
         partner_id: formData.partner_id,
-        student_name: formData.student_name,
+        student_name: formData.student_name.trim(),
         student_phone: formData.student_phone,
-        student_email: formData.student_email || undefined,
+        student_email: normalizedEmail,
         student_pin_code: formData.student_pin_code,
         country: formData.country,
         universities: processedUniversities,
@@ -345,7 +374,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
         intake_year: intakeYear,
         loan_type: formData.loan_type,
         amount_requested: formData.amount_requested,
-        co_applicant_name: formData.co_applicant_name,
+        co_applicant_name: formData.co_applicant_name.trim(),
         co_applicant_phone: formData.co_applicant_phone,
         co_applicant_monthly_salary: formData.co_applicant_salary,
         co_applicant_relationship: formData.co_applicant_relationship,
@@ -354,26 +383,65 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
 
       const { data, error } = await supabase.functions.invoke('create-lead', { body: payload });
 
-      if (error) throw new Error(error.message);
-      if (!data.success) throw new Error(data.error || 'Failed to create lead');
+      // Handle function invocation errors
+      if (error) {
+        console.error('[CreateLead] Function error:', error);
+        const apiError = parseApiError(error.message);
+        setTopLevelError(apiError.message);
+        
+        if (apiError.field) {
+          setErrors(prev => ({ ...prev, [apiError.field!]: apiError.message }));
+        }
+        
+        toast({
+          title: 'Failed to Create Lead',
+          description: apiError.message,
+          variant: getToastVariant(apiError.type),
+        });
+        return;
+      }
+      
+      // Handle errors in response data
+      if (!data.success) {
+        const errorMessage = data.error || 'Failed to create lead';
+        console.error('[CreateLead] API error:', errorMessage);
+        const apiError = parseApiError(errorMessage);
+        setTopLevelError(apiError.message);
+        
+        if (apiError.field) {
+          setErrors(prev => ({ ...prev, [apiError.field!]: apiError.message }));
+        }
+        
+        toast({
+          title: 'Failed to Create Lead',
+          description: apiError.message,
+          variant: getToastVariant(apiError.type),
+        });
+        return;
+      }
 
+      // SUCCESS - Only show green success after backend confirms
       toast({
-        title: 'Lead Created',
-        description: `Case ${data.lead.case_id} created for partner`,
+        title: 'Success',
+        description: SUCCESS_COPY.LEAD_CREATED,
       });
 
       resetForm();
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
-      console.error('Error creating lead:', error);
+    } catch (error: unknown) {
+      console.error('[CreateLead] Exception:', error);
+      const apiError = parseApiError(error);
+      setTopLevelError(apiError.message);
+      
       toast({
         title: 'Failed to Create Lead',
-        description: error.message,
+        description: apiError.message,
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
+      submitRef.current = false;
     }
   };
 
@@ -395,6 +463,16 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Top-level error banner (Red) */}
+          {topLevelError && (
+            <Alert variant="destructive" className="border-destructive bg-destructive-light">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription className="font-medium">
+                {topLevelError}
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {/* Partner Selection */}
           <Card className="border-primary/30 bg-primary/5">
             <CardContent className="pt-4">
