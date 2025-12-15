@@ -119,11 +119,10 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
 
         <div className="py-4 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="status">Status</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -616,88 +615,8 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
               </Card>
             </TabsContent>
 
-            <TabsContent value="status" className="space-y-4">
-              <StatusHistory leadId={lead.id} />
-            </TabsContent>
-
-            <TabsContent value="timeline" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    Activity Timeline
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Lead creation event */}
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                        <div className="w-px h-12 bg-border ml-0.5 mt-1"></div>
-                      </div>
-                      <div className="flex-1 pb-4">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">Lead created</p>
-                          <span className="text-sm text-muted-foreground">
-                            {format(new Date(lead.created_at), 'MMM dd, HH:mm')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">partner</Badge>
-                          <span className="text-xs text-muted-foreground">case created</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Document upload events */}
-                    {documents.map((doc, index) => {
-                      const docType = documentTypes.find(type => type.id === doc.document_type_id);
-                      return (
-                        <div key={doc.id} className="flex items-start space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-2 h-2 bg-success rounded-full mt-2"></div>
-                            {index < documents.length - 1 && (
-                              <div className="w-px h-12 bg-border ml-0.5 mt-1"></div>
-                            )}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium">{docType?.name || 'Document'} uploaded</p>
-                            <span className="text-sm text-muted-foreground">
-                              {format(new Date(doc.uploaded_at), 'MMM dd, HH:mm')}
-                            </span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs">student</Badge>
-                              <span className="text-xs text-muted-foreground">document uploaded</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* If no documents, show current status */}
-                    {documents.length === 0 && (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-2 h-2 bg-warning rounded-full mt-2"></div>
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium">Awaiting document upload</p>
-                            <span className="text-sm text-muted-foreground">Current</span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">system</Badge>
-                            <span className="text-xs text-muted-foreground">documents pending</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="activity" className="space-y-4">
+              <StatusHistory leadId={lead.id} documents={documents} documentTypes={documentTypes} createdAt={lead.created_at} />
             </TabsContent>
           </Tabs>
         </div>
