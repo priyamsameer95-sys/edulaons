@@ -118,14 +118,38 @@ serve(async (req) => {
       throw new Error('Phone number must be 10 digits');
     }
 
-    // Check for duplicate by phone
-    const { data: existingStudent } = await supabaseAdmin
+    // Check for existing student by phone OR email
+    const studentEmail = body.student_email?.trim() || null;
+    
+    let existingStudent = null;
+    
+    // Check by phone first
+    const { data: studentByPhone } = await supabaseAdmin
       .from('students')
-      .select('id')
+      .select('id, email')
       .eq('phone', cleanPhone)
       .maybeSingle();
+    
+    existingStudent = studentByPhone;
+    
+    // If no match by phone and email provided, check by email
+    if (!existingStudent && studentEmail) {
+      const { data: studentByEmail } = await supabaseAdmin
+        .from('students')
+        .select('id, email')
+        .eq('email', studentEmail.toLowerCase())
+        .maybeSingle();
+      
+      existingStudent = studentByEmail;
+    }
+
+    let studentId: string;
 
     if (existingStudent) {
+      // Use existing student
+      console.log('✅ Using existing student:', existingStudent.id);
+      studentId = existingStudent.id;
+      
       // Check for duplicate application
       const { data: isDuplicate } = await supabaseAdmin
         .rpc('check_duplicate_application', {
@@ -138,29 +162,30 @@ serve(async (req) => {
       if (isDuplicate) {
         throw new Error('A lead already exists for this student for the selected intake');
       }
+    } else {
+      // Create new student with minimal info
+      const newStudentEmail = studentEmail || `${cleanPhone}@quicklead.placeholder`;
+      const studentData = {
+        name: body.student_name.trim(),
+        email: newStudentEmail.toLowerCase(),
+        phone: cleanPhone,
+        postal_code: body.student_pin_code.trim(),
+        country: 'India',
+        nationality: 'Indian'
+      };
+
+      const { data: student, error: studentError } = await supabaseAdmin
+        .from('students')
+        .insert(studentData)
+        .select()
+        .single();
+
+      if (studentError) {
+        throw new Error(`Failed to create student: ${studentError.message}`);
+      }
+      console.log('✅ Student created:', student.id);
+      studentId = student.id;
     }
-
-    // Create student with minimal info
-    const studentEmail = body.student_email?.trim() || `${cleanPhone}@quicklead.placeholder`;
-    const studentData = {
-      name: body.student_name.trim(),
-      email: studentEmail,
-      phone: cleanPhone,
-      postal_code: body.student_pin_code.trim(),
-      country: 'India',
-      nationality: 'Indian'
-    };
-
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from('students')
-      .insert(studentData)
-      .select()
-      .single();
-
-    if (studentError) {
-      throw new Error(`Failed to create student: ${studentError.message}`);
-    }
-    console.log('✅ Student created:', student.id);
 
     // Create co-applicant with provided name
     const coApplicantData = {
@@ -205,7 +230,7 @@ serve(async (req) => {
     const loanAmount = body.loan_amount || 3000000; // Use provided or default ₹30 lakhs
     const leadData = {
       case_id: caseId,
-      student_id: student.id,
+      student_id: studentId,
       co_applicant_id: coApplicant.id,
       partner_id: appUser.partner_id,
       lender_id: lender.id,
