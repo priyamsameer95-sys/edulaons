@@ -31,7 +31,7 @@ import {
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
-import { StandardDocumentUpload } from "./StandardDocumentUpload";
+import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
@@ -479,48 +479,64 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                                     <Eye className="h-4 w-4" />
                                     View Document
                                   </Button>
-                                  <div className="w-48">
-                                    <StandardDocumentUpload
-                                      leadId={lead.id}
-                                      documentTypeId={item.id}
-                                      documentTypeName={item.name}
-                                      maxFileSize={docType?.max_file_size_pdf || 10485760}
-                                      acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
-                                      onUploadSuccess={() => {
-                                        refetchDocuments();
-                                        toast({
-                                          title: "Document Replaced",
-                                          description: `${item.name} has been updated`,
-                                        });
-                                      }}
-                                      existingDocument={true}
-                                      variant="ghost"
-                                      size="sm"
-                                      allowMultiple={false}
-                                    />
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="w-48">
-                                  <StandardDocumentUpload
+                                  <EnhancedDocumentUpload
                                     leadId={lead.id}
-                                    documentTypeId={item.id}
-                                    documentTypeName={item.name}
-                                    maxFileSize={docType?.max_file_size_pdf || 10485760}
-                                    acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                    documentType={{
+                                      id: item.id,
+                                      name: item.name,
+                                      category: docType?.category || 'student',
+                                      required: item.required,
+                                      max_file_size_pdf: docType?.max_file_size_pdf || 10485760,
+                                      max_file_size_image: docType?.max_file_size_image || 5242880,
+                                      accepted_formats: docType?.accepted_formats || ['pdf', 'jpg', 'png'],
+                                      description: docType?.description || ''
+                                    }}
                                     onUploadSuccess={() => {
                                       refetchDocuments();
                                       toast({
-                                        title: "Document Uploaded",
-                                        description: `${item.name} uploaded successfully`,
+                                        title: "Document Replaced",
+                                        description: `${item.name} has been updated`,
                                       });
                                     }}
-                                    existingDocument={false}
-                                    variant="default"
-                                    size="sm"
-                                    allowMultiple={false}
+                                    onUploadError={(error) => {
+                                      toast({
+                                        variant: "destructive",
+                                        title: "Upload Failed",
+                                        description: error,
+                                      });
+                                    }}
+                                    enableAIValidation={true}
                                   />
-                                </div>
+                                </>
+                              ) : (
+                                <EnhancedDocumentUpload
+                                  leadId={lead.id}
+                                  documentType={{
+                                    id: item.id,
+                                    name: item.name,
+                                    category: docType?.category || 'student',
+                                    required: item.required,
+                                    max_file_size_pdf: docType?.max_file_size_pdf || 10485760,
+                                    max_file_size_image: docType?.max_file_size_image || 5242880,
+                                    accepted_formats: docType?.accepted_formats || ['pdf', 'jpg', 'png'],
+                                    description: docType?.description || ''
+                                  }}
+                                  onUploadSuccess={() => {
+                                    refetchDocuments();
+                                    toast({
+                                      title: "Document Uploaded",
+                                      description: `${item.name} uploaded successfully`,
+                                    });
+                                  }}
+                                  onUploadError={(error) => {
+                                    toast({
+                                      variant: "destructive",
+                                      title: "Upload Failed",
+                                      description: error,
+                                    });
+                                  }}
+                                  enableAIValidation={true}
+                                />
                               )}
                             </div>
                           </div>
@@ -651,12 +667,18 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                                           <Eye className="h-4 w-4 mr-2" />
                                           View Document
                                         </Button>
-                                        <StandardDocumentUpload
+                                        <EnhancedDocumentUpload
                                           leadId={lead.id}
-                                          documentTypeId={item.id}
-                                          documentTypeName={item.name}
-                                          maxFileSize={docType?.max_file_size_pdf || 10485760}
-                                          acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                          documentType={{
+                                            id: item.id,
+                                            name: item.name,
+                                            category: docType?.category || 'student',
+                                            required: item.required,
+                                            max_file_size_pdf: docType?.max_file_size_pdf || 10485760,
+                                            max_file_size_image: docType?.max_file_size_image || 5242880,
+                                            accepted_formats: docType?.accepted_formats || ['pdf', 'jpg', 'png'],
+                                            description: docType?.description || ''
+                                          }}
                                           onUploadSuccess={() => {
                                             refetchDocuments();
                                             toast({
@@ -664,19 +686,29 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                                               description: `${item.name} has been updated`,
                                             });
                                           }}
-                                          existingDocument={true}
-                                          variant="ghost"
-                                          size="sm"
-                                          allowMultiple={false}
+                                          onUploadError={(error) => {
+                                            toast({
+                                              variant: "destructive",
+                                              title: "Upload Failed",
+                                              description: error,
+                                            });
+                                          }}
+                                          enableAIValidation={true}
                                         />
                                       </>
                                     ) : (
-                                      <StandardDocumentUpload
+                                      <EnhancedDocumentUpload
                                         leadId={lead.id}
-                                        documentTypeId={item.id}
-                                        documentTypeName={item.name}
-                                        maxFileSize={docType?.max_file_size_pdf || 10485760}
-                                        acceptedFormats={docType?.accepted_formats || ['pdf', 'docx', 'jpg', 'png']}
+                                        documentType={{
+                                          id: item.id,
+                                          name: item.name,
+                                          category: docType?.category || 'student',
+                                          required: item.required,
+                                          max_file_size_pdf: docType?.max_file_size_pdf || 10485760,
+                                          max_file_size_image: docType?.max_file_size_image || 5242880,
+                                          accepted_formats: docType?.accepted_formats || ['pdf', 'jpg', 'png'],
+                                          description: docType?.description || ''
+                                        }}
                                         onUploadSuccess={() => {
                                           refetchDocuments();
                                           toast({
@@ -684,10 +716,14 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                                             description: `${item.name} uploaded successfully`,
                                           });
                                         }}
-                                        existingDocument={false}
-                                        variant="default"
-                                        size="sm"
-                                        allowMultiple={false}
+                                        onUploadError={(error) => {
+                                          toast({
+                                            variant: "destructive",
+                                            title: "Upload Failed",
+                                            description: error,
+                                          });
+                                        }}
+                                        enableAIValidation={true}
                                       />
                                     )}
                                   </div>
