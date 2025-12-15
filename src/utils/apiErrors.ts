@@ -34,6 +34,10 @@ export interface ApiResponse<T = unknown> {
 export const ERROR_COPY = {
   // Duplicate/Conflict errors (Red)
   EMAIL_EXISTS: 'This email ID already exists in the system. Please use a different email ID.',
+  EMAIL_EXISTS_AS_STUDENT: 'This email is already registered as a student account. Please use a different email ID.',
+  EMAIL_EXISTS_AS_PARTNER: 'This email is already registered as a partner account. Please use a different email ID.',
+  EMAIL_EXISTS_AS_ADMIN: 'This email is already registered as an admin account. Please use a different email ID.',
+  EMAIL_PROTECTED: 'This email is reserved for system use and cannot be used.',
   PARTNER_CODE_EXISTS: 'This partner code already exists. Please choose a different code.',
   DUPLICATE_APPLICATION: 'You already have an active application for this intake and destination.',
   
@@ -102,7 +106,45 @@ export function parseApiError(error: unknown): ApiError {
 function mapErrorMessage(rawMessage: string): ApiError {
   const msg = rawMessage.toLowerCase();
   
-  // Email exists patterns
+  // Email exists with specific role - check for role-specific patterns first
+  if (msg.includes('as student') || (msg.includes('student') && msg.includes('email'))) {
+    return {
+      type: 'duplicate',
+      message: ERROR_COPY.EMAIL_EXISTS_AS_STUDENT,
+      field: 'email',
+      code: 'EMAIL_EXISTS_AS_STUDENT',
+    };
+  }
+  
+  if (msg.includes('as partner') || (msg.includes('partner') && msg.includes('email') && msg.includes('exists'))) {
+    return {
+      type: 'duplicate',
+      message: ERROR_COPY.EMAIL_EXISTS_AS_PARTNER,
+      field: 'email',
+      code: 'EMAIL_EXISTS_AS_PARTNER',
+    };
+  }
+  
+  if (msg.includes('as admin') || (msg.includes('admin') && msg.includes('email') && msg.includes('exists'))) {
+    return {
+      type: 'duplicate',
+      message: ERROR_COPY.EMAIL_EXISTS_AS_ADMIN,
+      field: 'email',
+      code: 'EMAIL_EXISTS_AS_ADMIN',
+    };
+  }
+  
+  // Protected/reserved email
+  if (msg.includes('reserved') || msg.includes('protected')) {
+    return {
+      type: 'duplicate',
+      message: ERROR_COPY.EMAIL_PROTECTED,
+      field: 'email',
+      code: 'EMAIL_PROTECTED',
+    };
+  }
+  
+  // Generic email exists patterns
   if (
     msg.includes('email already exists') ||
     msg.includes('email id already exists') ||
