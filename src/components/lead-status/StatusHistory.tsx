@@ -12,12 +12,14 @@ interface StatusHistoryProps {
     id: string;
     uploaded_at: string;
     document_type_id: string;
+    uploaded_by?: string;
   }>;
   documentTypes?: Array<{
     id: string;
     name: string;
   }>;
   createdAt?: string;
+  createdByPartner?: string;
 }
 
 interface ActivityEvent {
@@ -27,7 +29,7 @@ interface ActivityEvent {
   data: any;
 }
 
-export function StatusHistory({ leadId, documents = [], documentTypes = [], createdAt }: StatusHistoryProps) {
+export function StatusHistory({ leadId, documents = [], documentTypes = [], createdAt, createdByPartner }: StatusHistoryProps) {
   const { history, loading, error } = useLeadStatusHistory(leadId);
 
   // Merge all events into a single timeline
@@ -39,7 +41,7 @@ export function StatusHistory({ leadId, documents = [], documentTypes = [], crea
       id: 'created',
       type: 'lead_created',
       timestamp: createdAt,
-      data: null,
+      data: { createdByPartner },
     });
   }
 
@@ -60,7 +62,7 @@ export function StatusHistory({ leadId, documents = [], documentTypes = [], crea
       id: doc.id,
       type: 'document_upload',
       timestamp: doc.uploaded_at,
-      data: { ...doc, typeName: docType?.name || 'Document' },
+      data: { ...doc, typeName: docType?.name || 'Document', uploadedBy: doc.uploaded_by },
     });
   });
 
@@ -146,7 +148,12 @@ export function StatusHistory({ leadId, documents = [], documentTypes = [], crea
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     {event.type === 'lead_created' && (
-                      <p className="font-medium">Lead created</p>
+                      <div>
+                        <p className="font-medium">Lead created</p>
+                        {event.data?.createdByPartner && (
+                          <p className="text-muted-foreground">by {event.data.createdByPartner}</p>
+                        )}
+                      </div>
                     )}
 
                     {event.type === 'status_change' && (
@@ -184,11 +191,19 @@ export function StatusHistory({ leadId, documents = [], documentTypes = [], crea
                             {event.data.change_reason}
                           </p>
                         )}
+                        {event.data.changer_email && (
+                          <p className="text-muted-foreground">by {event.data.changer_email}</p>
+                        )}
                       </div>
                     )}
 
                     {event.type === 'document_upload' && (
-                      <p className="font-medium truncate">{event.data.typeName} uploaded</p>
+                      <div>
+                        <p className="font-medium truncate">{event.data.typeName} uploaded</p>
+                        {event.data.uploadedBy && (
+                          <p className="text-muted-foreground capitalize">by {event.data.uploadedBy}</p>
+                        )}
+                      </div>
                     )}
                   </div>
 

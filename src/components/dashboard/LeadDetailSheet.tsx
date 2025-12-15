@@ -616,7 +616,13 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-4">
-              <StatusHistory leadId={lead.id} documents={documents} documentTypes={documentTypes} createdAt={lead.created_at} />
+              <StatusHistory 
+                leadId={lead.id} 
+                documents={documents} 
+                documentTypes={documentTypes} 
+                createdAt={lead.created_at} 
+                createdByPartner={lead.partners?.name || 'Partner'}
+              />
             </TabsContent>
           </Tabs>
         </div>
