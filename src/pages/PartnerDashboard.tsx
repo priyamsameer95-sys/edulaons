@@ -1,17 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, IndianRupee } from "lucide-react";
-import { LeadsTab } from "@/components/dashboard/LeadsTab";
-import { PayoutsTab } from "@/components/dashboard/PayoutsTab";
-import { ProcessFlowGuide } from "@/components/dashboard/ProcessFlowGuide";
+import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerKPIs } from "@/hooks/usePartnerKPIs";
-import { PartnerHeader } from "@/components/partner/PartnerHeader";
-import { PartnerKPICards } from "@/components/partner/PartnerKPICards";
-import { DataFreshnessIndicator } from "@/components/partner/DataFreshnessIndicator";
+import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
+import { CompactStatsBar } from "@/components/partner/CompactStatsBar";
+import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
+import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
 import { Partner } from "@/types/partner";
+import { RefactoredLead } from "@/types/refactored-lead";
 
 interface PartnerDashboardProps {
   partner?: Partner;
@@ -21,72 +19,127 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const navigate = useNavigate();
   const { partnerCode } = useParams();
   const { signOut, isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState("leads");
-  
-  // Use the centralized KPI hook
-  const { kpis, loading: kpisLoading, lastUpdated } = usePartnerKPIs(partner?.id, isAdmin());
+  const { kpis, loading: kpisLoading } = usePartnerKPIs(partner?.id, isAdmin());
+  const { leads, loading: leadsLoading } = useRefactoredLeads();
+
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Calculate pending docs count
+  const pendingDocsCount = useMemo(() => {
+    return leads.filter(
+      (lead) => lead.documents_status === 'pending' || lead.documents_status === 'resubmission_required'
+    ).length;
+  }, [leads]);
+
+  // Filter leads based on status and search
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      // Status filter from compact stats bar
+      if (statusFilter) {
+        // Map filter keys to actual status values
+        const statusMap: Record<string, string[]> = {
+          in_progress: ['in_progress', 'contacted', 'document_review'],
+          approved: ['approved'],
+          disbursed: ['disbursed'],
+        };
+        const allowedStatuses = statusMap[statusFilter] || [];
+        if (!allowedStatuses.includes(lead.status)) {
+          return false;
+        }
+      }
+
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          (lead.student?.name || '').toLowerCase().includes(query) ||
+          (lead.student?.phone || '').toLowerCase().includes(query) ||
+          lead.case_id.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      return true;
+    });
+  }, [leads, statusFilter, searchQuery]);
+
+  const handleNewLead = () => {
+    navigate(`/partner/${partnerCode}/new-lead`);
+  };
+
+  const handleUploadDocs = (lead?: RefactoredLead) => {
+    // Navigate to lead detail or open upload modal
+    if (lead) {
+      // For now, could open a modal or navigate
+      console.log("Upload docs for lead:", lead.case_id);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <PartnerHeader 
-        partner={partner} 
-        isAdmin={isAdmin()} 
-        onSignOut={signOut} 
-      />
+      {/* Compact Header */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold">
+              {partner?.name || 'Partner Dashboard'}
+            </h1>
+            {partner?.partner_code && (
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                {partner.partner_code}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {isAdmin() && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+              >
+                Admin
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="text-muted-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 pt-8 pb-12">
-        <div className="space-y-8">
-          {/* KPI Cards */}
-          <PartnerKPICards 
-            kpis={kpis} 
-            loading={kpisLoading} 
-            lastUpdated={lastUpdated} 
-          />
+      <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+        {/* Compact Stats Bar - clickable filters */}
+        <CompactStatsBar
+          kpis={kpis}
+          loading={kpisLoading}
+          activeFilter={statusFilter}
+          onFilterClick={setStatusFilter}
+        />
 
-          {/* Data Freshness Indicator */}
-          <DataFreshnessIndicator lastUpdated={lastUpdated} />
+        {/* Quick Actions Bar */}
+        <QuickActionsBar
+          onNewLead={handleNewLead}
+          onUploadDocs={() => handleUploadDocs()}
+          pendingDocsCount={pendingDocsCount}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
 
-          {/* Process Flow Guide */}
-          <ProcessFlowGuide
-            currentStep={2}
-            completedSteps={[1]}
-            totalLeads={kpis.totalLeads}
-          />
-
-          {/* Tabs Section */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="leads" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Leads
-              </TabsTrigger>
-              <TabsTrigger value="payouts" className="flex items-center gap-2">
-                <IndianRupee className="h-4 w-4" />
-                Payouts
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="leads" className="space-y-6 mt-6">
-              <LeadsTab />
-            </TabsContent>
-
-            <TabsContent value="payouts" className="space-y-6 mt-6">
-              <PayoutsTab />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-
-      {/* Floating Action Button - Mobile */}
-      <Button 
-        onClick={() => navigate(`/partner/${partnerCode}/new-lead`)}
-        className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full shadow-lg z-50" 
-        size="icon"
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
+        {/* Leads Table */}
+        <PartnerLeadsTable
+          leads={filteredLeads}
+          loading={leadsLoading}
+          onUploadDocs={handleUploadDocs}
+          onNewLead={handleNewLead}
+        />
+      </main>
     </div>
   );
 };
