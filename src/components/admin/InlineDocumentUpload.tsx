@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Loader2, X, FileText, CheckCircle, AlertTriangle, Bot } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
@@ -9,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { validateFileSize, validateFileFormat } from './document-upload';
 import { Badge } from '@/components/ui/badge';
+import { DocumentTypeSelector } from './document-upload/DocumentTypeSelector';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface InlineDocumentUploadProps {
   leadId: string;
@@ -157,16 +158,6 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
     }
   };
 
-  // Group document types by category
-  const groupedTypes = useMemo(() => {
-    if (!documentTypes) return {};
-    return documentTypes.reduce((acc, type) => {
-      if (!acc[type.category]) acc[type.category] = [];
-      acc[type.category].push(type);
-      return acc;
-    }, {} as Record<string, typeof documentTypes>);
-  }, [documentTypes]);
-
   const getValidationBadge = () => {
     if (!selectedFile || !selectedDocumentType) return null;
     if (isValidating) return (
@@ -201,36 +192,44 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
     );
   };
 
+  // Convert to format expected by DocumentTypeSelector
+  const docTypesForSelector = useMemo(() => {
+    if (!documentTypes) return [];
+    return documentTypes.map(dt => ({
+      id: dt.id,
+      name: dt.name,
+      category: dt.category,
+      required: dt.required ?? false,
+    }));
+  }, [documentTypes]);
+
   return (
     <div className="border rounded-lg p-4 bg-card">
       <div className="flex items-center gap-2 mb-3">
         <Upload className="h-4 w-4 text-muted-foreground" />
-        <span className="font-medium text-sm">Quick Upload</span>
+        <span className="font-medium text-sm">Upload Document</span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Document Type Selector */}
-        <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
-          <SelectTrigger className="w-full sm:w-[220px]">
-            <SelectValue placeholder="Select document type" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            {Object.entries(groupedTypes).map(([category, types]) => (
-              <div key={category}>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                  {category}
-                </div>
-                {types.map(type => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </div>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Document Type Selector - Inline Categorized Grid */}
+      <ScrollArea className="h-[220px] mb-4 border rounded-md">
+        <DocumentTypeSelector
+          documentTypes={docTypesForSelector}
+          selectedDocumentType={selectedDocumentType}
+          onSelect={setSelectedDocumentType}
+          uploadedDocuments={uploadedDocuments}
+        />
+      </ScrollArea>
 
-        {/* File Drop Zone - Compact */}
+      {/* Selected document type indicator */}
+      {selectedDocumentType && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Selected:</span>
+          <Badge variant="secondary">{selectedDocTypeName}</Badge>
+        </div>
+      )}
+
+      {/* File Drop Zone + Upload */}
+      <div className="flex gap-3">
         <div
           className={`flex-1 border-2 border-dashed rounded-lg transition-colors ${
             isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
@@ -269,7 +268,6 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
           )}
         </div>
 
-        {/* Upload Button */}
         <Button
           onClick={handleUpload}
           disabled={loading || !canUpload}
