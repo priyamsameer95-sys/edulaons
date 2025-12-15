@@ -6,24 +6,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Document type mapping for validation
-const DOCUMENT_TYPE_KEYWORDS: Record<string, string[]> = {
-  'passport': ['passport', 'republic of india', 'nationality', 'date of birth', 'place of birth', 'date of issue', 'date of expiry', 'p<ind', 'type p'],
-  'aadhaar': ['aadhaar', 'aadhar', 'uidai', 'unique identification', 'government of india', '12 digit', 'enrollment'],
-  'pan_card': ['pan', 'permanent account number', 'income tax department', 'govt of india'],
-  'voter_id': ['election commission', 'voter id', 'epic', 'electoral'],
-  'driving_license': ['driving licence', 'driving license', 'transport department', 'motor vehicle'],
-  'bank_statement': ['bank statement', 'account statement', 'transaction', 'balance', 'credit', 'debit', 'opening balance', 'closing balance'],
-  'salary_slip': ['salary slip', 'pay slip', 'payslip', 'earnings', 'deductions', 'gross salary', 'net salary', 'basic pay'],
-  'offer_letter': ['offer letter', 'appointment letter', 'employment offer', 'job offer', 'we are pleased to offer', 'position offered'],
-  'property_deed': ['property', 'deed', 'registration', 'land', 'plot', 'sale deed', 'conveyance'],
-  'photo': ['photograph', 'passport size', 'photo'],
-  'mark_sheet': ['marks', 'grade', 'result', 'examination', 'semester', 'cgpa', 'percentage', 'university', 'board'],
-  'degree_certificate': ['degree', 'certificate', 'conferred', 'bachelor', 'master', 'graduation', 'university'],
-  'admission_letter': ['admission', 'acceptance', 'enrolled', 'university', 'congratulations', 'offer of admission', 'i-20', 'cas'],
-  'visa': ['visa', 'immigration', 'entry permit', 'authorized stay'],
-  'itr': ['income tax return', 'itr', 'assessment year', 'form 16', 'total income'],
+// Map expected document type names to their canonical detected types
+// This maps UI document names to what the AI detects
+const DOCUMENT_TYPE_ALIASES: Record<string, string[]> = {
+  'pan_card': ['pan_copy', 'pan_card_copy', 'co_applicant_pan', 'co_applicant_pan_card'],
+  'aadhaar': ['aadhaar_copy', 'aadhaar_card', 'aadhaar_card_copy', 'co_applicant_aadhaar'],
+  'passport': ['passport_copy', 'passport_document'],
+  'bank_statement': ['bank_account_statement', 'indian_bank_account_statement', 'last_6_months_indian_bank_account_statement', 'last___months_indian_bank_account_statement', 'co_applicant_bank_statement'],
+  'salary_slip': ['salary_slips', 'latest_salary_slips', 'co_applicant_salary_slips'],
+  'itr': ['itr_documents', 'itr_returns', 'income_tax_return', 'co_applicant_itr', 'co_applicant_itr_documents'],
+  'offer_letter': ['offer_letter_document', 'job_offer_letter'],
+  'visa': ['visa_copy', 'visa_document', 'visa__if_available_'],
+  'photo': ['passport_size_photo', 'passport_photo', 'passport_size_photograph'],
+  'mark_sheet': ['mark_sheets', 'academic_mark_sheets', 'mark_sheet_document'],
+  'degree_certificate': ['degree_certificates', 'graduation_certificate'],
+  'admission_letter': ['admission_letter_i_20_cas', 'i_20', 'cas', 'admission_document'],
+  'driving_license': ['driving_licence', 'dl', 'driving_license_copy'],
+  'voter_id': ['voter_id_card', 'epic_card'],
+  'property_deed': ['property_documents', 'property_papers', 'sale_deed'],
 };
+
+// Function to check if detected type matches expected type
+function isTypeMatch(detectedType: string, expectedType: string): boolean {
+  const normalizedDetected = detectedType.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+  const normalizedExpected = expectedType.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+  
+  // Direct match
+  if (normalizedDetected === normalizedExpected) return true;
+  
+  // Check if detected type is a known alias of any canonical type
+  for (const [canonical, aliases] of Object.entries(DOCUMENT_TYPE_ALIASES)) {
+    const allVariants = [canonical, ...aliases];
+    const detectedMatches = allVariants.some(v => normalizedDetected.includes(v) || v.includes(normalizedDetected));
+    const expectedMatches = allVariants.some(v => normalizedExpected.includes(v) || v.includes(normalizedExpected));
+    
+    if (detectedMatches && expectedMatches) {
+      return true;
+    }
+  }
+  
+  // Fallback substring check
+  return normalizedDetected.includes(normalizedExpected) || normalizedExpected.includes(normalizedDetected);
+}
 
 interface ValidationResult {
   isValid: boolean;
@@ -193,10 +217,7 @@ REJECT: selfies, random photos, non-document images, screenshots, heavily edited
       );
     }
 
-    // Build validation result
-    const normalizedExpectedType = expectedDocumentType.toLowerCase().replace(/[^a-z]/g, '_');
-    const normalizedDetectedType = (aiResult.detected_type || 'unknown').toLowerCase().replace(/[^a-z]/g, '_');
-    
+    const detectedType = aiResult.detected_type || 'unknown';
     const confidence = aiResult.confidence || 0;
     const quality = aiResult.quality || 'acceptable';
     const redFlags = aiResult.red_flags || [];
@@ -214,18 +235,16 @@ REJECT: selfies, random photos, non-document images, screenshots, heavily edited
       notes = `NOT A DOCUMENT | This image is not a valid ${expectedDocumentType}. Please upload the actual document.`;
     }
     // Priority 2: Reject unknown/unidentifiable documents
-    else if (normalizedDetectedType === 'unknown') {
+    else if (detectedType === 'unknown') {
       validationStatus = 'rejected';
       isValid = false;
       notes = `UNRECOGNIZED | Could not identify this as a valid document. Please upload a clear ${expectedDocumentType}.`;
     }
-    // Priority 3: Reject wrong document type (STRICT - no is_relevant bypass)
-    else if (normalizedDetectedType !== normalizedExpectedType && 
-             !normalizedDetectedType.includes(normalizedExpectedType) &&
-             !normalizedExpectedType.includes(normalizedDetectedType)) {
+    // Priority 3: Check if document type matches using smart alias matching
+    else if (!isTypeMatch(detectedType, expectedDocumentType)) {
       validationStatus = 'rejected';
       isValid = false;
-      notes = `WRONG TYPE | Expected ${expectedDocumentType}, got ${aiResult.detected_type}`;
+      notes = `WRONG TYPE | Expected ${expectedDocumentType}, got ${detectedType}`;
     }
     // Priority 4: Reject very low confidence
     else if (confidence < 40) {
