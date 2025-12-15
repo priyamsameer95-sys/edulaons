@@ -1,21 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useErrorHandler } from './useErrorHandler';
-
-export interface PartnerKPIs {
-  totalLeads: number;
-  inPipeline: number;
-  sanctioned: number;
-}
+import { useToast } from '@/hooks/use-toast';
+import { PartnerKPIs } from '@/types/partner';
 
 export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
   const [kpis, setKpis] = useState<PartnerKPIs>({
     totalLeads: 0,
     inPipeline: 0,
     sanctioned: 0,
+    disbursed: 0,
   });
   const [loading, setLoading] = useState(true);
-  const { handleDatabaseError } = useErrorHandler();
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const { toast } = useToast();
 
   const fetchKPIs = useCallback(async () => {
     try {
@@ -36,7 +33,7 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
       const { data: leadsByStatus, error: statusError } = await statusQuery;
       if (statusError) throw statusError;
 
-      let inPipeline = 0, sanctioned = 0;
+      let inPipeline = 0, sanctioned = 0, disbursed = 0;
 
       leadsByStatus?.forEach((lead) => {
         switch (lead.status) {
@@ -56,20 +53,45 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
         totalLeads: totalLeads || 0,
         inPipeline,
         sanctioned,
+        disbursed,
       });
+      setLastUpdated(new Date());
+
     } catch (error) {
-      handleDatabaseError(error, { 
-        description: 'Failed to load partner KPIs',
-        showToast: false
+      console.error('Error fetching KPIs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch dashboard metrics",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [partnerId, isAdmin, handleDatabaseError]);
+  }, [partnerId, isAdmin, toast]);
 
   useEffect(() => {
     fetchKPIs();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('kpi-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads_new'
+        },
+        () => {
+          fetchKPIs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchKPIs]);
 
-  return { kpis, loading, refetch: fetchKPIs };
+  return { kpis, loading, lastUpdated, refetch: fetchKPIs };
 };

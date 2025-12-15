@@ -5,15 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import PartnerDashboard from './PartnerDashboard';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface Partner {
-  id: string;
-  name: string;
-  partner_code: string;
-  email: string;
-  phone?: string;
-  address?: string;
-}
+import { Partner } from '@/types/partner';
 
 const PartnerDashboardWrapper = () => {
   const { partnerCode } = useParams<{ partnerCode: string }>();
@@ -77,7 +69,7 @@ const PartnerDashboardWrapper = () => {
     };
 
     fetchPartner();
-  }, [partnerCode, appUser]);
+  }, [partnerCode, appUser, toast]);
 
   if (loading) {
     return (
