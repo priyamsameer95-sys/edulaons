@@ -16,9 +16,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  HelpCircle,
   Edit,
-  FileText,
   Clock
 } from 'lucide-react';
 import { formatDistanceToNow, differenceInDays } from 'date-fns';
@@ -29,7 +27,6 @@ interface LeadQueueTableProps {
   loading: boolean;
   onViewLead: (lead: PaginatedLead) => void;
   onUpdateStatus: (lead: PaginatedLead) => void;
-  onVerifyDocs: (lead: PaginatedLead) => void;
   selectedLeads: string[];
   onSelectionChange: (selectedIds: string[]) => void;
   page: number;
@@ -38,6 +35,20 @@ interface LeadQueueTableProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+}
+
+// Check if lead needs admin action
+function needsAction(lead: PaginatedLead): { needed: boolean; reason: string } {
+  if (lead.status === 'new') {
+    return { needed: true, reason: 'New lead - needs contact' };
+  }
+  if (lead.documents_status === 'uploaded') {
+    return { needed: true, reason: 'Documents need verification' };
+  }
+  if (lead.documents_status === 'resubmission_required') {
+    return { needed: true, reason: 'Re-submitted docs need review' };
+  }
+  return { needed: false, reason: '' };
 }
 
 // Updated status colors per user request
@@ -130,8 +141,7 @@ export function LeadQueueTable({
   leads, 
   loading, 
   onViewLead, 
-  onUpdateStatus, 
-  onVerifyDocs,
+  onUpdateStatus,
   selectedLeads,
   onSelectionChange,
   page,
@@ -321,6 +331,7 @@ export function LeadQueueTable({
                 const isSelected = selectedLeads.includes(lead.id);
                 const urgent = isUrgent(lead);
                 const ageDays = getAgeDays(lead.created_at);
+                const action = needsAction(lead);
                 
                 return (
                   <TableRow 
@@ -329,7 +340,7 @@ export function LeadQueueTable({
                     onClick={() => onViewLead(lead)}
                   >
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={(checked) => handleSelectLead(lead.id, !!checked)}
@@ -342,6 +353,16 @@ export function LeadQueueTable({
                             </TooltipTrigger>
                             <TooltipContent>
                               <p className="text-xs">Requires immediate attention</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {!urgent && action.needed && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <span className="flex h-2 w-2 rounded-full bg-blue-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">{action.reason}</p>
                             </TooltipContent>
                           </Tooltip>
                         )}
@@ -463,10 +484,6 @@ export function LeadQueueTable({
                             <DropdownMenuItem onClick={() => onUpdateStatus(lead)}>
                               <Edit className="h-3.5 w-3.5 mr-2" />
                               Update Status
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onVerifyDocs(lead)}>
-                              <FileText className="h-3.5 w-3.5 mr-2" />
-                              Verify Documents
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

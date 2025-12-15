@@ -291,7 +291,6 @@ const AdminDashboardV2 = () => {
                     loading={isLoading}
                     onViewLead={handleViewLead}
                     onUpdateStatus={handleUpdateStatus}
-                    onVerifyDocs={handleVerifyDocs}
                     selectedLeads={selectedLeads}
                     onSelectionChange={setSelectedLeads}
                     // Pagination props
