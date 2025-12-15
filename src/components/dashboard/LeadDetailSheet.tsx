@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,9 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
-  ExternalLink
+  ExternalLink,
+  Building2,
+  Star
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -45,18 +47,80 @@ interface LeadDetailSheetProps {
   onLeadUpdated?: () => void;
 }
 
+interface PreferredLender {
+  id: string;
+  name: string;
+}
+
+interface LeadUniversity {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+}
+
 export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const [lenderAssignmentModalOpen, setLenderAssignmentModalOpen] = useState(false);
   const [partnerAssignmentModalOpen, setPartnerAssignmentModalOpen] = useState(false);
   const [showCoApplicantDetails, setShowCoApplicantDetails] = useState(false);
+  const [preferredLenders, setPreferredLenders] = useState<PreferredLender[]>([]);
+  const [leadUniversities, setLeadUniversities] = useState<LeadUniversity[]>([]);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
   
   // Real data from Supabase
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
   const { documents, loading: documentsLoading, getDownloadUrl, refetch: refetchDocuments } = useLeadDocuments(lead?.id);
+
+  // Fetch preferred lenders and universities
+  useEffect(() => {
+    if (!lead?.id) return;
+
+    const fetchAdditionalData = async () => {
+      // Fetch universities for this lead
+      const { data: univData } = await supabase
+        .from('lead_universities')
+        .select('university_id, universities(id, name, city, country)')
+        .eq('lead_id', lead.id);
+
+      if (univData) {
+        const universities = univData
+          .filter((u: any) => u.universities)
+          .map((u: any) => ({
+            id: u.universities.id,
+            name: u.universities.name,
+            city: u.universities.city,
+            country: u.universities.country
+          }));
+        setLeadUniversities(universities);
+
+        // Fetch preferred lenders based on university preferences
+        if (universities.length > 0) {
+          const { data: prefData } = await supabase
+            .from('university_lender_preferences')
+            .select('lender_id, is_preferred, lenders(id, name)')
+            .eq('university_id', universities[0].id)
+            .eq('study_destination', lead.study_destination)
+            .eq('is_preferred', true)
+            .limit(2);
+
+          if (prefData) {
+            const lenders = prefData
+              .filter((p: any) => p.lenders)
+              .map((p: any) => ({
+                id: p.lenders.id,
+                name: p.lenders.name
+              }));
+            setPreferredLenders(lenders);
+          }
+        }
+      }
+    };
+
+    fetchAdditionalData();
+  }, [lead?.id, lead?.study_destination]);
 
   if (!lead) return null;
 
@@ -245,6 +309,17 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                         </Button>
                       )}
                     </div>
+                    {preferredLenders.length > 0 && (
+                      <div className="pt-1.5 border-t mt-1.5">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Star className="h-3 w-3 text-amber-500" />
+                          <span>Preferred:</span>
+                          <span className="text-foreground">
+                            {preferredLenders.map(l => l.name).join(', ')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -261,6 +336,22 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                     <p className="text-sm text-muted-foreground">
                       Intake: {lead.intake_month}/{lead.intake_year}
                     </p>
+                    {leadUniversities.length > 0 && (
+                      <div className="pt-1.5 border-t mt-1.5 space-y-1">
+                        {leadUniversities.slice(0, 2).map((uni) => (
+                          <div key={uni.id} className="flex items-start gap-1.5 text-xs">
+                            <Building2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                            <div>
+                              <p className="text-foreground leading-tight">{uni.name}</p>
+                              <p className="text-muted-foreground">{uni.city}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {leadUniversities.length > 2 && (
+                          <p className="text-xs text-muted-foreground">+{leadUniversities.length - 2} more</p>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
