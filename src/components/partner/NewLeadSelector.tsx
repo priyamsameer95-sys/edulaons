@@ -54,6 +54,11 @@ export const NewLeadSelector = ({
                 <li>Loan Amount</li>
                 <li>Co-applicant Name, Type & Salary</li>
               </ul>
+              <p className="font-medium text-foreground mt-2">Then complete:</p>
+              <ul className="list-disc list-inside space-y-0.5 pl-1">
+                <li>University, Intake & Loan Type</li>
+                <li>Co-applicant Phone & PIN</li>
+              </ul>
             </div>
 
             <div className="border-t border-border pt-3 mt-1">

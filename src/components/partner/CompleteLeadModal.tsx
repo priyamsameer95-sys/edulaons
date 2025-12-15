@@ -30,6 +30,14 @@ interface CompleteLeadModalProps {
   onSuccess: () => void;
 }
 
+interface FormErrors {
+  universityId?: string;
+  intakeMonth?: string;
+  intakeYear?: string;
+  coApplicantPhone?: string;
+  coApplicantPinCode?: string;
+}
+
 const MONTHS = [
   { value: 1, label: "January" },
   { value: 2, label: "February" },
@@ -59,15 +67,46 @@ export const CompleteLeadModal = ({
   const [intakeYear, setIntakeYear] = useState<string>("");
   const [loanType, setLoanType] = useState<string>(lead?.loan_type || "unsecured");
   const [coApplicantPhone, setCoApplicantPhone] = useState<string>("");
-  const [coApplicantEmail, setCoApplicantEmail] = useState<string>("");
-  const [coApplicantOccupation, setCoApplicantOccupation] = useState<string>("");
-  const [coApplicantEmployer, setCoApplicantEmployer] = useState<string>("");
+  const [coApplicantPinCode, setCoApplicantPinCode] = useState<string>("");
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!universityId) {
+      newErrors.universityId = "Required";
+    }
+
+    if (!intakeMonth) {
+      newErrors.intakeMonth = "Required";
+    }
+
+    if (!intakeYear) {
+      newErrors.intakeYear = "Required";
+    }
+
+    // Co-Applicant Phone validation (10 digits, starts with 6-9)
+    if (!coApplicantPhone.trim()) {
+      newErrors.coApplicantPhone = "Required";
+    } else if (!/^[6-9]\d{9}$/.test(coApplicantPhone.trim())) {
+      newErrors.coApplicantPhone = "Enter valid 10-digit number";
+    }
+
+    // Co-Applicant PIN Code validation (6 digits)
+    if (!coApplicantPinCode.trim()) {
+      newErrors.coApplicantPinCode = "Required";
+    } else if (!/^\d{6}$/.test(coApplicantPinCode.trim())) {
+      newErrors.coApplicantPinCode = "Enter valid 6-digit PIN";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async () => {
     if (!lead) return;
 
-    if (!universityId || !intakeMonth || !intakeYear) {
-      toast.error("Please fill University and Intake details");
+    if (!validateForm()) {
       return;
     }
 
@@ -99,21 +138,16 @@ export const CompleteLeadModal = ({
         throw uniError;
       }
 
-      // Update co-applicant if any fields provided
-      if (coApplicantPhone || coApplicantEmail || coApplicantOccupation || coApplicantEmployer) {
-        const updateData: Record<string, string> = {};
-        if (coApplicantPhone) updateData.phone = coApplicantPhone;
-        if (coApplicantEmail) updateData.email = coApplicantEmail;
-        if (coApplicantOccupation) updateData.occupation = coApplicantOccupation;
-        if (coApplicantEmployer) updateData.employer = coApplicantEmployer;
+      // Update co-applicant with phone and pin_code (required)
+      const { error: coAppError } = await supabase
+        .from("co_applicants")
+        .update({
+          phone: coApplicantPhone.trim(),
+          pin_code: coApplicantPinCode.trim(),
+        })
+        .eq("id", lead.co_applicant_id);
 
-        const { error: coAppError } = await supabase
-          .from("co_applicants")
-          .update(updateData)
-          .eq("id", lead.co_applicant_id);
-
-        if (coAppError) throw coAppError;
-      }
+      if (coAppError) throw coAppError;
 
       toast.success("Lead completed successfully!");
       onSuccess();
@@ -214,45 +248,53 @@ export const CompleteLeadModal = ({
             </RadioGroup>
           </div>
 
-          {/* Co-Applicant Details (Optional) */}
+          {/* Co-Applicant Details (Required) */}
           <div className="border-t pt-4 mt-4">
-            <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-              Additional Co-Applicant Details (Optional)
+            <h4 className="text-sm font-medium mb-3">
+              Co-Applicant Details <span className="text-destructive">*</span>
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-sm">Phone</Label>
+                <Label className="text-sm">
+                  Phone <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   placeholder="10-digit phone"
                   value={coApplicantPhone}
-                  onChange={(e) => setCoApplicantPhone(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setCoApplicantPhone(value);
+                    if (errors.coApplicantPhone) {
+                      setErrors(prev => ({ ...prev, coApplicantPhone: undefined }));
+                    }
+                  }}
                   maxLength={10}
+                  className={errors.coApplicantPhone ? 'border-destructive' : ''}
                 />
+                {errors.coApplicantPhone && (
+                  <p className="text-xs text-destructive">{errors.coApplicantPhone}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="text-sm">Email</Label>
+                <Label className="text-sm">
+                  PIN Code <span className="text-destructive">*</span>
+                </Label>
                 <Input
-                  type="email"
-                  placeholder="email@example.com"
-                  value={coApplicantEmail}
-                  onChange={(e) => setCoApplicantEmail(e.target.value)}
+                  placeholder="6-digit PIN"
+                  value={coApplicantPinCode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setCoApplicantPinCode(value);
+                    if (errors.coApplicantPinCode) {
+                      setErrors(prev => ({ ...prev, coApplicantPinCode: undefined }));
+                    }
+                  }}
+                  maxLength={6}
+                  className={errors.coApplicantPinCode ? 'border-destructive' : ''}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Occupation</Label>
-                <Input
-                  placeholder="e.g. Engineer"
-                  value={coApplicantOccupation}
-                  onChange={(e) => setCoApplicantOccupation(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Employer</Label>
-                <Input
-                  placeholder="e.g. TCS"
-                  value={coApplicantEmployer}
-                  onChange={(e) => setCoApplicantEmployer(e.target.value)}
-                />
+                {errors.coApplicantPinCode && (
+                  <p className="text-xs text-destructive">{errors.coApplicantPinCode}</p>
+                )}
               </div>
             </div>
           </div>
