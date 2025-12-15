@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminDocumentManager } from "@/components/admin/AdminDocumentManager";
@@ -13,21 +12,19 @@ import { format } from "date-fns";
 import {
   CheckCircle,
   Clock,
-  XCircle,
-  AlertCircle,
   Download,
   FileText,
-  Calendar,
   User,
-  MapPin,
   CreditCard,
   GraduationCap,
-  Building,
   Phone,
   Mail,
-  Upload,
   Eye,
-  Users
+  Users,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -37,7 +34,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
 import { StatusHistory } from "@/components/lead-status/StatusHistory";
-import { StatusProgressIndicator } from "@/components/lead-status/StatusProgressIndicator";
 import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal";
 import { PartnerAssignmentModal } from "@/components/admin/PartnerAssignmentModal";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
@@ -54,6 +50,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
   const [lenderAssignmentModalOpen, setLenderAssignmentModalOpen] = useState(false);
   const [partnerAssignmentModalOpen, setPartnerAssignmentModalOpen] = useState(false);
+  const [showCoApplicantDetails, setShowCoApplicantDetails] = useState(false);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
   
@@ -111,12 +108,17 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const completedRequired = requiredDocs.filter(item => item.status === 'uploaded').length;
   const progressPercentage = requiredDocs.length > 0 ? (completedRequired / requiredDocs.length) * 100 : 0;
 
+  // Get first 5 required docs for quick check
+  const quickDocCheck = requiredDocs.slice(0, 5);
+  const partnerName = lead.partners?.name || lead.partner?.name || 'Direct';
+  const createdDate = lead.created_at ? format(new Date(lead.created_at), 'dd MMM yyyy') : '';
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="space-y-2 pb-4 border-b">
-          <SheetTitle className="text-xl font-semibold">
-            Lead Details - {lead.case_id}
+        <SheetHeader className="space-y-1 pb-4 border-b">
+          <SheetTitle className="text-lg font-semibold">
+            Lead Details • {createdDate} • {partnerName}
           </SheetTitle>
         </SheetHeader>
 
@@ -128,172 +130,195 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
               <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-4">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      Student Details
+            <TabsContent value="overview" className="space-y-4 mt-4">
+              {/* Status Row */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">Application Status</span>
+                  <StatusBadge status={lead.status as LeadStatus} type="lead" />
+                </div>
+                {isAdmin() && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setStatusUpdateModalOpen(true)}
+                  >
+                    Update Status
+                  </Button>
+                )}
+              </div>
+
+              {/* 2x2 Grid Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Student Details */}
+                <Card className="border">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" />
+                      Student
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <p className="font-semibold">{lead.student?.name || 'N/A'}</p>
-                      <div className="flex items-center text-sm text-muted-foreground mt-1">
-                        <Phone className="h-3 w-3 mr-1" />
-                        {lead.student?.phone || 'N/A'}
-                      </div>
-                      {lead.student?.email && (
-                        <div className="flex items-center text-sm text-muted-foreground mt-1">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {lead.student?.email}
-                        </div>
+                  <CardContent className="px-3 pb-3 space-y-1.5">
+                    <p className="font-semibold text-sm">{lead.student?.name || 'N/A'}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-3 w-3" />
+                      <span>{lead.student?.phone || 'N/A'}</span>
+                      {lead.student?.phone && (
+                        <a 
+                          href={`https://wa.me/91${lead.student.phone}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                        </a>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Loan Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <p className="font-semibold">₹{lead.loan_amount.toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{lead.loan_type} loan</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-sm text-muted-foreground">
-                          Lender: {lead.lender?.name || 'N/A'}
-                        </p>
-                        {isAdmin() && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setLenderAssignmentModalOpen(true)}
-                            className="h-7 text-xs"
-                          >
-                            Change
-                          </Button>
-                        )}
+                    {lead.student?.email && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{lead.student.email}</span>
                       </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                      <GraduationCap className="h-4 w-4 mr-2" />
-                      Study Destination
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <p className="font-semibold">{lead.study_destination}</p>
-                      {lead.intake_month && (
-                        <p className="text-sm text-muted-foreground">
-                          Intake: {lead.intake_month}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                      <Building className="h-4 w-4 mr-2" />
+                {/* Co-Applicant Details */}
+                <Card className="border">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5" />
                       Co-Applicant
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <p className="font-semibold">{lead.co_applicant?.name || 'N/A'}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{lead.co_applicant?.relationship || 'N/A'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/year` : 'N/A'}
-                      </p>
+                  <CardContent className="px-3 pb-3 space-y-1.5">
+                    <p className="font-semibold text-sm">{lead.co_applicant?.name || 'N/A'}</p>
+                    {lead.co_applicant?.phone && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-3 w-3" />
+                        <span>{lead.co_applicant.phone}</span>
+                      </div>
+                    )}
+                    {lead.co_applicant?.email && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{lead.co_applicant.email}</span>
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => setShowCoApplicantDetails(!showCoApplicantDetails)}
+                      className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+                    >
+                      {showCoApplicantDetails ? 'Hide' : 'Show more'}
+                      {showCoApplicantDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </button>
+                    {showCoApplicantDetails && (
+                      <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
+                        <p>Relation: <span className="capitalize">{lead.co_applicant?.relationship || 'N/A'}</span></p>
+                        <p>Salary: {lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/yr` : 'N/A'}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Loan Details */}
+                <Card className="border">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Loan Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3 space-y-1.5">
+                    <p className="font-semibold text-sm">₹{lead.loan_amount?.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{lead.loan_type}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">{lead.lender?.name || 'N/A'}</p>
+                      {isAdmin() && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setLenderAssignmentModalOpen(true)}
+                          className="h-auto p-0 text-xs"
+                        >
+                          Change
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                      <Users className="h-4 w-4 mr-2" />
-                      Partner
+                {/* Study Destination */}
+                <Card className="border">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <GraduationCap className="h-3.5 w-3.5" />
+                      Study Destination
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{lead.partners?.name || lead.partner?.name || 'Direct'}</p>
-                          {(lead.partners?.partner_code || lead.partner?.partner_code) && (
-                            <p className="text-sm text-muted-foreground">
-                              {lead.partners?.partner_code || lead.partner?.partner_code}
-                            </p>
-                          )}
-                        </div>
-                        {isAdmin() && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setPartnerAssignmentModalOpen(true)}
-                            className="h-7 text-xs"
-                          >
-                            Change
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                  <CardContent className="px-3 pb-3 space-y-1.5">
+                    <p className="font-semibold text-sm">{lead.study_destination}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Intake: {lead.intake_month}/{lead.intake_year}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Application Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    Application Status
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={lead.status as LeadStatus} type="lead" />
-                      {isAdmin() && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setStatusUpdateModalOpen(true)}
-                        >
-                          Update Status
-                        </Button>
-                      )}
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Documents Status</span>
-                      <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
-                    </div>
-                    <div className="space-y-3">
-                      <StatusProgressIndicator currentStatus={lead.status as LeadStatus} />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Document Progress</span>
-                        <span>{Math.round(progressPercentage)}%</span>
-                      </div>
-                      <Progress value={progressPercentage} className="w-full h-2" />
-                    </div>
+              {/* Quick Document Check */}
+              <Card className="border">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium">Document Progress</CardTitle>
+                    <span className="text-xs text-muted-foreground">{completedRequired}/{requiredDocs.length} uploaded</span>
                   </div>
+                  <Progress value={progressPercentage} className="h-1.5 mt-2" />
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <div className="space-y-1.5">
+                    {quickDocCheck.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between text-sm py-1">
+                        <div className="flex items-center gap-2">
+                          {doc.status === 'uploaded' ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span className={doc.status === 'uploaded' ? 'text-foreground' : 'text-muted-foreground'}>
+                            {doc.name}
+                          </span>
+                        </div>
+                        <span className={`text-xs ${doc.status === 'uploaded' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {doc.status === 'uploaded' ? 'Uploaded' : 'Pending'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    className="mt-2 h-auto p-0 text-xs"
+                    onClick={() => setActiveTab('documents')}
+                  >
+                    View all documents <ExternalLink className="h-3 w-3 ml-1" />
+                  </Button>
                 </CardContent>
               </Card>
+
+              {/* Partner Info Footer */}
+              {isAdmin() && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                  <span>Partner: {partnerName} {lead.partners?.partner_code && `(${lead.partners.partner_code})`}</span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setPartnerAssignmentModalOpen(true)}
+                    className="h-auto p-0 text-xs"
+                  >
+                    Change
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="checklist" className="space-y-4">
