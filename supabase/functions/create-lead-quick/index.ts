@@ -18,6 +18,7 @@ const QUICK_LEAD_REQUIRED = [
   'country',
   'loan_amount',
   'co_applicant_relationship',
+  'co_applicant_name',
   'co_applicant_monthly_salary'
 ];
 
@@ -161,9 +162,9 @@ serve(async (req) => {
     }
     console.log('✅ Student created:', student.id);
 
-    // Create co-applicant with minimal info
+    // Create co-applicant with provided name
     const coApplicantData = {
-      name: 'To be updated',
+      name: body.co_applicant_name.trim(),
       phone: cleanPhone, // Use student phone as placeholder
       relationship: body.co_applicant_relationship,
       salary: parseFloat(body.co_applicant_monthly_salary) * 12,
