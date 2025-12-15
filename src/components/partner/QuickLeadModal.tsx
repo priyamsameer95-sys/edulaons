@@ -103,12 +103,42 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
     return parseInt(num).toLocaleString('en-IN');
   }, []);
 
+  // Number to words helper
+  const numberToWords = (n: number): string => {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+      'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    return n.toString();
+  };
+
   // Convert loan amount to words
   const loanAmountInWords = useMemo(() => {
     const num = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
     if (num === 0) return '';
-    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
-    if (num >= 100000) return `₹${(num / 100000).toFixed(2)} Lakh`;
+    
+    if (num >= 10000000) {
+      const crores = num / 10000000;
+      const wholeCrores = Math.floor(crores);
+      const decimalPart = Math.round((crores - wholeCrores) * 100);
+      if (decimalPart === 0) {
+        return `${numberToWords(wholeCrores)} Crore`;
+      }
+      return `${numberToWords(wholeCrores)}.${decimalPart.toString().padStart(2, '0')} Crore`;
+    }
+    
+    if (num >= 100000) {
+      const lakhs = num / 100000;
+      const wholeLakhs = Math.floor(lakhs);
+      const decimalPart = Math.round((lakhs - wholeLakhs) * 100);
+      if (decimalPart === 0) {
+        return `${numberToWords(wholeLakhs)} Lakh`;
+      }
+      return `${numberToWords(wholeLakhs)}.${decimalPart.toString().padStart(2, '0')} Lakh`;
+    }
+    
     return `₹${num.toLocaleString('en-IN')}`;
   }, [formData.loan_amount]);
 
