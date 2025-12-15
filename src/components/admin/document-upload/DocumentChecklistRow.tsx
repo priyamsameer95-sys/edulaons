@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Eye, Check, Clock, XCircle, Circle, Loader2, FileText, Download } from 'lucide-react';
+import { Upload, Eye, Check, Clock, XCircle, Circle, Loader2, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { LeadDocument } from '@/hooks/useLeadDocuments';
 
@@ -29,34 +29,43 @@ function getDocumentStatus(doc?: LeadDocument): DocumentStatus {
   return 'pending';
 }
 
-function StatusIndicator({ status }: { status: DocumentStatus }) {
+function StatusBadge({ status, onClick }: { status: DocumentStatus; onClick?: () => void }) {
+  const isClickable = onClick && status === 'pending';
+  const baseClasses = "flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded";
+  
   switch (status) {
     case 'verified':
       return (
-        <div className="flex items-center gap-1 text-emerald-600">
-          <Check className="h-3.5 w-3.5" />
-          <span className="text-[11px] font-medium">Verified</span>
-        </div>
+        <span className={cn(baseClasses, "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400")}>
+          <Check className="h-3 w-3" />
+        </span>
       );
     case 'pending':
       return (
-        <div className="flex items-center gap-1 text-amber-600">
-          <Clock className="h-3.5 w-3.5" />
-          <span className="text-[11px] font-medium">Pending</span>
-        </div>
+        <button
+          onClick={onClick}
+          disabled={!isClickable}
+          className={cn(
+            baseClasses,
+            "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+            isClickable && "hover:bg-amber-200 cursor-pointer"
+          )}
+          title={isClickable ? "Click to verify" : undefined}
+        >
+          <Clock className="h-3 w-3" />
+        </button>
       );
     case 'rejected':
       return (
-        <div className="flex items-center gap-1 text-destructive">
-          <XCircle className="h-3.5 w-3.5" />
-          <span className="text-[11px] font-medium">Re-upload</span>
-        </div>
+        <span className={cn(baseClasses, "bg-destructive/10 text-destructive")}>
+          <XCircle className="h-3 w-3" />
+        </span>
       );
     default:
       return (
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <Circle className="h-3.5 w-3.5" />
-        </div>
+        <span className={cn(baseClasses, "text-muted-foreground")}>
+          <Circle className="h-3 w-3" />
+        </span>
       );
   }
 }
@@ -83,51 +92,36 @@ export function DocumentChecklistRow({
     e.target.value = '';
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
   return (
-    <div
-      className={cn(
-        'flex items-center gap-2 py-2 px-3 rounded-md border transition-colors',
-        status === 'verified' && 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800',
-        status === 'pending' && 'bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800',
-        status === 'rejected' && 'bg-destructive/5 border-destructive/30',
-        status === 'not_uploaded' && 'bg-card border-border hover:bg-muted/50'
-      )}
-    >
+    <div className={cn(
+      'flex items-center gap-2 py-1.5 px-2 rounded transition-colors',
+      status === 'verified' && 'bg-emerald-50/40 dark:bg-emerald-900/10',
+      status === 'pending' && 'bg-amber-50/40 dark:bg-amber-900/10',
+      status === 'rejected' && 'bg-destructive/5',
+      status === 'not_uploaded' && 'hover:bg-muted/30'
+    )}>
       {/* Document Name */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium truncate">{documentType.name}</span>
-          {documentType.required && status === 'not_uploaded' && (
-            <span className="text-destructive text-xs">*</span>
-          )}
-        </div>
-        <p className="text-[11px] text-muted-foreground">
-          jpg, pdf, png
-          {documentType.required ? ' • Required' : ' • Optional'}
-        </p>
+      <div className="flex-1 min-w-0 flex items-center gap-1">
+        <span className="text-xs font-medium truncate">{documentType.name}</span>
+        {documentType.required && (
+          <span className="text-destructive text-[10px]">*</span>
+        )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-1 shrink-0">
-        {/* Upload/Replace Button */}
+      {/* Compact Action Icons */}
+      <div className="flex items-center gap-0.5 shrink-0">
+        {/* Upload */}
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="h-7 px-2"
-          onClick={handleUploadClick}
+          className="h-6 w-6 p-0"
+          onClick={() => fileInputRef.current?.click()}
           disabled={isCurrentlyUploading}
         >
           {isCurrentlyUploading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
-            <>
-              <Upload className="h-3.5 w-3.5" />
-              <span className="text-[11px] ml-1 hidden sm:inline">{status !== 'not_uploaded' ? 'Replace' : 'Upload'}</span>
-            </>
+            <Upload className="h-3 w-3 text-muted-foreground hover:text-foreground" />
           )}
         </Button>
         <input
@@ -138,45 +132,37 @@ export function DocumentChecklistRow({
           onChange={handleFileSelect}
         />
 
-        {/* Preview Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          disabled={!uploadedDocument}
-          onClick={() => uploadedDocument && onPreview(uploadedDocument)}
-        >
-          <Eye className={cn('h-3.5 w-3.5', uploadedDocument ? 'text-foreground' : 'text-muted-foreground/40')} />
-        </Button>
+        {/* Preview - only if uploaded */}
+        {uploadedDocument && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => onPreview(uploadedDocument)}
+          >
+            <Eye className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+          </Button>
+        )}
 
-        {/* Download Button - only if uploaded */}
+        {/* Download - only if uploaded */}
         {uploadedDocument && onDownload && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
+            className="h-6 w-6 p-0"
             onClick={() => onDownload(uploadedDocument)}
           >
-            <Download className="h-3.5 w-3.5" />
-          </Button>
-        )}
-
-        {/* Verify Button - only if uploaded and handler provided */}
-        {uploadedDocument && onVerify && status !== 'verified' && (
-          <Button
-            variant={status === 'rejected' ? 'default' : 'outline'}
-            size="sm"
-            className={cn('h-7 w-7 p-0', status === 'rejected' && 'bg-amber-500 hover:bg-amber-600')}
-            onClick={() => onVerify(uploadedDocument)}
-          >
-            <Check className="h-3.5 w-3.5" />
+            <Download className="h-3 w-3 text-muted-foreground hover:text-foreground" />
           </Button>
         )}
       </div>
 
-      {/* Status */}
-      <div className="w-16 flex justify-end shrink-0">
-        <StatusIndicator status={status} />
+      {/* Status Badge */}
+      <div className="shrink-0">
+        <StatusBadge 
+          status={status} 
+          onClick={uploadedDocument && onVerify && status === 'pending' ? () => onVerify(uploadedDocument) : undefined}
+        />
       </div>
     </div>
   );
