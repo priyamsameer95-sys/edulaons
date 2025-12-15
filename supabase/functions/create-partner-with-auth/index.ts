@@ -112,14 +112,58 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if email already exists in auth
+    // Check if email already exists ANYWHERE in the system (admin, partner, student, etc.)
+    console.log('Checking system-wide email uniqueness for:', email)
+    
+    const { data: emailConflicts, error: emailCheckError } = await supabaseAdmin
+      .rpc('check_email_exists_system_wide', { check_email: email })
+    
+    if (emailCheckError) {
+      console.error('Error checking email uniqueness:', emailCheckError)
+    }
+    
+    if (emailConflicts && emailConflicts.length > 0) {
+      console.log('Email already exists in system:', emailConflicts)
+      const existingRole = emailConflicts[0].entity_role
+      return new Response(
+        JSON.stringify({ 
+          error: `This email ID already exists in the system (as ${existingRole}) and cannot be reused for another role.`
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
+    // Also check if email exists in auth system
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     const existingUser = existingUsers.users?.find(user => user.email === email)
     
     if (existingUser) {
-      console.log('Email already registered')
+      console.log('Email already registered in auth')
       return new Response(
-        JSON.stringify({ error: 'Email already registered' }),
+        JSON.stringify({ error: 'This email ID already exists in the system and cannot be reused for another role.' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
+    // Check if email is in protected accounts list (admin emails)
+    const { data: protectedAccount } = await supabaseAdmin
+      .from('protected_accounts')
+      .select('email, reason')
+      .eq('email', email.toLowerCase())
+      .maybeSingle()
+    
+    if (protectedAccount) {
+      console.log('Email is protected:', protectedAccount.reason)
+      return new Response(
+        JSON.stringify({ 
+          error: 'This email ID is reserved and cannot be used for partner registration.'
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

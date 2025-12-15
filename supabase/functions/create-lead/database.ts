@@ -40,6 +40,49 @@ export async function validateUniversities(
 }
 
 /**
+ * Check if email is protected (admin/system emails that cannot be used as student)
+ */
+export async function checkProtectedEmail(
+  supabaseAdmin: SupabaseClient,
+  email: string
+): Promise<void> {
+  if (!email) return;
+  
+  // Check protected_accounts table
+  const { data: protectedAccount } = await supabaseAdmin
+    .from('protected_accounts')
+    .select('email, reason')
+    .eq('email', email.toLowerCase())
+    .maybeSingle();
+  
+  if (protectedAccount) {
+    throw new Error(`This email ID already exists in the system and cannot be reused for another role.`);
+  }
+  
+  // Check if email belongs to an admin or partner (not student)
+  const { data: appUser } = await supabaseAdmin
+    .from('app_users')
+    .select('email, role')
+    .eq('email', email)
+    .maybeSingle();
+  
+  if (appUser && appUser.role !== 'student') {
+    throw new Error(`This email ID already exists in the system (as ${appUser.role}) and cannot be reused for another role.`);
+  }
+  
+  // Check if email belongs to a partner
+  const { data: partner } = await supabaseAdmin
+    .from('partners')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+  
+  if (partner) {
+    throw new Error(`This email ID already exists in the system (as partner) and cannot be reused for another role.`);
+  }
+}
+
+/**
  * Check for duplicate applications
  */
 export async function checkDuplicateApplication(
@@ -51,6 +94,11 @@ export async function checkDuplicateApplication(
   studyDestination: string
 ): Promise<void> {
   const cleanPhone = cleanPhoneNumber(studentPhone);
+  
+  // First check if email is protected/reserved
+  if (studentEmail) {
+    await checkProtectedEmail(supabaseAdmin, studentEmail);
+  }
   
   const { data: existingStudent } = await supabaseAdmin
     .from('students')
