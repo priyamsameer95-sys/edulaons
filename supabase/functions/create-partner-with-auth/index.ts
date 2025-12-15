@@ -112,11 +112,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Normalize email for all checks
+    const normalizedEmail = email.trim().toLowerCase()
+    
     // Check if email already exists ANYWHERE in the system (admin, partner, student, etc.)
-    console.log('Checking system-wide email uniqueness for:', email)
+    console.log('Checking system-wide email uniqueness for:', normalizedEmail)
     
     const { data: emailConflicts, error: emailCheckError } = await supabaseAdmin
-      .rpc('check_email_exists_system_wide', { check_email: email })
+      .rpc('check_email_exists_system_wide', { check_email: normalizedEmail })
     
     if (emailCheckError) {
       console.error('Error checking email uniqueness:', emailCheckError)
@@ -138,12 +141,14 @@ Deno.serve(async (req) => {
     
     // Also check if email exists in auth system
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const existingUser = existingUsers.users?.find(user => user.email === email)
+    const existingUser = existingUsers.users?.find(user => 
+      user.email?.toLowerCase() === normalizedEmail
+    )
     
     if (existingUser) {
       console.log('Email already registered in auth')
       return new Response(
-        JSON.stringify({ error: 'This email ID already exists in the system and cannot be reused for another role.' }),
+        JSON.stringify({ error: 'This email ID already exists in the system. Please use a different email ID.' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -155,14 +160,14 @@ Deno.serve(async (req) => {
     const { data: protectedAccount } = await supabaseAdmin
       .from('protected_accounts')
       .select('email, reason')
-      .eq('email', email.toLowerCase())
+      .eq('email', normalizedEmail)
       .maybeSingle()
     
     if (protectedAccount) {
       console.log('Email is protected:', protectedAccount.reason)
       return new Response(
         JSON.stringify({ 
-          error: 'This email ID is reserved and cannot be used for partner registration.'
+          error: 'This email ID already exists in the system. Please use a different email ID.'
         }),
         { 
           status: 400, 
@@ -172,15 +177,15 @@ Deno.serve(async (req) => {
     }
 
     // Create auth user first
-    console.log('Creating auth user for:', email)
+    console.log('Creating auth user for:', normalizedEmail)
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: normalizedEmail,
       password,
       email_confirm: true, // Auto-confirm email
       user_metadata: {
         role: 'partner',
         partner_code: partnerCode,
-        name: name
+        name: name.trim()
       }
     })
 
@@ -201,10 +206,10 @@ Deno.serve(async (req) => {
     const { data: partner, error: partnerError } = await supabaseAdmin
       .from('partners')
       .insert({
-        name,
-        email,
-        phone: phone || null,
-        address: address || null,
+        name: name.trim(),
+        email: normalizedEmail,
+        phone: phone?.trim() || null,
+        address: address?.trim() || null,
         partner_code: partnerCode,
         is_active: true,
       })
@@ -215,8 +220,20 @@ Deno.serve(async (req) => {
       console.error('Error creating partner:', partnerError)
       // If partner creation fails, clean up the auth user
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+      
+      // Check for specific constraint violations
+      if (partnerError.code === '23505') {
+        return new Response(
+          JSON.stringify({ error: 'This partner code or email already exists. Please use different values.' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+      
       return new Response(
-        JSON.stringify({ error: `Failed to create partner: ${partnerError.message}` }),
+        JSON.stringify({ error: 'Failed to create partner. Please try again.' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -231,7 +248,7 @@ Deno.serve(async (req) => {
       .from('app_users')
       .insert({
         id: authUser.user.id,
-        email: email,
+        email: normalizedEmail,
         role: 'partner',
         partner_id: partner.id,
         is_active: true,
@@ -239,11 +256,11 @@ Deno.serve(async (req) => {
 
     if (appUserError) {
       console.error('Error creating app_users record:', appUserError)
-      // Clean up on error
-      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+      // Clean up on error - rollback in reverse order
       await supabaseAdmin.from('partners').delete().eq('id', partner.id)
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       return new Response(
-        JSON.stringify({ error: `Failed to link user to partner: ${appUserError.message}` }),
+        JSON.stringify({ error: 'Failed to complete partner setup. Please try again.' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -251,7 +268,32 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('Successfully created partner with auth')
+    // Create user_roles record for proper RBAC
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: authUser.user.id,
+        role: 'partner',
+        granted_by: null, // System-created
+        is_active: true,
+      })
+
+    if (roleError) {
+      console.error('Error creating user_roles record:', roleError)
+      // Clean up on error - rollback in reverse order
+      await supabaseAdmin.from('app_users').delete().eq('id', authUser.user.id)
+      await supabaseAdmin.from('partners').delete().eq('id', partner.id)
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+      return new Response(
+        JSON.stringify({ error: 'Failed to complete partner setup. Please try again.' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    console.log('Successfully created partner with auth and role assignment')
 
     // Generate dashboard URL - use the current origin or fallback
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://lovableproject.com'

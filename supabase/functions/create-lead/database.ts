@@ -48,37 +48,40 @@ export async function checkProtectedEmail(
 ): Promise<void> {
   if (!email) return;
   
+  // Normalize email for all checks
+  const normalizedEmail = email.trim().toLowerCase();
+  
   // Check protected_accounts table
   const { data: protectedAccount } = await supabaseAdmin
     .from('protected_accounts')
     .select('email, reason')
-    .eq('email', email.toLowerCase())
+    .eq('email', normalizedEmail)
     .maybeSingle();
   
   if (protectedAccount) {
-    throw new Error(`This email ID already exists in the system and cannot be reused for another role.`);
+    throw new Error('This email ID already exists in the system. Please use a different email ID.');
   }
   
   // Check if email belongs to an admin or partner (not student)
   const { data: appUser } = await supabaseAdmin
     .from('app_users')
     .select('email, role')
-    .eq('email', email)
+    .ilike('email', normalizedEmail)
     .maybeSingle();
   
   if (appUser && appUser.role !== 'student') {
-    throw new Error(`This email ID already exists in the system (as ${appUser.role}) and cannot be reused for another role.`);
+    throw new Error('This email ID already exists in the system. Please use a different email ID.');
   }
   
   // Check if email belongs to a partner
   const { data: partner } = await supabaseAdmin
     .from('partners')
     .select('email')
-    .eq('email', email)
+    .ilike('email', normalizedEmail)
     .maybeSingle();
   
   if (partner) {
-    throw new Error(`This email ID already exists in the system (as partner) and cannot be reused for another role.`);
+    throw new Error('This email ID already exists in the system. Please use a different email ID.');
   }
 }
 
