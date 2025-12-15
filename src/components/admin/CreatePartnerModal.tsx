@@ -1,5 +1,5 @@
 import { LoadingButton } from '@/components/ui/loading-button';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Link2, QrCode, Copy, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Building2, Copy, CheckCircle, Eye, EyeOff, AlertCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
+import { 
+  parseApiError, 
+  normalizeEmail, 
+  isValidEmail, 
+  isEmpty,
+  SUCCESS_COPY,
+  ERROR_COPY,
+  getToastVariant
+} from '@/utils/apiErrors';
 
 interface CreatePartnerModalProps {
   open: boolean;
@@ -25,6 +35,14 @@ interface PartnerForm {
   phone: string;
   address: string;
   partnerCode: string;
+}
+
+interface FieldErrors {
+  [key: string]: string | null;
+}
+
+interface TouchedFields {
+  [key: string]: boolean;
 }
 
 const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePartnerModalProps) => {
@@ -47,6 +65,12 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState<TouchedFields>({});
+  const [topLevelError, setTopLevelError] = useState<string | null>(null);
+  
+  // Prevent double-submit
+  const submitRef = useRef(false);
 
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
@@ -55,6 +79,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setFormData(prev => ({ ...prev, password }));
+    setErrors(prev => ({ ...prev, password: null }));
   };
 
   const generatePartnerCode = () => {
@@ -63,97 +88,210 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       .replace(/[^a-z0-9]/g, '')
       .substring(0, 10);
     setFormData(prev => ({ ...prev, partnerCode: code }));
+    setErrors(prev => ({ ...prev, partnerCode: null }));
+  };
+
+  // Field validation
+  const validateField = (field: keyof PartnerForm, value: string): string | null => {
+    switch (field) {
+      case 'name':
+        if (isEmpty(value)) return 'This field cannot be empty.';
+        if (value.length < 2) return 'Name must be at least 2 characters.';
+        if (value.length > 100) return 'Name must be less than 100 characters.';
+        return null;
+      case 'email':
+        if (isEmpty(value)) return 'This field cannot be empty.';
+        if (!isValidEmail(value)) return 'Please enter a valid email address.';
+        return null;
+      case 'password':
+        if (isEmpty(value)) return 'This field cannot be empty.';
+        if (value.length < 8) return 'Password must be at least 8 characters.';
+        return null;
+      case 'partnerCode':
+        if (isEmpty(value)) return 'This field cannot be empty.';
+        if (!/^[a-z0-9]+$/.test(value)) return 'Partner code must contain only lowercase letters and numbers.';
+        if (value.length < 3) return 'Partner code must be at least 3 characters.';
+        return null;
+      case 'phone':
+        if (value && !/^\+?[\d\s-]{10,15}$/.test(value.replace(/\s/g, ''))) {
+          return 'Please enter a valid phone number.';
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const handleInputChange = (field: keyof PartnerForm, value: string) => {
+    let processedValue = value;
+    
+    // Normalize email
+    if (field === 'email') {
+      processedValue = value.toLowerCase().trim();
+    }
+    
+    // Force lowercase for partner code
+    if (field === 'partnerCode') {
+      processedValue = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
+    
+    // Clear field error when typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+    }
+    
+    // Clear top-level error when user makes changes
+    if (topLevelError) {
+      setTopLevelError(null);
+    }
+  };
+
+  const handleBlur = (field: keyof PartnerForm) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field]);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const validateAllFields = (): boolean => {
+    const requiredFields: (keyof PartnerForm)[] = ['name', 'email', 'password', 'partnerCode'];
+    const newErrors: FieldErrors = {};
+    const newTouched: TouchedFields = {};
+    let hasErrors = false;
+
+    requiredFields.forEach(field => {
+      newTouched[field] = true;
+      const error = validateField(field, formData[field]);
+      newErrors[field] = error;
+      if (error) hasErrors = true;
+    });
+
+    // Also validate optional phone if provided
+    if (formData.phone) {
+      const phoneError = validateField('phone', formData.phone);
+      newErrors.phone = phoneError;
+      if (phoneError) hasErrors = true;
+    }
+
+    setTouched(newTouched);
+    setErrors(newErrors);
+
+    return !hasErrors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.password || !formData.partnerCode) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields including password",
-        variant: "destructive",
-      });
+    
+    // Prevent double-submit
+    if (submitRef.current || loading) return;
+    
+    // Clear previous top-level error
+    setTopLevelError(null);
+    
+    // Validate all fields first
+    if (!validateAllFields()) {
       return;
     }
 
-    // Additional client-side validation
-    if (formData.password.length < 8) {
-      toast({
-        title: "Weak Password",
-        description: "Password must be at least 8 characters long",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!/^[a-z0-9]+$/.test(formData.partnerCode)) {
-      toast({
-        title: "Invalid Partner Code",
-        description: "Partner code must contain only lowercase letters and numbers",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    submitRef.current = true;
     setLoading(true);
+    
     try {
-      // Call the edge function to create partner with auth
+      // Normalize email before sending
+      const normalizedEmail = normalizeEmail(formData.email);
+      
       const { data, error } = await supabase.functions.invoke('create-partner-with-auth', {
         body: {
-          name: formData.name,
-          email: formData.email,
+          name: formData.name.trim(),
+          email: normalizedEmail,
           password: formData.password,
-          phone: formData.phone || undefined,
-          address: formData.address || undefined,
+          phone: formData.phone?.trim() || undefined,
+          address: formData.address?.trim() || undefined,
           partnerCode: formData.partnerCode,
         }
       });
 
-      // Check for function invocation errors
+      // Handle function invocation errors
       if (error) {
-        console.error('Function invocation error:', error);
-        throw new Error(error.message || 'Failed to create partner');
+        console.error('[CreatePartner] Function error:', error);
+        const apiError = parseApiError(error.message);
+        setTopLevelError(apiError.message);
+        
+        // Set field-specific error if applicable
+        if (apiError.field) {
+          setErrors(prev => ({ ...prev, [apiError.field!]: apiError.message }));
+        }
+        
+        toast({
+          title: 'Failed to Create Partner',
+          description: apiError.message,
+          variant: getToastVariant(apiError.type),
+        });
+        return;
       }
 
-      // Check for errors in the response data
+      // Handle errors in response data
       if (!data || data.error) {
         const errorMessage = data?.error || 'Failed to create partner';
-        console.error('Partner creation error:', errorMessage);
-        throw new Error(errorMessage);
+        console.error('[CreatePartner] API error:', errorMessage);
+        const apiError = parseApiError(errorMessage);
+        setTopLevelError(apiError.message);
+        
+        if (apiError.field) {
+          setErrors(prev => ({ ...prev, [apiError.field!]: apiError.message }));
+        }
+        
+        toast({
+          title: 'Failed to Create Partner',
+          description: apiError.message,
+          variant: getToastVariant(apiError.type),
+        });
+        return;
       }
 
       // Validate response structure
       if (!data.success || !data.partner) {
-        console.error('Invalid response structure:', data);
-        throw new Error('Invalid response from server');
+        console.error('[CreatePartner] Invalid response:', data);
+        setTopLevelError(ERROR_COPY.SERVER_ERROR);
+        toast({
+          title: 'Failed to Create Partner',
+          description: ERROR_COPY.SERVER_ERROR,
+          variant: 'destructive',
+        });
+        return;
       }
 
-      // Generate shareable URL
+      // SUCCESS - Only show green success after backend confirms
       const partnerUrl = data.partner.dashboard_url;
       
       setCreatedPartner({
         code: formData.partnerCode,
         url: partnerUrl,
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
-        name: formData.name,
+        name: formData.name.trim(),
       });
 
       toast({
-        title: "Partner Created Successfully",
-        description: `${formData.name} has been created with login credentials`,
+        title: 'Success',
+        description: SUCCESS_COPY.PARTNER_CREATED,
       });
 
       onPartnerCreated();
-    } catch (error: any) {
-      console.error('Error creating partner:', error);
+    } catch (error: unknown) {
+      console.error('[CreatePartner] Exception:', error);
+      const apiError = parseApiError(error);
+      setTopLevelError(apiError.message);
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to create partner with credentials",
-        variant: "destructive",
+        title: 'Failed to Create Partner',
+        description: apiError.message,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
+      submitRef.current = false;
     }
   };
 
@@ -163,14 +301,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({
-        title: "Copied!",
-        description: "Content copied to clipboard",
+        title: 'Copied!',
+        description: 'Content copied to clipboard',
       });
     } catch (error) {
       toast({
-        title: "Copy Failed",
-        description: "Could not copy to clipboard",
-        variant: "destructive",
+        title: 'Copy Failed',
+        description: 'Could not copy to clipboard',
+        variant: 'destructive',
       });
     }
   };
@@ -187,6 +325,9 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     setCreatedPartner(null);
     setCopied(false);
     setShowPassword(false);
+    setErrors({});
+    setTouched({});
+    setTopLevelError(null);
   };
 
   const handleClose = () => {
@@ -194,6 +335,48 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     onOpenChange(false);
   };
 
+  // Field wrapper with validation states
+  const FieldWrapper = ({ 
+    children, 
+    label, 
+    required, 
+    field,
+    helperText,
+  }: { 
+    children: React.ReactNode; 
+    label: string; 
+    required?: boolean;
+    field: keyof PartnerForm;
+    helperText?: string;
+  }) => {
+    const error = errors[field];
+    const isTouched = touched[field];
+    const value = formData[field];
+    const isValid = isTouched && !error && value;
+    const showError = isTouched && error;
+
+    return (
+      <div className="space-y-1">
+        <Label htmlFor={field} className="flex items-center gap-1">
+          {label}
+          {required && <span className="text-destructive">*</span>}
+          {isValid && <CheckCircle className="h-3.5 w-3.5 text-success" />}
+        </Label>
+        {children}
+        {showError && (
+          <p className="text-xs text-destructive flex items-center gap-1" role="alert">
+            <AlertCircle className="h-3 w-3" />
+            {error}
+          </p>
+        )}
+        {helperText && !showError && (
+          <p className="text-xs text-muted-foreground">{helperText}</p>
+        )}
+      </div>
+    );
+  };
+
+  // Success view
   if (createdPartner) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
@@ -209,7 +392,6 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Dashboard URL */}
             <div>
               <Label className="text-sm font-medium">Dashboard URL:</Label>
               <div className="flex items-center space-x-2 mt-1">
@@ -227,8 +409,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
 
             <Separator />
 
-            {/* Login Credentials */}
-            <Alert>
+            <Alert className="border-success/30 bg-success-light">
               <Building2 className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-2">
@@ -320,42 +501,72 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
           </DialogDescription>
         </DialogHeader>
 
+        {/* Top-level error banner (Red) */}
+        {topLevelError && (
+          <Alert variant="destructive" className="border-destructive bg-destructive-light">
+            <XCircle className="h-4 w-4" />
+            <AlertDescription className="font-medium">
+              {topLevelError}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label htmlFor="name">Organization Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., CashKaro Education"
-                required
-              />
+              <FieldWrapper label="Organization Name" required field="name">
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onBlur={() => handleBlur('name')}
+                  placeholder="e.g., CashKaro Education"
+                  disabled={loading}
+                  aria-required="true"
+                  aria-invalid={!!errors.name}
+                  className={cn(
+                    touched.name && errors.name && 'border-destructive focus-visible:ring-destructive',
+                    touched.name && !errors.name && formData.name && 'border-success'
+                  )}
+                />
+              </FieldWrapper>
             </div>
 
-            <div>
-              <Label htmlFor="email">Contact Email *</Label>
+            <FieldWrapper label="Contact Email" required field="email">
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
                 placeholder="partner@example.com"
-                required
+                disabled={loading}
+                aria-required="true"
+                aria-invalid={!!errors.email}
+                className={cn(
+                  touched.email && errors.email && 'border-destructive focus-visible:ring-destructive',
+                  touched.email && !errors.email && formData.email && 'border-success'
+                )}
               />
-            </div>
+            </FieldWrapper>
 
-            <div>
-              <Label htmlFor="password">Login Password *</Label>
+            <FieldWrapper label="Login Password" required field="password">
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    onBlur={() => handleBlur('password')}
                     placeholder="Enter secure password"
-                    required
+                    disabled={loading}
+                    aria-required="true"
+                    aria-invalid={!!errors.password}
+                    className={cn(
+                      touched.password && errors.password && 'border-destructive focus-visible:ring-destructive',
+                      touched.password && !errors.password && formData.password && 'border-success'
+                    )}
                   />
                   <Button
                     type="button"
@@ -363,6 +574,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -371,55 +583,73 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
                   type="button"
                   variant="outline"
                   onClick={generatePassword}
+                  disabled={loading}
                 >
                   Generate
                 </Button>
               </div>
-            </div>
+            </FieldWrapper>
 
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
+            <FieldWrapper label="Phone Number" field="phone" helperText="Optional">
               <Input
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                onBlur={() => handleBlur('phone')}
                 placeholder="+91 98765 43210"
+                disabled={loading}
+                className={cn(
+                  touched.phone && errors.phone && 'border-destructive focus-visible:ring-destructive',
+                  touched.phone && !errors.phone && formData.phone && 'border-success'
+                )}
               />
+            </FieldWrapper>
+
+            <div className="col-span-2">
+              <FieldWrapper 
+                label="Partner Code" 
+                required 
+                field="partnerCode"
+                helperText={`Dashboard URL: /partner/${formData.partnerCode || 'code'}`}
+              >
+                <div className="flex gap-2">
+                  <Input
+                    id="partnerCode"
+                    value={formData.partnerCode}
+                    onChange={(e) => handleInputChange('partnerCode', e.target.value)}
+                    onBlur={() => handleBlur('partnerCode')}
+                    placeholder="e.g., cashkaro"
+                    disabled={loading}
+                    aria-required="true"
+                    aria-invalid={!!errors.partnerCode}
+                    className={cn(
+                      touched.partnerCode && errors.partnerCode && 'border-destructive focus-visible:ring-destructive',
+                      touched.partnerCode && !errors.partnerCode && formData.partnerCode && 'border-success'
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generatePartnerCode}
+                    disabled={!formData.name || loading}
+                  >
+                    Generate
+                  </Button>
+                </div>
+              </FieldWrapper>
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="partnerCode">Partner Code *</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="partnerCode"
-                  value={formData.partnerCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, partnerCode: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') }))}
-                  placeholder="e.g., cashkaro"
-                  required
+              <FieldWrapper label="Address" field="address" helperText="Optional">
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="Business address"
+                  rows={2}
+                  disabled={loading}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={generatePartnerCode}
-                  disabled={!formData.name}
-                >
-                  Generate
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                This will be used in the dashboard URL: /partner/{formData.partnerCode || 'code'}
-              </p>
-            </div>
-
-            <div className="col-span-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Business address"
-                rows={2}
-              />
+              </FieldWrapper>
             </div>
           </div>
 
@@ -434,7 +664,12 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
-            <LoadingButton type="submit" loading={loading} loadingText="Creating Partner...">
+            <LoadingButton 
+              type="submit" 
+              loading={loading} 
+              loadingText="Creating Partner..."
+              disabled={loading}
+            >
               Create Partner with Login
             </LoadingButton>
           </DialogFooter>
