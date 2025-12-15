@@ -117,13 +117,15 @@ serve(async (req) => {
     console.log('✅ Lender found:', lender.name);
 
     // Create lead
-    console.log('📋 Creating lead...');
+    // Use partner_id from request body (admin creating on behalf of partner) or from logged-in user
+    const partnerId = body.partner_id || appUser.partner_id;
+    console.log('📋 Creating lead for partner:', partnerId || 'Direct (no partner)');
     const lead = await createLead(
       supabaseAdmin,
       student.id,
       coApplicant.id,
       lender.id,
-      appUser.partner_id,
+      partnerId,
       body
     );
     console.log('✅ Lead created:', lead.case_id);
