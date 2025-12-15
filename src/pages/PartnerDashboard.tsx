@@ -10,6 +10,7 @@ import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
 import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
 import { NewLeadSelector } from "@/components/partner/NewLeadSelector";
 import { QuickLeadModal } from "@/components/partner/QuickLeadModal";
+import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
 import { Partner } from "@/types/partner";
 import { RefactoredLead } from "@/types/refactored-lead";
 
@@ -31,6 +32,8 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   // Modal states
   const [showLeadSelector, setShowLeadSelector] = useState(false);
   const [showQuickLead, setShowQuickLead] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [selectedQuickLead, setSelectedQuickLead] = useState<RefactoredLead | null>(null);
 
   // Calculate pending docs count
   const pendingDocsCount = useMemo(() => {
@@ -83,6 +86,16 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   };
 
   const handleQuickLeadSuccess = () => {
+    refetchLeads();
+    refetchKPIs();
+  };
+
+  const handleCompleteLead = (lead: RefactoredLead) => {
+    setSelectedQuickLead(lead);
+    setShowCompleteModal(true);
+  };
+
+  const handleCompleteSuccess = () => {
     refetchLeads();
     refetchKPIs();
   };
@@ -156,6 +169,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
           leads={filteredLeads}
           loading={leadsLoading}
           onUploadDocs={handleUploadDocs}
+          onCompleteLead={handleCompleteLead}
           onNewLead={handleNewLead}
         />
       </main>
@@ -173,6 +187,17 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         open={showQuickLead}
         onClose={() => setShowQuickLead(false)}
         onSuccess={handleQuickLeadSuccess}
+      />
+
+      {/* Complete Lead Modal */}
+      <CompleteLeadModal
+        open={showCompleteModal}
+        onClose={() => {
+          setShowCompleteModal(false);
+          setSelectedQuickLead(null);
+        }}
+        lead={selectedQuickLead}
+        onSuccess={handleCompleteSuccess}
       />
     </div>
   );

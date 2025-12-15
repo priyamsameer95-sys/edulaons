@@ -79,6 +79,8 @@ export interface RefactoredLead {
   intake_year: number | null;
   status: 'new' | 'contacted' | 'in_progress' | 'document_review' | 'approved' | 'rejected' | 'withdrawn';
   documents_status: 'pending' | 'uploaded' | 'verified' | 'rejected' | 'resubmission_required';
+  is_quick_lead: boolean | null;
+  quick_lead_completed_at: string | null;
   created_at: string;
   updated_at: string;
   
@@ -121,6 +123,8 @@ export interface DbRefactoredLead {
   intake_year: number | null;
   status: string;
   documents_status: string;
+  is_quick_lead: boolean | null;
+  quick_lead_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +149,8 @@ export const mapDbRefactoredLeadToLead = (dbLead: DbRefactoredLead & {
   intake_year: dbLead.intake_year,
   status: dbLead.status as RefactoredLead['status'],
   documents_status: dbLead.documents_status as RefactoredLead['documents_status'],
+  is_quick_lead: dbLead.is_quick_lead,
+  quick_lead_completed_at: dbLead.quick_lead_completed_at,
   created_at: dbLead.created_at,
   updated_at: dbLead.updated_at,
   student: dbLead.students ? {
