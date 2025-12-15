@@ -406,6 +406,7 @@ const AdminDashboardV2 = () => {
             refetch();
           }}
           partners={allPartners}
+          defaultPartnerId={filters.partnerId}
         />
       </div>
     </AdminErrorBoundary>

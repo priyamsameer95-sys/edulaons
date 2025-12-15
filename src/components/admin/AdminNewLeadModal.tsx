@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ interface AdminNewLeadModalProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   partners: PartnerOption[];
+  defaultPartnerId?: string | null;
 }
 
 interface FormData {
@@ -107,7 +108,7 @@ function FieldWrapper({
   );
 }
 
-export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: AdminNewLeadModalProps) => {
+export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, defaultPartnerId }: AdminNewLeadModalProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [coApplicantOpen, setCoApplicantOpen] = useState(true);
@@ -135,9 +136,9 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
     co_applicant_pin_code: '',
   });
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
-      partner_id: '',
+      partner_id: defaultPartnerId || '',
       student_name: '',
       student_phone: '',
       student_email: '',
@@ -156,7 +157,15 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners }: A
     setErrors({});
     setTouched({});
     setTopLevelError(null);
-  };
+  }, [defaultPartnerId]);
+
+  // Auto-select partner when modal opens with defaultPartnerId
+  useEffect(() => {
+    if (open && defaultPartnerId) {
+      setFormData(prev => ({ ...prev, partner_id: defaultPartnerId }));
+      setTouched(prev => ({ ...prev, partner_id: true }));
+    }
+  }, [open, defaultPartnerId]);
 
   // Validate a single field
   const validateField = (field: keyof FormData, value: string): string | null => {
