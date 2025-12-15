@@ -36,7 +36,7 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="h-full flex flex-col">
       {/* Unified Document Checklist - handles both types and uploaded docs */}
       <InlineDocumentUpload 
         leadId={leadId} 

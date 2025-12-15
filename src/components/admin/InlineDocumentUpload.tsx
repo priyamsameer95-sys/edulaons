@@ -152,9 +152,9 @@ export function InlineDocumentUpload({
   };
 
   return (
-    <div className="border rounded-lg bg-card">
+    <div className="border rounded-lg bg-card flex flex-col h-full">
       {/* Compact Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b">
+      <div className="flex items-center justify-between px-3 py-2 border-b shrink-0">
         <div className="flex items-center gap-2">
           <Upload className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium text-sm">Documents</span>
@@ -181,8 +181,8 @@ export function InlineDocumentUpload({
         )}
       </div>
 
-      {/* Compact Document List */}
-      <ScrollArea className="h-[320px]">
+      {/* Full height Document List */}
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-2 space-y-3">
           {Object.entries(groupedTypes).map(([category, types]) => (
             <div key={category}>
