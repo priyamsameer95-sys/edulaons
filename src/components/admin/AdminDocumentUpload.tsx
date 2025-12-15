@@ -12,6 +12,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Upload, Loader2 } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
+import { useLeadDocuments } from '@/hooks/useLeadDocuments';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -44,6 +45,7 @@ export function AdminDocumentUpload({
   const [showPreview, setShowPreview] = useState(false);
 
   const { documentTypes } = useDocumentTypes();
+  const { documents: uploadedDocuments, refetch: refetchDocuments } = useLeadDocuments(leadId);
   const { toast } = useToast();
   const { validateDocument, isValidating, validationResult, resetValidation } = useDocumentValidation();
 
@@ -183,6 +185,7 @@ export function AdminDocumentUpload({
           : 'Document uploaded and queued for review.',
       });
 
+      refetchDocuments();
       onUploadComplete();
       onOpenChange(false);
     } catch (err) {
@@ -213,6 +216,7 @@ export function AdminDocumentUpload({
               documentTypes={documentTypes}
               selectedDocumentType={selectedDocumentType}
               onSelect={setSelectedDocumentType}
+              uploadedDocuments={uploadedDocuments}
             />
 
             <FileDropZone

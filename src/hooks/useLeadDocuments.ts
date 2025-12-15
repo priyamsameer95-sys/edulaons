@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-interface LeadDocument {
+export interface LeadDocument {
   id: string;
   lead_id: string;
   document_type_id: string;
@@ -11,18 +11,24 @@ interface LeadDocument {
   file_path: string;
   file_size: number;
   mime_type: string;
-  upload_status: string;
-  uploaded_by: string;
-  verification_notes?: string;
-  version: number;
-  uploaded_at: string;
-  verified_at?: string;
+  upload_status: string | null;
+  uploaded_by: string | null;
+  verification_status: string;
+  verification_notes?: string | null;
+  ai_validation_status?: string | null;
+  ai_detected_type?: string | null;
+  ai_confidence_score?: number | null;
+  ai_quality_assessment?: string | null;
+  ai_validation_notes?: string | null;
+  version: number | null;
+  uploaded_at: string | null;
+  verified_at?: string | null;
   document_types?: {
     id: string;
     name: string;
     category: string;
-    description: string;
-  };
+    description: string | null;
+  } | null;
 }
 
 export function useLeadDocuments(leadId?: string) {
