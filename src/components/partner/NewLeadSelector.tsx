@@ -113,6 +113,13 @@ export const NewLeadSelector = ({
           </button>
         </div>
 
+        {/* Pro Tip */}
+        <div className="text-center px-4 py-2 bg-muted/50 rounded-lg">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">💡 Pro Tip:</span> Full leads convert 2x faster and get priority processing from lenders.
+          </p>
+        </div>
+
         <div className="flex justify-center">
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel

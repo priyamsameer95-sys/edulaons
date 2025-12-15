@@ -290,7 +290,49 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
     }
   };
 
+  // Calculate quality score based on filled fields
+  const calculateQualityScore = useMemo(() => {
+    let score = 0;
+    const breakdown: string[] = [];
+    
+    if (formData.student_email.trim()) {
+      score += 20;
+    } else {
+      breakdown.push('email');
+    }
+    if (formData.university_id) {
+      score += 20;
+    } else {
+      breakdown.push('university');
+    }
+    if (formData.co_applicant_name.trim() && formData.co_applicant_monthly_salary) {
+      score += 20;
+    }
+    // Loan amount in sweet spot (15-50L)
+    const loanNum = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
+    if (loanNum >= 1500000 && loanNum <= 5000000) {
+      score += 20;
+    } else if (loanNum > 0) {
+      score += 10;
+    }
+    if (formData.student_pin_code.trim()) {
+      score += 20;
+    }
+    
+    return { score, missingFields: breakdown };
+  }, [formData]);
+
+  const getQualityMessage = (score: number, missing: string[]) => {
+    if (score >= 80) return "Great lead! High conversion potential.";
+    if (missing.includes('email')) return "Adding email improves student response by 40%";
+    if (missing.includes('university')) return "University selection speeds up lender matching";
+    return "Complete profile for better lender matching";
+  };
+
   if (showSuccess) {
+    const { score, missingFields } = calculateQualityScore;
+    const stars = Math.round(score / 20);
+    
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-sm">
@@ -303,7 +345,21 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
               <p className="text-sm text-muted-foreground mt-1">
                 Case ID: {createdCaseId}
               </p>
-              <p className="text-xs text-muted-foreground mt-2">
+              
+              {/* Quality Score */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-center gap-1 text-amber-500">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <span key={i} className={i < stars ? 'opacity-100' : 'opacity-30'}>★</span>
+                  ))}
+                  <span className="text-xs text-muted-foreground ml-1">({score}%)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {getQualityMessage(score, missingFields)}
+                </p>
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-3">
                 Student will receive notification to complete details
               </p>
             </div>
@@ -371,8 +427,10 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
               placeholder="student@email.com"
               className={errors.student_email ? 'border-destructive' : ''}
             />
-            {errors.student_email && (
+            {errors.student_email ? (
               <p className="text-xs text-destructive">{errors.student_email}</p>
+            ) : !formData.student_email.trim() && (
+              <p className="text-xs text-muted-foreground">Leads with email convert 40% faster</p>
             )}
           </div>
 
@@ -434,8 +492,10 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
               placeholder="Select university"
               disabled={!formData.country}
             />
-            {errors.university_id && (
+            {errors.university_id ? (
               <p className="text-xs text-destructive">{errors.university_id}</p>
+            ) : !formData.university_id && formData.country && (
+              <p className="text-xs text-muted-foreground">Speeds up lender matching</p>
             )}
           </div>
 
