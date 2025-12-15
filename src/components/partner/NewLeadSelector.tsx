@@ -47,12 +47,12 @@ export const NewLeadSelector = ({
             </div>
 
             <div className="text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">You fill:</p>
+              <p className="font-medium text-foreground">You fill (10 fields):</p>
               <ul className="list-disc list-inside space-y-0.5 pl-1">
                 <li>Name, Phone, Email, PIN</li>
                 <li>Country & University</li>
                 <li>Loan Amount</li>
-                <li>Co-applicant Type & Salary</li>
+                <li>Co-applicant Name, Type & Salary</li>
               </ul>
             </div>
 

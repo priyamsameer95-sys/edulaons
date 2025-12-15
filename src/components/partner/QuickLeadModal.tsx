@@ -35,6 +35,7 @@ interface FormData {
   university_id: string;
   loan_amount: string;
   co_applicant_relationship: string;
+  co_applicant_name: string;
   co_applicant_monthly_salary: string;
 }
 
@@ -47,6 +48,7 @@ interface FormErrors {
   university_id?: string;
   loan_amount?: string;
   co_applicant_relationship?: string;
+  co_applicant_name?: string;
   co_applicant_monthly_salary?: string;
 }
 
@@ -77,6 +79,7 @@ const initialFormData: FormData = {
   university_id: "",
   loan_amount: "",
   co_applicant_relationship: "",
+  co_applicant_name: "",
   co_applicant_monthly_salary: "",
 };
 
@@ -164,6 +167,13 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
       newErrors.co_applicant_relationship = "Required";
     }
 
+    // Co-Applicant Name
+    if (!formData.co_applicant_name.trim()) {
+      newErrors.co_applicant_name = "Required";
+    } else if (formData.co_applicant_name.trim().length < 2) {
+      newErrors.co_applicant_name = "Min 2 characters";
+    }
+
     // Salary
     const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
     if (!formData.co_applicant_monthly_salary) {
@@ -192,6 +202,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
           university_id: formData.university_id || undefined,
           loan_amount: parseInt(formData.loan_amount.replace(/,/g, '')),
           co_applicant_relationship: formData.co_applicant_relationship,
+          co_applicant_name: formData.co_applicant_name.trim(),
           co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')),
         }
       });
@@ -427,6 +438,23 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
             </Select>
             {errors.co_applicant_relationship && (
               <p className="text-xs text-destructive">{errors.co_applicant_relationship}</p>
+            )}
+          </div>
+
+          {/* Co-Applicant Name */}
+          <div className="space-y-1.5">
+            <Label htmlFor="co_applicant_name" className="text-xs">
+              Co-Applicant Name *
+            </Label>
+            <Input
+              id="co_applicant_name"
+              value={formData.co_applicant_name}
+              onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
+              placeholder="Full name"
+              className={errors.co_applicant_name ? 'border-destructive' : ''}
+            />
+            {errors.co_applicant_name && (
+              <p className="text-xs text-destructive">{errors.co_applicant_name}</p>
             )}
           </div>
 
