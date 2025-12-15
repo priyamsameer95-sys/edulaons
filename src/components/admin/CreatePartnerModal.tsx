@@ -1,5 +1,5 @@
 import { LoadingButton } from '@/components/ui/loading-button';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,51 @@ interface FieldErrors {
 interface TouchedFields {
   [key: string]: boolean;
 }
+
+// Memoized FieldWrapper - moved outside component to prevent recreation
+interface FieldWrapperProps {
+  children: React.ReactNode;
+  label: string;
+  required?: boolean;
+  field: string;
+  helperText?: string;
+  error: string | null | undefined;
+  isTouched: boolean | undefined;
+  isValid: boolean;
+}
+
+const FieldWrapper = memo(({ 
+  children, 
+  label, 
+  required, 
+  field,
+  helperText,
+  error,
+  isTouched,
+  isValid,
+}: FieldWrapperProps) => {
+  const showError = isTouched && error;
+
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={field} className="flex items-center gap-1">
+        {label}
+        {required && <span className="text-destructive">*</span>}
+        {isValid && <CheckCircle className="h-3.5 w-3.5 text-success" />}
+      </Label>
+      {children}
+      {showError && (
+        <p className="text-xs text-destructive flex items-center gap-1" role="alert">
+          <AlertCircle className="h-3 w-3" />
+          {error}
+        </p>
+      )}
+      {helperText && !showError && (
+        <p className="text-xs text-muted-foreground">{helperText}</p>
+      )}
+    </div>
+  );
+});
 
 const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePartnerModalProps) => {
   const { toast } = useToast();
@@ -122,7 +167,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     }
   };
 
-  const handleInputChange = (field: keyof PartnerForm, value: string) => {
+  const handleInputChange = useCallback((field: keyof PartnerForm, value: string) => {
     let processedValue = value;
     
     // Normalize email
@@ -137,16 +182,10 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     
     setFormData(prev => ({ ...prev, [field]: processedValue }));
     
-    // Clear field error when typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
-    }
-    
-    // Clear top-level error when user makes changes
-    if (topLevelError) {
-      setTopLevelError(null);
-    }
-  };
+    // Batch clear errors - only update if there's something to clear
+    setErrors(prev => prev[field] ? { ...prev, [field]: null } : prev);
+    setTopLevelError(prev => prev ? null : prev);
+  }, []);
 
   const handleBlur = (field: keyof PartnerForm) => {
     setTouched(prev => ({ ...prev, [field]: true }));
@@ -335,46 +374,6 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     onOpenChange(false);
   };
 
-  // Field wrapper with validation states
-  const FieldWrapper = ({ 
-    children, 
-    label, 
-    required, 
-    field,
-    helperText,
-  }: { 
-    children: React.ReactNode; 
-    label: string; 
-    required?: boolean;
-    field: keyof PartnerForm;
-    helperText?: string;
-  }) => {
-    const error = errors[field];
-    const isTouched = touched[field];
-    const value = formData[field];
-    const isValid = isTouched && !error && value;
-    const showError = isTouched && error;
-
-    return (
-      <div className="space-y-1">
-        <Label htmlFor={field} className="flex items-center gap-1">
-          {label}
-          {required && <span className="text-destructive">*</span>}
-          {isValid && <CheckCircle className="h-3.5 w-3.5 text-success" />}
-        </Label>
-        {children}
-        {showError && (
-          <p className="text-xs text-destructive flex items-center gap-1" role="alert">
-            <AlertCircle className="h-3 w-3" />
-            {error}
-          </p>
-        )}
-        {helperText && !showError && (
-          <p className="text-xs text-muted-foreground">{helperText}</p>
-        )}
-      </div>
-    );
-  };
 
   // Success view
   if (createdPartner) {
@@ -514,7 +513,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <FieldWrapper label="Organization Name" required field="name">
+              <FieldWrapper 
+                label="Organization Name" 
+                required 
+                field="name"
+                error={errors.name}
+                isTouched={touched.name}
+                isValid={!!touched.name && !errors.name && !!formData.name}
+              >
                 <Input
                   id="name"
                   value={formData.name}
@@ -532,7 +538,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
               </FieldWrapper>
             </div>
 
-            <FieldWrapper label="Contact Email" required field="email">
+            <FieldWrapper 
+              label="Contact Email" 
+              required 
+              field="email"
+              error={errors.email}
+              isTouched={touched.email}
+              isValid={!!touched.email && !errors.email && !!formData.email}
+            >
               <Input
                 id="email"
                 type="email"
@@ -550,7 +563,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
               />
             </FieldWrapper>
 
-            <FieldWrapper label="Login Password" required field="password">
+            <FieldWrapper 
+              label="Login Password" 
+              required 
+              field="password"
+              error={errors.password}
+              isTouched={touched.password}
+              isValid={!!touched.password && !errors.password && !!formData.password}
+            >
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
@@ -590,7 +610,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
               </div>
             </FieldWrapper>
 
-            <FieldWrapper label="Phone Number" field="phone" helperText="Optional">
+            <FieldWrapper 
+              label="Phone Number" 
+              field="phone" 
+              helperText="Optional"
+              error={errors.phone}
+              isTouched={touched.phone}
+              isValid={!!touched.phone && !errors.phone && !!formData.phone}
+            >
               <Input
                 id="phone"
                 value={formData.phone}
@@ -611,6 +638,9 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
                 required 
                 field="partnerCode"
                 helperText={`Dashboard URL: /partner/${formData.partnerCode || 'code'}`}
+                error={errors.partnerCode}
+                isTouched={touched.partnerCode}
+                isValid={!!touched.partnerCode && !errors.partnerCode && !!formData.partnerCode}
               >
                 <div className="flex gap-2">
                   <Input
@@ -640,7 +670,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
             </div>
 
             <div className="col-span-2">
-              <FieldWrapper label="Address" field="address" helperText="Optional">
+              <FieldWrapper 
+                label="Address" 
+                field="address" 
+                helperText="Optional"
+                error={errors.address}
+                isTouched={touched.address}
+                isValid={!!touched.address && !errors.address && !!formData.address}
+              >
                 <Textarea
                   id="address"
                   value={formData.address}
