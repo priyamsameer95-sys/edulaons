@@ -100,11 +100,23 @@ export function DocumentChecklistRow({
       status === 'rejected' && 'bg-destructive/5',
       status === 'not_uploaded' && 'hover:bg-muted/30'
     )}>
-      {/* Document Name */}
-      <div className="flex-1 min-w-0 flex items-center gap-1">
-        <span className="text-xs font-medium truncate">{documentType.name}</span>
-        {documentType.required && (
-          <span className="text-destructive text-[10px]">*</span>
+      {/* Document Name & AI Note */}
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-medium truncate">{documentType.name}</span>
+          {documentType.required && (
+            <span className="text-destructive text-[10px]">*</span>
+          )}
+        </div>
+        {/* Inline AI validation note */}
+        {uploadedDocument?.ai_validation_notes && 
+         (status === 'rejected' || uploadedDocument.ai_validation_status === 'manual_review') && (
+          <span className={cn(
+            "text-[10px] truncate max-w-[200px]",
+            status === 'rejected' ? "text-destructive" : "text-amber-600 dark:text-amber-400"
+          )}>
+            ⚠️ {uploadedDocument.ai_validation_notes}
+          </span>
         )}
       </div>
 
