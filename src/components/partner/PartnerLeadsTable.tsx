@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
 import { 
   Pagination, 
   PaginationContent, 
@@ -13,7 +12,7 @@ import {
   PaginationNext, 
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Eye, Upload, Users, Plus } from "lucide-react";
+import { Eye, Upload, Users, Plus, Zap, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -25,6 +24,7 @@ interface PartnerLeadsTableProps {
   leads: RefactoredLead[];
   loading: boolean;
   onUploadDocs: (lead: RefactoredLead) => void;
+  onCompleteLead?: (lead: RefactoredLead) => void;
   onNewLead?: () => void;
 }
 
@@ -32,6 +32,7 @@ export const PartnerLeadsTable = ({
   leads,
   loading,
   onUploadDocs,
+  onCompleteLead,
   onNewLead,
 }: PartnerLeadsTableProps) => {
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
@@ -48,14 +49,13 @@ export const PartnerLeadsTable = ({
     setSheetOpen(true);
   };
 
-  const getLoanTypeBadge = (type: string) => {
-    return type === 'secured' ? 
-      'bg-primary text-primary-foreground' : 
-      'bg-secondary text-secondary-foreground';
+  const isIncompleteQuickLead = (lead: RefactoredLead) => {
+    return lead.is_quick_lead === true && !lead.quick_lead_completed_at;
   };
 
-  const needsDocUpload = (lead: RefactoredLead) => {
-    return lead.documents_status === 'pending' || lead.documents_status === 'resubmission_required';
+  const canUploadDocs = (lead: RefactoredLead) => {
+    const isIncomplete = isIncompleteQuickLead(lead);
+    return !isIncomplete && (lead.documents_status === 'pending' || lead.documents_status === 'resubmission_required');
   };
 
   if (loading) {
@@ -139,51 +139,94 @@ export const PartnerLeadsTable = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedLeads.map((lead) => (
-                  <TableRow key={lead.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium text-sm">{lead.case_id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-sm">{lead.student?.name || 'N/A'}</div>
-                        <div className="text-xs text-muted-foreground">{lead.student?.phone || ''}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={lead.status as LeadStatus} type="lead" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
-                        {needsDocUpload(lead) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onUploadDocs(lead)}
-                            className="h-6 px-2 text-xs text-primary hover:text-primary"
-                          >
-                            <Upload className="h-3 w-3" />
-                          </Button>
+                {paginatedLeads.map((lead) => {
+                  const isIncomplete = isIncompleteQuickLead(lead);
+                  
+                  return (
+                    <TableRow key={lead.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium text-sm">
+                        <div className="flex items-center gap-2">
+                          {lead.case_id}
+                          {isIncomplete && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1"
+                            >
+                              <Zap className="h-3 w-3" />
+                              Quick
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-sm">{lead.student?.name || 'N/A'}</div>
+                          <div className="text-xs text-muted-foreground">{lead.student?.phone || ''}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {isIncomplete ? (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            Incomplete
+                          </Badge>
+                        ) : (
+                          <StatusBadge status={lead.status as LeadStatus} type="lead" />
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      ₹{(lead.loan_amount / 100000).toFixed(1)}L
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(lead.created_at), 'dd MMM')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewLead(lead)}
-                        className="h-8 px-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {isIncomplete ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <>
+                              <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
+                              {canUploadDocs(lead) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onUploadDocs(lead)}
+                                  className="h-6 px-2 text-xs text-primary hover:text-primary"
+                                >
+                                  <Upload className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        ₹{(lead.loan_amount / 100000).toFixed(1)}L
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(lead.created_at), 'dd MMM')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {isIncomplete && onCompleteLead ? (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => onCompleteLead(lead)}
+                              className="h-8 px-3 text-xs gap-1"
+                            >
+                              <ClipboardCheck className="h-3.5 w-3.5" />
+                              Complete
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewLead(lead)}
+                              className="h-8 px-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
