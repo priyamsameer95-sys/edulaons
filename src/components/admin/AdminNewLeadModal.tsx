@@ -241,6 +241,61 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
     return x.length > 1 ? formatted + '.' + x[1] : formatted;
   };
 
+  // Number to words helper
+  const numberToWords = (n: number): string => {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+      'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    return n.toString();
+  };
+
+  // Convert amount to words
+  const getAmountInWords = (value: string): string => {
+    const num = parseInt(value.replace(/,/g, '') || '0');
+    if (num === 0) return '';
+    
+    if (num >= 10000000) {
+      const crores = num / 10000000;
+      const wholeCrores = Math.floor(crores);
+      const decimalPart = Math.round((crores - wholeCrores) * 100);
+      if (decimalPart === 0) {
+        return `${numberToWords(wholeCrores)} Crore`;
+      }
+      return `${numberToWords(wholeCrores)}.${decimalPart.toString().padStart(2, '0')} Crore`;
+    }
+    
+    if (num >= 100000) {
+      const lakhs = num / 100000;
+      const wholeLakhs = Math.floor(lakhs);
+      const decimalPart = Math.round((lakhs - wholeLakhs) * 100);
+      if (decimalPart === 0) {
+        return `${numberToWords(wholeLakhs)} Lakh`;
+      }
+      return `${numberToWords(wholeLakhs)}.${decimalPart.toString().padStart(2, '0')} Lakh`;
+    }
+    
+    if (num >= 1000) {
+      const thousands = num / 1000;
+      const wholeThousands = Math.floor(thousands);
+      const decimalPart = Math.round((thousands - wholeThousands) * 10);
+      if (decimalPart === 0) {
+        return `${numberToWords(wholeThousands)} Thousand`;
+      }
+      return `${wholeThousands}.${decimalPart} Thousand`;
+    }
+    
+    return `₹${num.toLocaleString('en-IN')}`;
+  };
+
+  // Loan amount in words
+  const loanAmountInWords = useMemo(() => getAmountInWords(formData.amount_requested), [formData.amount_requested]);
+  
+  // Salary in words
+  const salaryInWords = useMemo(() => getAmountInWords(formData.co_applicant_salary), [formData.co_applicant_salary]);
+
   const handleInputChange = (field: keyof FormData, value: string) => {
     let processedValue = value;
     
@@ -738,7 +793,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                 error={errors.amount_requested}
                 touched={touched.amount_requested}
                 isValid={!!formData.amount_requested && !validateField('amount_requested', formData.amount_requested)}
-                helperText="Min: ₹1 Lakh • Max: ₹1 Crore"
+                helperText={loanAmountInWords || "Min: ₹1 Lakh • Max: ₹1 Crore"}
                 id="amount_requested"
               >
                 <Input
@@ -869,17 +924,22 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                       error={errors.co_applicant_salary}
                       touched={touched.co_applicant_salary}
                       isValid={!!formData.co_applicant_salary && !validateField('co_applicant_salary', formData.co_applicant_salary)}
-                      helperText="Gross monthly income"
+                      helperText={salaryInWords || "Gross monthly income"}
                       id="co_applicant_salary"
                     >
                       <Input
                         id="co_applicant_salary"
-                        type="number"
-                        value={formData.co_applicant_salary}
-                        onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatIndianNumber(formData.co_applicant_salary)}
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/,/g, '');
+                          if (rawValue === '' || /^\d*$/.test(rawValue)) {
+                            handleInputChange('co_applicant_salary', rawValue);
+                          }
+                        }}
                         onBlur={() => handleBlur('co_applicant_salary')}
-                        placeholder="50000"
-                        min={0}
+                        placeholder="50,000"
                         aria-required="true"
                         aria-invalid={!!errors.co_applicant_salary}
                         className={cn(

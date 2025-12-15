@@ -96,8 +96,8 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
     setErrors(prev => ({ ...prev, [field]: undefined }));
   }, []);
 
-  // Format currency with commas
-  const formatCurrency = useCallback((value: string): string => {
+  // Format currency with commas (use shared utility)
+  const formatCurrencyInput = useCallback((value: string): string => {
     const num = value.replace(/,/g, '').replace(/\D/g, '');
     if (!num) return '';
     return parseInt(num).toLocaleString('en-IN');
@@ -114,9 +114,9 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
     return n.toString();
   };
 
-  // Convert loan amount to words
-  const loanAmountInWords = useMemo(() => {
-    const num = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
+  // Convert amount to words
+  const getAmountInWords = useCallback((value: string): string => {
+    const num = parseInt(value.replace(/,/g, '') || '0');
     if (num === 0) return '';
     
     if (num >= 10000000) {
@@ -139,8 +139,24 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
       return `${numberToWords(wholeLakhs)}.${decimalPart.toString().padStart(2, '0')} Lakh`;
     }
     
+    if (num >= 1000) {
+      const thousands = num / 1000;
+      const wholeThousands = Math.floor(thousands);
+      const decimalPart = Math.round((thousands - wholeThousands) * 10);
+      if (decimalPart === 0) {
+        return `${numberToWords(wholeThousands)} Thousand`;
+      }
+      return `${wholeThousands}.${decimalPart} Thousand`;
+    }
+    
     return `₹${num.toLocaleString('en-IN')}`;
-  }, [formData.loan_amount]);
+  }, []);
+
+  // Convert loan amount to words
+  const loanAmountInWords = useMemo(() => getAmountInWords(formData.loan_amount), [formData.loan_amount, getAmountInWords]);
+  
+  // Convert salary to words
+  const salaryInWords = useMemo(() => getAmountInWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary, getAmountInWords]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -433,7 +449,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
               <Input
                 id="loan_amount"
                 value={formData.loan_amount}
-                onChange={(e) => handleInputChange('loan_amount', formatCurrency(e.target.value))}
+                onChange={(e) => handleInputChange('loan_amount', formatCurrencyInput(e.target.value))}
                 placeholder="30,00,000"
                 className={`pl-7 ${errors.loan_amount ? 'border-destructive' : ''}`}
               />
@@ -498,11 +514,14 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
               <Input
                 id="salary"
                 value={formData.co_applicant_monthly_salary}
-                onChange={(e) => handleInputChange('co_applicant_monthly_salary', formatCurrency(e.target.value))}
+                onChange={(e) => handleInputChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
                 placeholder="50,000"
                 className={`pl-7 ${errors.co_applicant_monthly_salary ? 'border-destructive' : ''}`}
               />
             </div>
+            {salaryInWords && !errors.co_applicant_monthly_salary && (
+              <p className="text-xs text-muted-foreground">{salaryInWords}</p>
+            )}
             {errors.co_applicant_monthly_salary && (
               <p className="text-xs text-destructive">{errors.co_applicant_monthly_salary}</p>
             )}
