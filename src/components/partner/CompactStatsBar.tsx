@@ -16,9 +16,10 @@ interface StatItemProps {
   isActive: boolean;
   onClick: () => void;
   loading: boolean;
+  suffix?: string;
 }
 
-const StatItem = ({ label, value, isActive, onClick, loading }: StatItemProps) => {
+const StatItem = ({ label, value, isActive, onClick, loading, suffix }: StatItemProps) => {
   if (loading) {
     return (
       <div className="flex items-center gap-1.5 px-3 py-1.5">
@@ -39,6 +40,7 @@ const StatItem = ({ label, value, isActive, onClick, loading }: StatItemProps) =
     >
       <span className="font-semibold">{value}</span>
       <span className="text-muted-foreground">{label}</span>
+      {suffix && <span className="text-xs text-green-600 font-medium">{suffix}</span>}
     </button>
   );
 };
@@ -49,11 +51,16 @@ export const CompactStatsBar = ({
   activeFilter,
   onFilterClick,
 }: CompactStatsBarProps) => {
+  // Calculate conversion rate
+  const conversionRate = kpis.totalLeads > 0 
+    ? Math.round((kpis.sanctioned / kpis.totalLeads) * 100) 
+    : 0;
+
   const stats = [
-    { label: "Total", value: kpis.totalLeads, filterKey: null },
-    { label: "In Progress", value: kpis.inPipeline, filterKey: "in_progress" },
-    { label: "Approved", value: kpis.sanctioned, filterKey: "approved" },
-    { label: "Disbursed", value: kpis.disbursed, filterKey: "disbursed" },
+    { label: "Total", value: kpis.totalLeads, filterKey: null, suffix: "" },
+    { label: "In Progress", value: kpis.inPipeline, filterKey: "in_progress", suffix: "" },
+    { label: "Approved", value: kpis.sanctioned, filterKey: "approved", suffix: kpis.totalLeads > 0 ? ` (${conversionRate}%)` : "" },
+    { label: "Disbursed", value: kpis.disbursed, filterKey: "disbursed", suffix: "" },
   ];
 
   return (
@@ -67,6 +74,7 @@ export const CompactStatsBar = ({
             isActive={activeFilter === stat.filterKey}
             onClick={() => onFilterClick(stat.filterKey === activeFilter ? null : stat.filterKey)}
             loading={loading}
+            suffix={stat.suffix}
           />
           {index < stats.length - 1 && (
             <span className="text-border mx-1">|</span>

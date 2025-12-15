@@ -145,16 +145,21 @@ export const PartnerLeadsTable = ({
                   return (
                     <TableRow key={lead.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium text-sm">
-                        <div className="flex items-center gap-2">
-                          {lead.case_id}
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            {lead.case_id}
+                            {isIncomplete && (
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1"
+                              >
+                                <Zap className="h-3 w-3" />
+                                Quick
+                              </Badge>
+                            )}
+                          </div>
                           {isIncomplete && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1"
-                            >
-                              <Zap className="h-3 w-3" />
-                              Quick
-                            </Badge>
+                            <span className="text-[10px] text-amber-600">Complete for 2x match</span>
                           )}
                         </div>
                       </TableCell>
