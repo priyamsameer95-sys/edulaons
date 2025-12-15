@@ -9,19 +9,12 @@ import { LoadingButton } from '@/components/ui/loading-button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2 } from 'lucide-react';
+import { Partner } from '@/types/partner';
 
 interface EditPartnerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  partner: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    address?: string | null;
-    partner_code: string;
-    is_active: boolean;
-  } | null;
+  partner: (Partner & { partner_code: string }) | null;
   onPartnerUpdated: () => void;
 }
 

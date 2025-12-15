@@ -1,20 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useErrorHandler } from './useErrorHandler';
+import { PartnerStats } from '@/types/partner';
 
-export interface PartnerStats {
-  id: string;
-  name: string;
-  partner_code: string;
-  email: string;
-  phone?: string | null;
-  address?: string | null;
-  is_active: boolean;
-  created_at: string;
-  totalLeads: number;
-  activeLenders: number;
-  recentActivity: string | null;
-}
+export type { PartnerStats } from '@/types/partner';
 
 export const usePartnerStats = () => {
   const [stats, setStats] = useState<PartnerStats[]>([]);
@@ -47,19 +36,24 @@ export const usePartnerStats = () => {
       });
 
       // Combine data
-      const partnerStats: PartnerStats[] = partners?.map(partner => ({
-        id: partner.id,
-        name: partner.name,
-        partner_code: partner.partner_code,
-        email: partner.email,
-        phone: partner.phone,
-        address: partner.address,
-        is_active: partner.is_active,
-        created_at: partner.created_at,
-        totalLeads: leadCountMap.get(partner.id) || 0,
-        activeLenders: 1,
-        recentActivity: partner.updated_at,
-      })) || [];
+      const partnerStats: PartnerStats[] = partners?.map(partner => {
+        const leadCount = leadCountMap.get(partner.id) || 0;
+        return {
+          id: partner.id,
+          name: partner.name,
+          partner_code: partner.partner_code,
+          email: partner.email,
+          phone: partner.phone,
+          address: partner.address,
+          is_active: partner.is_active,
+          created_at: partner.created_at,
+          lead_count: leadCount,
+          totalLeads: leadCount,
+          activeLenders: 1,
+          recentActivity: partner.updated_at,
+          last_activity: partner.updated_at,
+        };
+      }) || [];
 
       setStats(partnerStats);
     } catch (error) {

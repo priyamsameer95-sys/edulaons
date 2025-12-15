@@ -69,14 +69,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const { leads, loading, refetch } = useRefactoredLeads();
   const { isAdmin } = useAuth();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 [LeadsTab] Leads updated:', {
-      total: leads.length,
-      loading,
-      sample: leads[0]
-    });
-  }, [leads, loading]);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,16 +91,7 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
    * Applies search, status, loan type, country, and date range filters
    */
   const filteredLeads = useMemo(() => {
-    console.log('🔍 [LeadsTab] Starting filter with:', {
-      totalLeads: leads.length,
-      searchQuery,
-      statusFilter,
-      loanTypeFilter,
-      countryFilter,
-      dateRange
-    });
-    
-    const filtered = leads.filter((lead) => {
+    return leads.filter((lead) => {
       // Search filter - matches name, phone, or case ID
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -143,13 +126,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
 
       return true;
     });
-    
-    console.log('✅ [LeadsTab] Filtered results:', {
-      filtered: filtered.length,
-      original: leads.length
-    });
-    
-    return filtered;
   }, [leads, searchQuery, statusFilter, loanTypeFilter, countryFilter, dateRange]);
 
   /**
@@ -159,14 +135,6 @@ export const LeadsTab = ({ onNewLead }: LeadsTabProps) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
-  
-  console.log('📄 [LeadsTab] Pagination:', {
-    totalPages,
-    currentPage,
-    startIndex,
-    endIndex,
-    paginatedCount: paginatedLeads.length
-  });
   
   /**
    * Reset to page 1 when filters change
