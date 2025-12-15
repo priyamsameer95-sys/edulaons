@@ -19,8 +19,25 @@ import {
   Edit,
   Clock
 } from 'lucide-react';
-import { formatDistanceToNow, differenceInDays } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+// Import shared constants and utilities
+import {
+  STATUS_COLORS,
+  STATUS_LABELS,
+  STATUS_DESCRIPTIONS,
+  DOC_STATUS_COLORS,
+  DOC_STATUS_LABELS,
+  DOC_STATUS_DESCRIPTIONS,
+} from '@/constants/leadStatus';
+import {
+  formatLoanAmount,
+  getAgeDays,
+  getAgeColor,
+  isLeadUrgent,
+  needsAdminAction,
+} from '@/utils/leadTableUtils';
 
 interface LeadQueueTableProps {
   leads: PaginatedLead[];
@@ -37,105 +54,8 @@ interface LeadQueueTableProps {
   onPageSizeChange: (size: number) => void;
 }
 
-// Check if lead needs admin action
-function needsAction(lead: PaginatedLead): { needed: boolean; reason: string } {
-  if (lead.status === 'new') {
-    return { needed: true, reason: 'New lead - needs contact' };
-  }
-  if (lead.documents_status === 'uploaded') {
-    return { needed: true, reason: 'Documents need verification' };
-  }
-  if (lead.documents_status === 'resubmission_required') {
-    return { needed: true, reason: 'Re-submitted docs need review' };
-  }
-  return { needed: false, reason: '' };
-}
-
-// Updated status colors per user request
-const STATUS_COLORS: Record<string, string> = {
-  new: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
-  contacted: 'bg-purple-500/15 text-purple-700 border-purple-500/30',
-  in_progress: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
-  document_review: 'bg-orange-500/15 text-orange-700 border-orange-500/30',
-  approved: 'bg-green-500/15 text-green-700 border-green-500/30',
-  rejected: 'bg-red-500/15 text-red-700 border-red-500/30',
-  withdrawn: 'bg-muted text-muted-foreground border-border',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  in_progress: 'In Progress',
-  document_review: 'Doc Review',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
-};
-
-// Status descriptions for tooltips
-const STATUS_DESCRIPTIONS: Record<string, string> = {
-  new: 'New lead awaiting initial contact',
-  contacted: 'Lead has been contacted, awaiting response',
-  in_progress: 'Application is being processed',
-  document_review: 'Documents submitted and under review',
-  approved: 'Loan application has been approved',
-  rejected: 'Application was rejected',
-  withdrawn: 'Lead has withdrawn their application',
-};
-
-// Updated doc status colors per user request
-const DOC_STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
-  uploaded: 'bg-blue-500/15 text-blue-700 border-blue-500/30',
-  verified: 'bg-green-500/15 text-green-700 border-green-500/30',
-  rejected: 'bg-red-500/15 text-red-700 border-red-500/30',
-  resubmission_required: 'bg-red-500/15 text-red-700 border-red-500/30',
-};
-
-const DOC_STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
-  uploaded: 'Uploaded',
-  verified: 'Verified',
-  rejected: 'Rejected',
-  resubmission_required: 'Resubmit',
-};
-
-const DOC_STATUS_DESCRIPTIONS: Record<string, string> = {
-  pending: 'Documents not yet uploaded',
-  uploaded: 'Documents uploaded, awaiting verification',
-  verified: 'All documents verified successfully',
-  rejected: 'One or more documents were rejected',
-  resubmission_required: 'Documents need to be re-uploaded',
-};
-
 type SortField = 'student' | 'amount' | 'status' | 'age' | null;
 type SortDirection = 'asc' | 'desc';
-
-function getAgeDays(createdAt: string): number {
-  return differenceInDays(new Date(), new Date(createdAt));
-}
-
-function getAgeColor(createdAt: string): string {
-  const days = getAgeDays(createdAt);
-  if (days < 3) return 'text-green-600';
-  if (days < 7) return 'text-amber-600';
-  if (days < 30) return 'text-orange-600';
-  return 'text-red-600 font-semibold';
-}
-
-function isUrgent(lead: PaginatedLead): boolean {
-  // Urgent only if documents are rejected or need resubmission
-  return (
-    lead.documents_status === 'rejected' ||
-    lead.documents_status === 'resubmission_required'
-  );
-}
-
-function formatAmount(amount: number): string {
-  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  return `₹${amount.toLocaleString('en-IN')}`;
-}
 
 export function LeadQueueTable({ 
   leads, 
@@ -329,9 +249,9 @@ export function LeadQueueTable({
             <TableBody>
               {sortedLeads.map((lead) => {
                 const isSelected = selectedLeads.includes(lead.id);
-                const urgent = isUrgent(lead);
+                const urgent = isLeadUrgent(lead);
                 const ageDays = getAgeDays(lead.created_at);
-                const action = needsAction(lead);
+                const action = needsAdminAction(lead);
                 
                 return (
                   <TableRow 
@@ -405,7 +325,7 @@ export function LeadQueueTable({
                       </Tooltip>
                     </TableCell>
                     <TableCell className="font-semibold text-sm">
-                      {formatAmount(lead.loan_amount)}
+                      {formatLoanAmount(lead.loan_amount)}
                     </TableCell>
                     <TableCell>
                       <Tooltip>
