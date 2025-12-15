@@ -13,7 +13,7 @@ import {
   PaginationNext, 
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Eye, Upload, Users } from "lucide-react";
+import { Eye, Upload, Users, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -95,12 +95,29 @@ export const PartnerLeadsTable = ({
 
   if (leads.length === 0) {
     return (
-      <EmptyState
-        icon={Users}
-        title="No leads yet"
-        description="Create your first lead to start managing education loan applications."
-        action={onNewLead ? { label: "Create First Lead", onClick: onNewLead } : undefined}
-      />
+      <div className="flex flex-col items-center justify-center py-16 px-4 bg-card border rounded-lg">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Users className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">Start Your First Application</h2>
+            <p className="text-muted-foreground">
+              Add a student lead to begin processing education loan applications
+            </p>
+          </div>
+          {onNewLead && (
+            <Button 
+              onClick={onNewLead} 
+              size="lg" 
+              className="h-14 px-10 text-lg font-semibold gap-3"
+            >
+              <Plus className="h-6 w-6" />
+              Add Your First Lead
+            </Button>
+          )}
+        </div>
+      </div>
     );
   }
 
