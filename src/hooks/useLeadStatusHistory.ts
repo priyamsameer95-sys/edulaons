@@ -26,7 +26,7 @@ export function useLeadStatusHistory(leadId: string) {
 
       const { data, error } = await supabase
         .from('lead_status_history')
-        .select('*, app_users!changed_by(email)')
+        .select('*')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false });
 
@@ -36,10 +36,10 @@ export function useLeadStatusHistory(leadId: string) {
         return;
       }
 
-      // Map the joined data to include changer_email
+      // Map the data (no FK join available for changed_by)
       const mappedData = (data || []).map((record: any) => ({
         ...record,
-        changer_email: record.app_users?.email || null,
+        changer_email: null, // No FK relationship exists
       }));
 
       setHistory(mappedData);
