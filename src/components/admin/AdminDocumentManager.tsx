@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { 
   Download, 
-  Upload, 
   CheckCircle, 
   XCircle, 
   Clock,
@@ -16,9 +14,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useLeadDocuments } from '@/hooks/useLeadDocuments';
-import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { DocumentVerificationModal } from './DocumentVerificationModal';
-import { AdminDocumentUpload } from './AdminDocumentUpload';
+import { InlineDocumentUpload } from './InlineDocumentUpload';
 
 interface AdminDocumentManagerProps {
   leadId: string;
@@ -45,11 +42,9 @@ interface LeadDocument {
 }
 
 export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
-  const { documents, loading, refetch, deleteDocument, getDownloadUrl } = useLeadDocuments(leadId);
-  const { documentTypes } = useDocumentTypes();
+  const { documents, loading, refetch, getDownloadUrl } = useLeadDocuments(leadId);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<LeadDocument | null>(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const handleDownload = async (document: LeadDocument) => {
     try {
@@ -134,34 +129,27 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
 
   return (
     <div className="space-y-6">
-      {/* Upload New Document Button */}
-      <div className="flex justify-between items-center p-6 bg-gradient-to-r from-primary/5 to-background rounded-lg border animate-fade-in">
-        <div>
-          <h3 className="text-xl font-semibold">Document Management</h3>
-          <p className="text-sm text-muted-foreground mt-1">Upload and verify student documents</p>
-        </div>
-        <Button
-          onClick={() => setUploadModalOpen(true)}
-          className="flex items-center gap-2 hover-lift"
-        >
-          <Upload className="h-4 w-4" />
-          Upload for Student
-        </Button>
-      </div>
+      {/* Inline Upload Section */}
+      <InlineDocumentUpload leadId={leadId} onUploadComplete={refetch} />
 
       {/* Documents List */}
       <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Uploaded Documents ({documents.length})</span>
+        </div>
+
         {documents.length === 0 ? (
-          <Card className="animate-fade-in">
-            <CardContent className="flex items-center justify-center py-12">
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
               <div className="text-center">
-                <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground text-lg">No documents uploaded yet</p>
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-muted-foreground">No documents uploaded yet</p>
               </div>
             </CardContent>
           </Card>
         ) : (
-          documents.map((document: LeadDocument, index: number) => {
+          documents.map((document: LeadDocument) => {
             const VerificationIcon = getVerificationIcon(document.verification_status || 'pending');
             const UploadedByIcon = getUploadedByIcon(document.uploaded_by || 'student');
             const isAIFlagged = document.ai_validation_status === 'manual_review' || document.ai_validation_status === 'rejected';
@@ -169,23 +157,21 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
             return (
               <Card 
                 key={document.id} 
-                className={`hover-lift transition-all stagger-fade-${Math.min(index + 1, 4) as 1 | 2 | 3 | 4} ${
-                  isAIFlagged ? 'border-amber-300 dark:border-amber-700' : ''
-                }`}
+                className={isAIFlagged ? 'border-amber-300 dark:border-amber-700' : ''}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className={`p-2 rounded-lg ${
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`p-2 rounded-lg shrink-0 ${
                         document.verification_status === 'verified' ? 'bg-success/10' :
                         document.verification_status === 'rejected' ? 'bg-destructive/10' :
                         isAIFlagged ? 'bg-amber-500/10' :
                         'bg-warning/10'
                       }`}>
                         {isAIFlagged ? (
-                          <Bot className="h-5 w-5 text-amber-500" />
+                          <Bot className="h-4 w-4 text-amber-500" />
                         ) : (
-                          <VerificationIcon className={`h-5 w-5 ${
+                          <VerificationIcon className={`h-4 w-4 ${
                             document.verification_status === 'verified' ? 'text-success' :
                             document.verification_status === 'rejected' ? 'text-destructive' :
                             'text-warning'
@@ -193,72 +179,44 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
                         )}
                       </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="font-semibold text-base">{document.original_filename}</span>
-                          <UploadedByIcon className="h-4 w-4 text-muted-foreground" />
-                          {document.uploaded_by === 'admin' && (
-                            <Badge variant="outline" className="text-xs">Admin Upload</Badge>
-                          )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm truncate">{document.original_filename}</span>
+                          <UploadedByIcon className="h-3 w-3 text-muted-foreground shrink-0" />
                           {getAIStatusBadge(document)}
                         </div>
                         
-                        <div className="text-sm text-muted-foreground mb-1">
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           {document.document_types?.name} • {document.document_types?.category}
                         </div>
 
-                        {/* AI Details - compact inline */}
-                        {isAIFlagged && (
-                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                            {document.ai_detected_type && (
-                              <span className="font-medium">{document.ai_detected_type}</span>
-                            )}
-                            {document.ai_confidence_score != null && (
-                              <Badge variant="outline" className={`text-[10px] py-0 h-4 ${
-                                document.ai_confidence_score >= 75 ? "text-green-600 border-green-300" :
-                                document.ai_confidence_score >= 50 ? "text-amber-600 border-amber-300" :
-                                "text-red-600 border-red-300"
-                              }`}>
-                                {document.ai_confidence_score}%
-                              </Badge>
-                            )}
-                            {document.ai_validation_notes && (
-                              <span className="text-amber-600 dark:text-amber-400">• {document.ai_validation_notes}</span>
-                            )}
-                          </div>
-                        )}
-                        
-                        {document.admin_notes && (
-                          <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/50 rounded italic">
-                            Admin notes: {document.admin_notes}
+                        {isAIFlagged && document.ai_validation_notes && (
+                          <div className="text-xs text-amber-600 mt-1">
+                            {document.ai_validation_notes}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
                       {getVerificationBadge(document.verification_status || 'pending')}
                       
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(document)}
-                          className="hover-lift"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button
-                          variant={isAIFlagged ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleVerificationAction(document)}
-                          title="Update Status"
-                          className={isAIFlagged ? "bg-amber-500 hover:bg-amber-600" : "hover-lift"}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(document)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button
+                        variant={isAIFlagged ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleVerificationAction(document)}
+                        className={isAIFlagged ? "bg-amber-500 hover:bg-amber-600" : ""}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -274,14 +232,6 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
         onOpenChange={setVerificationModalOpen}
         document={selectedDocument}
         onVerificationComplete={refetch}
-      />
-
-      {/* Upload Modal */}
-      <AdminDocumentUpload
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        leadId={leadId}
-        onUploadComplete={refetch}
       />
     </div>
   );
