@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Upload, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertTriangle, FileText, Download } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { useLeadDocuments, LeadDocument } from '@/hooks/useLeadDocuments';
@@ -13,16 +13,28 @@ import { DocumentPreviewDialog } from './document-upload/DocumentPreviewDialog';
 interface InlineDocumentUploadProps {
   leadId: string;
   onUploadComplete: () => void;
+  uploadedDocuments?: LeadDocument[];
+  onDownload?: (document: LeadDocument) => void;
+  onVerify?: (document: LeadDocument) => void;
 }
 
-export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumentUploadProps) {
+export function InlineDocumentUpload({ 
+  leadId, 
+  onUploadComplete,
+  uploadedDocuments: externalDocs,
+  onDownload,
+  onVerify,
+}: InlineDocumentUploadProps) {
   const [uploadingDocTypeId, setUploadingDocTypeId] = useState<string | null>(null);
   const [previewDocument, setPreviewDocument] = useState<LeadDocument | null>(null);
 
   const { documentTypes } = useDocumentTypes();
-  const { documents: uploadedDocuments, refetch: refetchDocuments } = useLeadDocuments(leadId);
+  const { documents: internalDocs, refetch: refetchDocuments } = useLeadDocuments(leadId);
   const { toast } = useToast();
-  const { validateDocument, validationResult, resetValidation } = useDocumentValidation();
+  const { validateDocument, resetValidation } = useDocumentValidation();
+
+  // Use external docs if provided, otherwise use internal
+  const uploadedDocuments = externalDocs || internalDocs;
 
   // Group document types by category
   const groupedTypes = useMemo(() => {
@@ -190,6 +202,8 @@ export function InlineDocumentUpload({ leadId, onUploadComplete }: InlineDocumen
                     uploadedDocument={getUploadedDocument(docType.id)}
                     onUpload={handleUpload}
                     onPreview={handlePreview}
+                    onDownload={onDownload}
+                    onVerify={onVerify}
                     isUploading={!!uploadingDocTypeId}
                     uploadingDocTypeId={uploadingDocTypeId || undefined}
                   />
