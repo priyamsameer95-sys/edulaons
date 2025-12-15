@@ -1,6 +1,7 @@
 import { LoadingButton } from '@/components/ui/loading-button';
 import { useState, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -257,10 +258,20 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
       if (error) {
         console.error('[CreatePartner] Function error:', error, 'Data:', data);
         
-        // The actual error message is often in the data object for non-2xx responses
         let errorMessage = 'Something went wrong';
         
-        if (data && typeof data === 'object' && 'error' in data) {
+        // FunctionsHttpError contains the actual response in context
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const errorBody = await error.context.json();
+            errorMessage = errorBody.error || errorMessage;
+          } catch {
+            // Fall back to data or generic message
+            if (data && typeof data === 'object' && 'error' in data) {
+              errorMessage = (data as { error: string }).error;
+            }
+          }
+        } else if (data && typeof data === 'object' && 'error' in data) {
           errorMessage = (data as { error: string }).error;
         } else if (error.message) {
           errorMessage = error.message;
