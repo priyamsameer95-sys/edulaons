@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Upload, CheckCircle, AlertTriangle, FileText, Download } from 'lucide-react';
+import { Upload, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useDocumentValidation } from '@/hooks/useDocumentValidation';
 import { useLeadDocuments, LeadDocument } from '@/hooks/useLeadDocuments';
@@ -153,43 +153,43 @@ export function InlineDocumentUpload({
 
   return (
     <div className="border rounded-lg bg-card">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b">
         <div className="flex items-center gap-2">
           <Upload className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium text-sm">Documents</span>
+          <span className="text-[10px] text-muted-foreground">(jpg, pdf, png • max 10MB)</span>
         </div>
         {progressStats && (
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-2 text-[10px]">
             {progressStats.rejectedCount > 0 && (
-              <span className="flex items-center gap-1 text-destructive">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                {progressStats.rejectedCount} need re-upload
+              <span className="flex items-center gap-1 text-destructive font-medium">
+                <AlertTriangle className="h-3 w-3" />
+                {progressStats.rejectedCount}
               </span>
             )}
             <span className="text-muted-foreground">
-              {progressStats.requiredUploaded}/{progressStats.totalRequired} required
+              {progressStats.requiredUploaded}/{progressStats.totalRequired}
             </span>
             {progressStats.verifiedCount > 0 && (
               <span className="flex items-center gap-1 text-emerald-600">
-                <CheckCircle className="h-3.5 w-3.5" />
-                {progressStats.verifiedCount} verified
+                <CheckCircle className="h-3 w-3" />
+                {progressStats.verifiedCount}
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Document List */}
-      <ScrollArea className="h-[350px]">
-        <div className="p-3 space-y-4">
+      {/* Compact Document List */}
+      <ScrollArea className="h-[320px]">
+        <div className="p-2 space-y-3">
           {Object.entries(groupedTypes).map(([category, types]) => (
             <div key={category}>
-              <h4 className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground mb-2 px-1">
-                <FileText className="h-3.5 w-3.5" />
+              <h4 className="text-[10px] font-semibold uppercase text-muted-foreground mb-1 px-2">
                 {category}
               </h4>
-              <div className="space-y-1.5">
+              <div className="space-y-0.5">
                 {types.map((docType) => (
                   <DocumentChecklistRow
                     key={docType.id}
