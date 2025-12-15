@@ -11,6 +11,7 @@ interface StatusHistoryRecord {
   notes: string | null;
   created_at: string;
   changed_by: string | null;
+  changer_email: string | null;
 }
 
 export function useLeadStatusHistory(leadId: string) {
@@ -25,7 +26,7 @@ export function useLeadStatusHistory(leadId: string) {
 
       const { data, error } = await supabase
         .from('lead_status_history')
-        .select('*')
+        .select('*, app_users!changed_by(email)')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false });
 
@@ -35,7 +36,13 @@ export function useLeadStatusHistory(leadId: string) {
         return;
       }
 
-      setHistory(data || []);
+      // Map the joined data to include changer_email
+      const mappedData = (data || []).map((record: any) => ({
+        ...record,
+        changer_email: record.app_users?.email || null,
+      }));
+
+      setHistory(mappedData);
     } catch (err) {
       console.error('Error in fetchHistory:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
