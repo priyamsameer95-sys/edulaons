@@ -11,7 +11,13 @@ import {
   Upload,
   Shield,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Phone,
+  Mail,
+  User,
+  MapPin,
+  Wallet,
+  Calendar
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -20,6 +26,7 @@ import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import type { LeadStatus } from "@/utils/statusUtils";
 import { cn } from "@/lib/utils";
+import { formatIndianNumber } from "@/utils/currencyFormatter";
 
 interface PartnerLeadDetailSheetProps {
   lead: RefactoredLead | null;
@@ -128,6 +135,93 @@ export const PartnerLeadDetailSheet = ({
         </SheetHeader>
 
         <div className="py-4 space-y-4">
+          {/* Lead Information */}
+          <Card className="border">
+            <CardHeader className="pb-2 pt-3 px-3">
+              <CardTitle className="text-sm font-medium">Lead Information</CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 space-y-3">
+              {/* Student Details */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Student</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    {lead.student?.name || 'N/A'}
+                  </p>
+                  {lead.student?.phone && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5" />
+                      {lead.student.phone}
+                    </p>
+                  )}
+                  {lead.student?.email && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5" />
+                      {lead.student.email}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Loan Details */}
+              <div className="space-y-1.5 border-t pt-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">₹{formatIndianNumber(lead.loan_amount || 0)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{lead.study_destination || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>
+                      {lead.intake_month && lead.intake_year 
+                        ? `${format(new Date(2000, lead.intake_month - 1), 'MMM')} ${lead.intake_year}`
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {lead.loan_type || 'N/A'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Co-Applicant Details */}
+              {lead.co_applicant && (
+                <div className="space-y-1.5 border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Co-Applicant</p>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      {lead.co_applicant.name}
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {lead.co_applicant.relationship}
+                      </Badge>
+                    </p>
+                    {lead.co_applicant.salary && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Wallet className="h-3.5 w-3.5" />
+                        ₹{formatIndianNumber(lead.co_applicant.salary)}/yr
+                      </p>
+                    )}
+                    {lead.co_applicant.phone && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5" />
+                        {lead.co_applicant.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Upload Section */}
           <Card className="border">
             <CardHeader className="pb-2 pt-3 px-3">
