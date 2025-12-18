@@ -206,6 +206,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
           onUploadDocs={handleUploadDocs}
           onCompleteLead={handleCompleteLead}
           onNewLead={handleNewLead}
+          onViewLead={handleViewLead}
         />
       </main>
 
