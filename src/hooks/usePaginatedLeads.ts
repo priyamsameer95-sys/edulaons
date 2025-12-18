@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/use-debounce';
 
-export type LoanClassification = 'unsecured_nbfc' | 'secured_property' | 'psu_bank' | 'undecided';
-export type CaseComplexity = 'straightforward' | 'edge_case' | 'high_risk';
+export type LoanClassification = 'unsecured' | 'secured_fd' | 'secured_property';
+export type CaseComplexity = 'straightforward' | 'nri_case' | 'low_credit_case' | 'late_intake_case' | 'rejected_case';
 
 export interface PaginatedLead {
   id: string;

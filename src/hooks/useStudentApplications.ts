@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { useErrorHandler } from './useErrorHandler';
 import { logger } from '@/utils/logger';
 
-export type LoanClassification = 'unsecured_nbfc' | 'secured_property' | 'psu_bank' | 'undecided';
+export type LoanClassification = 'unsecured' | 'secured_fd' | 'secured_property';
 
 export interface StudentApplication {
   id: string;
