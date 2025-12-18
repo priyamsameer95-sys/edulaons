@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import {
   CheckCircle,
@@ -105,14 +106,9 @@ export const PartnerLeadDetailSheet = ({
     return 'text-red-600';
   };
 
-  // Group documents by category for upload selection
-  const docsByCategory = documentTypes.reduce((acc, doc) => {
-    if (!acc[doc.category]) acc[doc.category] = [];
-    acc[doc.category].push(doc);
-    return acc;
-  }, {} as Record<string, typeof documentTypes>);
-
+  // Selected document type object
   const selectedDocTypeObj = documentTypes.find(d => d.id === selectedDocType);
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -140,73 +136,54 @@ export const PartnerLeadDetailSheet = ({
                 Upload Document
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-3 pb-3">
-              {!selectedDocType ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground">Select document type to upload:</p>
-                  <div className="max-h-48 overflow-y-auto space-y-3">
-                    {Object.entries(docsByCategory).map(([category, docs]) => (
-                      <div key={category}>
-                        <p className="text-xs font-medium text-muted-foreground mb-1">{category}</p>
-                        <div className="grid grid-cols-2 gap-1">
-                          {docs.map((doc) => {
-                            const isUploaded = documents.some(d => d.document_type_id === doc.id);
-                            return (
-                              <Button
-                                key={doc.id}
-                                variant="outline"
-                                size="sm"
-                                className={cn(
-                                  "h-auto py-1.5 px-2 text-xs justify-start",
-                                  isUploaded && "bg-green-50 border-green-200"
-                                )}
-                                onClick={() => setSelectedDocType(doc.id)}
-                              >
-                                {isUploaded && <CheckCircle className="h-3 w-3 mr-1 text-green-600" />}
-                                <span className="truncate">{doc.name}</span>
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : selectedDocTypeObj ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{selectedDocTypeObj.name}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setSelectedDocType(null)}
-                      className="h-6 px-2 text-xs"
-                    >
-                      Change
-                    </Button>
-                  </div>
-                  <EnhancedDocumentUpload
-                    leadId={lead.id}
-                    documentType={{
-                      id: selectedDocTypeObj.id,
-                      name: selectedDocTypeObj.name,
-                      category: selectedDocTypeObj.category,
-                      required: selectedDocTypeObj.required || false,
-                      max_file_size_pdf: selectedDocTypeObj.max_file_size_pdf || 10 * 1024 * 1024,
-                      max_file_size_image: selectedDocTypeObj.max_file_size_image || 5 * 1024 * 1024,
-                      accepted_formats: selectedDocTypeObj.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png'],
-                      description: selectedDocTypeObj.description || ''
-                    }}
-                    onUploadSuccess={handleDocumentUploadSuccess}
-                    onUploadError={handleDocumentUploadError}
-                    enableAIValidation={true}
-                  />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Shield className="h-3 w-3" />
-                    AI verification enabled - documents are auto-checked
-                  </p>
-                </div>
-              ) : null}
+            <CardContent className="px-3 pb-3 space-y-3">
+              {/* Simple dropdown selector */}
+              <Select
+                value={selectedDocType || ""}
+                onValueChange={(value) => setSelectedDocType(value || null)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50 max-h-60">
+                  {documentTypes.map((doc) => {
+                    const isUploaded = documents.some(d => d.document_type_id === doc.id);
+                    return (
+                      <SelectItem key={doc.id} value={doc.id}>
+                        <span className="flex items-center gap-2">
+                          {isUploaded && <CheckCircle className="h-3 w-3 text-green-600" />}
+                          {doc.name}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+
+              {/* File upload area - only show when document type selected */}
+              {selectedDocTypeObj && (
+                <EnhancedDocumentUpload
+                  leadId={lead.id}
+                  documentType={{
+                    id: selectedDocTypeObj.id,
+                    name: selectedDocTypeObj.name,
+                    category: selectedDocTypeObj.category,
+                    required: selectedDocTypeObj.required || false,
+                    max_file_size_pdf: selectedDocTypeObj.max_file_size_pdf || 10 * 1024 * 1024,
+                    max_file_size_image: selectedDocTypeObj.max_file_size_image || 5 * 1024 * 1024,
+                    accepted_formats: selectedDocTypeObj.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png'],
+                    description: selectedDocTypeObj.description || ''
+                  }}
+                  onUploadSuccess={handleDocumentUploadSuccess}
+                  onUploadError={handleDocumentUploadError}
+                  enableAIValidation={true}
+                />
+              )}
+
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                AI verification enabled - documents are auto-checked
+              </p>
             </CardContent>
           </Card>
 
