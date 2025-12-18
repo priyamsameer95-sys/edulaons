@@ -106,15 +106,12 @@ const AdminDashboardV2 = () => {
     setSelectedLeads([]);
   }, [setFilters]);
 
-  // Stats for sidebar (using totalCount from server)
-  const stats = useMemo(() => {
-    return {
-      totalLeads: totalCount,
-      newLeads: 0, // Would need separate queries for accurate counts
-      approvedLeads: 0,
-      totalLoanAmount: leads.reduce((sum, l) => sum + l.loan_amount, 0),
-    };
-  }, [totalCount, leads]);
+  // Handle sidebar filter changes
+  const handleSidebarFilter = useCallback((filter: { status?: string | null }) => {
+    setFilters({ status: filter.status, partnerId: null });
+    setActiveView('all');
+    setActiveTab('queue');
+  }, [setFilters]);
 
   // Handlers
   const handleViewLead = (lead: PaginatedLead) => {
@@ -336,7 +333,7 @@ const AdminDashboardV2 = () => {
           </main>
 
           {/* Right: Stats Sidebar */}
-          <StatsSidebar stats={stats} />
+          <StatsSidebar onFilterChange={handleSidebarFilter} />
         </div>
 
         {/* Command Palette */}

@@ -1,55 +1,76 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, TrendingUp, Users, FileCheck, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Calendar, Clock, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TATDashboard } from './TATDashboard';
-import { DropOffIntelligence } from './DropOffIntelligence';
+import { useQuickStats } from '@/hooks/useQuickStats';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StatsSidebarProps {
-  stats: {
-    totalLeads: number;
-    newLeads: number;
-    approvedLeads: number;
-    totalLoanAmount: number;
-  };
+  onFilterChange?: (filter: { status?: string | null }) => void;
 }
 
-export function StatsSidebar({ stats }: StatsSidebarProps) {
+export function StatsSidebar({ onFilterChange }: StatsSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { stats, loading } = useQuickStats();
+
+  const formatValue = (value: number) => {
+    if (value >= 10000000) {
+      return `₹${(value / 10000000).toFixed(1)}Cr`;
+    } else if (value >= 100000) {
+      return `₹${(value / 100000).toFixed(1)}L`;
+    }
+    return `₹${value.toLocaleString('en-IN')}`;
+  };
 
   const kpis = [
     { 
+      id: 'total',
       label: 'Total Leads', 
-      value: stats.totalLeads, 
+      value: stats.totalLeads,
       icon: Users,
-      color: 'text-blue-600'
+      color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30',
+      filter: null, // Shows all
     },
     { 
-      label: 'New Today', 
-      value: stats.newLeads, 
-      icon: TrendingUp,
-      color: 'text-green-600'
+      id: 'new',
+      label: 'New This Week', 
+      value: stats.newThisWeek, 
+      icon: Calendar,
+      color: 'text-green-600 bg-green-100 dark:bg-green-900/30',
+      filter: null, // Would need date filter - for now shows all
     },
     { 
-      label: 'Approved', 
-      value: stats.approvedLeads, 
-      icon: FileCheck,
-      color: 'text-emerald-600'
+      id: 'pipeline',
+      label: 'In Pipeline', 
+      value: stats.inPipeline,
+      subtitle: formatValue(stats.totalPipelineValue),
+      icon: Clock,
+      color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30',
+      filter: 'in_progress', // Shows in progress leads
     },
     { 
-      label: 'Total Value', 
-      value: `₹${(stats.totalLoanAmount / 10000000).toFixed(1)}Cr`, 
-      icon: DollarSign,
-      color: 'text-amber-600'
+      id: 'disbursed',
+      label: 'Disbursed', 
+      value: stats.disbursed,
+      subtitle: formatValue(stats.disbursedValue),
+      icon: CheckCircle,
+      color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30',
+      filter: 'disbursed',
     },
   ];
+
+  const handleCardClick = (filter: string | null) => {
+    if (onFilterChange) {
+      onFilterChange({ status: filter });
+    }
+  };
 
   return (
     <div
       className={cn(
         'border-l border-border bg-card transition-all duration-200 flex flex-col',
-        collapsed ? 'w-12' : 'w-72'
+        collapsed ? 'w-12' : 'w-64'
       )}
     >
       <Button
@@ -62,32 +83,44 @@ export function StatsSidebar({ stats }: StatsSidebarProps) {
       </Button>
 
       {!collapsed && (
-        <div className="p-3 space-y-4 overflow-auto flex-1">
+        <div className="p-3 space-y-3 overflow-auto flex-1">
           <h3 className="text-sm font-semibold text-muted-foreground px-1">Quick Stats</h3>
           
-          <div className="grid grid-cols-2 gap-2">
-            {kpis.map((kpi) => (
-              <Card key={kpi.label} className="shadow-none border">
-                <CardContent className="p-2">
-                  <div className="flex items-center gap-2">
-                    <div className={cn('p-1.5 rounded-md bg-muted', kpi.color)}>
-                      <kpi.icon className="h-3.5 w-3.5" />
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {kpis.map((kpi) => (
+                <Card 
+                  key={kpi.id} 
+                  className={cn(
+                    "shadow-none border cursor-pointer transition-colors",
+                    "hover:bg-accent/50"
+                  )}
+                  onClick={() => handleCardClick(kpi.filter)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className={cn('p-2 rounded-md', kpi.color)}>
+                        <kpi.icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-lg font-semibold">{kpi.value}</p>
+                        <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
+                        {kpi.subtitle && (
+                          <p className="text-xs text-muted-foreground/70">{kpi.subtitle}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold">{kpi.value}</p>
-                      <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* TAT Dashboard */}
-          <TATDashboard />
-          
-          {/* Drop-off Intelligence */}
-          <DropOffIntelligence />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
