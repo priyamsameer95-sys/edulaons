@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
-import { LeadDetailSheet } from "@/components/dashboard/LeadDetailSheet";
+import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
 
 interface PartnerLeadsTableProps {
   leads: RefactoredLead[];
@@ -290,7 +290,7 @@ export const PartnerLeadsTable = ({
       </Card>
 
       {/* Lead Detail Sheet */}
-      <LeadDetailSheet
+      <PartnerLeadDetailSheet
         lead={selectedLead}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
