@@ -24,7 +24,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 // Existing modals
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
-import { EnhancedStatusUpdateModal } from '@/components/lead-status/EnhancedStatusUpdateModal';
+import { StatusUpdateSheet } from '@/components/admin/StatusUpdateSheet';
 import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import { CompleteLeadModal } from '@/components/partner/CompleteLeadModal';
@@ -363,12 +363,14 @@ const AdminDashboardV2 = () => {
               lead={selectedLead as any}
               onLeadUpdated={handleStatusUpdated}
             />
-            <EnhancedStatusUpdateModal
+            <StatusUpdateSheet
               open={showStatusUpdateModal}
               onOpenChange={setShowStatusUpdateModal}
               leadId={selectedLead.id}
+              studentName={selectedLead.student?.name}
               currentStatus={selectedLead.status as any}
               currentDocumentsStatus={selectedLead.documents_status as any}
+              stageStartedAt={selectedLead.current_stage_started_at}
               onStatusUpdated={handleStatusUpdated}
             />
           </>

@@ -9,6 +9,7 @@ interface StatusUpdateParams {
   newDocumentsStatus?: DocumentStatus;
   reason?: string;
   notes?: string;
+  additionalData?: Record<string, unknown>;
 }
 
 interface StatusHistoryEntry {
@@ -86,6 +87,11 @@ export function useStatusManager() {
       if (params.newDocumentsStatus && params.newDocumentsStatus !== currentStatus.documents_status) {
         updateData.documents_status = params.newDocumentsStatus;
         documentsStatusChanged = true;
+      }
+
+      // Merge additional data (for conditional fields like LAN, sanction amount, etc.)
+      if (params.additionalData) {
+        Object.assign(updateData, params.additionalData);
       }
 
       // If no changes, return early

@@ -20,6 +20,16 @@ export interface PaginatedLead {
   updated_at: string;
   is_quick_lead: boolean | null;
   quick_lead_completed_at: string | null;
+  // TAT tracking fields
+  current_stage_started_at: string | null;
+  lan_number: string | null;
+  sanction_amount: number | null;
+  sanction_date: string | null;
+  pd_call_scheduled_at: string | null;
+  pd_call_status: string | null;
+  pf_amount: number | null;
+  pf_paid_at: string | null;
+  property_verification_status: string | null;
   // Joined data
   student?: {
     id: string;
