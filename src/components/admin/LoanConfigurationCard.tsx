@@ -51,7 +51,7 @@ export function LoanConfigurationCard({
   const [saving, setSaving] = useState(false);
   
   const [loanType, setLoanType] = useState<LoanClassification>(currentClassification || 'undecided');
-  const [targetLender, setTargetLender] = useState<string>(currentTargetLenderId || '');
+  const [targetLender, setTargetLender] = useState<string>(currentTargetLenderId || 'none');
   const [complexity, setComplexity] = useState<CaseComplexity>(currentComplexity || 'straightforward');
 
   const handleSave = useCallback(async () => {
@@ -61,7 +61,7 @@ export function LoanConfigurationCard({
         .from('leads_new')
         .update({
           loan_classification: loanType,
-          target_lender_id: targetLender || null,
+          target_lender_id: targetLender === 'none' ? null : targetLender,
           case_complexity: complexity,
           loan_config_updated_at: new Date().toISOString()
         })
@@ -176,7 +176,7 @@ export function LoanConfigurationCard({
               <SelectValue placeholder="Select lender..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {lenders.map((lender) => (
                 <SelectItem key={lender.id} value={lender.id}>
                   {lender.name}
@@ -217,7 +217,7 @@ export function LoanConfigurationCard({
             size="sm" 
             onClick={() => {
               setLoanType(currentClassification || 'undecided');
-              setTargetLender(currentTargetLenderId || '');
+              setTargetLender(currentTargetLenderId || 'none');
               setComplexity(currentComplexity || 'straightforward');
               setIsEditing(false);
             }}
