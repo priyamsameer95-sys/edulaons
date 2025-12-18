@@ -1955,7 +1955,14 @@ export type Database = {
     }
     Enums: {
       app_role: "partner" | "admin" | "super_admin" | "student" | "kam"
-      case_complexity_enum: "straightforward" | "edge_case" | "high_risk"
+      case_complexity_enum:
+        | "straightforward"
+        | "edge_case"
+        | "high_risk"
+        | "nri_case"
+        | "low_credit_case"
+        | "late_intake_case"
+        | "rejected_case"
       document_status_enum:
         | "pending"
         | "uploaded"
@@ -1997,6 +2004,8 @@ export type Database = {
         | "secured_property"
         | "psu_bank"
         | "undecided"
+        | "secured_fd"
+        | "unsecured"
       loan_type_enum: "secured" | "unsecured"
       relationship_enum: "parent" | "spouse" | "sibling" | "guardian" | "other"
       study_destination_enum:
@@ -2145,7 +2154,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["partner", "admin", "super_admin", "student", "kam"],
-      case_complexity_enum: ["straightforward", "edge_case", "high_risk"],
+      case_complexity_enum: [
+        "straightforward",
+        "edge_case",
+        "high_risk",
+        "nri_case",
+        "low_credit_case",
+        "late_intake_case",
+        "rejected_case",
+      ],
       document_status_enum: [
         "pending",
         "uploaded",
@@ -2189,6 +2206,8 @@ export const Constants = {
         "secured_property",
         "psu_bank",
         "undecided",
+        "secured_fd",
+        "unsecured",
       ],
       loan_type_enum: ["secured", "unsecured"],
       relationship_enum: ["parent", "spouse", "sibling", "guardian", "other"],
