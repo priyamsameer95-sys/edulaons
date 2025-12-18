@@ -10,11 +10,17 @@ export interface QuickStats {
   disbursedValue: number;
 }
 
-const PIPELINE_STATUSES = [
-  'lead_intake', 'first_contact', 'lenders_mapped', 'checklist_shared',
-  'docs_uploading', 'docs_submitted', 'docs_verified', 'logged_with_lender',
-  'counselling_done', 'pd_scheduled', 'pd_completed', 'additional_docs_pending',
-  'property_verification', 'credit_assessment', 'sanctioned', 'pf_pending', 'pf_paid'
+// In Pipeline = logged_with_lender onwards (with lender, not pre-login)
+const IN_PIPELINE_STATUSES = [
+  // With Lender phase (steps 8-14)
+  'logged_with_lender', 'counselling_done', 'pd_scheduled', 'pd_completed',
+  'additional_docs_pending', 'property_verification', 'credit_assessment',
+  // Sanction phase (steps 15-18)
+  'sanctioned', 'pf_pending', 'pf_paid', 'sanction_letter_issued',
+  // Disbursement phase (steps 19-21, excluding disbursed)
+  'docs_dispatched', 'security_creation', 'ops_verification',
+  // Legacy statuses
+  'in_progress', 'approved'
 ];
 
 export const useQuickStats = () => {
@@ -61,7 +67,7 @@ export const useQuickStats = () => {
         if (lead.status === 'disbursed') {
           disbursed++;
           disbursedValue += lead.loan_amount || 0;
-        } else if (PIPELINE_STATUSES.includes(lead.status)) {
+        } else if (IN_PIPELINE_STATUSES.includes(lead.status)) {
           inPipeline++;
           totalPipelineValue += lead.loan_amount || 0;
         }
