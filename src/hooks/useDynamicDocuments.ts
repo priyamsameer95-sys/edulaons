@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export type LoanClassification = 'unsecured_nbfc' | 'secured_property' | 'psu_bank' | 'undecided';
+export type LoanClassification = 'unsecured' | 'secured_fd' | 'secured_property';
 
 interface DocumentRequirement {
   id: string;
@@ -34,8 +34,8 @@ export function useDynamicDocuments(
   const [error, setError] = useState<string | null>(null);
 
   const fetchDocuments = useCallback(async () => {
-    // Default to 'undecided' if no classification set
-    const classification = loanClassification || 'undecided';
+    // Default to 'unsecured' if no classification set
+    const classification = loanClassification || 'unsecured';
     
     setLoading(true);
     setError(null);

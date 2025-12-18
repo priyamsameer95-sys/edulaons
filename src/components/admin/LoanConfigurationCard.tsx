@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { LoanClassification } from "@/hooks/useDynamicDocuments";
 
-type CaseComplexity = 'straightforward' | 'edge_case' | 'high_risk';
+type CaseComplexity = 'straightforward' | 'nri_case' | 'low_credit_case' | 'late_intake_case' | 'rejected_case';
 
 interface Lender {
   id: string;
@@ -27,16 +27,17 @@ interface LoanConfigurationCardProps {
 }
 
 const LOAN_TYPES = [
-  { value: 'unsecured_nbfc', label: 'Unsecured (NBFC)', description: 'Standard NBFC loan' },
-  { value: 'secured_property', label: 'Secured (Property/FD)', description: 'Collateral-backed loan' },
-  { value: 'psu_bank', label: 'PSU Bank', description: 'Government bank loan' },
-  { value: 'undecided', label: 'Undecided', description: 'Exploration phase' },
+  { value: 'unsecured', label: 'Unsecured', description: 'No collateral required' },
+  { value: 'secured_fd', label: 'Secured (FD)', description: 'Fixed deposit collateral' },
+  { value: 'secured_property', label: 'Secured (Property)', description: 'Property collateral' },
 ] as const;
 
 const COMPLEXITY_OPTIONS = [
   { value: 'straightforward', label: 'Straightforward', color: 'bg-green-100 text-green-800' },
-  { value: 'edge_case', label: 'Edge Case', color: 'bg-amber-100 text-amber-800' },
-  { value: 'high_risk', label: 'High Risk', color: 'bg-red-100 text-red-800' },
+  { value: 'nri_case', label: 'NRI Case', color: 'bg-amber-100 text-amber-800' },
+  { value: 'low_credit_case', label: 'Low Credit', color: 'bg-amber-100 text-amber-800' },
+  { value: 'late_intake_case', label: 'Late Intake', color: 'bg-amber-100 text-amber-800' },
+  { value: 'rejected_case', label: 'Previously Rejected', color: 'bg-red-100 text-red-800' },
 ] as const;
 
 export function LoanConfigurationCard({
@@ -50,7 +51,7 @@ export function LoanConfigurationCard({
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   
-  const [loanType, setLoanType] = useState<LoanClassification>(currentClassification || 'undecided');
+  const [loanType, setLoanType] = useState<LoanClassification>(currentClassification || 'unsecured');
   const [targetLender, setTargetLender] = useState<string>(currentTargetLenderId || 'none');
   const [complexity, setComplexity] = useState<CaseComplexity>(currentComplexity || 'straightforward');
 
@@ -216,7 +217,7 @@ export function LoanConfigurationCard({
             variant="ghost" 
             size="sm" 
             onClick={() => {
-              setLoanType(currentClassification || 'undecided');
+              setLoanType(currentClassification || 'unsecured');
               setTargetLender(currentTargetLenderId || 'none');
               setComplexity(currentComplexity || 'straightforward');
               setIsEditing(false);
