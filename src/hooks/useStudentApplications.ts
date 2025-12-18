@@ -4,11 +4,14 @@ import { useAuth } from './useAuth';
 import { useErrorHandler } from './useErrorHandler';
 import { logger } from '@/utils/logger';
 
+export type LoanClassification = 'unsecured_nbfc' | 'secured_property' | 'psu_bank' | 'undecided';
+
 export interface StudentApplication {
   id: string;
   case_id: string;
   loan_amount: number;
   loan_type: 'secured' | 'unsecured';
+  loan_classification: LoanClassification | null;
   study_destination: string;
   intake_month: number;
   intake_year: number;
@@ -89,7 +92,19 @@ export const useStudentApplications = () => {
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
-          *,
+          id,
+          case_id,
+          loan_amount,
+          loan_type,
+          loan_classification,
+          study_destination,
+          intake_month,
+          intake_year,
+          status,
+          documents_status,
+          created_at,
+          updated_at,
+          status_updated_at,
           students(name, email, phone, nationality, city, state),
           co_applicants(name, relationship, salary),
           lenders(name, code),
@@ -99,7 +114,7 @@ export const useStudentApplications = () => {
           )
         `)
         .eq('student_id', studentData.id)
-        .order('created_at', { ascending: false});
+        .order('created_at', { ascending: false });
 
       if (leadsError) {
         logger.error('[useStudentApplications] Error fetching leads:', leadsError);
@@ -120,6 +135,7 @@ export const useStudentApplications = () => {
           case_id: lead.case_id,
           loan_amount: Number(lead.loan_amount),
           loan_type: lead.loan_type,
+          loan_classification: lead.loan_classification,
           study_destination: lead.study_destination,
           intake_month: lead.intake_month,
           intake_year: lead.intake_year,
