@@ -14,7 +14,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { ViewTabs, DEFAULT_VIEWS, ViewConfig } from '@/components/admin/dashboard/ViewTabs';
 import { SmartFilterBar } from '@/components/admin/dashboard/SmartFilterBar';
 import { LeadQueueTable } from '@/components/admin/dashboard/LeadQueueTable';
-import { StatsSidebar } from '@/components/admin/dashboard/StatsSidebar';
+
 import { SettingsTab } from '@/components/admin/dashboard/SettingsTab';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab';
@@ -106,12 +106,6 @@ const AdminDashboardV2 = () => {
     setSelectedLeads([]);
   }, [setFilters]);
 
-  // Handle sidebar filter changes
-  const handleSidebarFilter = useCallback((filter: { status?: string | null }) => {
-    setFilters({ status: filter.status, partnerId: null });
-    setActiveView('all');
-    setActiveTab('queue');
-  }, [setFilters]);
 
   // Handlers
   const handleViewLead = (lead: PaginatedLead) => {
@@ -224,117 +218,111 @@ const AdminDashboardV2 = () => {
         />
 
         {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left: Main content area */}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
-              <div className="border-b px-4 bg-card">
-                <TabsList className="h-10 bg-transparent">
-                  <TabsTrigger value="queue" className="gap-1.5 data-[state=active]:bg-background">
-                    <LayoutList className="h-4 w-4" />
-                    Lead Queue
-                  </TabsTrigger>
-                  <TabsTrigger value="partners" className="gap-1.5 data-[state=active]:bg-background">
-                    <Users className="h-4 w-4" />
-                    Partners
-                  </TabsTrigger>
-                  <TabsTrigger value="lenders" className="gap-1.5 data-[state=active]:bg-background">
-                    <Building className="h-4 w-4" />
-                    Lenders
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" className="gap-1.5 data-[state=active]:bg-background">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
+            <div className="border-b px-4 bg-card">
+              <TabsList className="h-10 bg-transparent">
+                <TabsTrigger value="queue" className="gap-1.5 data-[state=active]:bg-background">
+                  <LayoutList className="h-4 w-4" />
+                  Lead Queue
+                </TabsTrigger>
+                <TabsTrigger value="partners" className="gap-1.5 data-[state=active]:bg-background">
+                  <Users className="h-4 w-4" />
+                  Partners
+                </TabsTrigger>
+                <TabsTrigger value="lenders" className="gap-1.5 data-[state=active]:bg-background">
+                  <Building className="h-4 w-4" />
+                  Lenders
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="gap-1.5 data-[state=active]:bg-background">
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-              <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
-                <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-                  <SmartFilterBar
-                    searchTerm={filters.search}
-                    onSearchChange={(value) => setFilters({ search: value })}
-                    statusFilter={filters.status || 'all'}
-                    onStatusChange={(value) => setFilters({ status: value === 'all' ? null : value })}
-                    partnerFilter={filters.partnerId || 'all'}
-                    onPartnerChange={(value) => setFilters({ partnerId: value === 'all' ? null : value })}
-                    partners={allPartners}
-                  />
-                  <Button size="sm" onClick={() => setShowNewLeadModal(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Lead
+            <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+                <SmartFilterBar
+                  searchTerm={filters.search}
+                  onSearchChange={(value) => setFilters({ search: value })}
+                  statusFilter={filters.status || 'all'}
+                  onStatusChange={(value) => setFilters({ status: value === 'all' ? null : value })}
+                  partnerFilter={filters.partnerId || 'all'}
+                  onPartnerChange={(value) => setFilters({ partnerId: value === 'all' ? null : value })}
+                  partners={allPartners}
+                />
+                <Button size="sm" onClick={() => setShowNewLeadModal(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Lead
+                </Button>
+              </div>
+              
+              {/* Bulk Actions Bar */}
+              {selectedLeads.length > 0 && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
+                  <span className="text-sm font-medium">
+                    {selectedLeads.length} lead{selectedLeads.length > 1 ? 's' : ''} selected
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowBulkStatusModal(true)}
+                  >
+                    Bulk Update Status
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedLeads([])}
+                  >
+                    Clear Selection
                   </Button>
                 </div>
-                
-                {/* Bulk Actions Bar */}
-                {selectedLeads.length > 0 && (
-                  <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
-                    <span className="text-sm font-medium">
-                      {selectedLeads.length} lead{selectedLeads.length > 1 ? 's' : ''} selected
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowBulkStatusModal(true)}
-                    >
-                      Bulk Update Status
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedLeads([])}
-                    >
-                      Clear Selection
-                    </Button>
-                  </div>
-                )}
-                
-                <div className="flex-1 overflow-auto">
-                  <LeadQueueTable
-                    leads={leads}
-                    loading={isLoading}
-                    onViewLead={handleViewLead}
-                    onUpdateStatus={handleUpdateStatus}
-                    onCompleteLead={handleCompleteLead}
-                    selectedLeads={selectedLeads}
-                    onSelectionChange={setSelectedLeads}
-                    // Pagination props
-                    page={page}
-                    pageSize={pageSize}
-                    totalCount={totalCount}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                    onPageSizeChange={setPageSize}
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="partners" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
-                <AdminPartnersTab 
-                  onViewLeads={(partnerId) => {
-                    setFilters({ partnerId });
-                    setActiveTab('queue');
-                  }}
+              )}
+              
+              <div className="flex-1 overflow-auto">
+                <LeadQueueTable
+                  leads={leads}
+                  loading={isLoading}
+                  onViewLead={handleViewLead}
+                  onUpdateStatus={handleUpdateStatus}
+                  onCompleteLead={handleCompleteLead}
+                  selectedLeads={selectedLeads}
+                  onSelectionChange={setSelectedLeads}
+                  // Pagination props
+                  page={page}
+                  pageSize={pageSize}
+                  totalCount={totalCount}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
                 />
-              </TabsContent>
+              </div>
+            </TabsContent>
 
-              <TabsContent value="lenders" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
-                <LenderManagementTab />
-              </TabsContent>
+            <TabsContent value="partners" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
+              <AdminPartnersTab 
+                onViewLeads={(partnerId) => {
+                  setFilters({ partnerId });
+                  setActiveTab('queue');
+                }}
+              />
+            </TabsContent>
 
-              <TabsContent value="settings" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
-                <SettingsTab
-                  isSuperAdmin={isSuperAdmin}
-                  currentUserRole={appUser.role as 'admin' | 'super_admin'}
-                  currentUserId={appUser.id}
-                />
-              </TabsContent>
-            </Tabs>
-          </main>
+            <TabsContent value="lenders" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
+              <LenderManagementTab />
+            </TabsContent>
 
-          {/* Right: Stats Sidebar */}
-          <StatsSidebar onFilterChange={handleSidebarFilter} />
-        </div>
+            <TabsContent value="settings" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
+              <SettingsTab
+                isSuperAdmin={isSuperAdmin}
+                currentUserRole={appUser.role as 'admin' | 'super_admin'}
+                currentUserId={appUser.id}
+              />
+            </TabsContent>
+          </Tabs>
+        </main>
 
         {/* Command Palette */}
         <CommandPalette
