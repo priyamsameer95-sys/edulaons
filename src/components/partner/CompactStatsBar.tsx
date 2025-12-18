@@ -51,15 +51,15 @@ export const CompactStatsBar = ({
   activeFilter,
   onFilterClick,
 }: CompactStatsBarProps) => {
-  // Calculate conversion rate
+  // Calculate conversion rate (sanctioned out of total)
   const conversionRate = kpis.totalLeads > 0 
     ? Math.round((kpis.sanctioned / kpis.totalLeads) * 100) 
     : 0;
 
   const stats = [
     { label: "Total", value: kpis.totalLeads, filterKey: null, suffix: "" },
-    { label: "In Progress", value: kpis.inPipeline, filterKey: "in_progress", suffix: "" },
-    { label: "Approved", value: kpis.sanctioned, filterKey: "approved", suffix: kpis.totalLeads > 0 ? ` (${conversionRate}%)` : "" },
+    { label: "In Pipeline", value: kpis.inPipeline, filterKey: "in_pipeline", suffix: "" },
+    { label: "Sanctioned", value: kpis.sanctioned, filterKey: "sanctioned", suffix: kpis.totalLeads > 0 ? ` (${conversionRate}%)` : "" },
     { label: "Disbursed", value: kpis.disbursed, filterKey: "disbursed", suffix: "" },
   ];
 

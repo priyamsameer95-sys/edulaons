@@ -3,7 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { RefactoredLead, mapDbRefactoredLeadToLead } from '@/types/refactored-lead';
 import { logger } from '@/utils/logger';
 
-export function useRefactoredLeads() {
+/**
+ * Hook to fetch leads with optional partner filtering
+ * @param partnerId - Optional partner ID to filter leads (for partner dashboard)
+ *                    If not provided, fetches all leads (for admin dashboard)
+ */
+export function useRefactoredLeads(partnerId?: string) {
   const [leads, setLeads] = useState<RefactoredLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,9 +18,9 @@ export function useRefactoredLeads() {
       setLoading(true);
       setError(null);
 
-      logger.info('[useRefactoredLeads] Starting fetch...');
+      logger.info('[useRefactoredLeads] Starting fetch...', { partnerId });
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('leads_new')
         .select(`
           *,
@@ -72,6 +77,13 @@ export function useRefactoredLeads() {
         `)
         .order('created_at', { ascending: false });
 
+      // Filter by partner if partnerId is provided
+      if (partnerId) {
+        query = query.eq('partner_id', partnerId);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         logger.error('[useRefactoredLeads] Error fetching leads:', error);
         setError(error.message);
@@ -89,7 +101,7 @@ export function useRefactoredLeads() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [partnerId]);
 
   const refetch = useCallback(() => {
     fetchLeads();
