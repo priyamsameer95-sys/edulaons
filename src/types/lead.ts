@@ -1,3 +1,16 @@
+// Lightweight lead info for document pages
+export interface LeadInfo {
+  id: string;
+  case_id: string;
+  loan_amount: number;
+  study_destination: string;
+  student: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
 export interface Lead {
   id: string;
   case_id: string;

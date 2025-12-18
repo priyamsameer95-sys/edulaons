@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
-import { Check, CheckCircle, Clock, XCircle, AlertTriangle, Upload } from 'lucide-react';
+import { Check, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { StatusIcon, StatusLabel } from '@/components/document-status';
+import { getDocumentStatus, documentStatusTooltips } from '@/utils/documentStatusUtils';
 import type { LeadDocument } from '@/hooks/useLeadDocuments';
 
 interface DocumentType {
@@ -16,55 +18,6 @@ interface PartnerDocumentGridProps {
   uploadedDocuments: LeadDocument[];
   selectedDocType: string | null;
   onSelect: (id: string) => void;
-}
-
-type DocumentStatus = 'verified' | 'pending' | 'rejected' | 'not_uploaded';
-
-function getDocumentStatus(
-  documentTypeId: string,
-  uploadedDocuments: LeadDocument[]
-): DocumentStatus {
-  const doc = uploadedDocuments.find(d => d.document_type_id === documentTypeId);
-  if (!doc) return 'not_uploaded';
-  
-  if (doc.verification_status === 'verified') return 'verified';
-  if (doc.verification_status === 'rejected' || doc.ai_validation_status === 'rejected') return 'rejected';
-  return 'pending';
-}
-
-function StatusIcon({ status }: { status: DocumentStatus }) {
-  switch (status) {
-    case 'verified':
-      return <CheckCircle className="h-4 w-4 text-emerald-600" />;
-    case 'pending':
-      return <Clock className="h-4 w-4 text-amber-600" />;
-    case 'rejected':
-      return <XCircle className="h-4 w-4 text-destructive" />;
-    default:
-      return <Upload className="h-4 w-4 text-muted-foreground" />;
-  }
-}
-
-function StatusLabel({ status }: { status: DocumentStatus }) {
-  const styles = {
-    verified: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    rejected: 'bg-destructive/10 text-destructive',
-    not_uploaded: 'bg-muted text-muted-foreground',
-  };
-  
-  const labels = {
-    verified: 'Verified',
-    pending: 'Pending',
-    rejected: 'Re-upload',
-    not_uploaded: 'Not uploaded',
-  };
-  
-  return (
-    <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', styles[status])}>
-      {labels[status]}
-    </span>
-  );
 }
 
 export function PartnerDocumentGrid({
@@ -125,8 +78,8 @@ export function PartnerDocumentGrid({
                         type="button"
                         onClick={() => onSelect(doc.id)}
                         className={cn(
-                          'flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-all',
-                          'hover:shadow-sm hover:border-primary/50',
+                          'flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-colors',
+                          'hover:border-primary/50',
                           isSelected && 'border-primary bg-primary/5 ring-1 ring-primary',
                           status === 'verified' && !isSelected && 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10',
                           status === 'rejected' && !isSelected && 'border-destructive/50 bg-destructive/5',
@@ -154,12 +107,7 @@ export function PartnerDocumentGrid({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      <p className="text-xs">
-                        {status === 'rejected' && '⚠️ Re-upload required'}
-                        {status === 'pending' && '⏳ Pending verification'}
-                        {status === 'verified' && '✓ Verified'}
-                        {status === 'not_uploaded' && 'Click to upload'}
-                      </p>
+                      <p className="text-xs">{documentStatusTooltips[status]}</p>
                     </TooltipContent>
                   </Tooltip>
                 );
