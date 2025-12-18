@@ -8,6 +8,7 @@ interface StatusUpdateParams {
   newStatus?: LeadStatus;
   newDocumentsStatus?: DocumentStatus;
   reason?: string;
+  reasonCode?: string;
   notes?: string;
   additionalData?: Record<string, unknown>;
 }
@@ -19,6 +20,7 @@ interface StatusHistoryEntry {
   old_documents_status?: DocumentStatus;
   new_documents_status?: DocumentStatus;
   change_reason?: string;
+  reason_code?: string;
   notes?: string;
   changed_by?: string;
 }
@@ -45,6 +47,7 @@ export function useStatusManager() {
   const createStatusHistory = async (params: StatusHistoryEntry) => {
     const { data: userData } = await supabase.auth.getUser();
     
+    // Using raw insert since reason_code column was just added
     const { error } = await supabase
       .from('lead_status_history')
       .insert({
@@ -55,8 +58,9 @@ export function useStatusManager() {
         new_documents_status: params.new_documents_status,
         change_reason: params.change_reason,
         notes: params.notes,
-        changed_by: userData.user?.id
-      });
+        changed_by: userData.user?.id,
+        reason_code: params.reason_code, // New field for structured tracking
+      } as any);
 
     if (error) {
       console.error('Error creating status history:', error);
@@ -123,6 +127,7 @@ export function useStatusManager() {
         old_documents_status: documentsStatusChanged ? currentStatus.documents_status : undefined,
         new_documents_status: documentsStatusChanged ? params.newDocumentsStatus : undefined,
         change_reason: params.reason,
+        reason_code: params.reasonCode,
         notes: params.notes,
       });
 

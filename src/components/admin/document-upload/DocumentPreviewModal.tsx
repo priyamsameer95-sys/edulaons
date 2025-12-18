@@ -1,23 +1,38 @@
+import { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useAccessLogger } from '@/hooks/useAccessLogger';
 
 interface DocumentPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   previewUrl: string | null;
   fileName?: string;
+  leadId?: string;
+  documentId?: string;
 }
 
 export function DocumentPreviewModal({
   open,
   onOpenChange,
   previewUrl,
-  fileName
+  fileName,
+  leadId,
+  documentId
 }: DocumentPreviewModalProps) {
+  const { logDocumentPreview } = useAccessLogger();
+
+  // Silent background logging when preview opens
+  useEffect(() => {
+    if (open && leadId && documentId) {
+      logDocumentPreview(leadId, documentId);
+    }
+  }, [open, leadId, documentId, logDocumentPreview]);
+
   if (!previewUrl) return null;
 
   return (

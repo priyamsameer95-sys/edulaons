@@ -837,6 +837,7 @@ export type Database = {
             | Database["public"]["Enums"]["document_status_enum"]
             | null
           old_status: Database["public"]["Enums"]["lead_status_enum"] | null
+          reason_code: string | null
         }
         Insert: {
           change_reason?: string | null
@@ -853,6 +854,7 @@ export type Database = {
             | Database["public"]["Enums"]["document_status_enum"]
             | null
           old_status?: Database["public"]["Enums"]["lead_status_enum"] | null
+          reason_code?: string | null
         }
         Update: {
           change_reason?: string | null
@@ -869,6 +871,7 @@ export type Database = {
             | Database["public"]["Enums"]["document_status_enum"]
             | null
           old_status?: Database["public"]["Enums"]["lead_status_enum"] | null
+          reason_code?: string | null
         }
         Relationships: [
           {

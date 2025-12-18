@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, TrendingUp, Users, FileCheck, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TATDashboard } from './TATDashboard';
+import { DropOffIntelligence } from './DropOffIntelligence';
 
 interface StatsSidebarProps {
   stats: {
@@ -14,7 +16,7 @@ interface StatsSidebarProps {
 }
 
 export function StatsSidebar({ stats }: StatsSidebarProps) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
 
   const kpis = [
     { 
@@ -47,7 +49,7 @@ export function StatsSidebar({ stats }: StatsSidebarProps) {
     <div
       className={cn(
         'border-l border-border bg-card transition-all duration-200 flex flex-col',
-        collapsed ? 'w-12' : 'w-64'
+        collapsed ? 'w-12' : 'w-72'
       )}
     >
       <Button
@@ -60,24 +62,32 @@ export function StatsSidebar({ stats }: StatsSidebarProps) {
       </Button>
 
       {!collapsed && (
-        <div className="p-3 space-y-3 overflow-auto">
+        <div className="p-3 space-y-4 overflow-auto flex-1">
           <h3 className="text-sm font-semibold text-muted-foreground px-1">Quick Stats</h3>
           
-          {kpis.map((kpi) => (
-            <Card key={kpi.label} className="shadow-none border">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className={cn('p-2 rounded-md bg-muted', kpi.color)}>
-                    <kpi.icon className="h-4 w-4" />
+          <div className="grid grid-cols-2 gap-2">
+            {kpis.map((kpi) => (
+              <Card key={kpi.label} className="shadow-none border">
+                <CardContent className="p-2">
+                  <div className="flex items-center gap-2">
+                    <div className={cn('p-1.5 rounded-md bg-muted', kpi.color)}>
+                      <kpi.icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{kpi.value}</p>
+                      <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-lg font-semibold">{kpi.value}</p>
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* TAT Dashboard */}
+          <TATDashboard />
+          
+          {/* Drop-off Intelligence */}
+          <DropOffIntelligence />
         </div>
       )}
     </div>
