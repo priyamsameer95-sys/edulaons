@@ -1,21 +1,15 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Upload, Search, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Search, X } from "lucide-react";
 
 interface QuickActionsBarProps {
   onNewLead: () => void;
-  onUploadDocs: () => void;
-  pendingDocsCount: number;
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }
 
 export const QuickActionsBar = ({
   onNewLead,
-  onUploadDocs,
-  pendingDocsCount,
   searchQuery,
   onSearchChange,
 }: QuickActionsBarProps) => {
@@ -25,20 +19,6 @@ export const QuickActionsBar = ({
       <Button onClick={onNewLead} className="gap-2">
         <Plus className="h-4 w-4" />
         New Lead
-      </Button>
-
-      {/* Upload Docs with pending badge */}
-      <Button variant="outline" onClick={onUploadDocs} className="gap-2 relative">
-        <Upload className="h-4 w-4" />
-        Upload Docs
-        {pendingDocsCount > 0 && (
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-2 -right-2 h-5 min-w-[20px] px-1.5 text-xs"
-          >
-            {pendingDocsCount}
-          </Badge>
-        )}
       </Button>
 
       {/* Search Input */}
