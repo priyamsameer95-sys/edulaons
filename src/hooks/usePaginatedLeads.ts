@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/use-debounce';
 
+export type LoanClassification = 'unsecured_nbfc' | 'secured_property' | 'psu_bank' | 'undecided';
+export type CaseComplexity = 'straightforward' | 'edge_case' | 'high_risk';
+
 export interface PaginatedLead {
   id: string;
   case_id: string;
@@ -30,6 +33,12 @@ export interface PaginatedLead {
   pf_amount: number | null;
   pf_paid_at: string | null;
   property_verification_status: string | null;
+  // Loan configuration fields
+  loan_classification: LoanClassification | null;
+  target_lender_id: string | null;
+  case_complexity: CaseComplexity | null;
+  loan_config_updated_at: string | null;
+  loan_config_updated_by: string | null;
   // Joined data
   student?: {
     id: string;
@@ -125,14 +134,15 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
       const leadIds = searchResults.map((r: { id: string }) => r.id);
 
       // Fetch full lead data with relationships
+      // Use explicit relationship hints due to multiple foreign keys
       const { data: fullLeads, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
           *,
-          student:students(id, name, email, phone),
-          partner:partners(id, name, partner_code),
-          lender:lenders(id, name, code),
-          co_applicant:co_applicants(id, name, relationship)
+          student:students!leads_new_student_id_fkey(id, name, email, phone),
+          partner:partners!leads_new_partner_id_fkey(id, name, partner_code),
+          lender:lenders!leads_new_lender_id_fkey(id, name, code),
+          co_applicant:co_applicants!leads_new_co_applicant_id_fkey(id, name, relationship)
         `)
         .in('id', leadIds)
         .order('created_at', { ascending: false });

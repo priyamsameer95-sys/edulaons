@@ -31,6 +31,7 @@ import {
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useLeadDocuments } from "@/hooks/useLeadDocuments";
+import { useDynamicDocuments, LoanClassification } from "@/hooks/useDynamicDocuments";
 import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
@@ -38,6 +39,7 @@ import { StatusUpdateSheet } from "@/components/admin/StatusUpdateSheet";
 import { StatusHistory } from "@/components/lead-status/StatusHistory";
 import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal";
 import { PartnerAssignmentModal } from "@/components/admin/PartnerAssignmentModal";
+import { LoanConfigurationCard } from "@/components/admin/LoanConfigurationCard";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
@@ -67,12 +69,18 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [showCoApplicantDetails, setShowCoApplicantDetails] = useState(false);
   const [preferredLenders, setPreferredLenders] = useState<PreferredLender[]>([]);
   const [leadUniversities, setLeadUniversities] = useState<LeadUniversity[]>([]);
+  const [allLenders, setAllLenders] = useState<{ id: string; name: string }[]>([]);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
   
   // Real data from Supabase
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
   const { documents, loading: documentsLoading, getDownloadUrl, refetch: refetchDocuments } = useLeadDocuments(lead?.id);
+  
+  // Dynamic documents based on loan classification
+  const { requiredDocs, totalRequired, loading: dynamicDocsLoading, refetch: refetchDynamicDocs } = useDynamicDocuments(
+    lead?.loan_classification as LoanClassification | null
+  );
 
   // Fetch preferred lenders and universities
   useEffect(() => {
@@ -122,6 +130,23 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     fetchAdditionalData();
   }, [lead?.id, lead?.study_destination]);
 
+  // Fetch all lenders for the loan configuration dropdown
+  useEffect(() => {
+    const fetchAllLenders = async () => {
+      const { data } = await supabase
+        .from('lenders')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (data) {
+        setAllLenders(data);
+      }
+    };
+    
+    fetchAllLenders();
+  }, []);
+
   if (!lead) return null;
 
   const handleDownloadDoc = async (documentId: string, docName: string) => {
@@ -156,24 +181,36 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     }
   };
 
-  // Create real checklist from document types and uploaded documents
-  const checklist = documentTypes.map(docType => {
-    const uploadedDoc = documents.find(doc => doc.document_type_id === docType.id);
-    return {
-      id: docType.id,
-      name: docType.name,
-      required: docType.required,
-      status: uploadedDoc ? 'uploaded' : 'pending',
-      uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'yyyy-MM-dd') : undefined
-    };
-  });
+  // Create dynamic checklist from document requirements based on loan classification
+  // If dynamic docs available, use them; otherwise fall back to all document types
+  const dynamicChecklist = requiredDocs.length > 0 
+    ? requiredDocs.map(req => {
+        const uploadedDoc = documents.find(doc => doc.document_type_id === req.document_type_id);
+        return {
+          id: req.document_type_id,
+          name: req.document_type?.name || 'Unknown',
+          required: req.is_required,
+          status: uploadedDoc ? 'uploaded' : 'pending',
+          uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'yyyy-MM-dd') : undefined
+        };
+      })
+    : documentTypes.map(docType => {
+        const uploadedDoc = documents.find(doc => doc.document_type_id === docType.id);
+        return {
+          id: docType.id,
+          name: docType.name,
+          required: docType.required,
+          status: uploadedDoc ? 'uploaded' : 'pending',
+          uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'yyyy-MM-dd') : undefined
+        };
+      });
 
-  const requiredDocs = checklist.filter(item => item.required);
-  const completedRequired = requiredDocs.filter(item => item.status === 'uploaded').length;
-  const progressPercentage = requiredDocs.length > 0 ? (completedRequired / requiredDocs.length) * 100 : 0;
+  const requiredDocsFiltered = dynamicChecklist.filter(item => item.required);
+  const completedRequired = requiredDocsFiltered.filter(item => item.status === 'uploaded').length;
+  const progressPercentage = requiredDocsFiltered.length > 0 ? (completedRequired / requiredDocsFiltered.length) * 100 : 0;
 
   // Get first 5 required docs for quick check
-  const quickDocCheck = requiredDocs.slice(0, 5);
+  const quickDocCheck = requiredDocsFiltered.slice(0, 5);
   const partnerName = lead.partners?.name || lead.partner?.name || 'Direct';
   const createdDate = lead.created_at ? format(new Date(lead.created_at), 'dd MMM yyyy') : '';
 
@@ -356,12 +393,29 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                 </Card>
               </div>
 
+              {/* Loan Configuration - Admin Only */}
+              {isAdmin() && (
+                <LoanConfigurationCard
+                  leadId={lead.id}
+                  currentClassification={lead.loan_classification || null}
+                  currentTargetLenderId={lead.target_lender_id || null}
+                  currentComplexity={lead.case_complexity || null}
+                  lenders={allLenders}
+                  onConfigUpdated={() => {
+                    onLeadUpdated?.();
+                    refetchDynamicDocs();
+                  }}
+                />
+              )}
+
               {/* Quick Document Check */}
               <Card className="border">
                 <CardHeader className="pb-2 pt-3 px-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium">Document Progress</CardTitle>
-                    <span className="text-xs text-muted-foreground">{completedRequired}/{requiredDocs.length} uploaded</span>
+                    <span className="text-xs text-muted-foreground">
+                      {completedRequired}/{requiredDocsFiltered.length} required for this stage
+                    </span>
                   </div>
                   <Progress value={progressPercentage} className="h-1.5 mt-2" />
                 </CardHeader>
@@ -433,7 +487,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                       <p className="text-muted-foreground">Loading document requirements...</p>
                     </div>
                   ) : (
-                    checklist.map((item) => {
+                    dynamicChecklist.map((item) => {
                       const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
                       const docType = documentTypes.find(type => type.id === item.id);
                       
@@ -590,7 +644,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                             ))}
                           </div>
                         ) : (
-                          checklist.map((item) => {
+                          dynamicChecklist.map((item) => {
                             const uploadedDoc = documents.find(doc => doc.document_type_id === item.id);
                             const docType = documentTypes.find(type => type.id === item.id);
                             
