@@ -65,10 +65,27 @@ export const CompleteLeadModal = ({
   const [universityId, setUniversityId] = useState<string>("");
   const [intakeMonth, setIntakeMonth] = useState<string>("");
   const [intakeYear, setIntakeYear] = useState<string>("");
-  const [loanType, setLoanType] = useState<string>(lead?.loan_type || "unsecured");
+  const [loanType, setLoanType] = useState<string>("unsecured");
   const [coApplicantPhone, setCoApplicantPhone] = useState<string>("");
   const [coApplicantPinCode, setCoApplicantPinCode] = useState<string>("");
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Reset form when lead changes or modal opens/closes
+  const resetForm = () => {
+    setUniversityId("");
+    setIntakeMonth("");
+    setIntakeYear("");
+    setLoanType(lead?.loan_type || "unsecured");
+    setCoApplicantPhone("");
+    setCoApplicantPinCode("");
+    setErrors({});
+  };
+
+  // Reset when modal closes or lead changes
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -151,7 +168,7 @@ export const CompleteLeadModal = ({
 
       toast.success("Lead completed successfully!");
       onSuccess();
-      onClose();
+      handleClose();
     } catch (error: any) {
       console.error("Error completing lead:", error);
       toast.error(error.message || "Failed to complete lead");
@@ -163,7 +180,7 @@ export const CompleteLeadModal = ({
   if (!lead) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -235,14 +252,14 @@ export const CompleteLeadModal = ({
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="unsecured" id="unsecured" />
-                <Label htmlFor="unsecured" className="font-normal cursor-pointer">
+                <Label htmlFor="unsecured" className="font-normal cursor-pointer text-sm">
                   Unsecured
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="secured" id="secured" />
-                <Label htmlFor="secured" className="font-normal cursor-pointer">
-                  Secured
+                <Label htmlFor="secured" className="font-normal cursor-pointer text-sm">
+                  Secured (Collateral)
                 </Label>
               </div>
             </RadioGroup>
@@ -302,7 +319,7 @@ export const CompleteLeadModal = ({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button variant="outline" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>

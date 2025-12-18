@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerKPIs } from "@/hooks/usePartnerKPIs";
 import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
@@ -11,8 +11,21 @@ import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
 import { NewLeadSelector } from "@/components/partner/NewLeadSelector";
 import { QuickLeadModal } from "@/components/partner/QuickLeadModal";
 import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
+import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
 import { Partner } from "@/types/partner";
 import { RefactoredLead } from "@/types/refactored-lead";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Status mappings for 18-step process filtering
+const IN_PIPELINE_STATUSES = [
+  'contacted', 'in_progress', 'document_review',
+  'logged_with_lender', 'counselling_done', 'pd_scheduled', 'pd_completed',
+  'additional_docs_pending', 'property_verification', 'credit_assessment'
+];
+
+const SANCTIONED_STATUSES = [
+  'approved', 'sanctioned', 'pf_pending', 'pf_paid', 'sanction_letter_issued'
+];
 
 interface PartnerDashboardProps {
   partner?: Partner;
@@ -22,8 +35,10 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const navigate = useNavigate();
   const { partnerCode } = useParams();
   const { signOut, isAdmin } = useAuth();
+  
+  // Pass partnerId to hooks for filtering
   const { kpis, loading: kpisLoading, refetch: refetchKPIs } = usePartnerKPIs(partner?.id, isAdmin());
-  const { leads, loading: leadsLoading, refetch: refetchLeads } = useRefactoredLeads();
+  const { leads, loading: leadsLoading, error: leadsError, refetch: refetchLeads } = useRefactoredLeads(partner?.id);
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -34,6 +49,11 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const [showQuickLead, setShowQuickLead] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [selectedQuickLead, setSelectedQuickLead] = useState<RefactoredLead | null>(null);
+  
+  // Lead detail sheet state
+  const [showLeadDetail, setShowLeadDetail] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
+  const [leadDetailInitialTab, setLeadDetailInitialTab] = useState("overview");
 
   // Calculate pending docs count
   const pendingDocsCount = useMemo(() => {
@@ -45,17 +65,20 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   // Filter leads based on status and search
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
-      // Status filter from compact stats bar
+      // Status filter from compact stats bar (updated for 18-step process)
       if (statusFilter) {
-        // Map filter keys to actual status values
-        const statusMap: Record<string, string[]> = {
-          in_progress: ['in_progress', 'contacted', 'document_review'],
-          approved: ['approved'],
-          disbursed: ['disbursed'],
-        };
-        const allowedStatuses = statusMap[statusFilter] || [];
-        if (!allowedStatuses.includes(lead.status)) {
-          return false;
+        if (statusFilter === 'in_pipeline') {
+          if (!IN_PIPELINE_STATUSES.includes(lead.status)) {
+            return false;
+          }
+        } else if (statusFilter === 'sanctioned') {
+          if (!SANCTIONED_STATUSES.includes(lead.status)) {
+            return false;
+          }
+        } else if (statusFilter === 'disbursed') {
+          if (lead.status !== 'disbursed') {
+            return false;
+          }
         }
       }
 
@@ -101,11 +124,22 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   };
 
   const handleUploadDocs = (lead?: RefactoredLead) => {
-    // Navigate to lead detail or open upload modal
     if (lead) {
-      // For now, could open a modal or navigate
-      console.log("Upload docs for lead:", lead.case_id);
+      setSelectedLead(lead);
+      setLeadDetailInitialTab("documents");
+      setShowLeadDetail(true);
     }
+  };
+
+  const handleViewLead = (lead: RefactoredLead) => {
+    setSelectedLead(lead);
+    setLeadDetailInitialTab("overview");
+    setShowLeadDetail(true);
+  };
+
+  const handleLeadUpdated = () => {
+    refetchLeads();
+    refetchKPIs();
   };
 
   return (
@@ -147,6 +181,16 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+        {/* Error Alert */}
+        {leadsError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Failed to load leads: {leadsError}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Compact Stats Bar - clickable filters */}
         <CompactStatsBar
           kpis={kpis}
@@ -198,6 +242,18 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         }}
         lead={selectedQuickLead}
         onSuccess={handleCompleteSuccess}
+      />
+
+      {/* Partner Lead Detail Sheet */}
+      <PartnerLeadDetailSheet
+        lead={selectedLead}
+        open={showLeadDetail}
+        onOpenChange={(open) => {
+          setShowLeadDetail(open);
+          if (!open) setSelectedLead(null);
+        }}
+        onLeadUpdated={handleLeadUpdated}
+        initialTab={leadDetailInitialTab}
       />
     </div>
   );
