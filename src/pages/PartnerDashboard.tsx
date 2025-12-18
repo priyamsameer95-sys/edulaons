@@ -55,13 +55,6 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [leadDetailInitialTab, setLeadDetailInitialTab] = useState("overview");
 
-  // Calculate pending docs count
-  const pendingDocsCount = useMemo(() => {
-    return leads.filter(
-      (lead) => lead.documents_status === 'pending' || lead.documents_status === 'resubmission_required'
-    ).length;
-  }, [leads]);
-
   // Filter leads based on status and search
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -202,8 +195,6 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         {/* Quick Actions Bar */}
         <QuickActionsBar
           onNewLead={handleNewLead}
-          onUploadDocs={() => handleUploadDocs()}
-          pendingDocsCount={pendingDocsCount}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
