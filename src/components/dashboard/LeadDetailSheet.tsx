@@ -34,7 +34,7 @@ import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import { supabase } from "@/integrations/supabase/client";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
-import { EnhancedStatusUpdateModal } from "@/components/lead-status/EnhancedStatusUpdateModal";
+import { StatusUpdateSheet } from "@/components/admin/StatusUpdateSheet";
 import { StatusHistory } from "@/components/lead-status/StatusHistory";
 import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal";
 import { PartnerAssignmentModal } from "@/components/admin/PartnerAssignmentModal";
@@ -816,16 +816,16 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
         </div>
       </SheetContent>
 
-      {/* Status Update Modal */}
-      <EnhancedStatusUpdateModal
+      {/* Status Update Sheet */}
+      <StatusUpdateSheet
         open={statusUpdateModalOpen}
         onOpenChange={setStatusUpdateModalOpen}
         leadId={lead.id}
         currentStatus={lead.status as LeadStatus}
         currentDocumentsStatus={lead.documents_status as DocumentStatus}
+        stageStartedAt={lead.current_stage_started_at}
         onStatusUpdated={() => {
           setStatusUpdateModalOpen(false);
-          // Call the parent callback to refresh dashboard data
           onLeadUpdated?.();
         }}
       />
