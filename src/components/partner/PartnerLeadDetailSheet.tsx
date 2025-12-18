@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import {
   User,
@@ -22,7 +23,8 @@ import {
   Upload,
   Shield,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Info
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -98,7 +100,7 @@ export const PartnerLeadDetailSheet = ({
 
   if (!lead) return null;
 
-  // Create document checklist
+  // Create document checklist with AI validation details
   const documentChecklist = documentTypes.map(docType => {
     const uploadedDoc = documents.find(doc => doc.document_type_id === docType.id);
     return {
@@ -109,6 +111,10 @@ export const PartnerLeadDetailSheet = ({
       status: uploadedDoc ? 'uploaded' : 'pending',
       uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'dd MMM yyyy') : undefined,
       ai_status: uploadedDoc?.ai_validation_status,
+      ai_detected_type: uploadedDoc?.ai_detected_type,
+      ai_confidence: uploadedDoc?.ai_confidence_score,
+      ai_quality: uploadedDoc?.ai_quality_assessment,
+      ai_notes: uploadedDoc?.ai_validation_notes,
       docType: docType
     };
   });
@@ -141,6 +147,26 @@ export const PartnerLeadDetailSheet = ({
       default:
         return null;
     }
+  };
+
+  const getAIStatusLabel = (aiStatus?: string) => {
+    switch (aiStatus) {
+      case 'validated':
+        return 'Verified';
+      case 'manual_review':
+        return 'Pending Review';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return null;
+    }
+  };
+
+  const getConfidenceColor = (confidence?: number) => {
+    if (!confidence) return 'text-muted-foreground';
+    if (confidence >= 80) return 'text-green-600';
+    if (confidence >= 60) return 'text-amber-600';
+    return 'text-red-600';
   };
 
   // Group documents by category for upload selection
@@ -403,35 +429,68 @@ export const PartnerLeadDetailSheet = ({
                   {documentTypesLoading || documentsLoading ? (
                     <p className="text-sm text-muted-foreground">Loading...</p>
                   ) : (
-                    <div className="space-y-2">
-                      {requiredDocs.slice(0, 8).map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between text-sm">
-                          <span className={doc.status === 'uploaded' ? 'text-foreground' : 'text-muted-foreground'}>
-                            {doc.name}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {doc.ai_status && getAIStatusIcon(doc.ai_status)}
-                            {doc.status === 'uploaded' ? (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2"
-                                onClick={() => setSelectedDocType(doc.id)}
-                              >
-                                <Upload className="h-3 w-3" />
-                              </Button>
-                            )}
+                    <TooltipProvider>
+                      <div className="space-y-2">
+                        {requiredDocs.slice(0, 8).map((doc) => (
+                          <div key={doc.id} className="flex items-center justify-between text-sm">
+                            <span className={doc.status === 'uploaded' ? 'text-foreground' : 'text-muted-foreground'}>
+                              {doc.name}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {/* AI Status with detailed tooltip */}
+                              {doc.ai_status && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-1 cursor-help">
+                                      {getAIStatusIcon(doc.ai_status)}
+                                      {doc.ai_confidence && (
+                                        <span className={cn("text-xs", getConfidenceColor(doc.ai_confidence))}>
+                                          {Math.round(doc.ai_confidence)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-xs">
+                                    <div className="space-y-1.5 text-xs">
+                                      <p className="font-medium">{getAIStatusLabel(doc.ai_status)}</p>
+                                      {doc.ai_detected_type && (
+                                        <p>Detected: <span className="font-medium">{doc.ai_detected_type}</span></p>
+                                      )}
+                                      {doc.ai_confidence && (
+                                        <p>Confidence: <span className={cn("font-medium", getConfidenceColor(doc.ai_confidence))}>{Math.round(doc.ai_confidence)}%</span></p>
+                                      )}
+                                      {doc.ai_quality && (
+                                        <p>Quality: <span className="capitalize font-medium">{doc.ai_quality}</span></p>
+                                      )}
+                                      {doc.ai_notes && (
+                                        <p className="text-muted-foreground border-t pt-1 mt-1">{doc.ai_notes}</p>
+                                      )}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {doc.status === 'uploaded' ? (
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2"
+                                  onClick={() => setSelectedDocType(doc.id)}
+                                >
+                                  <Upload className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      {requiredDocs.length > 8 && (
-                        <p className="text-xs text-muted-foreground">
-                          +{requiredDocs.length - 8} more documents
-                        </p>
-                      )}
-                    </div>
+                        ))}
+                        {requiredDocs.length > 8 && (
+                          <p className="text-xs text-muted-foreground">
+                            +{requiredDocs.length - 8} more documents
+                          </p>
+                        )}
+                      </div>
+                    </TooltipProvider>
                   )}
                 </CardContent>
               </Card>

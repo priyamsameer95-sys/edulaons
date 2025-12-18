@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useDocumentValidation, ValidationResult } from '@/hooks/useDocumentValidation';
+import { PartnerValidationFeedback } from '@/components/partner/PartnerValidationFeedback';
 import { 
   DOCUMENT_ERROR_MESSAGES, 
   transformBackendError 
@@ -395,76 +396,47 @@ export function EnhancedDocumentUpload({
       {uploadedFiles.length > 0 && (
         <div className="mt-3 space-y-2">
           {uploadedFiles.map((file) => (
-            <div
-              key={file.id}
-              className={cn(
-                "flex items-center justify-between gap-3 p-2 rounded text-xs",
-                file.status === 'completed' && "bg-success/10 text-success",
-                file.status === 'rejected' && "bg-destructive/10 text-destructive",
-                file.status === 'error' && "bg-destructive/10 text-destructive",
-                file.status === 'validating' && "bg-primary/10 text-primary",
-                file.status === 'uploading' && "bg-primary/10 text-primary"
-              )}
-            >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {getStatusIcon(file)}
-                <span className="truncate">{file.file.name}</span>
-                <span className="flex-shrink-0 text-muted-foreground">
-                  {getStatusText(file)}
-                </span>
-              </div>
-              
-              {file.status === 'rejected' && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => retryUpload(file.id, true)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        Upload Anyway
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Skip AI verification and upload for manual review</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              
-              {file.status === 'error' && (
+            <div key={file.id}>
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-3 p-2 rounded text-xs",
+                  file.status === 'completed' && "bg-success/10 text-success",
+                  file.status === 'rejected' && "bg-destructive/10 text-destructive",
+                  file.status === 'error' && "bg-destructive/10 text-destructive",
+                  file.status === 'validating' && "bg-primary/10 text-primary",
+                  file.status === 'uploading' && "bg-primary/10 text-primary"
+                )}
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {getStatusIcon(file)}
+                  <span className="truncate">{file.file.name}</span>
+                  <span className="flex-shrink-0 text-muted-foreground">
+                    {getStatusText(file)}
+                  </span>
+                </div>
+                
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => retryUpload(file.id)}
-                  className="h-6 px-2 text-xs"
+                  onClick={() => removeFile(file.id)}
+                  className="h-6 w-6 p-0"
                 >
-                  Retry
+                  <X className="h-3 w-3" />
                 </Button>
+              </div>
+
+              {/* Detailed AI Validation Feedback */}
+              {(file.status === 'validating' || file.validationResult) && (
+                <PartnerValidationFeedback
+                  isValidating={file.status === 'validating'}
+                  validationResult={file.validationResult || null}
+                  hasFile={true}
+                  showUploadAnyway={file.status === 'rejected'}
+                  onUploadAnyway={() => retryUpload(file.id, true)}
+                />
               )}
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeFile(file.id)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Validation Error Details */}
-      {uploadedFiles.some(f => f.status === 'rejected' && f.error) && (
-        <div className="mt-2 p-2 bg-destructive/5 border border-destructive/20 rounded text-xs text-destructive">
-          <p className="font-medium">Why was this rejected?</p>
-          <p className="mt-1 text-muted-foreground">
-            {uploadedFiles.find(f => f.status === 'rejected')?.error}
-          </p>
         </div>
       )}
     </div>
