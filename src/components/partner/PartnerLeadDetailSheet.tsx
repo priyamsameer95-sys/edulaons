@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import {
   User,
@@ -18,7 +19,10 @@ import {
   Clock,
   FileText,
   CheckCircle,
-  Upload
+  Upload,
+  Shield,
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -27,6 +31,7 @@ import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import { EnhancedDocumentUpload } from "@/components/ui/enhanced-document-upload";
 import { supabase } from "@/integrations/supabase/client";
 import type { LeadStatus } from "@/utils/statusUtils";
+import { cn } from "@/lib/utils";
 
 interface PartnerLeadDetailSheetProps {
   lead: RefactoredLead | null;
@@ -53,6 +58,7 @@ export const PartnerLeadDetailSheet = ({
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showCoApplicantDetails, setShowCoApplicantDetails] = useState(false);
   const [leadUniversities, setLeadUniversities] = useState<LeadUniversity[]>([]);
+  const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
   
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
   const { documents, loading: documentsLoading, refetch: refetchDocuments } = useLeadDocuments(lead?.id);
@@ -98,9 +104,12 @@ export const PartnerLeadDetailSheet = ({
     return {
       id: docType.id,
       name: docType.name,
+      category: docType.category,
       required: docType.required,
       status: uploadedDoc ? 'uploaded' : 'pending',
-      uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'dd MMM yyyy') : undefined
+      uploaded_at: uploadedDoc?.uploaded_at ? format(new Date(uploadedDoc.uploaded_at), 'dd MMM yyyy') : undefined,
+      ai_status: uploadedDoc?.ai_validation_status,
+      docType: docType
     };
   });
 
@@ -114,7 +123,34 @@ export const PartnerLeadDetailSheet = ({
   const handleDocumentUploadSuccess = () => {
     refetchDocuments();
     onLeadUpdated?.();
+    setSelectedDocType(null);
   };
+
+  const handleDocumentUploadError = (error: string) => {
+    console.error('Upload error:', error);
+  };
+
+  const getAIStatusIcon = (aiStatus?: string) => {
+    switch (aiStatus) {
+      case 'validated':
+        return <ShieldCheck className="h-3.5 w-3.5 text-green-600" />;
+      case 'manual_review':
+        return <Shield className="h-3.5 w-3.5 text-amber-600" />;
+      case 'rejected':
+        return <ShieldAlert className="h-3.5 w-3.5 text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  // Group documents by category for upload selection
+  const docsByCategory = documentTypes.reduce((acc, doc) => {
+    if (!acc[doc.category]) acc[doc.category] = [];
+    acc[doc.category].push(doc);
+    return acc;
+  }, {} as Record<string, typeof documentTypes>);
+
+  const selectedDocTypeObj = documentTypes.find(d => d.id === selectedDocType);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -280,10 +316,88 @@ export const PartnerLeadDetailSheet = ({
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-4 mt-4">
+              {/* Upload Section */}
+              <Card className="border">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload Document
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  {!selectedDocType ? (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">Select document type to upload:</p>
+                      <div className="max-h-48 overflow-y-auto space-y-3">
+                        {Object.entries(docsByCategory).slice(0, 3).map(([category, docs]) => (
+                          <div key={category}>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">{category}</p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {docs.slice(0, 4).map((doc) => {
+                                const isUploaded = documents.some(d => d.document_type_id === doc.id);
+                                return (
+                                  <Button
+                                    key={doc.id}
+                                    variant="outline"
+                                    size="sm"
+                                    className={cn(
+                                      "h-auto py-1.5 px-2 text-xs justify-start",
+                                      isUploaded && "bg-green-50 border-green-200"
+                                    )}
+                                    onClick={() => setSelectedDocType(doc.id)}
+                                  >
+                                    {isUploaded && <CheckCircle className="h-3 w-3 mr-1 text-green-600" />}
+                                    <span className="truncate">{doc.name}</span>
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : selectedDocTypeObj ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{selectedDocTypeObj.name}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setSelectedDocType(null)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          Change
+                        </Button>
+                      </div>
+                      <EnhancedDocumentUpload
+                        leadId={lead.id}
+                        documentType={{
+                          id: selectedDocTypeObj.id,
+                          name: selectedDocTypeObj.name,
+                          category: selectedDocTypeObj.category,
+                          required: selectedDocTypeObj.required || false,
+                          max_file_size_pdf: selectedDocTypeObj.max_file_size_pdf || 10 * 1024 * 1024,
+                          max_file_size_image: selectedDocTypeObj.max_file_size_image || 5 * 1024 * 1024,
+                          accepted_formats: selectedDocTypeObj.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png'],
+                          description: selectedDocTypeObj.description || ''
+                        }}
+                        onUploadSuccess={handleDocumentUploadSuccess}
+                        onUploadError={handleDocumentUploadError}
+                        enableAIValidation={true}
+                      />
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        AI verification enabled - documents are auto-checked
+                      </p>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+
               {/* Document Checklist */}
               <Card className="border">
                 <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-sm font-medium">Document Checklist</CardTitle>
+                  <CardTitle className="text-sm font-medium">Document Status</CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
                   {documentTypesLoading || documentsLoading ? (
@@ -295,11 +409,21 @@ export const PartnerLeadDetailSheet = ({
                           <span className={doc.status === 'uploaded' ? 'text-foreground' : 'text-muted-foreground'}>
                             {doc.name}
                           </span>
-                          {doc.status === 'uploaded' ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Upload className="h-4 w-4 text-muted-foreground" />
-                          )}
+                          <div className="flex items-center gap-1">
+                            {doc.ai_status && getAIStatusIcon(doc.ai_status)}
+                            {doc.status === 'uploaded' ? (
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2"
+                                onClick={() => setSelectedDocType(doc.id)}
+                              >
+                                <Upload className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                       {requiredDocs.length > 8 && (
