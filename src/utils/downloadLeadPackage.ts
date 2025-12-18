@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
@@ -36,9 +37,6 @@ interface LeadData {
   intake_year?: number;
   status: string;
   created_at: string;
-  partners?: {
-    name: string;
-  };
 }
 
 interface LeadDocument {
@@ -58,89 +56,170 @@ interface LeadUniversity {
   country: string;
 }
 
-function generateProfileSummary(
+function generateProfilePDF(
   lead: LeadData,
   universities: LeadUniversity[]
-): string {
-  const generatedDate = format(new Date(), 'dd MMM yyyy, HH:mm');
-  const createdDate = lead.created_at ? format(new Date(lead.created_at), 'dd MMM yyyy') : 'N/A';
-  
+): Blob {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - (margin * 2);
+  let y = margin;
+
   const formatCurrency = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
   const formatIntake = () => {
     if (lead.intake_month && lead.intake_year) {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       return `${months[lead.intake_month - 1]} ${lead.intake_year}`;
     }
-    return 'N/A';
+    return 'Not Specified';
   };
 
-  let summary = `# Student Application Profile
-Generated: ${generatedDate}
-Case ID: ${lead.case_id}
+  // Helper functions
+  const addTitle = (text: string) => {
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(37, 99, 235); // Blue
+    doc.text(text, margin, y);
+    y += 10;
+  };
 
-================================================================================
-STUDENT DETAILS
-================================================================================
-Name:           ${lead.student?.name || 'N/A'}
-Phone:          ${lead.student?.phone || 'N/A'}
-Email:          ${lead.student?.email || 'N/A'}
-PIN Code:       ${lead.student?.postal_code || 'N/A'}
-City:           ${lead.student?.city || 'N/A'}
-State:          ${lead.student?.state || 'N/A'}
-Date of Birth:  ${lead.student?.date_of_birth ? format(new Date(lead.student.date_of_birth), 'dd MMM yyyy') : 'N/A'}
-Qualification:  ${lead.student?.highest_qualification || 'N/A'}
+  const addSubtitle = (text: string) => {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128); // Gray
+    doc.text(text, margin, y);
+    y += 8;
+  };
 
-================================================================================
-CO-APPLICANT DETAILS
-================================================================================
-Name:           ${lead.co_applicant?.name || 'N/A'}
-Relationship:   ${lead.co_applicant?.relationship || 'N/A'}
-Phone:          ${lead.co_applicant?.phone || 'N/A'}
-Email:          ${lead.co_applicant?.email || 'N/A'}
-PIN Code:       ${lead.co_applicant?.pin_code || 'N/A'}
-Occupation:     ${lead.co_applicant?.occupation || 'N/A'}
-Employer:       ${lead.co_applicant?.employer || 'N/A'}
-Annual Salary:  ${lead.co_applicant?.salary ? formatCurrency(lead.co_applicant.salary) : 'N/A'}
+  const addSectionHeader = (text: string) => {
+    y += 6;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(37, 99, 235); // Blue
+    doc.text(text, margin, y);
+    y += 2;
+    // Draw line under header
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, margin + contentWidth, y);
+    y += 8;
+  };
 
-================================================================================
-LOAN DETAILS
-================================================================================
-Amount:         ${formatCurrency(lead.loan_amount)}
-Type:           ${lead.loan_type?.replace('_', ' ').toUpperCase() || 'N/A'}
-Classification: ${lead.loan_classification?.replace('_', ' ').toUpperCase() || 'Not Set'}
-Current Lender: ${lead.lender?.name || 'Not Assigned'}
+  const addField = (label: string, value: string) => {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81); // Dark gray
+    doc.text(`${label}:`, margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(17, 24, 39); // Near black
+    doc.text(value || 'Not Provided', margin + 45, y);
+    y += 6;
+  };
 
-================================================================================
-STUDY DESTINATION
-================================================================================
-Country:        ${lead.study_destination || 'N/A'}
-Intake:         ${formatIntake()}
+  const checkPageBreak = (requiredSpace: number = 30) => {
+    if (y > doc.internal.pageSize.getHeight() - requiredSpace) {
+      doc.addPage();
+      y = margin;
+    }
+  };
 
-Universities:
-`;
+  // Title
+  addTitle('STUDENT APPLICATION PROFILE');
+  
+  // Subtitle with Case ID and date
+  const generatedDate = format(new Date(), 'dd MMMM yyyy, HH:mm');
+  addSubtitle(`Case ID: ${lead.case_id}  |  Generated: ${generatedDate}`);
+  
+  // Horizontal line
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, margin + contentWidth, y);
+  y += 10;
 
+  // Student Details Section
+  addSectionHeader('STUDENT DETAILS');
+  addField('Name', lead.student?.name || 'N/A');
+  addField('Phone', lead.student?.phone || 'N/A');
+  addField('Email', lead.student?.email || 'N/A');
+  addField('PIN Code', lead.student?.postal_code || 'N/A');
+  addField('City', lead.student?.city || 'N/A');
+  addField('State', lead.student?.state || 'N/A');
+  if (lead.student?.date_of_birth) {
+    addField('Date of Birth', format(new Date(lead.student.date_of_birth), 'dd MMMM yyyy'));
+  }
+  addField('Qualification', lead.student?.highest_qualification || 'N/A');
+
+  checkPageBreak();
+
+  // Co-Applicant Details Section
+  addSectionHeader('CO-APPLICANT DETAILS');
+  addField('Name', lead.co_applicant?.name || 'N/A');
+  addField('Relationship', lead.co_applicant?.relationship || 'N/A');
+  addField('Phone', lead.co_applicant?.phone || 'N/A');
+  addField('Email', lead.co_applicant?.email || 'N/A');
+  addField('PIN Code', lead.co_applicant?.pin_code || 'N/A');
+  addField('Occupation', lead.co_applicant?.occupation || 'N/A');
+  addField('Employer', lead.co_applicant?.employer || 'N/A');
+  addField('Annual Salary', lead.co_applicant?.salary ? formatCurrency(lead.co_applicant.salary) : 'N/A');
+
+  checkPageBreak();
+
+  // Loan Details Section
+  addSectionHeader('LOAN DETAILS');
+  addField('Amount Requested', formatCurrency(lead.loan_amount));
+  addField('Loan Type', lead.loan_type?.replace('_', ' ').toUpperCase() || 'N/A');
+  addField('Classification', lead.loan_classification?.replace('_', ' ').toUpperCase() || 'Not Set');
+  addField('Assigned Lender', lead.lender?.name || 'Not Assigned');
+
+  checkPageBreak();
+
+  // Study Destination Section
+  addSectionHeader('STUDY DESTINATION');
+  addField('Country', lead.study_destination || 'N/A');
+  addField('Intake', formatIntake());
+  
+  y += 4;
   if (universities.length > 0) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(55, 65, 81);
+    doc.text('Universities Applied:', margin, y);
+    y += 6;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(17, 24, 39);
     universities.forEach((uni, idx) => {
-      summary += `  ${idx + 1}. ${uni.name} - ${uni.city}, ${uni.country}\n`;
+      checkPageBreak();
+      doc.text(`${idx + 1}. ${uni.name} - ${uni.city}, ${uni.country}`, margin + 5, y);
+      y += 5;
     });
   } else {
-    summary += `  No universities selected\n`;
+    addField('Universities', 'No universities selected');
   }
 
-  summary += `
-================================================================================
-APPLICATION INFO
-================================================================================
-Status:         ${lead.status?.replace('_', ' ').toUpperCase() || 'N/A'}
-Created:        ${createdDate}
-Partner:        ${lead.partners?.name || 'Direct'}
+  checkPageBreak();
 
-================================================================================
-END OF PROFILE
-================================================================================
-`;
+  // Application Status Section
+  addSectionHeader('APPLICATION STATUS');
+  addField('Current Status', lead.status?.replace(/_/g, ' ').toUpperCase() || 'N/A');
+  addField('Created', lead.created_at ? format(new Date(lead.created_at), 'dd MMMM yyyy') : 'N/A');
 
-  return summary;
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(156, 163, 175);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: 'center' }
+    );
+  }
+
+  return doc.output('blob');
 }
 
 async function fetchDocumentFile(filePath: string): Promise<Blob | null> {
@@ -187,10 +266,10 @@ export async function downloadLeadPackage(
         country: u.universities.country
       }));
 
-    // Generate profile summary
-    onProgress?.('Generating profile summary...');
-    const profileSummary = generateProfileSummary(lead, universities);
-    zip.file('Profile_Summary.txt', profileSummary);
+    // Generate PDF profile summary
+    onProgress?.('Generating profile PDF...');
+    const profilePdf = generateProfilePDF(lead, universities);
+    zip.file('Profile_Summary.pdf', profilePdf);
 
     // Create documents folder
     const docsFolder = zip.folder('Documents');
@@ -198,17 +277,14 @@ export async function downloadLeadPackage(
     if (documents.length > 0) {
       onProgress?.(`Downloading ${documents.length} documents...`);
       
-      // Download all documents in parallel (with limit)
+      // Download all documents in parallel
       const downloadPromises = documents.map(async (doc, index) => {
         onProgress?.(`Downloading ${index + 1}/${documents.length}: ${doc.original_filename}`);
         
         const blob = await fetchDocumentFile(doc.file_path);
         if (blob && docsFolder) {
-          // Use document type name as prefix for clarity
           const docTypeName = doc.document_types?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Document';
-          const extension = doc.original_filename.split('.').pop() || 'pdf';
           const fileName = `${docTypeName}_${doc.original_filename}`;
-          
           docsFolder.file(fileName, blob);
         }
         return { success: !!blob, name: doc.original_filename };
@@ -216,7 +292,6 @@ export async function downloadLeadPackage(
 
       await Promise.all(downloadPromises);
     } else {
-      // Add placeholder file if no documents
       docsFolder?.file('_no_documents_uploaded.txt', 'No documents have been uploaded for this lead yet.');
     }
 
