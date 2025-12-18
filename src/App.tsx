@@ -9,6 +9,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import NewLeadPage from "./pages/NewLeadPage";
+import PartnerDocumentPage from "./pages/PartnerDocumentPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
@@ -58,6 +59,16 @@ const App = () => (
             element={
               <ProtectedRoute requiredRole="partner">
                 <NewLeadPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Partner Document Page */}
+          <Route 
+            path="/partner/:partnerCode/lead/:leadId/documents" 
+            element={
+              <ProtectedRoute requiredRole="partner">
+                <PartnerDocumentPage />
               </ProtectedRoute>
             } 
           />
