@@ -143,7 +143,11 @@ export const PartnerLeadsTable = ({
                   const isIncomplete = isIncompleteQuickLead(lead);
                   
                   return (
-                    <TableRow key={lead.id} className="hover:bg-muted/50">
+                    <TableRow 
+                      key={lead.id} 
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleViewLead(lead)}
+                    >
                       <TableCell className="font-medium text-sm">
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2">
@@ -186,10 +190,13 @@ export const PartnerLeadsTable = ({
                             <>
                               <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
                               {canUploadDocs(lead) && (
-                                <Button
+                              <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => onUploadDocs(lead)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUploadDocs(lead);
+                                  }}
                                   className="h-6 px-2 text-xs text-primary hover:text-primary"
                                 >
                                   <Upload className="h-3 w-3" />
@@ -211,7 +218,10 @@ export const PartnerLeadsTable = ({
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => onCompleteLead(lead)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCompleteLead(lead);
+                              }}
                               className="h-8 px-3 text-xs gap-1"
                             >
                               <ClipboardCheck className="h-3.5 w-3.5" />
@@ -221,7 +231,10 @@ export const PartnerLeadsTable = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleViewLead(lead)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewLead(lead);
+                              }}
                               className="h-8 px-2"
                             >
                               <Eye className="h-4 w-4" />
