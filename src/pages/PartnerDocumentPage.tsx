@@ -1,67 +1,25 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, User, FileText, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useLeadDocuments } from '@/hooks/useLeadDocuments';
+import { useLeadInfo } from '@/hooks/useLeadInfo';
 import { PartnerDocumentGrid } from '@/components/partner/PartnerDocumentGrid';
 import { EnhancedDocumentUpload } from '@/components/ui/enhanced-document-upload';
 import { formatIndianNumber } from '@/utils/currencyFormatter';
 
-interface LeadInfo {
-  id: string;
-  case_id: string;
-  loan_amount: number;
-  study_destination: string;
-  student: {
-    name: string;
-    email?: string;
-    phone?: string;
-  };
-}
-
 export default function PartnerDocumentPage() {
   const { partnerCode, leadId } = useParams();
   const navigate = useNavigate();
-  const [lead, setLead] = useState<LeadInfo | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
 
+  const { lead, loading } = useLeadInfo(leadId);
   const { documentTypes, loading: docTypesLoading } = useDocumentTypes();
-  const { documents, loading: docsLoading, refetch: refetchDocuments } = useLeadDocuments(leadId);
-
-  useEffect(() => {
-    if (leadId) {
-      fetchLeadInfo();
-    }
-  }, [leadId]);
-
-  const fetchLeadInfo = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('leads_new')
-        .select(`
-          id,
-          case_id,
-          loan_amount,
-          study_destination,
-          student:students(name, email, phone)
-        `)
-        .eq('id', leadId)
-        .single();
-
-      if (error) throw error;
-      setLead(data as unknown as LeadInfo);
-    } catch (error) {
-      console.error('Error fetching lead:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { documents, refetch: refetchDocuments } = useLeadDocuments(leadId);
 
   const handleBack = () => {
     navigate(`/partner/${partnerCode}`);
@@ -69,8 +27,7 @@ export default function PartnerDocumentPage() {
 
   const handleDocSelect = (docTypeId: string) => {
     setSelectedDocType(docTypeId);
-    // Scroll to upload section
-    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('upload-section')?.scrollIntoView();
   };
 
   const handleUploadSuccess = () => {
