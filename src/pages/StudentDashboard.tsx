@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudentApplications } from "@/hooks/useStudentApplications";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentApplicationFlow from "@/components/student/StudentApplicationFlow";
-import { FileText, CheckCircle2, Clock, XCircle, AlertCircle, Upload, Eye, DollarSign, MapPin, User, ArrowLeft, PlusCircle } from "lucide-react";
+import { FileText, CheckCircle2, Clock, XCircle, AlertCircle, DollarSign, MapPin, User, ArrowLeft, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusTimeline } from "@/components/student/StatusTimeline";
 import { Separator } from "@/components/ui/separator";
@@ -15,22 +14,18 @@ import type { StudentApplication } from "@/hooks/useStudentApplications";
 import { StudentApplicationCard } from "@/components/student/dashboard/StudentApplicationCard";
 import { StudentLayout } from "@/components/student/layout/StudentLayout";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ActionRequiredBanner } from "@/components/student/dashboard/ActionRequiredBanner";
 import { ImprovedEmptyState } from "@/components/student/dashboard/ImprovedEmptyState";
 import { SupportButton } from "@/components/student/dashboard/SupportButton";
+import { StudentDocumentChecklist } from "@/components/student/dashboard/StudentDocumentChecklist";
 import { updateMetaTags, pageSEO } from "@/utils/seo";
 
 const StudentDashboard = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const { applications, loading, error, refetch } = useStudentApplications();
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
 
   const hasApplications = applications.length > 0;
-  const pendingActions = applications.filter(
-    app => app.documents_status === 'pending' || app.documents_status === 'resubmission_required'
-  );
 
   // Update meta tags for SEO
   useEffect(() => {
@@ -167,15 +162,11 @@ const StudentDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
-          {needsAction && (
-            <div className="flex gap-3">
-              <Button className="flex-1" size="lg" onClick={() => navigate(`/student/documents/${selectedApplication.id}`)}>
-                <Upload className="h-5 w-5 mr-2" />
-                {selectedApplication.documents_status === 'pending' ? 'Upload Documents' : 'Resubmit Documents'}
-              </Button>
-            </div>
-          )}
+          {/* Document Checklist - replaces old Upload Documents button */}
+          <StudentDocumentChecklist
+            leadId={selectedApplication.id}
+            loanClassification={selectedApplication.loan_classification}
+          />
 
           {/* Status Timeline */}
           <StatusTimeline
