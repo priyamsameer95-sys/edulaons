@@ -528,6 +528,47 @@ export type Database = {
         }
         Relationships: []
       }
+      document_requirements: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          document_type_id: string | null
+          id: string
+          is_required: boolean | null
+          loan_classification: Database["public"]["Enums"]["loan_classification_enum"]
+          stage: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          document_type_id?: string | null
+          id?: string
+          is_required?: boolean | null
+          loan_classification: Database["public"]["Enums"]["loan_classification_enum"]
+          stage?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          document_type_id?: string | null
+          id?: string
+          is_required?: boolean | null
+          loan_classification?: Database["public"]["Enums"]["loan_classification_enum"]
+          stage?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requirements_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_types: {
         Row: {
           accepted_formats: string[] | null
@@ -898,6 +939,9 @@ export type Database = {
       }
       leads_new: {
         Row: {
+          case_complexity:
+            | Database["public"]["Enums"]["case_complexity_enum"]
+            | null
           case_id: string
           co_applicant_id: string
           created_at: string
@@ -911,6 +955,11 @@ export type Database = {
           lan_number: string | null
           lender_id: string
           loan_amount: number
+          loan_classification:
+            | Database["public"]["Enums"]["loan_classification_enum"]
+            | null
+          loan_config_updated_at: string | null
+          loan_config_updated_by: string | null
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id: string | null
           pd_call_scheduled_at: string | null
@@ -926,9 +975,13 @@ export type Database = {
           status_updated_at: string | null
           student_id: string
           study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          target_lender_id: string | null
           updated_at: string
         }
         Insert: {
+          case_complexity?:
+            | Database["public"]["Enums"]["case_complexity_enum"]
+            | null
           case_id: string
           co_applicant_id: string
           created_at?: string
@@ -942,6 +995,11 @@ export type Database = {
           lan_number?: string | null
           lender_id: string
           loan_amount: number
+          loan_classification?:
+            | Database["public"]["Enums"]["loan_classification_enum"]
+            | null
+          loan_config_updated_at?: string | null
+          loan_config_updated_by?: string | null
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
           pd_call_scheduled_at?: string | null
@@ -957,9 +1015,13 @@ export type Database = {
           status_updated_at?: string | null
           student_id: string
           study_destination: Database["public"]["Enums"]["study_destination_enum"]
+          target_lender_id?: string | null
           updated_at?: string
         }
         Update: {
+          case_complexity?:
+            | Database["public"]["Enums"]["case_complexity_enum"]
+            | null
           case_id?: string
           co_applicant_id?: string
           created_at?: string
@@ -973,6 +1035,11 @@ export type Database = {
           lan_number?: string | null
           lender_id?: string
           loan_amount?: number
+          loan_classification?:
+            | Database["public"]["Enums"]["loan_classification_enum"]
+            | null
+          loan_config_updated_at?: string | null
+          loan_config_updated_by?: string | null
           loan_type?: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
           pd_call_scheduled_at?: string | null
@@ -988,6 +1055,7 @@ export type Database = {
           status_updated_at?: string | null
           student_id?: string
           study_destination?: Database["public"]["Enums"]["study_destination_enum"]
+          target_lender_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1024,6 +1092,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_new_target_lender_id_fkey"
+            columns: ["target_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
             referencedColumns: ["id"]
           },
         ]
@@ -1877,6 +1952,7 @@ export type Database = {
     }
     Enums: {
       app_role: "partner" | "admin" | "super_admin" | "student" | "kam"
+      case_complexity_enum: "straightforward" | "edge_case" | "high_risk"
       document_status_enum:
         | "pending"
         | "uploaded"
@@ -1913,6 +1989,11 @@ export type Database = {
         | "security_creation"
         | "ops_verification"
         | "disbursed"
+      loan_classification_enum:
+        | "unsecured_nbfc"
+        | "secured_property"
+        | "psu_bank"
+        | "undecided"
       loan_type_enum: "secured" | "unsecured"
       relationship_enum: "parent" | "spouse" | "sibling" | "guardian" | "other"
       study_destination_enum:
@@ -2061,6 +2142,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["partner", "admin", "super_admin", "student", "kam"],
+      case_complexity_enum: ["straightforward", "edge_case", "high_risk"],
       document_status_enum: [
         "pending",
         "uploaded",
@@ -2098,6 +2180,12 @@ export const Constants = {
         "security_creation",
         "ops_verification",
         "disbursed",
+      ],
+      loan_classification_enum: [
+        "unsecured_nbfc",
+        "secured_property",
+        "psu_bank",
+        "undecided",
       ],
       loan_type_enum: ["secured", "unsecured"],
       relationship_enum: ["parent", "spouse", "sibling", "guardian", "other"],
