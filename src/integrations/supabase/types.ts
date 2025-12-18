@@ -901,17 +901,27 @@ export type Database = {
           case_id: string
           co_applicant_id: string
           created_at: string
+          current_stage_started_at: string | null
           documents_status: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at: string | null
           id: string
           intake_month: number | null
           intake_year: number | null
           is_quick_lead: boolean | null
+          lan_number: string | null
           lender_id: string
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id: string | null
+          pd_call_scheduled_at: string | null
+          pd_call_status: string | null
+          pf_amount: number | null
+          pf_paid_at: string | null
+          property_verification_status: string | null
           quick_lead_completed_at: string | null
+          sanction_amount: number | null
+          sanction_date: string | null
+          sanction_letter_date: string | null
           status: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at: string | null
           student_id: string
@@ -922,17 +932,27 @@ export type Database = {
           case_id: string
           co_applicant_id: string
           created_at?: string
+          current_stage_started_at?: string | null
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at?: string | null
           id?: string
           intake_month?: number | null
           intake_year?: number | null
           is_quick_lead?: boolean | null
+          lan_number?: string | null
           lender_id: string
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
+          pd_call_scheduled_at?: string | null
+          pd_call_status?: string | null
+          pf_amount?: number | null
+          pf_paid_at?: string | null
+          property_verification_status?: string | null
           quick_lead_completed_at?: string | null
+          sanction_amount?: number | null
+          sanction_date?: string | null
+          sanction_letter_date?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at?: string | null
           student_id: string
@@ -943,17 +963,27 @@ export type Database = {
           case_id?: string
           co_applicant_id?: string
           created_at?: string
+          current_stage_started_at?: string | null
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at?: string | null
           id?: string
           intake_month?: number | null
           intake_year?: number | null
           is_quick_lead?: boolean | null
+          lan_number?: string | null
           lender_id?: string
           loan_amount?: number
           loan_type?: Database["public"]["Enums"]["loan_type_enum"]
           partner_id?: string | null
+          pd_call_scheduled_at?: string | null
+          pd_call_status?: string | null
+          pf_amount?: number | null
+          pf_paid_at?: string | null
+          property_verification_status?: string | null
           quick_lead_completed_at?: string | null
+          sanction_amount?: number | null
+          sanction_date?: string | null
+          sanction_letter_date?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at?: string | null
           student_id?: string
@@ -1861,6 +1891,28 @@ export type Database = {
         | "approved"
         | "rejected"
         | "withdrawn"
+        | "lead_intake"
+        | "first_contact"
+        | "lenders_mapped"
+        | "checklist_shared"
+        | "docs_uploading"
+        | "docs_submitted"
+        | "docs_verified"
+        | "logged_with_lender"
+        | "counselling_done"
+        | "pd_scheduled"
+        | "pd_completed"
+        | "additional_docs_pending"
+        | "property_verification"
+        | "credit_assessment"
+        | "sanctioned"
+        | "pf_pending"
+        | "pf_paid"
+        | "sanction_letter_issued"
+        | "docs_dispatched"
+        | "security_creation"
+        | "ops_verification"
+        | "disbursed"
       loan_type_enum: "secured" | "unsecured"
       relationship_enum: "parent" | "spouse" | "sibling" | "guardian" | "other"
       study_destination_enum:
@@ -2024,6 +2076,28 @@ export const Constants = {
         "approved",
         "rejected",
         "withdrawn",
+        "lead_intake",
+        "first_contact",
+        "lenders_mapped",
+        "checklist_shared",
+        "docs_uploading",
+        "docs_submitted",
+        "docs_verified",
+        "logged_with_lender",
+        "counselling_done",
+        "pd_scheduled",
+        "pd_completed",
+        "additional_docs_pending",
+        "property_verification",
+        "credit_assessment",
+        "sanctioned",
+        "pf_pending",
+        "pf_paid",
+        "sanction_letter_issued",
+        "docs_dispatched",
+        "security_creation",
+        "ops_verification",
+        "disbursed",
       ],
       loan_type_enum: ["secured", "unsecured"],
       relationship_enum: ["parent", "spouse", "sibling", "guardian", "other"],

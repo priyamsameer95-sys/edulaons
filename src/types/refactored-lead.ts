@@ -65,6 +65,16 @@ export interface AcademicTest {
   updated_at: string;
 }
 
+// Extended lead status type matching 18-step process flow
+export type LeadStatusType = 
+  | 'new' | 'contacted' | 'in_progress' | 'document_review' | 'approved' | 'rejected' | 'withdrawn'
+  | 'lead_intake' | 'first_contact' | 'lenders_mapped' | 'checklist_shared'
+  | 'docs_uploading' | 'docs_submitted' | 'docs_verified' | 'logged_with_lender'
+  | 'counselling_done' | 'pd_scheduled' | 'pd_completed' | 'additional_docs_pending'
+  | 'property_verification' | 'credit_assessment' | 'sanctioned'
+  | 'pf_pending' | 'pf_paid' | 'sanction_letter_issued'
+  | 'docs_dispatched' | 'security_creation' | 'ops_verification' | 'disbursed';
+
 export interface RefactoredLead {
   id: string;
   case_id: string;
@@ -77,12 +87,24 @@ export interface RefactoredLead {
   study_destination: 'Australia' | 'Canada' | 'Germany' | 'Ireland' | 'New Zealand' | 'UK' | 'USA' | 'Other';
   intake_month: number | null;
   intake_year: number | null;
-  status: 'new' | 'contacted' | 'in_progress' | 'document_review' | 'approved' | 'rejected' | 'withdrawn';
+  status: LeadStatusType;
   documents_status: 'pending' | 'uploaded' | 'verified' | 'rejected' | 'resubmission_required';
   is_quick_lead: boolean | null;
   quick_lead_completed_at: string | null;
   created_at: string;
   updated_at: string;
+  
+  // New TAT tracking fields
+  lan_number?: string | null;
+  sanction_amount?: number | null;
+  sanction_date?: string | null;
+  pd_call_scheduled_at?: string | null;
+  pd_call_status?: 'scheduled' | 'completed' | 'rescheduled' | 'cancelled' | null;
+  pf_amount?: number | null;
+  pf_paid_at?: string | null;
+  sanction_letter_date?: string | null;
+  current_stage_started_at?: string | null;
+  property_verification_status?: 'pending' | 'scheduled' | 'completed' | 'failed' | null;
   
   // Relations
   student?: Student;

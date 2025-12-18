@@ -1,35 +1,27 @@
-// Lead Status Constants - Centralized for consistency across admin module
+// Lead Status Constants - Aligned with 18-step process flow
+// Re-exports from centralized processFlow for backward compatibility
 
-export const STATUS_COLORS: Record<string, string> = {
-  new: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
-  contacted: 'bg-purple-500/15 text-purple-700 border-purple-500/30',
-  in_progress: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
-  document_review: 'bg-orange-500/15 text-orange-700 border-orange-500/30',
-  approved: 'bg-green-500/15 text-green-700 border-green-500/30',
-  rejected: 'bg-red-500/15 text-red-700 border-red-500/30',
-  withdrawn: 'bg-muted text-muted-foreground border-border',
-};
+import { STATUS_CONFIG, PHASE_CONFIG, LeadStatusExtended, ProcessPhase } from './processFlow';
 
-export const STATUS_LABELS: Record<string, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  in_progress: 'In Progress',
-  document_review: 'Doc Review',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
-};
+// Generate STATUS_COLORS from centralized config
+export const STATUS_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(STATUS_CONFIG).map(([key, config]) => [
+    key,
+    `${config.bgColor.replace('bg-', 'bg-').replace('-100', '-500/15')} ${config.color} border-${config.bgColor.replace('bg-', '').replace('-100', '-500')}/30`
+  ])
+);
 
-export const STATUS_DESCRIPTIONS: Record<string, string> = {
-  new: 'New lead awaiting initial contact',
-  contacted: 'Lead has been contacted, awaiting response',
-  in_progress: 'Application is being processed',
-  document_review: 'Documents submitted and under review',
-  approved: 'Loan application has been approved',
-  rejected: 'Application was rejected',
-  withdrawn: 'Lead has withdrawn their application',
-};
+// Generate STATUS_LABELS from centralized config
+export const STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(STATUS_CONFIG).map(([key, config]) => [key, config.label])
+);
 
+// Generate STATUS_DESCRIPTIONS from centralized config
+export const STATUS_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
+  Object.entries(STATUS_CONFIG).map(([key, config]) => [key, config.description])
+);
+
+// Document status constants (unchanged)
 export const DOC_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
   uploaded: 'bg-blue-500/15 text-blue-700 border-blue-500/30',
@@ -53,3 +45,25 @@ export const DOC_STATUS_DESCRIPTIONS: Record<string, string> = {
   rejected: 'One or more documents were rejected',
   resubmission_required: 'Documents need to be re-uploaded',
 };
+
+// Phase-based groupings for UI
+export const PHASE_LABELS: Record<ProcessPhase, string> = {
+  pre_login: 'Pre-Login',
+  with_lender: 'With Lender',
+  sanction: 'Sanction',
+  disbursement: 'Disbursement',
+  terminal: 'Closed',
+};
+
+// Get all statuses in a specific phase
+export function getStatusesInPhase(phase: ProcessPhase): string[] {
+  return Object.entries(STATUS_CONFIG)
+    .filter(([_, config]) => config.phase === phase)
+    .sort((a, b) => a[1].step - b[1].step)
+    .map(([key]) => key);
+}
+
+// Get phase for a status
+export function getPhaseForStatus(status: string): ProcessPhase {
+  return STATUS_CONFIG[status as LeadStatusExtended]?.phase || 'pre_login';
+}
