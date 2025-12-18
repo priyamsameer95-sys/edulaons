@@ -100,19 +100,24 @@ function generateProfilePDF(
 
   // ============= HEADER BAR =============
   doc.setFillColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
-  doc.rect(0, 0, pageWidth, 35, 'F');
+  doc.rect(0, 0, pageWidth, 40, 'F');
   
-  doc.setFontSize(20);
+  // Branding
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('Student Application Profile', margin, 18);
+  doc.text('EDULOAN by CashKaro', margin, 12);
   
-  doc.setFontSize(10);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Student Application Profile', margin, 25);
+  
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Case ID: ${lead.case_id}`, margin, 28);
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageWidth - margin, 28, { align: 'right' });
+  doc.text(`Case ID: ${lead.case_id}`, margin, 34);
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageWidth - margin, 34, { align: 'right' });
   
-  y = 45;
+  y = 50;
 
   // ============= SUMMARY CARDS =============
   const cardWidth = (contentWidth - 10) / 2;
@@ -307,7 +312,8 @@ function generateProfilePDF(
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(gray[0], gray[1], gray[2]);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.text('EduLoan by CashKaro | Contact: priyam.sameer@cashkaro.com', margin, pageHeight - 8);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
   }
 
   return doc.output('blob');
