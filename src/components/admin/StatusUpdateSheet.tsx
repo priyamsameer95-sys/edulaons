@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusSelect } from '@/components/lead-status/StatusSelect';
 import { PipelineSelector } from './status-update/PipelineSelector';
 import { ConditionalFields } from './status-update/ConditionalFields';
@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AlertCircle } from 'lucide-react';
 import { LeadStatusExtended } from '@/constants/processFlow';
 import { parseFormattedNumber } from '@/utils/currencyFormatter';
+import { REASON_CODE_GROUPS } from '@/constants/reasonCodes';
 import type { DocumentStatus } from '@/utils/statusUtils';
 
 interface StatusUpdateSheetProps {
@@ -41,7 +42,7 @@ export function StatusUpdateSheet({
 }: StatusUpdateSheetProps) {
   const [selectedStatus, setSelectedStatus] = useState<LeadStatusExtended>(currentStatus);
   const [selectedDocumentsStatus, setSelectedDocumentsStatus] = useState<DocumentStatus>(currentDocumentsStatus);
-  const [reason, setReason] = useState('');
+  const [reasonCode, setReasonCode] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [conditionalValues, setConditionalValues] = useState<{
@@ -66,7 +67,7 @@ export function StatusUpdateSheet({
     if (open) {
       setSelectedStatus(currentStatus);
       setSelectedDocumentsStatus(currentDocumentsStatus);
-      setReason('');
+      setReasonCode('');
       setNotes('');
       setValidationError(null);
       setConditionalValues({});
@@ -149,7 +150,8 @@ export function StatusUpdateSheet({
       leadId,
       newStatus: selectedStatus !== currentStatus ? selectedStatus : undefined,
       newDocumentsStatus: selectedDocumentsStatus !== currentDocumentsStatus ? selectedDocumentsStatus : undefined,
-      reason: reason.trim() || undefined,
+      reason: reasonCode || undefined,
+      reasonCode: reasonCode || undefined,
       notes: notes.trim() || undefined,
       additionalData: Object.keys(additionalData).length > 0 ? additionalData : undefined,
     });
@@ -224,15 +226,40 @@ export function StatusUpdateSheet({
               />
             </div>
 
-            {/* Reason */}
+            {/* Reason - Quick Select Dropdown */}
             <div className="space-y-2">
               <Label className="text-sm">Reason for Change</Label>
-              <Input
-                placeholder="Brief reason for status change..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                maxLength={100}
-              />
+              <Select value={reasonCode} onValueChange={setReasonCode}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select reason (optional)..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>{REASON_CODE_GROUPS.positive.label}</SelectLabel>
+                    {REASON_CODE_GROUPS.positive.codes.map((code) => (
+                      <SelectItem key={code.value} value={code.value}>
+                        {code.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>{REASON_CODE_GROUPS.drop_off.label}</SelectLabel>
+                    {REASON_CODE_GROUPS.drop_off.codes.map((code) => (
+                      <SelectItem key={code.value} value={code.value}>
+                        {code.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>{REASON_CODE_GROUPS.neutral.label}</SelectLabel>
+                    {REASON_CODE_GROUPS.neutral.codes.map((code) => (
+                      <SelectItem key={code.value} value={code.value}>
+                        {code.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Admin Notes */}

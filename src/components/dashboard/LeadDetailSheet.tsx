@@ -40,6 +40,7 @@ import { StatusHistory } from "@/components/lead-status/StatusHistory";
 import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal";
 import { PartnerAssignmentModal } from "@/components/admin/PartnerAssignmentModal";
 import { LoanConfigurationCard } from "@/components/admin/LoanConfigurationCard";
+import { useAccessLogger } from "@/hooks/useAccessLogger";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
@@ -72,6 +73,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [allLenders, setAllLenders] = useState<{ id: string; name: string }[]>([]);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
+  const { logLeadView } = useAccessLogger();
   
   // Real data from Supabase
   const { documentTypes, loading: documentTypesLoading } = useDocumentTypes();
@@ -82,9 +84,12 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     lead?.loan_classification as LoanClassification | null
   );
 
-  // Fetch preferred lenders and universities
+  // Log lead view and fetch preferred lenders and universities
   useEffect(() => {
     if (!lead?.id) return;
+    
+    // Silent background logging
+    logLeadView(lead.id);
 
     const fetchAdditionalData = async () => {
       // Fetch universities for this lead

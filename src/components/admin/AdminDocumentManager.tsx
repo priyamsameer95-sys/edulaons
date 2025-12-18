@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLeadDocuments, LeadDocument } from '@/hooks/useLeadDocuments';
 import { DocumentVerificationModal } from './DocumentVerificationModal';
 import { InlineDocumentUpload } from './InlineDocumentUpload';
+import { useAccessLogger } from '@/hooks/useAccessLogger';
 
 interface AdminDocumentManagerProps {
   leadId: string;
@@ -11,9 +12,13 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
   const { documents, loading, refetch, getDownloadUrl } = useLeadDocuments(leadId);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<LeadDocument | null>(null);
+  const { logDocumentDownload } = useAccessLogger();
 
   const handleDownload = async (document: LeadDocument) => {
     try {
+      // Silent background logging
+      logDocumentDownload(leadId, document.id);
+      
       const url = await getDownloadUrl(document.file_path);
       if (url) {
         const link = window.document.createElement('a');

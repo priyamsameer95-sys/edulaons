@@ -31,23 +31,25 @@ export function useAccessLogger() {
     if (!appUser?.email || !appUser?.role) return;
 
     try {
-      // Non-blocking insert
-      supabase
-        .from('data_access_logs')
-        .insert({
-          user_id: appUser.id,
-          user_email: appUser.email,
-          user_role: appUser.role,
-          action: params.action,
-          table_name: params.tableName,
-          partner_id: appUser.partner_id || null,
-          record_count: 1,
-        })
-        .then(() => {})
-        .catch((err) => {
+      // Non-blocking insert - use void to fire and forget
+      void (async () => {
+        try {
+          await supabase
+            .from('data_access_logs')
+            .insert({
+              user_id: appUser.id,
+              user_email: appUser.email,
+              user_role: appUser.role,
+              action: params.action,
+              table_name: params.tableName,
+              partner_id: appUser.partner_id || null,
+              record_count: 1,
+            });
+        } catch (err) {
           // Silently log errors - don't disrupt user experience
           console.debug('Access log failed:', err);
-        });
+        }
+      })();
     } catch (err) {
       // Silently handle any errors
       console.debug('Access log error:', err);

@@ -29,11 +29,11 @@ export function DropOffIntelligence() {
         const startDate = startOfDay(subDays(new Date(), parseInt(dateRange)));
 
         // Fetch status history with reason codes
+        // Using raw query since reason_code column was just added
         const { data: history } = await supabase
           .from('lead_status_history')
-          .select('reason_code, change_reason, new_status, created_at')
-          .gte('created_at', startDate.toISOString())
-          .not('reason_code', 'is', null);
+          .select('*')
+          .gte('created_at', startDate.toISOString());
 
         if (!history || history.length === 0) {
           setMetrics([]);
@@ -42,12 +42,12 @@ export function DropOffIntelligence() {
           return;
         }
 
-        // Count by reason code, focusing on drop-offs
+        // Count by reason_code field
         const reasonCounts: Record<string, number> = {};
         let dropOffTotal = 0;
 
-        history.forEach(record => {
-          const code = record.reason_code;
+        history.forEach((record: any) => {
+          const code = record.reason_code as string | null;
           if (code && isDropOffReason(code)) {
             reasonCounts[code] = (reasonCounts[code] || 0) + 1;
             dropOffTotal++;
