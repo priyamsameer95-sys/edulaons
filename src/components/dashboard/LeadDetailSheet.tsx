@@ -26,7 +26,9 @@ import {
   ChevronUp,
   ExternalLink,
   Building2,
-  Star
+  Star,
+  FileArchive,
+  Loader2
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -41,6 +43,7 @@ import { LenderAssignmentModal } from "@/components/admin/LenderAssignmentModal"
 import { PartnerAssignmentModal } from "@/components/admin/PartnerAssignmentModal";
 import { LoanConfigurationCard } from "@/components/admin/LoanConfigurationCard";
 import { useAccessLogger } from "@/hooks/useAccessLogger";
+import { downloadLeadPackage } from "@/utils/downloadLeadPackage";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 
 interface LeadDetailSheetProps {
@@ -71,6 +74,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [preferredLenders, setPreferredLenders] = useState<PreferredLender[]>([]);
   const [leadUniversities, setLeadUniversities] = useState<LeadUniversity[]>([]);
   const [allLenders, setAllLenders] = useState<{ id: string; name: string }[]>([]);
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const { toast } = useToast();
   const { appUser, isAdmin } = useAuth();
   const { logLeadView } = useAccessLogger();
@@ -186,6 +190,37 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     }
   };
 
+  const handleDownloadZip = async () => {
+    if (!lead) return;
+    
+    setIsDownloadingZip(true);
+    try {
+      const success = await downloadLeadPackage(
+        lead,
+        documents,
+        (message) => console.log('ZIP Progress:', message)
+      );
+      
+      if (success) {
+        toast({
+          title: "Download Complete",
+          description: "Lead package has been downloaded successfully.",
+        });
+      } else {
+        throw new Error('Failed to create package');
+      }
+    } catch (error) {
+      console.error('ZIP download error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Unable to create lead package. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
   // Create dynamic checklist from document requirements based on loan classification
   // If dynamic docs available, use them; otherwise fall back to all document types
   const dynamicChecklist = requiredDocs.length > 0 
@@ -223,9 +258,27 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl overflow-y-auto">
         <SheetHeader className="space-y-1 pb-4 border-b">
-          <SheetTitle className="text-lg font-semibold">
-            Lead Details • {createdDate} • {partnerName}
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-lg font-semibold">
+              Lead Details • {createdDate} • {partnerName}
+            </SheetTitle>
+            {isAdmin() && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadZip}
+                disabled={isDownloadingZip}
+                className="shrink-0"
+              >
+                {isDownloadingZip ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <FileArchive className="h-4 w-4 mr-2" />
+                )}
+                {isDownloadingZip ? 'Creating...' : 'Download ZIP'}
+              </Button>
+            )}
+          </div>
         </SheetHeader>
 
         <div className="py-4 space-y-4">
