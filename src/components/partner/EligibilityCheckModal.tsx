@@ -26,6 +26,7 @@ interface EligibilityCheckModalProps {
   onClose: () => void;
   onSuccess?: (leadId: string) => void;
   onContinueApplication?: (leadId: string) => void;
+  partnerId?: string;
 }
 
 interface FormData {
@@ -100,7 +101,8 @@ export const EligibilityCheckModal = ({
   open, 
   onClose, 
   onSuccess,
-  onContinueApplication 
+  onContinueApplication,
+  partnerId
 }: EligibilityCheckModalProps) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -332,6 +334,8 @@ export const EligibilityCheckModal = ({
           source: 'eligibility_check',
           eligibility_score: eligibility.score,
           eligibility_result: eligibility.result,
+          // Partner ID for admins
+          partner_id: partnerId,
         }
       });
 
