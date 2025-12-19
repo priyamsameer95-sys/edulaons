@@ -462,8 +462,20 @@ export async function downloadLeadPackage(
       compressionOptions: { level: 6 }
     });
 
-    // Trigger download
-    const zipFileName = `${studentName}_${shortId}.zip`;
+    // Format intake date for filename (e.g., Mar_2026)
+    const formatIntakeForFilename = (): string => {
+      if (completeLead.intake_month && completeLead.intake_year) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[completeLead.intake_month - 1]}_${completeLead.intake_year}`;
+      }
+      return 'NoIntake';
+    };
+
+    // Trigger download with student name + intake date format
+    const zipFileName = `${studentName}_${formatIntakeForFilename()}.zip`;
+    console.log('Creating ZIP file:', zipFileName, 'Size:', zipBlob.size, 'bytes');
+    console.log('ZIP contents:', Object.keys(zip.files));
+    
     const url = URL.createObjectURL(zipBlob);
     const link = document.createElement('a');
     link.href = url;
