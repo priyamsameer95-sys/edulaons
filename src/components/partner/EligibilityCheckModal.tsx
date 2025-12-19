@@ -55,8 +55,8 @@ interface EligibilityResult {
   score: number;
   result: 'eligible' | 'conditional' | 'unlikely';
   breakdown: {
-    university: { score: number; grade: string };
-    coApplicant: { score: number; salaryBand: string };
+    university: { score: number; maxScore: number; grade: string };
+    coApplicant: { score: number; maxScore: number; salaryBand: string };
   };
   estimatedLoanMin: number;
   estimatedLoanMax: number;
@@ -216,8 +216,14 @@ export const EligibilityCheckModal = ({
   };
 
   const calculateEligibility = async (loanAmount: number, salary: number, universityId: string): Promise<EligibilityResult> => {
+    // Scoring breakdown (adds up to 100):
+    // - University: max 40 points
+    // - Co-Applicant Salary: max 35 points
+    // - Relationship: max 15 points
+    // - Credit Bonus: max 10 points
+    
     // Fetch university score from database
-    let universityScore = 50; // Default
+    let universityScore = 20; // Default for unknown
     let universityGrade = 'C';
     
     if (universityId) {
@@ -229,33 +235,33 @@ export const EligibilityCheckModal = ({
       
       if (university) {
         const uniScore = university.score || 0;
-        // Map university score to grade based on thresholds
-        if (uniScore >= 90) { universityGrade = 'A'; universityScore = 80; }
-        else if (uniScore >= 70) { universityGrade = 'B'; universityScore = 65; }
-        else if (uniScore >= 50) { universityGrade = 'C'; universityScore = 50; }
-        else { universityGrade = 'D'; universityScore = 35; }
+        // Map university score to grade and points (max 40)
+        if (uniScore >= 90) { universityGrade = 'A'; universityScore = 40; }
+        else if (uniScore >= 70) { universityGrade = 'B'; universityScore = 32; }
+        else if (uniScore >= 50) { universityGrade = 'C'; universityScore = 25; }
+        else { universityGrade = 'D'; universityScore = 18; }
       }
     }
     
-    // Co-applicant salary scoring using salary bands
+    // Co-applicant salary scoring (max 35 points)
     let salaryScore = 0;
     let salaryBand = 'Below 50K';
-    if (salary >= 100000) { salaryScore = 40; salaryBand = 'Above 1L'; }
-    else if (salary >= 75000) { salaryScore = 30; salaryBand = '75K-1L'; }
+    if (salary >= 100000) { salaryScore = 35; salaryBand = 'Above 1L'; }
+    else if (salary >= 75000) { salaryScore = 28; salaryBand = '75K-1L'; }
     else if (salary >= 50000) { salaryScore = 20; salaryBand = '50K-75K'; }
-    else { salaryScore = 10; salaryBand = 'Below 50K'; }
+    else { salaryScore = 12; salaryBand = 'Below 50K'; }
     
-    // Relationship scoring
+    // Relationship scoring (max 15 points)
     const relationshipScores: Record<string, number> = {
-      'parent': 25,
-      'spouse': 20,
-      'sibling': 15,
-      'guardian': 15,
-      'other': 10
+      'parent': 15,
+      'spouse': 12,
+      'sibling': 10,
+      'guardian': 10,
+      'other': 7
     };
-    const relationshipScore = relationshipScores[formData.co_applicant_relationship] || 10;
+    const relationshipScore = relationshipScores[formData.co_applicant_relationship] || 7;
     
-    // Credit score bonus if provided
+    // Credit score bonus (max 10 points - 5 each for student and co-applicant)
     let creditBonus = 0;
     const studentCredit = parseInt(formData.student_credit_score) || 0;
     const coAppCredit = parseInt(formData.co_applicant_credit_score) || 0;
@@ -264,10 +270,8 @@ export const EligibilityCheckModal = ({
     if (coAppCredit >= 750) creditBonus += 5;
     else if (coAppCredit >= 650) creditBonus += 3;
     
-    // Calculate weighted score (30% university, 40% co-applicant/student, 30% relationship)
-    let score = (universityScore * 0.3) + (salaryScore * 0.4) + (relationshipScore * 0.3) + creditBonus;
-    
-    // Normalize to 0-100
+    // Total score (max 100)
+    let score = universityScore + salaryScore + relationshipScore + creditBonus;
     score = Math.min(100, Math.max(0, score));
     
     // Determine result category
@@ -304,8 +308,8 @@ export const EligibilityCheckModal = ({
       score: Math.round(score),
       result,
       breakdown: {
-        university: { score: universityScore, grade: universityGrade },
-        coApplicant: { score: salaryScore, salaryBand },
+        university: { score: universityScore, maxScore: 40, grade: universityGrade },
+        coApplicant: { score: salaryScore + relationshipScore, maxScore: 50, salaryBand },
       },
       estimatedLoanMin: loanMin,
       estimatedLoanMax: loanMax,
@@ -434,11 +438,11 @@ export const EligibilityCheckModal = ({
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">University:</span>
-                  <span className="font-medium">{result.breakdown.university.score}/80 (Grade {result.breakdown.university.grade})</span>
+                  <span className="font-medium">{result.breakdown.university.score}/{result.breakdown.university.maxScore} (Grade {result.breakdown.university.grade})</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Co-Applicant:</span>
-                  <span className="font-medium">{result.breakdown.coApplicant.score}/40</span>
+                  <span className="font-medium">{result.breakdown.coApplicant.score}/{result.breakdown.coApplicant.maxScore}</span>
                 </div>
               </div>
             </div>
