@@ -1,5 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
-import { X, Loader2, CheckCircle2, AlertCircle, TrendingUp, Building2, ArrowRight, Share2 } from "lucide-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { 
+  Loader2, CheckCircle2, TrendingUp, Building2, ArrowRight, Share2,
+  Sparkles, Trophy, Rocket, Shield, Zap, Clock, Smartphone, Star,
+  GraduationCap, Users, BadgeCheck
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -387,102 +391,309 @@ export const EligibilityCheckModal = ({
     }
   };
 
-  const getResultColor = (resultType: string) => {
-    switch (resultType) {
-      case 'eligible': return 'text-green-600 bg-green-50 border-green-200';
-      case 'conditional': return 'text-amber-600 bg-amber-50 border-amber-200';
-      case 'unlikely': return 'text-orange-600 bg-orange-50 border-orange-200';
-      default: return 'text-muted-foreground bg-muted';
+  // Tier-based messaging and styling
+  const getTierConfig = (score: number) => {
+    if (score >= 80) {
+      return {
+        headline: "Excellent Match!",
+        emoji: "🎉",
+        subtext: "This student is in the top tier of applicants. Lenders are eager to fund!",
+        gradient: "from-emerald-500 via-green-500 to-teal-500",
+        bgGradient: "from-emerald-50 to-teal-50",
+        ringColor: "stroke-emerald-500",
+        icon: Trophy,
+        ctaText: "Fast-Track This Application",
+      };
+    } else if (score >= 65) {
+      return {
+        headline: "Great Opportunity!",
+        emoji: "✨",
+        subtext: "Strong profile! With complete documents, this is highly likely to get approved.",
+        gradient: "from-blue-500 via-indigo-500 to-purple-500",
+        bgGradient: "from-blue-50 to-indigo-50",
+        ringColor: "stroke-blue-500",
+        icon: Star,
+        ctaText: "Complete & Get Offers",
+      };
+    } else if (score >= 45) {
+      return {
+        headline: "Good to Go!",
+        emoji: "💪",
+        subtext: "Many students with similar profiles get funded. Complete details make the difference!",
+        gradient: "from-amber-500 via-orange-500 to-yellow-500",
+        bgGradient: "from-amber-50 to-orange-50",
+        ringColor: "stroke-amber-500",
+        icon: Rocket,
+        ctaText: "Let's Make It Happen",
+      };
+    } else {
+      return {
+        headline: "Let's Build This Together",
+        emoji: "🚀",
+        subtext: "Every successful journey starts somewhere. Complete the application to explore all options.",
+        gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
+        bgGradient: "from-violet-50 to-purple-50",
+        ringColor: "stroke-violet-500",
+        icon: Sparkles,
+        ctaText: "Explore All Options",
+      };
     }
   };
 
-  const getResultLabel = (resultType: string) => {
-    switch (resultType) {
-      case 'eligible': return 'Likely Eligible';
-      case 'conditional': return 'Conditional';
-      case 'unlikely': return 'Unlikely';
-      default: return 'Unknown';
-    }
+  // Animated score ring component
+  const ScoreRing = ({ score, config }: { score: number; config: ReturnType<typeof getTierConfig> }) => {
+    const [animatedScore, setAnimatedScore] = useState(0);
+    const radius = 54;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (animatedScore / 100) * circumference;
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setAnimatedScore(score);
+      }, 100);
+      return () => clearTimeout(timer);
+    }, [score]);
+
+    return (
+      <div className="relative w-36 h-36 mx-auto">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+          {/* Background ring */}
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="8"
+            className="text-muted/20"
+          />
+          {/* Animated progress ring */}
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            fill="none"
+            strokeWidth="8"
+            strokeLinecap="round"
+            className={cn(config.ringColor, "transition-all duration-1000 ease-out")}
+            style={{
+              strokeDasharray: circumference,
+              strokeDashoffset: strokeDashoffset,
+            }}
+          />
+        </svg>
+        {/* Score text in center */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={cn(
+            "text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+            config.gradient
+          )}>
+            {animatedScore}
+          </span>
+          <span className="text-xs text-muted-foreground font-medium">out of 100</span>
+        </div>
+      </div>
+    );
   };
 
   // Result Screen
   if (result) {
+    const tierConfig = getTierConfig(result.score);
+    const TierIcon = tierConfig.icon;
+
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Eligibility Result
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* Main Result */}
-            <div className={cn(
-              "p-4 rounded-lg border-2 text-center",
-              getResultColor(result.result)
-            )}>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                {result.result === 'eligible' && <CheckCircle2 className="h-5 w-5" />}
-                {result.result === 'conditional' && <AlertCircle className="h-5 w-5" />}
-                {result.result === 'unlikely' && <AlertCircle className="h-5 w-5" />}
-                <span className="font-semibold text-lg">{getResultLabel(result.result)}</span>
-              </div>
-              <div className="text-3xl font-bold">{result.score}/100</div>
+        <DialogContent className="sm:max-w-lg overflow-hidden p-0">
+          {/* Celebratory Header */}
+          <div className={cn(
+            "relative px-6 pt-6 pb-8 bg-gradient-to-br text-center overflow-hidden",
+            tierConfig.bgGradient
+          )}>
+            {/* Animated background particles */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full bg-white/30 animate-pulse"
+                  style={{
+                    left: `${15 + i * 15}%`,
+                    top: `${20 + (i % 3) * 25}%`,
+                    animationDelay: `${i * 0.2}s`,
+                  }}
+                />
+              ))}
             </div>
 
-            {/* Score Breakdown */}
-            <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-              <h4 className="text-sm font-medium">Score Breakdown</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">University:</span>
-                  <span className="font-medium">{result.breakdown.university.score}/{result.breakdown.university.maxScore} (Grade {result.breakdown.university.grade})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Co-Applicant:</span>
-                  <span className="font-medium">{result.breakdown.coApplicant.score}/{result.breakdown.coApplicant.maxScore}</span>
-                </div>
+            <div className="relative z-10">
+              {/* Headline with emoji */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="text-3xl animate-bounce">{tierConfig.emoji}</span>
+                <h2 className={cn(
+                  "text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                  tierConfig.gradient
+                )}>
+                  {tierConfig.headline}
+                </h2>
               </div>
+
+              {/* Animated Score Ring */}
+              <ScoreRing score={result.score} config={tierConfig} />
+
+              {/* Motivational subtext */}
+              <p className="mt-4 text-sm text-muted-foreground max-w-xs mx-auto">
+                {tierConfig.subtext}
+              </p>
             </div>
-
-            {/* Loan Estimate */}
-            {result.estimatedLoanMax > 0 && (
-              <div className="bg-primary/5 rounded-lg p-3 space-y-1">
-                <h4 className="text-sm font-medium flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 text-primary" />
-                  Estimated Loan Range
-                </h4>
-                <div className="text-lg font-semibold text-primary">
-                  ₹{(result.estimatedLoanMin / 100000).toFixed(1)}L - ₹{(result.estimatedLoanMax / 100000).toFixed(1)}L
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  @ {result.estimatedRateMin}% - {result.estimatedRateMax}% interest
-                </div>
-              </div>
-            )}
-
-            {/* Lender Availability Message */}
-            {result.lenderCount > 0 && (
-              <div className="flex items-center gap-2 bg-green-50 text-green-700 p-3 rounded-lg border border-green-200">
-                <CheckCircle2 className="h-5 w-5 shrink-0" />
-                <span className="font-medium">
-                  {result.lenderCount}+ lenders are ready to fund this application
-                </span>
-              </div>
-            )}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2 pt-2">
-            <Button onClick={handleContinueApplication} className="gap-2">
-              Continue Application
-              <ArrowRight className="h-4 w-4" />
+          {/* Content Section */}
+          <div className="px-6 py-4 space-y-4">
+            {/* Score Breakdown - Progress Style */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <BadgeCheck className="h-4 w-4 text-primary" />
+                Profile Strengths
+              </h4>
+              
+              {/* University */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    University Rating
+                  </span>
+                  <span className="font-medium text-foreground">
+                    Grade {result.breakdown.university.grade}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", tierConfig.gradient)}
+                    style={{ width: `${(result.breakdown.university.score / result.breakdown.university.maxScore) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Co-Applicant */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Users className="h-3.5 w-3.5" />
+                    Co-Applicant Strength
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {result.breakdown.coApplicant.salaryBand}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700 delay-150", tierConfig.gradient)}
+                    style={{ width: `${(result.breakdown.coApplicant.score / result.breakdown.coApplicant.maxScore) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Unlock Potential - Loan Range */}
+            <div className={cn(
+              "relative p-4 rounded-xl border-2 border-dashed",
+              "bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/30"
+            )}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    Unlock Up To
+                  </h4>
+                  <div className="text-2xl font-bold text-primary mt-1">
+                    ₹{(result.estimatedLoanMax / 100000).toFixed(0)} Lakhs
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    @ {result.estimatedRateMin}% - {result.estimatedRateMax}% interest
+                  </p>
+                </div>
+                <div className="text-right">
+                  <Building2 className="h-8 w-8 text-primary/30" />
+                </div>
+              </div>
+              <p className="text-xs text-primary/80 mt-2 font-medium">
+                Complete application to maximize loan amount →
+              </p>
+            </div>
+
+            {/* Dynamic Lender Message with Urgency */}
+            <div className={cn(
+              "flex items-center gap-3 p-3 rounded-lg",
+              "bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200"
+            )}>
+              <div className="flex -space-x-2">
+                {[...Array(Math.min(result.lenderCount, 4))].map((_, i) => (
+                  <div 
+                    key={i}
+                    className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/70 border-2 border-white flex items-center justify-center"
+                  >
+                    <Building2 className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                ))}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-emerald-800">
+                  {result.lenderCount}+ lenders competing for this student
+                </p>
+                <p className="text-xs text-emerald-600">
+                  Complete now to get multiple offers
+                </p>
+              </div>
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+            </div>
+          </div>
+
+          {/* Enhanced CTA Section */}
+          <div className="px-6 pb-6 space-y-4">
+            {/* Primary CTA */}
+            <Button 
+              onClick={handleContinueApplication} 
+              size="lg"
+              className={cn(
+                "w-full h-14 text-base font-semibold gap-2 relative overflow-hidden group",
+                "bg-gradient-to-r from-primary via-primary to-primary/90 hover:opacity-90"
+              )}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <TierIcon className="h-5 w-5" />
+                {tierConfig.ctaText}
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </span>
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             </Button>
+            
+            {/* Helper text */}
+            <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              Takes just 5 minutes to complete
+            </p>
+
+            {/* Trust Indicators */}
+            <div className="flex items-center justify-center gap-4 pt-2 border-t">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Shield className="h-3.5 w-3.5 text-green-600" />
+                <span>100% Secure</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                <span>48hr Response</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Smartphone className="h-3.5 w-3.5 text-blue-500" />
+                <span>Real-time Updates</span>
+              </div>
+            </div>
+
+            {/* Secondary Actions */}
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleClose} className="flex-1">
-                Save & Exit
+                Save & Continue Later
               </Button>
               <Button variant="ghost" size="icon" className="shrink-0">
                 <Share2 className="h-4 w-4" />
