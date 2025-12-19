@@ -344,8 +344,70 @@ export async function downloadLeadPackage(
 ): Promise<boolean> {
   try {
     const zip = new JSZip();
-    const studentName = lead.student?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
     const shortId = lead.id.slice(0, 8);
+
+    onProgress?.('Fetching complete lead data...');
+
+    // Fetch complete lead data with all related records
+    const { data: fullLeadData, error: leadError } = await supabase
+      .from('leads_new')
+      .select(`
+        *,
+        student:students!leads_new_student_id_fkey(
+          id, name, email, phone, postal_code, city, state, 
+          date_of_birth, highest_qualification, country, nationality,
+          tenth_percentage, twelfth_percentage, bachelors_cgpa, bachelors_percentage
+        ),
+        co_applicant:co_applicants!leads_new_co_applicant_id_fkey(
+          id, name, relationship, salary, phone, email, 
+          pin_code, occupation, employer, employment_type,
+          monthly_salary, credit_score
+        ),
+        lender:lenders!leads_new_lender_id_fkey(id, name, code)
+      `)
+      .eq('id', lead.id)
+      .maybeSingle();
+
+    // Use fetched data or fall back to passed lead data
+    const completeLead: LeadData = fullLeadData ? {
+      id: fullLeadData.id,
+      case_id: fullLeadData.case_id,
+      student: fullLeadData.student ? {
+        name: fullLeadData.student.name,
+        phone: fullLeadData.student.phone,
+        email: fullLeadData.student.email,
+        postal_code: fullLeadData.student.postal_code,
+        city: fullLeadData.student.city,
+        state: fullLeadData.student.state,
+        date_of_birth: fullLeadData.student.date_of_birth,
+        highest_qualification: fullLeadData.student.highest_qualification,
+      } : lead.student,
+      co_applicant: fullLeadData.co_applicant ? {
+        name: fullLeadData.co_applicant.name,
+        relationship: fullLeadData.co_applicant.relationship,
+        salary: fullLeadData.co_applicant.salary,
+        phone: fullLeadData.co_applicant.phone,
+        email: fullLeadData.co_applicant.email,
+        pin_code: fullLeadData.co_applicant.pin_code,
+        occupation: fullLeadData.co_applicant.occupation,
+        employer: fullLeadData.co_applicant.employer,
+      } : lead.co_applicant,
+      loan_amount: fullLeadData.loan_amount,
+      loan_type: fullLeadData.loan_type,
+      loan_classification: fullLeadData.loan_classification,
+      lender: fullLeadData.lender ? { name: fullLeadData.lender.name } : lead.lender,
+      study_destination: fullLeadData.study_destination,
+      intake_month: fullLeadData.intake_month,
+      intake_year: fullLeadData.intake_year,
+      status: fullLeadData.status,
+      created_at: fullLeadData.created_at,
+    } : lead;
+
+    if (leadError) {
+      console.warn('Could not fetch complete lead data, using partial data:', leadError);
+    }
+
+    const studentName = completeLead.student?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
 
     onProgress?.('Fetching universities...');
 
@@ -363,9 +425,9 @@ export async function downloadLeadPackage(
         country: u.universities.country
       }));
 
-    // Generate PDF profile summary
+    // Generate PDF profile summary with complete data
     onProgress?.('Generating profile PDF...');
-    const profilePdf = generateProfilePDF(lead, universities);
+    const profilePdf = generateProfilePDF(completeLead, universities);
     zip.file('Profile_Summary.pdf', profilePdf);
 
     // Create documents folder
