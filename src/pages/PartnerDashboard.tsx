@@ -8,8 +8,8 @@ import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { CompactStatsBar } from "@/components/partner/CompactStatsBar";
 import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
 import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
-import { NewLeadSelector } from "@/components/partner/NewLeadSelector";
 import { QuickLeadModal } from "@/components/partner/QuickLeadModal";
+import { EligibilityCheckModal } from "@/components/partner/EligibilityCheckModal";
 import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
 import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
 import { Partner } from "@/types/partner";
@@ -46,8 +46,8 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal states
-  const [showLeadSelector, setShowLeadSelector] = useState(false);
   const [showQuickLead, setShowQuickLead] = useState(false);
+  const [showEligibilityCheck, setShowEligibilityCheck] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [selectedQuickLead, setSelectedQuickLead] = useState<RefactoredLead | null>(null);
   
@@ -91,20 +91,25 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   }, [leads, statusFilter, searchQuery]);
 
   const handleNewLead = () => {
-    setShowLeadSelector(true);
-  };
-
-  const handleQuickLeadSelect = () => {
     setShowQuickLead(true);
   };
 
-  const handleFullLeadSelect = () => {
-    navigate(`/partner/${partnerCode}/new-lead`);
+  const handleEligibilityCheck = () => {
+    setShowEligibilityCheck(true);
   };
 
-  const handleQuickLeadSuccess = () => {
+  const handleLeadSuccess = () => {
     refetchLeads();
     refetchKPIs();
+  };
+
+  const handleEligibilityContinue = (leadId: string) => {
+    // Find the lead and open complete modal
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      setSelectedQuickLead(lead);
+      setShowCompleteModal(true);
+    }
   };
 
   const handleCompleteLead = (lead: RefactoredLead) => {
@@ -196,6 +201,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         {/* Quick Actions Bar */}
         <QuickActionsBar
           onNewLead={handleNewLead}
+          onEligibilityCheck={handleEligibilityCheck}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
@@ -211,19 +217,19 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         />
       </main>
 
-      {/* Lead Type Selector Modal */}
-      <NewLeadSelector
-        open={showLeadSelector}
-        onClose={() => setShowLeadSelector(false)}
-        onSelectQuick={handleQuickLeadSelect}
-        onSelectFull={handleFullLeadSelect}
-      />
-
       {/* Quick Lead Modal */}
       <QuickLeadModal
         open={showQuickLead}
         onClose={() => setShowQuickLead(false)}
-        onSuccess={handleQuickLeadSuccess}
+        onSuccess={handleLeadSuccess}
+      />
+
+      {/* Eligibility Check Modal */}
+      <EligibilityCheckModal
+        open={showEligibilityCheck}
+        onClose={() => setShowEligibilityCheck(false)}
+        onSuccess={handleLeadSuccess}
+        onContinueApplication={handleEligibilityContinue}
       />
 
       {/* Complete Lead Modal */}

@@ -1,15 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, X, TrendingUp } from "lucide-react";
 
 interface QuickActionsBarProps {
   onNewLead: () => void;
+  onEligibilityCheck?: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }
 
 export const QuickActionsBar = ({
   onNewLead,
+  onEligibilityCheck,
   searchQuery,
   onSearchChange,
 }: QuickActionsBarProps) => {
@@ -18,8 +20,16 @@ export const QuickActionsBar = ({
       {/* Primary Action - New Lead */}
       <Button onClick={onNewLead} className="gap-2">
         <Plus className="h-4 w-4" />
-        New Lead
+        Add New Lead
       </Button>
+
+      {/* Secondary Action - Eligibility Check */}
+      {onEligibilityCheck && (
+        <Button onClick={onEligibilityCheck} variant="outline" className="gap-2">
+          <TrendingUp className="h-4 w-4" />
+          Check Eligibility
+        </Button>
+      )}
 
       {/* Search Input */}
       <div className="relative flex-1 min-w-[200px] max-w-sm">

@@ -12,8 +12,8 @@ import {
   PaginationNext, 
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Eye, Upload, Users, Plus, Zap, ClipboardCheck } from "lucide-react";
-import { format } from "date-fns";
+import { Eye, Upload, Users, Plus, Zap, ClipboardCheck, TrendingUp } from "lucide-react";
+import { format, differenceInHours } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
@@ -45,6 +45,48 @@ export const PartnerLeadsTable = ({
 
   const isIncompleteQuickLead = (lead: RefactoredLead) => {
     return lead.is_quick_lead === true && !lead.quick_lead_completed_at;
+  };
+
+  const isEligibilityCheckedLead = (lead: RefactoredLead) => {
+    // Check if lead has eligibility data (from eligibility check flow)
+    return (lead as any).eligibility_score !== null && (lead as any).eligibility_score !== undefined;
+  };
+
+  const getEligibilityBadge = (lead: RefactoredLead) => {
+    const score = (lead as any).eligibility_score;
+    const result = (lead as any).eligibility_result;
+    
+    if (!score) return null;
+    
+    if (result === 'eligible' || score >= 70) {
+      return (
+        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 gap-1">
+          <TrendingUp className="h-3 w-3" />
+          {score}/100
+        </Badge>
+      );
+    } else if (result === 'conditional' || score >= 50) {
+      return (
+        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1">
+          <TrendingUp className="h-3 w-3" />
+          {score}/100
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 gap-1">
+          <TrendingUp className="h-3 w-3" />
+          {score}/100
+        </Badge>
+      );
+    }
+  };
+
+  const getLeadAgeUrgency = (lead: RefactoredLead) => {
+    const hours = differenceInHours(new Date(), new Date(lead.created_at));
+    if (hours > 48) return 'urgent';
+    if (hours > 24) return 'warning';
+    return 'normal';
   };
 
   const canUploadDocs = (lead: RefactoredLead) => {
@@ -132,13 +174,19 @@ export const PartnerLeadsTable = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedLeads.map((lead) => {
+            {paginatedLeads.map((lead) => {
                 const isIncomplete = isIncompleteQuickLead(lead);
+                const hasEligibility = isEligibilityCheckedLead(lead);
+                const urgency = getLeadAgeUrgency(lead);
                 
                 return (
                   <TableRow 
                     key={lead.id} 
-                    className="hover:bg-muted/50 cursor-pointer"
+                    className={cn(
+                      "hover:bg-muted/50 cursor-pointer",
+                      isIncomplete && urgency === 'urgent' && "bg-red-50/30",
+                      isIncomplete && urgency === 'warning' && "bg-amber-50/30"
+                    )}
                     onClick={() => onViewLead?.(lead)}
                   >
                     <TableCell className="font-medium text-sm">
@@ -155,8 +203,14 @@ export const PartnerLeadsTable = ({
                             </Badge>
                           )}
                         </div>
-                        {isIncomplete && (
-                          <span className="text-[10px] text-amber-600">Complete for 2x match</span>
+                        {isIncomplete && urgency === 'urgent' && (
+                          <span className="text-[10px] text-red-600 font-medium">Complete now!</span>
+                        )}
+                        {isIncomplete && urgency === 'warning' && (
+                          <span className="text-[10px] text-amber-600">Complete soon</span>
+                        )}
+                        {isIncomplete && urgency === 'normal' && (
+                          <span className="text-[10px] text-muted-foreground">Complete for 2x match</span>
                         )}
                       </div>
                     </TableCell>
@@ -167,13 +221,16 @@ export const PartnerLeadsTable = ({
                       </div>
                     </TableCell>
                     <TableCell>
-                      {isIncomplete ? (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                          Incomplete
-                        </Badge>
-                      ) : (
-                        <StatusBadge status={lead.status as LeadStatus} type="lead" />
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {isIncomplete ? (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 w-fit">
+                            Incomplete
+                          </Badge>
+                        ) : (
+                          <StatusBadge status={lead.status as LeadStatus} type="lead" />
+                        )}
+                        {hasEligibility && getEligibilityBadge(lead)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
