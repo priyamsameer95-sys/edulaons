@@ -704,6 +704,48 @@ export type Database = {
           },
         ]
       }
+      lead_courses: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          custom_course_name: string | null
+          id: string
+          is_custom_course: boolean | null
+          lead_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          custom_course_name?: string | null
+          id?: string
+          is_custom_course?: boolean | null
+          lead_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          custom_course_name?: string | null
+          id?: string
+          is_custom_course?: boolean | null
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_courses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_documents: {
         Row: {
           admin_notes: string | null
