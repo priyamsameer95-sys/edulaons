@@ -954,6 +954,9 @@ export type Database = {
           current_stage_started_at: string | null
           documents_status: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at: string | null
+          eligibility_checked_at: string | null
+          eligibility_result: string | null
+          eligibility_score: number | null
           id: string
           intake_month: number | null
           intake_year: number | null
@@ -977,6 +980,7 @@ export type Database = {
           sanction_amount: number | null
           sanction_date: string | null
           sanction_letter_date: string | null
+          source: string | null
           status: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at: string | null
           student_id: string
@@ -994,6 +998,9 @@ export type Database = {
           current_stage_started_at?: string | null
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at?: string | null
+          eligibility_checked_at?: string | null
+          eligibility_result?: string | null
+          eligibility_score?: number | null
           id?: string
           intake_month?: number | null
           intake_year?: number | null
@@ -1017,6 +1024,7 @@ export type Database = {
           sanction_amount?: number | null
           sanction_date?: string | null
           sanction_letter_date?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at?: string | null
           student_id: string
@@ -1034,6 +1042,9 @@ export type Database = {
           current_stage_started_at?: string | null
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at?: string | null
+          eligibility_checked_at?: string | null
+          eligibility_result?: string | null
+          eligibility_score?: number | null
           id?: string
           intake_month?: number | null
           intake_year?: number | null
@@ -1057,6 +1068,7 @@ export type Database = {
           sanction_amount?: number | null
           sanction_date?: string | null
           sanction_letter_date?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["lead_status_enum"]
           status_updated_at?: string | null
           student_id?: string
