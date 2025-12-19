@@ -36,8 +36,9 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const { partnerCode } = useParams();
   const { signOut, isAdmin } = useAuth();
   
-  // Pass partnerId to hooks for filtering
-  const { kpis, loading: kpisLoading, refetch: refetchKPIs } = usePartnerKPIs(partner?.id, isAdmin());
+  // CRITICAL: On partner dashboard, ALWAYS filter by partner_id - never show global KPIs
+  // This ensures partners only see their own data, even when an admin views the partner dashboard
+  const { kpis, loading: kpisLoading, refetch: refetchKPIs } = usePartnerKPIs(partner?.id, false);
   const { leads, loading: leadsLoading, error: leadsError, refetch: refetchLeads } = useRefactoredLeads(partner?.id);
 
   // Filter states
