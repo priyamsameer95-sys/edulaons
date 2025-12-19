@@ -295,15 +295,24 @@ export function useAuth() {
     try {
       const { error } = await supabase.auth.signOut();
       
+      // If session was already expired, that's fine - user is effectively signed out
       if (error) {
-        handleError(error, { title: 'Sign Out Failed' });
-        return;
+        logger.warn('Sign out warning (session may have expired):', error.message);
       }
-
+      
+      // Always clear local state regardless of error
+      setUser(null);
+      setSession(null);
+      setAppUser(null);
+      
       handleSuccess('Signed out', 'You have been successfully signed out.');
     } catch (err) {
       logger.error('Sign out error:', err);
-      handleError(err, { title: 'Sign Out Failed', description: 'An error occurred while signing out.' });
+      // Even on exception, clear local state and consider user signed out
+      setUser(null);
+      setSession(null);
+      setAppUser(null);
+      handleSuccess('Signed out', 'You have been signed out.');
     }
   };
 

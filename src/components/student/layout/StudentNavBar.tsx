@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { GraduationCap, LogOut, HelpCircle, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,15 +15,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 export const StudentNavBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
+  const { signOut } = useAuth();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/login');
-    toast({
-      title: "Signed out successfully",
-      description: "You have been logged out of your account.",
-    });
   };
 
   const isActive = (path: string) => location.pathname === path;
