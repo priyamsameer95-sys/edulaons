@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { 
   Loader2, CheckCircle2, TrendingUp, Building2, ArrowRight, Share2,
   Sparkles, Trophy, Rocket, Shield, Zap, Clock, Smartphone, Star,
-  GraduationCap, Users, BadgeCheck
+  GraduationCap, Users, BadgeCheck, User, Phone
 } from "lucide-react";
 import {
   Dialog,
@@ -13,13 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { UniversityCombobox } from "@/components/ui/university-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,27 +26,38 @@ interface EligibilityCheckModalProps {
   partnerId?: string;
 }
 
-interface FormData {
-  student_name: string;
-  student_phone: string;
+interface QuickFormData {
   country: string;
   university_id: string;
   loan_amount: string;
-  co_applicant_relationship: string;
   co_applicant_monthly_salary: string;
-  student_credit_score: string;
-  co_applicant_credit_score: string;
 }
 
-interface FormErrors {
-  student_name?: string;
-  student_phone?: string;
+interface SaveFormData {
+  student_name: string;
+  student_phone: string;
+}
+
+interface QuickFormErrors {
   country?: string;
   university_id?: string;
   loan_amount?: string;
-  co_applicant_relationship?: string;
   co_applicant_monthly_salary?: string;
 }
+
+interface SaveFormErrors {
+  student_name?: string;
+  student_phone?: string;
+}
+
+const COUNTRIES = [
+  { value: "USA", label: "🇺🇸 USA" },
+  { value: "UK", label: "🇬🇧 UK" },
+  { value: "Canada", label: "🇨🇦 Canada" },
+  { value: "Australia", label: "🇦🇺 Australia" },
+  { value: "Germany", label: "🇩🇪 Germany" },
+  { value: "Ireland", label: "🇮🇪 Ireland" },
+];
 
 interface EligibilityResult {
   score: number;
@@ -67,37 +71,19 @@ interface EligibilityResult {
   estimatedRateMin: number;
   estimatedRateMax: number;
   lenderCount: number;
-  leadId: string;
+  universityCountry: string;
 }
 
-const COUNTRIES = [
-  { value: "USA", label: "USA" },
-  { value: "UK", label: "UK" },
-  { value: "Canada", label: "Canada" },
-  { value: "Australia", label: "Australia" },
-  { value: "Germany", label: "Germany" },
-  { value: "Ireland", label: "Ireland" },
-  { value: "New Zealand", label: "New Zealand" },
-];
-
-const RELATIONSHIPS = [
-  { value: "parent", label: "Parent" },
-  { value: "spouse", label: "Spouse" },
-  { value: "sibling", label: "Sibling" },
-  { value: "guardian", label: "Guardian" },
-  { value: "other", label: "Other" },
-];
-
-const initialFormData: FormData = {
-  student_name: "",
-  student_phone: "",
+const initialQuickForm: QuickFormData = {
   country: "",
   university_id: "",
   loan_amount: "",
-  co_applicant_relationship: "",
   co_applicant_monthly_salary: "",
-  student_credit_score: "",
-  co_applicant_credit_score: "",
+};
+
+const initialSaveForm: SaveFormData = {
+  student_name: "",
+  student_phone: "",
 };
 
 export const EligibilityCheckModal = ({ 
@@ -107,14 +93,23 @@ export const EligibilityCheckModal = ({
   onContinueApplication,
   partnerId
 }: EligibilityCheckModalProps) => {
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quickForm, setQuickForm] = useState<QuickFormData>(initialQuickForm);
+  const [saveForm, setSaveForm] = useState<SaveFormData>(initialSaveForm);
+  const [quickErrors, setQuickErrors] = useState<QuickFormErrors>({});
+  const [saveErrors, setSaveErrors] = useState<SaveFormErrors>({});
+  const [isChecking, setIsChecking] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [result, setResult] = useState<EligibilityResult | null>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
 
-  const handleInputChange = useCallback((field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => ({ ...prev, [field]: undefined }));
+  const handleQuickChange = useCallback((field: keyof QuickFormData, value: string) => {
+    setQuickForm(prev => ({ ...prev, [field]: value }));
+    setQuickErrors(prev => ({ ...prev, [field]: undefined }));
+  }, []);
+
+  const handleSaveChange = useCallback((field: keyof SaveFormData, value: string) => {
+    setSaveForm(prev => ({ ...prev, [field]: value }));
+    setSaveErrors(prev => ({ ...prev, [field]: undefined }));
   }, []);
 
   const formatCurrencyInput = useCallback((value: string): string => {
@@ -166,19 +161,50 @@ export const EligibilityCheckModal = ({
     return `₹${num.toLocaleString('en-IN')}`;
   }, []);
 
-  const loanAmountInWords = useMemo(() => getAmountInWords(formData.loan_amount), [formData.loan_amount, getAmountInWords]);
-  const salaryInWords = useMemo(() => getAmountInWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary, getAmountInWords]);
+  const loanAmountInWords = useMemo(() => getAmountInWords(quickForm.loan_amount), [quickForm.loan_amount, getAmountInWords]);
+  const salaryInWords = useMemo(() => getAmountInWords(quickForm.co_applicant_monthly_salary), [quickForm.co_applicant_monthly_salary, getAmountInWords]);
 
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+  const validateQuickForm = (): boolean => {
+    const newErrors: QuickFormErrors = {};
 
-    if (!formData.student_name.trim()) {
+    if (!quickForm.country) {
+      newErrors.country = "Select a country";
+    }
+
+    if (!quickForm.university_id) {
+      newErrors.university_id = "Required";
+    }
+
+    const loanAmount = parseInt(quickForm.loan_amount.replace(/,/g, '') || '0');
+    if (!quickForm.loan_amount) {
+      newErrors.loan_amount = "Required";
+    } else if (loanAmount < 100000) {
+      newErrors.loan_amount = "Min ₹1 Lakh";
+    } else if (loanAmount > 10000000) {
+      newErrors.loan_amount = "Max ₹1 Crore";
+    }
+
+    const salary = parseFloat(quickForm.co_applicant_monthly_salary.replace(/,/g, ''));
+    if (!quickForm.co_applicant_monthly_salary) {
+      newErrors.co_applicant_monthly_salary = "Required";
+    } else if (isNaN(salary) || salary < 10000) {
+      newErrors.co_applicant_monthly_salary = "Min ₹10,000";
+    }
+
+    setQuickErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateSaveForm = (): boolean => {
+    const newErrors: SaveFormErrors = {};
+
+    if (!saveForm.student_name.trim()) {
       newErrors.student_name = "Required";
-    } else if (formData.student_name.trim().length < 2) {
+    } else if (saveForm.student_name.trim().length < 2) {
       newErrors.student_name = "Min 2 characters";
     }
 
-    const cleanPhone = formData.student_phone.replace(/\D/g, '');
+    const cleanPhone = saveForm.student_phone.replace(/\D/g, '');
     if (!cleanPhone) {
       newErrors.student_phone = "Required";
     } else if (cleanPhone.length !== 10) {
@@ -187,59 +213,26 @@ export const EligibilityCheckModal = ({
       newErrors.student_phone = "Invalid number";
     }
 
-    if (!formData.country) {
-      newErrors.country = "Required";
-    }
-
-    if (!formData.university_id) {
-      newErrors.university_id = "Required";
-    }
-
-    const loanAmount = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
-    if (!formData.loan_amount) {
-      newErrors.loan_amount = "Required";
-    } else if (loanAmount < 100000) {
-      newErrors.loan_amount = "Min ₹1 Lakh";
-    } else if (loanAmount > 10000000) {
-      newErrors.loan_amount = "Max ₹1 Crore";
-    }
-
-    if (!formData.co_applicant_relationship) {
-      newErrors.co_applicant_relationship = "Required";
-    }
-
-    const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
-    if (!formData.co_applicant_monthly_salary) {
-      newErrors.co_applicant_monthly_salary = "Required";
-    } else if (isNaN(salary) || salary < 10000) {
-      newErrors.co_applicant_monthly_salary = "Min ₹10,000";
-    }
-
-    setErrors(newErrors);
+    setSaveErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const calculateEligibility = async (loanAmount: number, salary: number, universityId: string): Promise<EligibilityResult> => {
-    // Scoring breakdown (adds up to 100):
-    // - University: max 40 points
-    // - Co-Applicant Salary: max 35 points
-    // - Relationship: max 15 points
-    // - Credit Bonus: max 10 points
-    
-    // Fetch university score from database
-    let universityScore = 20; // Default for unknown
+    // Fetch university score and country from database
+    let universityScore = 20;
     let universityGrade = 'C';
+    let universityCountry = 'USA';
     
     if (universityId) {
       const { data: university } = await supabase
         .from('universities')
-        .select('score, global_rank')
+        .select('score, global_rank, country')
         .eq('id', universityId)
         .single();
       
       if (university) {
+        universityCountry = university.country || 'USA';
         const uniScore = university.score || 0;
-        // Map university score to grade and points (max 40)
         if (uniScore >= 90) { universityGrade = 'A'; universityScore = 40; }
         else if (uniScore >= 70) { universityGrade = 'B'; universityScore = 32; }
         else if (uniScore >= 50) { universityGrade = 'C'; universityScore = 25; }
@@ -255,34 +248,18 @@ export const EligibilityCheckModal = ({
     else if (salary >= 50000) { salaryScore = 20; salaryBand = '50K-75K'; }
     else { salaryScore = 12; salaryBand = 'Below 50K'; }
     
-    // Relationship scoring (max 15 points)
-    const relationshipScores: Record<string, number> = {
-      'parent': 15,
-      'spouse': 12,
-      'sibling': 10,
-      'guardian': 10,
-      'other': 7
-    };
-    const relationshipScore = relationshipScores[formData.co_applicant_relationship] || 7;
+    // Default relationship to parent (15 points)
+    const relationshipScore = 15;
     
-    // Credit score bonus (max 10 points - 5 each for student and co-applicant)
-    let creditBonus = 0;
-    const studentCredit = parseInt(formData.student_credit_score) || 0;
-    const coAppCredit = parseInt(formData.co_applicant_credit_score) || 0;
-    if (studentCredit >= 750) creditBonus += 5;
-    else if (studentCredit >= 650) creditBonus += 3;
-    if (coAppCredit >= 750) creditBonus += 5;
-    else if (coAppCredit >= 650) creditBonus += 3;
-    
-    // Total score (max 100)
-    let score = universityScore + salaryScore + relationshipScore + creditBonus;
+    // Total score (max 100 - without credit bonus for quick check)
+    let score = universityScore + salaryScore + relationshipScore;
     score = Math.min(100, Math.max(0, score));
     
     // Determine result category
-    let result: 'eligible' | 'conditional' | 'unlikely';
-    if (score >= 65) result = 'eligible';
-    else if (score >= 45) result = 'conditional';
-    else result = 'unlikely';
+    let resultCategory: 'eligible' | 'conditional' | 'unlikely';
+    if (score >= 65) resultCategory = 'eligible';
+    else if (score >= 45) resultCategory = 'conditional';
+    else resultCategory = 'unlikely';
     
     // Calculate loan ranges based on score
     const baseAmount = loanAmount;
@@ -310,7 +287,7 @@ export const EligibilityCheckModal = ({
     
     return {
       score: Math.round(score),
-      result,
+      result: resultCategory,
       breakdown: {
         university: { score: universityScore, maxScore: 40, grade: universityGrade },
         coApplicant: { score: salaryScore + relationshipScore, maxScore: 50, salaryBand },
@@ -320,73 +297,91 @@ export const EligibilityCheckModal = ({
       estimatedRateMin: rateMin,
       estimatedRateMax: rateMax,
       lenderCount: count || 4,
-      leadId: '',
+      universityCountry,
     };
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const handleCheckEligibility = async () => {
+    if (!validateQuickForm()) return;
 
-    setIsSubmitting(true);
+    setIsChecking(true);
 
     try {
-      const loanAmount = parseInt(formData.loan_amount.replace(/,/g, ''));
-      const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
+      const loanAmount = parseInt(quickForm.loan_amount.replace(/,/g, ''));
+      const salary = parseFloat(quickForm.co_applicant_monthly_salary.replace(/,/g, ''));
       
-      // Calculate eligibility (now async)
-      const eligibility = await calculateEligibility(loanAmount, salary, formData.university_id);
+      const eligibility = await calculateEligibility(loanAmount, salary, quickForm.university_id);
+      setResult(eligibility);
+      toast.success('Score calculated!');
 
-      // Create lead via edge function
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to check eligibility');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleSaveLead = async () => {
+    if (!validateSaveForm() || !result) return;
+
+    setIsSaving(true);
+
+    try {
+      const loanAmount = parseInt(quickForm.loan_amount.replace(/,/g, ''));
+      const salary = parseFloat(quickForm.co_applicant_monthly_salary.replace(/,/g, ''));
+
       const { data, error } = await supabase.functions.invoke('create-lead-quick', {
         body: {
-          student_name: formData.student_name.trim(),
-          student_phone: formData.student_phone.replace(/\D/g, ''),
-          student_pin_code: '000000', // Placeholder for eligibility check
-          country: formData.country,
-          university_id: formData.university_id || undefined,
+          student_name: saveForm.student_name.trim(),
+          student_phone: saveForm.student_phone.replace(/\D/g, ''),
+          student_pin_code: '000000',
+          country: result.universityCountry,
+          university_id: quickForm.university_id,
           loan_amount: loanAmount,
-          co_applicant_relationship: formData.co_applicant_relationship,
-          co_applicant_name: 'Co-Applicant', // Placeholder
+          co_applicant_relationship: 'parent',
+          co_applicant_name: 'Co-Applicant',
           co_applicant_monthly_salary: salary,
           source: 'eligibility_check',
-          eligibility_score: eligibility.score,
-          eligibility_result: eligibility.result,
+          eligibility_score: result.score,
+          eligibility_result: result.result,
           partner_id: partnerId,
         }
       });
 
       if (error) {
-        throw new Error(error.message || 'Failed to check eligibility');
+        throw new Error(error.message || 'Failed to save lead');
       }
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to check eligibility');
+        throw new Error(data.error || 'Failed to save lead');
       }
 
-      eligibility.leadId = data.lead.id;
-      setResult(eligibility);
-      toast.success('Eligibility check complete!');
+      setLeadId(data.lead.id);
+      toast.success('Lead saved successfully!');
       onSuccess?.(data.lead.id);
 
     } catch (error: any) {
-      toast.error(error.message || 'Failed to check eligibility');
+      toast.error(error.message || 'Failed to save lead');
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
   const handleClose = () => {
-    if (!isSubmitting) {
-      setFormData(initialFormData);
-      setErrors({});
+    if (!isChecking && !isSaving) {
+      setQuickForm(initialQuickForm);
+      setSaveForm(initialSaveForm);
+      setQuickErrors({});
+      setSaveErrors({});
       setResult(null);
+      setLeadId(null);
       onClose();
     }
   };
 
   const handleContinueApplication = () => {
-    if (result?.leadId) {
-      onContinueApplication?.(result.leadId);
+    if (leadId) {
+      onContinueApplication?.(leadId);
       handleClose();
     }
   };
@@ -397,7 +392,7 @@ export const EligibilityCheckModal = ({
       return {
         headline: "Excellent Match!",
         emoji: "🎉",
-        subtext: "This student is in the top tier of applicants. Lenders are eager to fund!",
+        subtext: "Top tier applicant. Lenders are eager to fund!",
         gradient: "from-emerald-500 via-green-500 to-teal-500",
         bgGradient: "from-emerald-50 to-teal-50",
         ringColor: "stroke-emerald-500",
@@ -408,7 +403,7 @@ export const EligibilityCheckModal = ({
       return {
         headline: "Great Opportunity!",
         emoji: "✨",
-        subtext: "Strong profile! With complete documents, this is highly likely to get approved.",
+        subtext: "Strong profile! Highly likely to get approved.",
         gradient: "from-blue-500 via-indigo-500 to-purple-500",
         bgGradient: "from-blue-50 to-indigo-50",
         ringColor: "stroke-blue-500",
@@ -419,7 +414,7 @@ export const EligibilityCheckModal = ({
       return {
         headline: "Good to Go!",
         emoji: "💪",
-        subtext: "Many students with similar profiles get funded. Complete details make the difference!",
+        subtext: "Many similar profiles get funded!",
         gradient: "from-amber-500 via-orange-500 to-yellow-500",
         bgGradient: "from-amber-50 to-orange-50",
         ringColor: "stroke-amber-500",
@@ -428,9 +423,9 @@ export const EligibilityCheckModal = ({
       };
     } else {
       return {
-        headline: "Let's Build This Together",
+        headline: "Let's Explore Options",
         emoji: "🚀",
-        subtext: "Every successful journey starts somewhere. Complete the application to explore all options.",
+        subtext: "Complete the application to explore all options.",
         gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
         bgGradient: "from-violet-50 to-purple-50",
         ringColor: "stroke-violet-500",
@@ -455,9 +450,8 @@ export const EligibilityCheckModal = ({
     }, [score]);
 
     return (
-      <div className="relative w-36 h-36 mx-auto">
+      <div className="relative w-32 h-32 mx-auto">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-          {/* Background ring */}
           <circle
             cx="60"
             cy="60"
@@ -467,7 +461,6 @@ export const EligibilityCheckModal = ({
             strokeWidth="8"
             className="text-muted/20"
           />
-          {/* Animated progress ring */}
           <circle
             cx="60"
             cy="60"
@@ -482,427 +475,313 @@ export const EligibilityCheckModal = ({
             }}
           />
         </svg>
-        {/* Score text in center */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={cn(
-            "text-4xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+            "text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
             config.gradient
           )}>
             {animatedScore}
           </span>
-          <span className="text-xs text-muted-foreground font-medium">out of 100</span>
+          <span className="text-xs text-muted-foreground">out of 100</span>
         </div>
       </div>
     );
   };
 
-  // Result Screen
+  // Result Screen with Save Form
   if (result) {
     const tierConfig = getTierConfig(result.score);
     const TierIcon = tierConfig.icon;
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-lg overflow-hidden p-0">
-          {/* Celebratory Header */}
+        <DialogContent className="sm:max-w-md overflow-hidden p-0">
+          {/* Score Header */}
           <div className={cn(
-            "relative px-6 pt-6 pb-8 bg-gradient-to-br text-center overflow-hidden",
+            "relative px-6 pt-5 pb-6 bg-gradient-to-br text-center",
             tierConfig.bgGradient
           )}>
-            {/* Animated background particles */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-2 h-2 rounded-full bg-white/30 animate-pulse"
-                  style={{
-                    left: `${15 + i * 15}%`,
-                    top: `${20 + (i % 3) * 25}%`,
-                    animationDelay: `${i * 0.2}s`,
-                  }}
-                />
-              ))}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-2xl">{tierConfig.emoji}</span>
+              <h2 className={cn(
+                "text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                tierConfig.gradient
+              )}>
+                {tierConfig.headline}
+              </h2>
             </div>
 
-            <div className="relative z-10">
-              {/* Headline with emoji */}
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="text-3xl animate-bounce">{tierConfig.emoji}</span>
-                <h2 className={cn(
-                  "text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
-                  tierConfig.gradient
-                )}>
-                  {tierConfig.headline}
-                </h2>
-              </div>
+            <ScoreRing score={result.score} config={tierConfig} />
 
-              {/* Animated Score Ring */}
-              <ScoreRing score={result.score} config={tierConfig} />
-
-              {/* Motivational subtext */}
-              <p className="mt-4 text-sm text-muted-foreground max-w-xs mx-auto">
-                {tierConfig.subtext}
-              </p>
-            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {tierConfig.subtext}
+            </p>
           </div>
 
-          {/* Content Section */}
+          {/* Content */}
           <div className="px-6 py-4 space-y-4">
-            {/* Score Breakdown - Progress Style */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 text-primary" />
-                Profile Strengths
-              </h4>
-              
-              {/* University */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <GraduationCap className="h-3.5 w-3.5" />
-                    University Rating
-                  </span>
-                  <span className="font-medium text-foreground">
-                    Grade {result.breakdown.university.grade}
-                  </span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", tierConfig.gradient)}
-                    style={{ width: `${(result.breakdown.university.score / result.breakdown.university.maxScore) * 100}%` }}
-                  />
-                </div>
+            {/* Quick Breakdown */}
+            <div className="flex gap-4">
+              <div className="flex-1 text-center p-3 rounded-lg bg-muted/50">
+                <GraduationCap className="h-5 w-5 mx-auto text-primary mb-1" />
+                <div className="text-sm font-semibold">Grade {result.breakdown.university.grade}</div>
+                <div className="text-xs text-muted-foreground">University</div>
               </div>
-
-              {/* Co-Applicant */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" />
-                    Co-Applicant Strength
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {result.breakdown.coApplicant.salaryBand}
-                  </span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700 delay-150", tierConfig.gradient)}
-                    style={{ width: `${(result.breakdown.coApplicant.score / result.breakdown.coApplicant.maxScore) * 100}%` }}
-                  />
-                </div>
+              <div className="flex-1 text-center p-3 rounded-lg bg-muted/50">
+                <Users className="h-5 w-5 mx-auto text-primary mb-1" />
+                <div className="text-sm font-semibold">{result.breakdown.coApplicant.salaryBand}</div>
+                <div className="text-xs text-muted-foreground">Co-Applicant</div>
               </div>
             </div>
 
-            {/* Unlock Potential - Loan Range */}
-            <div className={cn(
-              "relative p-4 rounded-xl border-2 border-dashed",
-              "bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-primary/30"
-            )}>
-              <div className="flex items-start justify-between">
+            {/* Loan Estimate */}
+            <div className="p-3 rounded-xl border bg-primary/5 border-primary/20">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    Unlock Up To
-                  </h4>
-                  <div className="text-2xl font-bold text-primary mt-1">
-                    ₹{(result.estimatedLoanMax / 100000).toFixed(0)} Lakhs
+                  <div className="text-xs text-muted-foreground">Potential Loan</div>
+                  <div className="text-xl font-bold text-primary">
+                    ₹{(result.estimatedLoanMax / 100000).toFixed(0)}L
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    @ {result.estimatedRateMin}% - {result.estimatedRateMax}% interest
-                  </p>
                 </div>
                 <div className="text-right">
-                  <Building2 className="h-8 w-8 text-primary/30" />
+                  <div className="text-xs text-muted-foreground">Interest Rate</div>
+                  <div className="text-sm font-semibold">
+                    {result.estimatedRateMin}% - {result.estimatedRateMax}%
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-primary/80 mt-2 font-medium">
-                Complete application to maximize loan amount →
-              </p>
             </div>
 
-            {/* Dynamic Lender Message with Urgency */}
-            <div className={cn(
-              "flex items-center gap-3 p-3 rounded-lg",
-              "bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200"
-            )}>
-              <div className="flex -space-x-2">
-                {[...Array(Math.min(result.lenderCount, 4))].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/70 border-2 border-white flex items-center justify-center"
-                  >
-                    <Building2 className="h-4 w-4 text-primary-foreground" />
+            {/* Save Lead Form */}
+            {!leadId ? (
+              <div className="space-y-3 pt-2 border-t">
+                <div className="text-center">
+                  <h3 className="font-semibold text-sm">Save This Result</h3>
+                  <p className="text-xs text-muted-foreground">Enter student details to continue</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={saveForm.student_name}
+                      onChange={(e) => handleSaveChange('student_name', e.target.value)}
+                      placeholder="Student Name"
+                      className={cn("pl-9 h-10", saveErrors.student_name && 'border-destructive')}
+                    />
                   </div>
-                ))}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-emerald-800">
-                  {result.lenderCount}+ lenders competing for this student
-                </p>
-                <p className="text-xs text-emerald-600">
-                  Complete now to get multiple offers
-                </p>
-              </div>
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-            </div>
-          </div>
+                  {saveErrors.student_name && (
+                    <p className="text-xs text-destructive">{saveErrors.student_name}</p>
+                  )}
 
-          {/* Enhanced CTA Section */}
-          <div className="px-6 pb-6 space-y-4">
-            {/* Primary CTA */}
-            <Button 
-              onClick={handleContinueApplication} 
-              size="lg"
-              className={cn(
-                "w-full h-14 text-base font-semibold gap-2 relative overflow-hidden group",
-                "bg-gradient-to-r from-primary via-primary to-primary/90 hover:opacity-90"
-              )}
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <TierIcon className="h-5 w-5" />
-                {tierConfig.ctaText}
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </span>
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            </Button>
-            
-            {/* Helper text */}
-            <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              Takes just 5 minutes to complete
-            </p>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={saveForm.student_phone}
+                      onChange={(e) => handleSaveChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="Phone Number (10 digits)"
+                      className={cn("pl-9 h-10", saveErrors.student_phone && 'border-destructive')}
+                    />
+                  </div>
+                  {saveErrors.student_phone && (
+                    <p className="text-xs text-destructive">{saveErrors.student_phone}</p>
+                  )}
+                </div>
 
-            {/* Trust Indicators */}
-            <div className="flex items-center justify-center gap-4 pt-2 border-t">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Shield className="h-3.5 w-3.5 text-green-600" />
-                <span>100% Secure</span>
+                <Button 
+                  onClick={handleSaveLead} 
+                  disabled={isSaving}
+                  className="w-full h-11 gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Save & Continue
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Zap className="h-3.5 w-3.5 text-amber-500" />
-                <span>48hr Response</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Smartphone className="h-3.5 w-3.5 text-blue-500" />
-                <span>Real-time Updates</span>
-              </div>
-            </div>
+            ) : (
+              /* Lead Saved - Show Continue Button */
+              <div className="space-y-3 pt-2 border-t">
+                <div className="flex items-center justify-center gap-2 text-emerald-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-medium">Lead Saved!</span>
+                </div>
 
-            {/* Secondary Actions */}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleClose} className="flex-1">
-                Save & Continue Later
-              </Button>
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
+                <Button 
+                  onClick={handleContinueApplication} 
+                  size="lg"
+                  className="w-full h-12 gap-2"
+                >
+                  <TierIcon className="h-5 w-5" />
+                  {tierConfig.ctaText}
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Shield className="h-3.5 w-3.5 text-green-600" />
+                    Secure
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    48hr Response
+                  </span>
+                </div>
+
+                <Button variant="ghost" onClick={handleClose} className="w-full">
+                  Close
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // Form Screen
+  // Quick Check Form - Just 3 Fields!
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Quick Eligibility Check
+            <Zap className="h-5 w-5 text-amber-500" />
+            30-Second Eligibility Check
           </DialogTitle>
         </DialogHeader>
 
-        <div className="text-xs text-muted-foreground -mt-2 mb-2">
-          Check eligibility in 45 seconds. A lead will be created automatically.
+        <div className="text-sm text-muted-foreground -mt-2 mb-4">
+          Just 3 quick questions to see the score
         </div>
 
-        <div className="grid grid-cols-2 gap-3 py-2">
-          {/* Student Name */}
-          <div className="space-y-1">
-            <Label htmlFor="student_name" className="text-xs">
-              Student Name *
-            </Label>
-            <Input
-              id="student_name"
-              value={formData.student_name}
-              onChange={(e) => handleInputChange('student_name', e.target.value)}
-              placeholder="Full name"
-              className={cn("h-9", errors.student_name && 'border-destructive')}
-            />
-            {errors.student_name && (
-              <p className="text-xs text-destructive">{errors.student_name}</p>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div className="space-y-1">
-            <Label htmlFor="student_phone" className="text-xs">
-              Phone *
-            </Label>
-            <Input
-              id="student_phone"
-              value={formData.student_phone}
-              onChange={(e) => handleInputChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-              placeholder="10 digits"
-              className={cn("h-9", errors.student_phone && 'border-destructive')}
-            />
-            {errors.student_phone && (
-              <p className="text-xs text-destructive">{errors.student_phone}</p>
-            )}
-          </div>
-
-          {/* Country */}
-          <div className="space-y-1">
-            <Label className="text-xs">Study Destination *</Label>
-            <Select
-              value={formData.country}
-              onValueChange={(value) => {
-                handleInputChange('country', value);
-                handleInputChange('university_id', '');
-              }}
-            >
-              <SelectTrigger className={cn("h-9", errors.country && 'border-destructive')}>
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent>
-                {COUNTRIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.country && (
-              <p className="text-xs text-destructive">{errors.country}</p>
+        <div className="space-y-4">
+          {/* Country - Inline Buttons */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Study Destination</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {COUNTRIES.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => {
+                    handleQuickChange('country', c.value);
+                    handleQuickChange('university_id', '');
+                  }}
+                  className={cn(
+                    "py-2 px-3 text-sm rounded-lg border transition-all",
+                    quickForm.country === c.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background hover:bg-muted border-border"
+                  )}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            {quickErrors.country && (
+              <p className="text-xs text-destructive">{quickErrors.country}</p>
             )}
           </div>
 
           {/* University */}
-          <div className="space-y-1">
-            <Label className="text-xs">University *</Label>
-            <UniversityCombobox
-              country={formData.country}
-              value={formData.university_id}
-              onChange={(value) => handleInputChange('university_id', value)}
-              placeholder="Select university"
-              disabled={!formData.country}
-            />
-            {errors.university_id && (
-              <p className="text-xs text-destructive">{errors.university_id}</p>
-            )}
-          </div>
-
-          {/* Loan Amount */}
-          <div className="space-y-1">
-            <Label className="text-xs">Loan Amount *</Label>
-            <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
-              <Input
-                value={formData.loan_amount}
-                onChange={(e) => handleInputChange('loan_amount', formatCurrencyInput(e.target.value))}
-                placeholder="15,00,000"
-                className={cn("h-9 pl-6", errors.loan_amount && 'border-destructive')}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              University
+            </Label>
+            <div className={quickErrors.university_id ? '[&_button]:border-destructive' : ''}>
+              <UniversityCombobox
+                country={quickForm.country}
+                value={quickForm.university_id}
+                onChange={(value) => handleQuickChange('university_id', value)}
+                placeholder="Type to search university..."
+                disabled={!quickForm.country}
               />
             </div>
-            {loanAmountInWords && (
-              <p className="text-xs text-muted-foreground">₹ {loanAmountInWords}</p>
-            )}
-            {errors.loan_amount && (
-              <p className="text-xs text-destructive">{errors.loan_amount}</p>
-            )}
-          </div>
-
-          {/* Relationship */}
-          <div className="space-y-1">
-            <Label className="text-xs">Co-Applicant Relationship *</Label>
-            <Select
-              value={formData.co_applicant_relationship}
-              onValueChange={(value) => handleInputChange('co_applicant_relationship', value)}
-            >
-              <SelectTrigger className={cn("h-9", errors.co_applicant_relationship && 'border-destructive')}>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                {RELATIONSHIPS.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.co_applicant_relationship && (
-              <p className="text-xs text-destructive">{errors.co_applicant_relationship}</p>
+            {quickErrors.university_id && (
+              <p className="text-xs text-destructive">{quickErrors.university_id}</p>
             )}
           </div>
 
           {/* Salary */}
-          <div className="space-y-1 col-span-2">
-            <Label className="text-xs">Co-Applicant Monthly Salary *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              Co-Applicant Monthly Salary
+            </Label>
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
               <Input
-                value={formData.co_applicant_monthly_salary}
-                onChange={(e) => handleInputChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
+                value={quickForm.co_applicant_monthly_salary}
+                onChange={(e) => handleQuickChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
                 placeholder="75,000"
-                className={cn("h-9 pl-6", errors.co_applicant_monthly_salary && 'border-destructive')}
+                className={cn("pl-7 h-11 text-base", quickErrors.co_applicant_monthly_salary && 'border-destructive')}
               />
             </div>
             {salaryInWords && (
               <p className="text-xs text-muted-foreground">₹ {salaryInWords} per month</p>
             )}
-            {errors.co_applicant_monthly_salary && (
-              <p className="text-xs text-destructive">{errors.co_applicant_monthly_salary}</p>
+            {quickErrors.co_applicant_monthly_salary && (
+              <p className="text-xs text-destructive">{quickErrors.co_applicant_monthly_salary}</p>
             )}
           </div>
 
-          {/* Optional Credit Scores */}
-          <div className="col-span-2 pt-2 border-t">
-            <p className="text-xs text-muted-foreground mb-2">
-              Optional: Add credit scores for better accuracy
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Student Credit Score</Label>
-                <Input
-                  value={formData.student_credit_score}
-                  onChange={(e) => handleInputChange('student_credit_score', e.target.value.replace(/\D/g, '').slice(0, 3))}
-                  placeholder="e.g., 750"
-                  className="h-9"
-                  maxLength={3}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Co-Applicant Credit Score</Label>
-                <Input
-                  value={formData.co_applicant_credit_score}
-                  onChange={(e) => handleInputChange('co_applicant_credit_score', e.target.value.replace(/\D/g, '').slice(0, 3))}
-                  placeholder="e.g., 780"
-                  className="h-9"
-                  maxLength={3}
-                />
-              </div>
+          {/* Loan Amount */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              Loan Amount Needed
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
+              <Input
+                value={quickForm.loan_amount}
+                onChange={(e) => handleQuickChange('loan_amount', formatCurrencyInput(e.target.value))}
+                placeholder="15,00,000"
+                className={cn("pl-7 h-11 text-base", quickErrors.loan_amount && 'border-destructive')}
+              />
             </div>
+            {loanAmountInWords && (
+              <p className="text-xs text-muted-foreground">₹ {loanAmountInWords}</p>
+            )}
+            {quickErrors.loan_amount && (
+              <p className="text-xs text-destructive">{quickErrors.loan_amount}</p>
+            )}
           </div>
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-            {isSubmitting ? (
+        <div className="flex flex-col gap-2 pt-4">
+          <Button 
+            onClick={handleCheckEligibility} 
+            disabled={isChecking} 
+            size="lg"
+            className="w-full h-12 gap-2 text-base"
+          >
+            {isChecking ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Checking...
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Calculating...
               </>
             ) : (
               <>
-                <TrendingUp className="h-4 w-4" />
-                Check Eligibility
+                <TrendingUp className="h-5 w-5" />
+                Check Score
+                <ArrowRight className="h-5 w-5" />
               </>
             )}
           </Button>
+          
+          <p className="text-center text-xs text-muted-foreground">
+            No lead created until you save
+          </p>
         </div>
       </DialogContent>
     </Dialog>
