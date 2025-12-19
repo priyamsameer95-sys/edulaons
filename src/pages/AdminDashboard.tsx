@@ -69,29 +69,37 @@ const AdminDashboardV2 = () => {
   const [allPartners, setAllPartners] = useState<Array<{ id: string; name: string; partner_code: string }>>([]);
   const [activeTab, setActiveTab] = useState('queue');
 
+  // Fetch all partners for filters and Add Lead modal
+  const fetchPartners = useCallback(async () => {
+    const { data } = await supabase
+      .from('partners')
+      .select('id, name, partner_code')
+      .eq('is_active', true)
+      .order('name');
+    if (data) setAllPartners(data);
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchPartners();
+  }, [fetchPartners]);
+
+  // Open new lead modal with fresh partners list
+  const handleOpenNewLeadModal = useCallback(() => {
+    fetchPartners();
+    setShowNewLeadModal(true);
+  }, [fetchPartners]);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onCommandK: () => setShowCommandPalette(true),
-    onCommandN: () => setShowNewLeadModal(true),
+    onCommandN: handleOpenNewLeadModal,
     onEscape: () => {
       setShowCommandPalette(false);
       setShowNewLeadModal(false);
     },
     enabled: true,
   });
-
-  // Fetch all partners for filters and Add Lead modal
-  useEffect(() => {
-    const fetchPartners = async () => {
-      const { data } = await supabase
-        .from('partners')
-        .select('id, name, partner_code')
-        .eq('is_active', true)
-        .order('name');
-      if (data) setAllPartners(data);
-    };
-    fetchPartners();
-  }, []);
 
   // Handle view change - apply filters from view config
   const handleViewChange = useCallback((viewId: string) => {
@@ -252,7 +260,7 @@ const AdminDashboardV2 = () => {
                   onPartnerChange={(value) => setFilters({ partnerId: value === 'all' ? null : value })}
                   partners={allPartners}
                 />
-                <Button size="sm" onClick={() => setShowNewLeadModal(true)}>
+                <Button size="sm" onClick={handleOpenNewLeadModal}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Lead
                 </Button>
