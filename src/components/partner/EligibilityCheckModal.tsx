@@ -62,9 +62,8 @@ interface EligibilityResult {
   estimatedLoanMax: number;
   estimatedRateMin: number;
   estimatedRateMax: number;
-  matchingLenders: string[];
+  lenderCount: number;
   leadId: string;
-  caseId: string;
 }
 
 const COUNTRIES = [
@@ -216,93 +215,104 @@ export const EligibilityCheckModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const calculateEligibility = (loanAmount: number, salary: number, universityId: string): EligibilityResult => {
-    // Simple scoring algorithm based on available data
-    let score = 0;
+  const calculateEligibility = async (loanAmount: number, salary: number, universityId: string): Promise<EligibilityResult> => {
+    // Fetch university score from database
+    let universityScore = 50; // Default
+    let universityGrade = 'C';
     
-    // University scoring (simulated - in real app, fetch from DB)
-    const universityScore = universityId ? 65 : 40;
-    score += universityScore * 0.3;
+    if (universityId) {
+      const { data: university } = await supabase
+        .from('universities')
+        .select('score, global_rank')
+        .eq('id', universityId)
+        .single();
+      
+      if (university) {
+        const uniScore = university.score || 0;
+        // Map university score to grade based on thresholds
+        if (uniScore >= 90) { universityGrade = 'A'; universityScore = 80; }
+        else if (uniScore >= 70) { universityGrade = 'B'; universityScore = 65; }
+        else if (uniScore >= 50) { universityGrade = 'C'; universityScore = 50; }
+        else { universityGrade = 'D'; universityScore = 35; }
+      }
+    }
     
-    // Co-applicant salary scoring
+    // Co-applicant salary scoring using salary bands
     let salaryScore = 0;
-    if (salary >= 100000) salaryScore = 40;
-    else if (salary >= 75000) salaryScore = 35;
-    else if (salary >= 50000) salaryScore = 25;
-    else if (salary >= 25000) salaryScore = 15;
-    else salaryScore = 10;
-    score += salaryScore * 0.3;
+    let salaryBand = 'Below 50K';
+    if (salary >= 100000) { salaryScore = 40; salaryBand = 'Above 1L'; }
+    else if (salary >= 75000) { salaryScore = 30; salaryBand = '75K-1L'; }
+    else if (salary >= 50000) { salaryScore = 20; salaryBand = '50K-75K'; }
+    else { salaryScore = 10; salaryBand = 'Below 50K'; }
     
-    // Relationship scoring (parent is best)
-    const relationshipScore = formData.co_applicant_relationship === 'parent' ? 25 : 
-                              formData.co_applicant_relationship === 'spouse' ? 22 : 15;
-    score += relationshipScore * 0.2;
+    // Relationship scoring
+    const relationshipScores: Record<string, number> = {
+      'parent': 25,
+      'spouse': 20,
+      'sibling': 15,
+      'guardian': 15,
+      'other': 10
+    };
+    const relationshipScore = relationshipScores[formData.co_applicant_relationship] || 10;
     
     // Credit score bonus if provided
+    let creditBonus = 0;
     const studentCredit = parseInt(formData.student_credit_score) || 0;
     const coAppCredit = parseInt(formData.co_applicant_credit_score) || 0;
-    if (studentCredit >= 750) score += 5;
-    else if (studentCredit >= 650) score += 3;
-    if (coAppCredit >= 750) score += 5;
-    else if (coAppCredit >= 650) score += 3;
+    if (studentCredit >= 750) creditBonus += 5;
+    else if (studentCredit >= 650) creditBonus += 3;
+    if (coAppCredit >= 750) creditBonus += 5;
+    else if (coAppCredit >= 650) creditBonus += 3;
     
-    // Base score contribution
-    score += 20;
+    // Calculate weighted score (30% university, 40% co-applicant/student, 30% relationship)
+    let score = (universityScore * 0.3) + (salaryScore * 0.4) + (relationshipScore * 0.3) + creditBonus;
     
     // Normalize to 0-100
     score = Math.min(100, Math.max(0, score));
     
     // Determine result category
     let result: 'eligible' | 'conditional' | 'unlikely';
-    if (score >= 70) result = 'eligible';
-    else if (score >= 50) result = 'conditional';
+    if (score >= 65) result = 'eligible';
+    else if (score >= 45) result = 'conditional';
     else result = 'unlikely';
     
     // Calculate loan ranges based on score
     const baseAmount = loanAmount;
     let loanMin = 0, loanMax = 0, rateMin = 14, rateMax = 16;
     
-    if (score >= 90) {
-      loanMin = baseAmount * 0.9;
-      loanMax = baseAmount;
-      rateMin = 11; rateMax = 12;
-    } else if (score >= 80) {
-      loanMin = baseAmount * 0.7;
-      loanMax = baseAmount * 0.9;
-      rateMin = 12; rateMax = 13;
-    } else if (score >= 70) {
-      loanMin = baseAmount * 0.5;
-      loanMax = baseAmount * 0.7;
-      rateMin = 13; rateMax = 14;
+    if (score >= 80) {
+      loanMin = baseAmount * 0.9; loanMax = baseAmount;
+      rateMin = 10.5; rateMax = 11.5;
+    } else if (score >= 65) {
+      loanMin = baseAmount * 0.7; loanMax = baseAmount * 0.9;
+      rateMin = 11.5; rateMax = 12.5;
     } else if (score >= 50) {
-      loanMin = baseAmount * 0.3;
-      loanMax = baseAmount * 0.5;
-      rateMin = 14; rateMax = 15;
+      loanMin = baseAmount * 0.5; loanMax = baseAmount * 0.7;
+      rateMin = 12.5; rateMax = 13.5;
+    } else if (score >= 40) {
+      loanMin = baseAmount * 0.3; loanMax = baseAmount * 0.5;
+      rateMin = 13.5; rateMax = 14.5;
     }
     
-    // Matching lenders based on score
-    const lenders = [];
-    if (score >= 70) lenders.push('HDFC Credila', 'Avanse');
-    if (score >= 60) lenders.push('ICICI Bank');
-    if (score >= 50) lenders.push('Auxilo', 'InCred');
+    // Count active lenders
+    const { count } = await supabase
+      .from('lenders')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
     
     return {
       score: Math.round(score),
       result,
       breakdown: {
-        university: { score: universityScore, grade: universityScore >= 65 ? 'A' : universityScore >= 50 ? 'B' : 'C' },
-        coApplicant: { 
-          score: salaryScore, 
-          salaryBand: salary >= 100000 ? 'Above 1L' : salary >= 50000 ? '50K-1L' : 'Below 50K' 
-        },
+        university: { score: universityScore, grade: universityGrade },
+        coApplicant: { score: salaryScore, salaryBand },
       },
       estimatedLoanMin: loanMin,
       estimatedLoanMax: loanMax,
       estimatedRateMin: rateMin,
       estimatedRateMax: rateMax,
-      matchingLenders: lenders,
+      lenderCount: count || 4,
       leadId: '',
-      caseId: '',
     };
   };
 
@@ -315,8 +325,8 @@ export const EligibilityCheckModal = ({
       const loanAmount = parseInt(formData.loan_amount.replace(/,/g, ''));
       const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
       
-      // Calculate eligibility locally first
-      const eligibility = calculateEligibility(loanAmount, salary, formData.university_id);
+      // Calculate eligibility (now async)
+      const eligibility = await calculateEligibility(loanAmount, salary, formData.university_id);
 
       // Create lead via edge function
       const { data, error } = await supabase.functions.invoke('create-lead-quick', {
@@ -330,11 +340,9 @@ export const EligibilityCheckModal = ({
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_name: 'Co-Applicant', // Placeholder
           co_applicant_monthly_salary: salary,
-          // Mark as eligibility check
           source: 'eligibility_check',
           eligibility_score: eligibility.score,
           eligibility_result: eligibility.result,
-          // Partner ID for admins
           partner_id: partnerId,
         }
       });
@@ -347,10 +355,7 @@ export const EligibilityCheckModal = ({
         throw new Error(data.error || 'Failed to check eligibility');
       }
 
-      // Update result with lead info
       eligibility.leadId = data.lead.id;
-      eligibility.caseId = data.lead.case_id;
-      
       setResult(eligibility);
       toast.success('Eligibility check complete!');
       onSuccess?.(data.lead.id);
@@ -454,24 +459,15 @@ export const EligibilityCheckModal = ({
               </div>
             )}
 
-            {/* Matching Lenders */}
-            {result.matchingLenders.length > 0 && (
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium">Matching Lenders</h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {result.matchingLenders.map((lender) => (
-                    <span key={lender} className="px-2 py-0.5 bg-muted rounded text-xs">
-                      {lender}
-                    </span>
-                  ))}
-                </div>
+            {/* Lender Availability Message */}
+            {result.lenderCount > 0 && (
+              <div className="flex items-center gap-2 bg-green-50 text-green-700 p-3 rounded-lg border border-green-200">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span className="font-medium">
+                  {result.lenderCount}+ lenders are ready to fund this application
+                </span>
               </div>
             )}
-
-            {/* Case ID */}
-            <div className="text-center text-xs text-muted-foreground pt-2 border-t">
-              Lead created: {result.caseId}
-            </div>
           </div>
 
           {/* Actions */}
