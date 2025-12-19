@@ -368,34 +368,39 @@ export async function downloadLeadPackage(
       .eq('id', lead.id)
       .maybeSingle();
 
+    // Extract first element from arrays (Supabase returns joined data as arrays when isOneToOne: false)
+    const studentData = fullLeadData ? (Array.isArray(fullLeadData.student) ? fullLeadData.student[0] : fullLeadData.student) : null;
+    const coApplicantData = fullLeadData ? (Array.isArray(fullLeadData.co_applicant) ? fullLeadData.co_applicant[0] : fullLeadData.co_applicant) : null;
+    const lenderData = fullLeadData ? (Array.isArray(fullLeadData.lender) ? fullLeadData.lender[0] : fullLeadData.lender) : null;
+
     // Use fetched data or fall back to passed lead data
     const completeLead: LeadData = fullLeadData ? {
       id: fullLeadData.id,
       case_id: fullLeadData.case_id,
-      student: fullLeadData.student ? {
-        name: fullLeadData.student.name,
-        phone: fullLeadData.student.phone,
-        email: fullLeadData.student.email,
-        postal_code: fullLeadData.student.postal_code,
-        city: fullLeadData.student.city,
-        state: fullLeadData.student.state,
-        date_of_birth: fullLeadData.student.date_of_birth,
-        highest_qualification: fullLeadData.student.highest_qualification,
+      student: studentData ? {
+        name: studentData.name,
+        phone: studentData.phone,
+        email: studentData.email,
+        postal_code: studentData.postal_code,
+        city: studentData.city,
+        state: studentData.state,
+        date_of_birth: studentData.date_of_birth,
+        highest_qualification: studentData.highest_qualification,
       } : lead.student,
-      co_applicant: fullLeadData.co_applicant ? {
-        name: fullLeadData.co_applicant.name,
-        relationship: fullLeadData.co_applicant.relationship,
-        salary: fullLeadData.co_applicant.salary,
-        phone: fullLeadData.co_applicant.phone,
-        email: fullLeadData.co_applicant.email,
-        pin_code: fullLeadData.co_applicant.pin_code,
-        occupation: fullLeadData.co_applicant.occupation,
-        employer: fullLeadData.co_applicant.employer,
+      co_applicant: coApplicantData ? {
+        name: coApplicantData.name,
+        relationship: coApplicantData.relationship,
+        salary: coApplicantData.salary,
+        phone: coApplicantData.phone,
+        email: coApplicantData.email,
+        pin_code: coApplicantData.pin_code,
+        occupation: coApplicantData.occupation,
+        employer: coApplicantData.employer,
       } : lead.co_applicant,
       loan_amount: fullLeadData.loan_amount,
       loan_type: fullLeadData.loan_type,
       loan_classification: fullLeadData.loan_classification,
-      lender: fullLeadData.lender ? { name: fullLeadData.lender.name } : lead.lender,
+      lender: lenderData ? { name: lenderData.name } : lead.lender,
       study_destination: fullLeadData.study_destination,
       intake_month: fullLeadData.intake_month,
       intake_year: fullLeadData.intake_year,
