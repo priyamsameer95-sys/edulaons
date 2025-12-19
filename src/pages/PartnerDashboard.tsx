@@ -230,6 +230,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         onClose={() => setShowEligibilityCheck(false)}
         onSuccess={handleLeadSuccess}
         onContinueApplication={handleEligibilityContinue}
+        partnerId={partner?.id}
       />
 
       {/* Complete Lead Modal */}

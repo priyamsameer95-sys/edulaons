@@ -79,7 +79,7 @@ serve(async (req) => {
     }
     console.log('✅ User authenticated:', user.id);
 
-    // Verify user is a partner
+    // Verify user is a partner or admin
     const { data: appUser, error: appUserError } = await supabaseAdmin
       .from('app_users')
       .select('id, role, partner_id, is_active')
@@ -94,13 +94,31 @@ serve(async (req) => {
       throw new Error('Your account is inactive. Please contact support.');
     }
 
-    if (appUser.role !== 'partner' || !appUser.partner_id) {
-      throw new Error('Quick lead creation is only available for partners');
-    }
-    console.log('✅ Partner verified:', appUser.partner_id);
+    // Allow partners and admins
+    const isAdmin = appUser.role === 'admin' || appUser.role === 'super_admin';
+    const isPartner = appUser.role === 'partner';
 
-    // Parse request
-    const body = await req.json();
+    if (!isAdmin && !isPartner) {
+      throw new Error('Quick lead creation is only available for partners and admins');
+    }
+
+    // For partners, use their partner_id. For admins, use the one from request body
+    let partnerId = appUser.partner_id;
+    if (isAdmin) {
+      // Parse request early for admins to get partner_id
+      const bodyText = await req.text();
+      const body = JSON.parse(bodyText);
+      partnerId = body.partner_id;
+      if (!partnerId) {
+        throw new Error('Admins must specify a partner_id');
+      }
+      // Store parsed body for later use
+      (req as any)._parsedBody = body;
+    }
+    console.log('✅ User verified:', appUser.role, 'Partner:', partnerId);
+
+    // Parse request (may already be parsed for admins)
+    const body = (req as any)._parsedBody || await req.json();
 
     // Validate required fields
     const missingFields: string[] = [];
@@ -232,7 +250,7 @@ serve(async (req) => {
       case_id: caseId,
       student_id: studentId,
       co_applicant_id: coApplicant.id,
-      partner_id: appUser.partner_id,
+      partner_id: partnerId,
       lender_id: lender.id,
       loan_amount: loanAmount,
       loan_type: 'unsecured', // Most common
