@@ -27,7 +27,7 @@ export default function PartnerDocumentPage() {
 
   const handleDocSelect = (docTypeId: string) => {
     setSelectedDocType(docTypeId);
-    document.getElementById('upload-section')?.scrollIntoView();
+    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'instant' });
   };
 
   const handleUploadSuccess = () => {
