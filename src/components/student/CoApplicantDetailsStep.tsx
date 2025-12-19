@@ -363,6 +363,33 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
               <p className="text-sm text-destructive">{errors.coApplicantPinCode}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <Label htmlFor="coApplicantCreditScore">Credit Score (Optional)</Label>
+              <CoachingTooltip content="CIBIL credit score between 300-900. Higher scores improve loan approval chances. Leave empty if not available." />
+            </div>
+            <Input
+              id="coApplicantCreditScore"
+              type="number"
+              min={300}
+              max={900}
+              placeholder="e.g., 750"
+              value={data.coApplicantCreditScore || ''}
+              onChange={(e) => {
+                const value = e.target.value ? parseInt(e.target.value) : undefined;
+                handleChange('coApplicantCreditScore', value);
+              }}
+            />
+            {data.coApplicantCreditScore && data.coApplicantCreditScore >= 300 && data.coApplicantCreditScore <= 900 && (
+              <p className="text-sm text-muted-foreground">
+                {data.coApplicantCreditScore >= 750 ? '✓ Excellent credit score' :
+                 data.coApplicantCreditScore >= 700 ? '✓ Good credit score' :
+                 data.coApplicantCreditScore >= 650 ? 'Average credit score' :
+                 'Below average credit score'}
+              </p>
+            )}
+          </div>
         </div>
       </Card>
 

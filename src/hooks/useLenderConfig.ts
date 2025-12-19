@@ -129,6 +129,22 @@ const DEFAULT_CONFIG: Omit<LenderConfig, 'id' | 'lender_id'> = {
       '50k_to_75k': 20,
       below_50k: 10,
     },
+    credit_score_student: {
+      '750_plus': 15,
+      '700_to_749': 12,
+      '650_to_699': 8,
+      '600_to_649': 4,
+      below_600: 0,
+      not_provided: 5,
+    },
+    credit_score_co_applicant: {
+      '750_plus': 20,
+      '700_to_749': 15,
+      '650_to_699': 10,
+      '600_to_649': 5,
+      below_600: 0,
+      not_provided: 8,
+    },
   },
 };
 

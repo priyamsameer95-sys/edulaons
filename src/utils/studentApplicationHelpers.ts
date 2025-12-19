@@ -109,6 +109,10 @@ export const transformToEdgeFunctionPayload = (
     co_applicant_employer: data.coApplicantEmployer,
     co_applicant_employment_duration: data.coApplicantEmploymentDuration,
     co_applicant_pin_code: data.coApplicantPinCode.trim(),
+    
+    // Optional credit scores
+    student_credit_score: data.creditScore,
+    co_applicant_credit_score: data.coApplicantCreditScore,
   };
 };
 

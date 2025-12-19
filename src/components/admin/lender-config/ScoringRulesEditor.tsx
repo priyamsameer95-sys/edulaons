@@ -415,6 +415,126 @@ export const ScoringRulesEditor = ({ rules, onChange }: ScoringRulesEditorProps)
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          {/* Student Credit Score */}
+          <AccordionItem value="student-credit-score">
+            <AccordionTrigger>Student Credit Score Points (Optional)</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Points awarded based on student's CIBIL credit score. "Not Provided" points are used when the score is not submitted.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>750+ (Excellent)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_student?.['750_plus'] ?? 15}
+                    onChange={(e) => updateRule(['credit_score_student', '750_plus'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>700-749 (Good)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_student?.['700_to_749'] ?? 12}
+                    onChange={(e) => updateRule(['credit_score_student', '700_to_749'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>650-699 (Average)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_student?.['650_to_699'] ?? 8}
+                    onChange={(e) => updateRule(['credit_score_student', '650_to_699'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>600-649 (Below Avg)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_student?.['600_to_649'] ?? 4}
+                    onChange={(e) => updateRule(['credit_score_student', '600_to_649'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Below 600 (Poor)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_student?.below_600 ?? 0}
+                    onChange={(e) => updateRule(['credit_score_student', 'below_600'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Not Provided</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_student?.not_provided ?? 5}
+                    onChange={(e) => updateRule(['credit_score_student', 'not_provided'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Co-Applicant Credit Score */}
+          <AccordionItem value="co-applicant-credit-score">
+            <AccordionTrigger>Co-Applicant Credit Score Points (Optional)</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Points awarded based on co-applicant's CIBIL credit score. "Not Provided" points are used when the score is not submitted.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>750+ (Excellent)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_co_applicant?.['750_plus'] ?? 20}
+                    onChange={(e) => updateRule(['credit_score_co_applicant', '750_plus'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>700-749 (Good)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_co_applicant?.['700_to_749'] ?? 15}
+                    onChange={(e) => updateRule(['credit_score_co_applicant', '700_to_749'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>650-699 (Average)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_co_applicant?.['650_to_699'] ?? 10}
+                    onChange={(e) => updateRule(['credit_score_co_applicant', '650_to_699'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>600-649 (Below Avg)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_co_applicant?.['600_to_649'] ?? 5}
+                    onChange={(e) => updateRule(['credit_score_co_applicant', '600_to_649'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Below 600 (Poor)</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_co_applicant?.below_600 ?? 0}
+                    onChange={(e) => updateRule(['credit_score_co_applicant', 'below_600'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Not Provided</Label>
+                  <Input
+                    type="number"
+                    value={rules.credit_score_co_applicant?.not_provided ?? 8}
+                    onChange={(e) => updateRule(['credit_score_co_applicant', 'not_provided'], parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </CardContent>
     </Card>

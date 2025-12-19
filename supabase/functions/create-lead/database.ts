@@ -161,7 +161,8 @@ export async function createStudent(
         tenth_percentage: body.tenth_percentage || existingStudent.tenth_percentage,
         twelfth_percentage: body.twelfth_percentage || existingStudent.twelfth_percentage,
         bachelors_percentage: body.bachelors_percentage || existingStudent.bachelors_percentage,
-        bachelors_cgpa: body.bachelors_cgpa || existingStudent.bachelors_cgpa
+        bachelors_cgpa: body.bachelors_cgpa || existingStudent.bachelors_cgpa,
+        credit_score: body.student_credit_score || existingStudent.credit_score
       };
       
       const { data: updatedStudent, error: updateError } = await supabaseAdmin
@@ -196,7 +197,8 @@ export async function createStudent(
     tenth_percentage: body.tenth_percentage || null,
     twelfth_percentage: body.twelfth_percentage || null,
     bachelors_percentage: body.bachelors_percentage || null,
-    bachelors_cgpa: body.bachelors_cgpa || null
+    bachelors_cgpa: body.bachelors_cgpa || null,
+    credit_score: body.student_credit_score || null
   };
   
   const { data: student, error } = await supabaseAdmin
@@ -234,7 +236,8 @@ export async function createCoApplicant(
     occupation: body.co_applicant_occupation || null,
     employer: body.co_applicant_employer || null,
     employment_duration_years: body.co_applicant_employment_duration || null,
-    pin_code: body.co_applicant_pin_code.trim()
+    pin_code: body.co_applicant_pin_code.trim(),
+    credit_score: body.co_applicant_credit_score || null
   };
   
   const { data: coApplicant, error } = await supabaseAdmin

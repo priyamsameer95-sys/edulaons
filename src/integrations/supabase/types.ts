@@ -336,6 +336,7 @@ export type Database = {
       co_applicants: {
         Row: {
           created_at: string
+          credit_score: number | null
           documents_required: boolean | null
           email: string | null
           employer: string | null
@@ -355,6 +356,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credit_score?: number | null
           documents_required?: boolean | null
           email?: string | null
           employer?: string | null
@@ -374,6 +376,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credit_score?: number | null
           documents_required?: boolean | null
           email?: string | null
           employer?: string | null
@@ -1533,6 +1536,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          credit_score: number | null
           date_of_birth: string | null
           email: string
           email_invite_sent: boolean | null
@@ -1558,6 +1562,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          credit_score?: number | null
           date_of_birth?: string | null
           email: string
           email_invite_sent?: boolean | null
@@ -1583,6 +1588,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          credit_score?: number | null
           date_of_birth?: string | null
           email?: string
           email_invite_sent?: boolean | null
