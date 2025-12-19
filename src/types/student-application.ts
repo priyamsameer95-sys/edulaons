@@ -24,6 +24,7 @@ export interface PersonalDetails {
   state?: string;
   postalCode: string;
   nationality: string;
+  creditScore?: number; // Optional CIBIL score (300-900)
 }
 
 export interface AcademicBackground {
@@ -56,6 +57,7 @@ export interface CoApplicantDetails {
   coApplicantEmployer?: string;
   coApplicantEmploymentDuration?: number;
   coApplicantPinCode: string;
+  coApplicantCreditScore?: number; // Optional CIBIL score (300-900)
 }
 
 export interface StudentApplicationData 
@@ -116,4 +118,8 @@ export interface EdgeFunctionPayload {
   co_applicant_employer?: string;
   co_applicant_employment_duration?: number;
   co_applicant_pin_code: string;
+  
+  // Optional credit scores
+  student_credit_score?: number;
+  co_applicant_credit_score?: number;
 }

@@ -183,6 +183,33 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
           required
         />
 
+        <div className="space-y-2">
+          <div className="flex items-center gap-1">
+            <Label htmlFor="creditScore">Credit Score (Optional)</Label>
+            <CoachingTooltip content="Your CIBIL credit score between 300-900. This is optional but can improve your eligibility assessment." />
+          </div>
+          <FloatingLabelInput
+            label="Credit Score"
+            type="number"
+            value={data.creditScore?.toString() || ''}
+            onChange={(e) => {
+              const value = e.target.value ? parseInt(e.target.value) : undefined;
+              onUpdate({ creditScore: value });
+            }}
+            placeholder=" "
+            helperText="CIBIL score (300-900)"
+            isValid={!!data.creditScore && data.creditScore >= 300 && data.creditScore <= 900}
+          />
+          {data.creditScore && data.creditScore >= 300 && data.creditScore <= 900 && (
+            <p className="text-sm text-muted-foreground">
+              {data.creditScore >= 750 ? '✓ Excellent credit score' :
+               data.creditScore >= 700 ? '✓ Good credit score' :
+               data.creditScore >= 650 ? 'Average credit score' :
+               'Below average credit score'}
+            </p>
+          )}
+        </div>
+
       </div>
 
       <div className="flex justify-end stagger-fade-3">
