@@ -12,6 +12,7 @@ import { AddNewLeadModal } from "@/components/partner/AddNewLeadModal";
 import { EligibilityCheckModal } from "@/components/partner/EligibilityCheckModal";
 import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
 import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
+import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
 import { Partner } from "@/types/partner";
 import { RefactoredLead, mapDbRefactoredLeadToLead } from "@/types/refactored-lead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -224,7 +225,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {isAdmin() && (
               <Button
                 variant="ghost"
@@ -234,6 +235,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
                 Admin
               </Button>
             )}
+            <PartnerNotificationBell partnerId={partner?.id} />
             <Button
               variant="ghost"
               size="sm"
