@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { X, Loader2, CheckCircle2, ChevronLeft, ChevronRight, User, GraduationCap, Users } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronLeft, ChevronRight, User, GraduationCap, Users, ArrowRight, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,8 @@ interface AddNewLeadModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onContinueApplication?: (leadId: string) => void;
+  onUploadDocuments?: (leadId: string) => void;
   partnerId?: string;
 }
 
@@ -143,13 +145,14 @@ const STEPS = [
   { id: 3, title: "Co-Applicant", icon: Users },
 ];
 
-export const AddNewLeadModal = ({ open, onClose, onSuccess, partnerId }: AddNewLeadModalProps) => {
+export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplication, onUploadDocuments, partnerId }: AddNewLeadModalProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdCaseId, setCreatedCaseId] = useState<string | null>(null);
+  const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
 
   const handleInputChange = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -355,17 +358,10 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, partnerId }: AddNewL
       if (!data.success) throw new Error(data.error || 'Failed to create lead');
 
       setCreatedCaseId(data.lead.case_id);
+      setCreatedLeadId(data.lead.id);
       setShowSuccess(true);
       toast.success('Lead created successfully!');
-
-      setTimeout(() => {
-        setFormData(initialFormData);
-        setCurrentStep(1);
-        setShowSuccess(false);
-        setCreatedCaseId(null);
-        onSuccess?.();
-        onClose();
-      }, 2000);
+      onSuccess?.();
 
     } catch (error: any) {
       toast.error(error.message || 'Failed to create lead');
@@ -380,7 +376,23 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, partnerId }: AddNewL
       setErrors({});
       setCurrentStep(1);
       setShowSuccess(false);
+      setCreatedCaseId(null);
+      setCreatedLeadId(null);
       onClose();
+    }
+  };
+
+  const handleCompleteApplication = () => {
+    if (createdLeadId && onContinueApplication) {
+      handleClose();
+      onContinueApplication(createdLeadId);
+    }
+  };
+
+  const handleUploadDocs = () => {
+    if (createdLeadId && onUploadDocuments) {
+      handleClose();
+      onUploadDocuments(createdLeadId);
     }
   };
 
@@ -416,18 +428,51 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, partnerId }: AddNewL
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md">
-          <div className="flex flex-col items-center justify-center py-8 gap-4">
+          <div className="flex flex-col items-center justify-center py-6 gap-4">
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
             <div className="text-center">
               <h3 className="font-semibold text-lg">Lead Created Successfully!</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Case ID: {createdCaseId}
+                Case ID: <span className="font-mono font-medium">{createdCaseId}</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-3">
+              <p className="text-xs text-muted-foreground mt-2">
                 All details have been captured. The lead is ready for processing.
               </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="w-full space-y-2 mt-2">
+              {onContinueApplication && (
+                <Button 
+                  onClick={handleCompleteApplication} 
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  Continue to Complete
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {onUploadDocuments && (
+                <Button 
+                  onClick={handleUploadDocs} 
+                  variant="outline" 
+                  className="w-full gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Upload Documents
+                </Button>
+              )}
+              
+              <Button 
+                onClick={handleClose} 
+                variant="ghost" 
+                className="w-full text-muted-foreground"
+              >
+                Done for Now
+              </Button>
             </div>
           </div>
         </DialogContent>

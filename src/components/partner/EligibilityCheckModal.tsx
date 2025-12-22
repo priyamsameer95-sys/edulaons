@@ -23,6 +23,7 @@ interface EligibilityCheckModalProps {
   onClose: () => void;
   onSuccess?: (leadId: string) => void;
   onContinueApplication?: (leadId: string) => Promise<void> | void;
+  onUploadDocuments?: (leadId: string) => Promise<void> | void;
   partnerId?: string;
 }
 
@@ -195,6 +196,7 @@ export const EligibilityCheckModal = ({
   onClose, 
   onSuccess,
   onContinueApplication,
+  onUploadDocuments,
   partnerId
 }: EligibilityCheckModalProps) => {
   const [quickForm, setQuickForm] = useState<QuickFormData>(initialQuickForm);
