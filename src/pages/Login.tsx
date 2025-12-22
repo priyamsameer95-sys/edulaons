@@ -256,14 +256,21 @@ const Login = () => {
         </div>
 
         {/* RIGHT SIDE - LOGIN FORM */}
-        <div className="flex flex-col items-center justify-center p-6 sm:p-8 lg:p-10 bg-background relative overflow-y-auto">
+        <div className="flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-background via-background to-muted/30 relative overflow-y-auto">
+          {/* Decorative background elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-primary/3 to-transparent rounded-full blur-3xl" />
+          </div>
+          
           {/* Partner Login - Top Right */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
             <Button 
-              variant="ghost" 
+              variant="outline" 
               size="sm" 
               asChild
-              className="gap-2 text-muted-foreground hover:text-foreground"
+              className="gap-2 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm shadow-sm border-border/50 hover:border-primary/30 transition-all"
             >
               <Link to="/partner">
                 <Briefcase className="h-4 w-4" />
@@ -273,63 +280,70 @@ const Login = () => {
           </div>
 
           {/* Mobile Hero - Shown only on small screens */}
-          <div className="lg:hidden text-center mb-6 pt-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3">
-              <CheckCircle2 className="w-3 h-3" />
+          <div className="lg:hidden text-center mb-8 pt-14 relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-blue-500/10 text-primary text-xs font-semibold mb-4 border border-primary/20 shadow-sm">
+              <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Trusted by 10,000+ students</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-              Your Dream University is Within Reach
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 leading-tight">
+              Your Dream University<br />
+              <span className="bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">is Within Reach</span>
             </h1>
-            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
               Secure your education loan in minutes — with top lenders and fast approvals.
             </p>
             
             {/* Mobile Stats */}
-            <div className="grid grid-cols-2 gap-2 mt-4 max-w-xs mx-auto">
+            <div className="grid grid-cols-2 gap-3 mt-6 max-w-sm mx-auto">
               {stats.slice(0, 2).map((stat, index) => (
-                <div key={index} className="bg-muted/50 rounded-xl p-3 text-center">
-                  <span className="text-lg">{stat.icon}</span>
-                  <div className="text-lg font-bold text-foreground">{stat.value}</div>
+                <div 
+                  key={index} 
+                  className="bg-background/80 backdrop-blur-sm rounded-2xl p-4 text-center border border-border/50 shadow-sm hover:shadow-md transition-all hover:scale-[1.02]"
+                >
+                  <span className="text-2xl block mb-1">{stat.icon}</span>
+                  <div className="text-xl font-bold text-foreground">{stat.value}</div>
                   <div className="text-xs text-muted-foreground">{stat.label}</div>
                 </div>
               ))}
             </div>
           </div>
           
-          <Card className="w-full max-w-md shadow-[0_8px_24px_rgba(0,0,0,0.08)] border rounded-2xl relative z-10">
-            <CardHeader className="text-center space-y-3 pb-4 pt-6 px-6">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#3B82F6] flex items-center justify-center shadow-lg">
-                  <GraduationCap className="w-7 h-7 text-white" />
+          <Card className="w-full max-w-md shadow-2xl shadow-primary/5 border border-border/50 rounded-3xl relative z-10 bg-background/95 backdrop-blur-sm">
+            <CardHeader className="text-center space-y-4 pb-2 pt-8 px-8">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-blue-500 rounded-2xl blur-xl opacity-40 animate-pulse" />
+                  <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#3B82F6] flex items-center justify-center shadow-xl shadow-primary/25">
+                    <GraduationCap className="w-8 h-8 text-white" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h2 className="text-xl font-bold text-foreground">
+                <div className="space-y-1.5">
+                  <h2 className="text-2xl font-bold text-foreground">
                     Welcome, Future Graduate!
                   </h2>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-sm text-muted-foreground">
                     Start your education loan journey today.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-4 px-6 pb-6">
+            <CardContent className="space-y-5 px-8 pb-8">
               <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-11 mb-5 rounded-xl">
-                  <TabsTrigger value="signin" className="text-sm rounded-lg data-[state=active]:shadow-sm">
+                <TabsList className="grid w-full grid-cols-2 h-12 mb-6 rounded-xl bg-muted/50 p-1">
+                  <TabsTrigger value="signin" className="text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                     Sign In
                   </TabsTrigger>
-                  <TabsTrigger value="signup" className="text-sm rounded-lg data-[state=active]:shadow-sm">
+                  <TabsTrigger value="signup" className="text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                     Sign Up
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="signin" className="space-y-4 mt-0">
+                <TabsContent value="signin" className="space-y-5 mt-0 animate-fade-in">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <Mail className="h-4 w-4 text-primary/60" />
                         Email
                       </Label>
                       <Input
@@ -340,12 +354,12 @@ const Login = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        className="h-11 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="h-12 rounded-xl bg-muted/30 border-border/50 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Lock className="h-4 w-4 text-primary/60" />
                         Password
                       </Label>
                       <Input
@@ -356,55 +370,63 @@ const Login = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         required
-                        className="h-11 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="h-12 rounded-xl bg-muted/30 border-border/50 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
                       />
                     </div>
                     
-                    <div className="pt-2 space-y-3">
+                    <div className="pt-3 space-y-3">
                       <LoadingButton 
                         type="submit" 
-                        className="w-full h-12 font-semibold text-base gap-2 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-md" 
+                        className="w-full h-13 py-3.5 font-semibold text-base gap-2 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/25" 
                         loading={isLoading}
                         loadingText="Verifying your details..."
                       >
                         Start My Loan Journey
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-5 h-5" />
                       </LoadingButton>
                       
                       <p className="text-xs text-center text-muted-foreground">
-                        Takes under 2 minutes. No credit score impact.
+                        ⚡ Takes under 2 minutes. No credit score impact.
                       </p>
                     </div>
                   </form>
                   
                   <p className="text-sm text-center text-muted-foreground pt-2">
-                    New here? <button onClick={() => {}} className="font-medium text-primary hover:underline">Switch to Sign Up</button>
+                    New here? <button onClick={() => {}} className="font-semibold text-primary hover:underline underline-offset-2">Switch to Sign Up</button>
                   </p>
 
                   {/* Trust Indicators */}
-                  <div className="space-y-2 pt-4 border-t">
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                      <Shield className="h-4 w-4 text-emerald-500" />
-                      <span>Your data is encrypted and secure</span>
+                  <div className="flex items-center justify-center gap-6 pt-5 border-t border-border/50">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                      </div>
+                      <span>Encrypted</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                      <Zap className="h-4 w-4 text-amber-500" />
-                      <span>Get pre-approved results in under 30 seconds</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                        <Zap className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <span>30s Pre-approval</span>
                     </div>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="signup" className="space-y-4 mt-0">
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                    <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                      <span className="font-semibold">Create your free account</span> • Track applications • Get instant updates
+                <TabsContent value="signup" className="space-y-5 mt-0 animate-fade-in">
+                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200/50 dark:border-emerald-800/50">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                      <span className="font-semibold">Create your free account</span>
+                      <br />
+                      <span className="text-xs opacity-80">Track applications • Get instant updates • Secure docs</span>
                     </p>
                   </div>
 
-                  <form onSubmit={handleSignUp} className="space-y-3">
+                  <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label htmlFor="signup-name" className="text-sm font-medium">Full Name</Label>
                         <Input
                           id="signup-name"
@@ -414,10 +436,10 @@ const Login = () => {
                           value={signUpData.name}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-10 rounded-xl"
+                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label htmlFor="signup-phone" className="text-sm font-medium">Phone</Label>
                         <Input
                           id="signup-phone"
@@ -427,14 +449,14 @@ const Login = () => {
                           value={signUpData.phone}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-10 rounded-xl"
+                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
                         />
                       </div>
                     </div>
                     
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Label htmlFor="signup-email" className="text-sm font-medium flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <Mail className="h-4 w-4 text-primary/60" />
                         Email
                       </Label>
                       <Input
@@ -445,77 +467,79 @@ const Login = () => {
                         value={signUpData.email}
                         onChange={handleSignUpInputChange}
                         required
-                        className="h-10 rounded-xl"
+                        className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
                       />
                     </div>
                     
-                    <div className="space-y-1.5">
-                      <Label htmlFor="signup-password" className="text-sm font-medium flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                        Password
-                      </Label>
-                      <Input
-                        id="signup-password"
-                        name="password"
-                        type="password"
-                        placeholder="Min. 6 characters"
-                        value={signUpData.password}
-                        onChange={handleSignUpInputChange}
-                        required
-                        minLength={6}
-                        className="h-10 rounded-xl"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
+                        <Input
+                          id="signup-password"
+                          name="password"
+                          type="password"
+                          placeholder="Min. 6 chars"
+                          value={signUpData.password}
+                          onChange={handleSignUpInputChange}
+                          required
+                          minLength={6}
+                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-confirm-password" className="text-sm font-medium">Confirm</Label>
+                        <Input
+                          id="signup-confirm-password"
+                          name="confirmPassword"
+                          type="password"
+                          placeholder="Re-enter"
+                          value={signUpData.confirmPassword}
+                          onChange={handleSignUpInputChange}
+                          required
+                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                        />
+                      </div>
                     </div>
-                    
-                    <div className="space-y-1.5">
-                      <Label htmlFor="signup-confirm-password" className="text-sm font-medium">Confirm Password</Label>
-                      <Input
-                        id="signup-confirm-password"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="Re-enter password"
-                        value={signUpData.confirmPassword}
-                        onChange={handleSignUpInputChange}
-                        required
-                        className="h-10 rounded-xl"
-                      />
-                      {signUpData.confirmPassword && (
-                        <p className={`text-xs ${signUpData.password === signUpData.confirmPassword ? "text-emerald-600" : "text-destructive"}`}>
-                          {signUpData.password === signUpData.confirmPassword ? "✓ Passwords match" : "Passwords don't match"}
-                        </p>
-                      )}
-                    </div>
+                    {signUpData.confirmPassword && (
+                      <p className={`text-xs ${signUpData.password === signUpData.confirmPassword ? "text-emerald-600" : "text-destructive"}`}>
+                        {signUpData.password === signUpData.confirmPassword ? "✓ Passwords match" : "✗ Passwords don't match"}
+                      </p>
+                    )}
                     
                     <div className="pt-2 space-y-3">
                       <LoadingButton 
                         type="submit" 
-                        className="w-full h-12 font-semibold text-base gap-2 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-md" 
+                        className="w-full h-13 py-3.5 font-semibold text-base gap-2 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/25" 
                         loading={isLoading}
                         loadingText="Creating your account..."
                       >
                         Start My Loan Journey
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-5 h-5" />
                       </LoadingButton>
                       
                       <p className="text-xs text-center text-muted-foreground">
-                        Takes under 2 minutes. No credit score impact.
+                        ⚡ Takes under 2 minutes. No credit score impact.
                       </p>
                     </div>
                   </form>
                   
                   <p className="text-sm text-center text-muted-foreground pt-2">
-                    Already have an account? <button onClick={() => {}} className="font-medium text-primary hover:underline">Switch to Sign In</button>
+                    Already have an account? <button onClick={() => {}} className="font-semibold text-primary hover:underline underline-offset-2">Switch to Sign In</button>
                   </p>
 
                   {/* Trust Indicators */}
-                  <div className="space-y-2 pt-4 border-t">
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                      <Shield className="h-4 w-4 text-emerald-500" />
-                      <span>Your data is encrypted and secure</span>
+                  <div className="flex items-center justify-center gap-6 pt-5 border-t border-border/50">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                      </div>
+                      <span>Encrypted</span>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                      <Zap className="h-4 w-4 text-amber-500" />
-                      <span>Get pre-approved results in under 30 seconds</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                        <Zap className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <span>30s Pre-approval</span>
                     </div>
                   </div>
                 </TabsContent>
