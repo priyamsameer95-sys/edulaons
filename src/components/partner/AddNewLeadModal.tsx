@@ -65,13 +65,14 @@ interface FormErrors {
 }
 
 const COUNTRIES = [
-  { value: "USA", label: "USA" },
-  { value: "UK", label: "UK" },
-  { value: "Canada", label: "Canada" },
-  { value: "Australia", label: "Australia" },
-  { value: "Germany", label: "Germany" },
-  { value: "Ireland", label: "Ireland" },
-  { value: "New Zealand", label: "New Zealand" },
+  { value: "United States", label: "🇺🇸 USA" },
+  { value: "United Kingdom", label: "🇬🇧 UK" },
+  { value: "Canada", label: "🇨🇦 Canada" },
+  { value: "Australia", label: "🇦🇺 Australia" },
+  { value: "Germany", label: "🇩🇪 Germany" },
+  { value: "Ireland", label: "🇮🇪 Ireland" },
+  { value: "New Zealand", label: "🇳🇿 New Zealand" },
+  { value: "Not Specified", label: "🌍 Other" },
 ];
 
 const RELATIONSHIPS = [

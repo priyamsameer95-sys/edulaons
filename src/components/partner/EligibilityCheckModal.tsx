@@ -51,12 +51,13 @@ interface SaveFormErrors {
 }
 
 const COUNTRIES = [
-  { value: "USA", label: "🇺🇸 USA" },
-  { value: "UK", label: "🇬🇧 UK" },
+  { value: "United States", label: "🇺🇸 USA" },
+  { value: "United Kingdom", label: "🇬🇧 UK" },
   { value: "Canada", label: "🇨🇦 Canada" },
   { value: "Australia", label: "🇦🇺 Australia" },
   { value: "Germany", label: "🇩🇪 Germany" },
   { value: "Ireland", label: "🇮🇪 Ireland" },
+  { value: "Not Specified", label: "🌍 Other" },
 ];
 
 interface EligibilityResult {
