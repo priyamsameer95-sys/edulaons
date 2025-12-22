@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useCourses } from "@/hooks/useCourses";
+import { useCourseSelection } from "@/hooks/useCourseSelection";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Course, isValidUUID } from "@/types/selection";
 
 interface CourseComboboxProps {
   universityId?: string;
@@ -38,20 +39,53 @@ export function CourseCombobox({
   error,
 }: CourseComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
-  const debouncedSearch = useDebounce(inputValue, 300);
+  const [localInput, setLocalInput] = React.useState("");
+  
+  const {
+    courses,
+    groupedCourses,
+    loading,
+    error: fetchError,
+    selectedCourse,
+    inputValue,
+    isUniversityValid,
+    searchCourses,
+    refetch,
+  } = useCourseSelection({
+    universityId,
+    initialValue: value,
+  });
 
-  const { courses, groupedCourses, loading, error: fetchError, searchCourses, refetch } = useCourses(universityId);
+  const debouncedSearch = useDebounce(localInput, 300);
 
   const filteredCourses = React.useMemo(() => {
     return searchCourses(debouncedSearch);
   }, [searchCourses, debouncedSearch]);
 
-  const selectedCourse = courses.find(c => c.id === value);
-  const displayValue = selectedCourse ? selectedCourse.program_name : value;
+  // Sync local input with selection state
+  React.useEffect(() => {
+    setLocalInput(inputValue);
+  }, [inputValue]);
 
+  const handleSelect = (course: Course) => {
+    setLocalInput(course.program_name);
+    onChange(course.id, false);
+    setOpen(false);
+  };
+
+  const handleCustomSelect = () => {
+    onChange(localInput, true);
+    setOpen(false);
+  };
+
+  const displayValue = selectedCourse?.program_name || value;
   const showNoResults = !loading && !fetchError && filteredCourses.length === 0 && debouncedSearch.length > 0;
-  const showAddCustom = inputValue.length > 0 && !courses.find(c => c.program_name.toLowerCase() === inputValue.toLowerCase());
+  const showAddCustom = localInput.length > 0 && !courses.find(c => 
+    c.program_name.toLowerCase() === localInput.toLowerCase()
+  );
+
+  // Allow custom course entry even when university is not a valid UUID
+  const isDisabled = disabled || (!universityId && !value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -65,7 +99,7 @@ export function CourseCombobox({
             !value && "text-muted-foreground",
             error && "border-destructive"
           )}
-          disabled={disabled || !universityId}
+          disabled={isDisabled}
         >
           <span className="truncate">
             {value ? displayValue : placeholder}
@@ -78,8 +112,8 @@ export function CourseCombobox({
           <div className="border-b px-3 py-2 bg-muted/30">
             <CommandInput 
               placeholder="Type to search courses or enter custom name..."
-              value={inputValue}
-              onValueChange={setInputValue}
+              value={localInput}
+              onValueChange={setLocalInput}
               className="border-0"
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -122,6 +156,13 @@ export function CourseCombobox({
 
             {!loading && !fetchError && (
               <>
+                {/* Show message for custom university */}
+                {universityId && !isUniversityValid && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground bg-muted/50 border-b">
+                    Custom university selected. Enter a course name manually.
+                  </div>
+                )}
+
                 {Object.entries(groupedCourses).map(([level, levelCourses]) => {
                   const filtered = levelCourses.filter(c => 
                     filteredCourses.find(fc => fc.id === c.id)
@@ -135,11 +176,7 @@ export function CourseCombobox({
                         <CommandItem
                           key={course.id}
                           value={course.id}
-                          onSelect={() => {
-                            onChange(course.id, false);
-                            setOpen(false);
-                            setInputValue("");
-                          }}
+                          onSelect={() => handleSelect(course)}
                           className="flex items-start gap-2 py-3"
                         >
                           <Check
@@ -180,7 +217,7 @@ export function CourseCombobox({
                   );
                 })}
 
-                {showNoResults && (
+                {showNoResults && isUniversityValid && (
                   <CommandEmpty>
                     <div className="text-center py-6">
                       <Search className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
@@ -197,17 +234,13 @@ export function CourseCombobox({
                     <CommandSeparator />
                     <CommandGroup heading="Custom Course">
                       <CommandItem
-                        onSelect={() => {
-                          onChange(inputValue, true);
-                          setOpen(false);
-                          setInputValue("");
-                        }}
+                        onSelect={handleCustomSelect}
                         className="flex items-center gap-2 bg-muted/50"
                       >
                         <Plus className="h-4 w-4 text-primary" />
                         <div className="flex-1">
                           <div className="font-medium">Use custom course name</div>
-                          <div className="text-xs text-muted-foreground">"{inputValue}"</div>
+                          <div className="text-xs text-muted-foreground">"{localInput}"</div>
                         </div>
                       </CommandItem>
                     </CommandGroup>
