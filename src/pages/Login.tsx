@@ -42,20 +42,16 @@ const Login = () => {
     phone: '',
   });
 
-  // If user is authenticated, route them to appropriate dashboard
   if (user && !loading) {
     return <DashboardRouter />;
   }
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-            <Loader2 className="h-10 w-10 animate-spin text-primary relative" />
-          </div>
-          <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground text-sm">Loading...</p>
         </div>
       </div>
     );
@@ -78,9 +74,7 @@ const Login = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signIn(formData.email, formData.password);
-    
     if (error) {
       toast({
         title: "Sign in failed",
@@ -88,13 +82,11 @@ const Login = () => {
         variant: "destructive",
       });
     }
-    
     setIsLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (signUpData.password !== signUpData.confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -103,7 +95,6 @@ const Login = () => {
       });
       return;
     }
-
     if (signUpData.password.length < 6) {
       toast({
         title: "Password too short",
@@ -112,11 +103,8 @@ const Login = () => {
       });
       return;
     }
-
     setIsLoading(true);
-    
     const { error } = await signUp(signUpData.email, signUpData.password);
-    
     if (error) {
       toast({
         title: "Sign up failed",
@@ -129,7 +117,6 @@ const Login = () => {
         description: "We've sent you a confirmation link to verify your account",
       });
     }
-    
     setIsLoading(false);
   };
 
@@ -141,7 +128,7 @@ const Login = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="h-screen bg-background relative overflow-hidden">
       {/* Partner Login - Top Right */}
       <div className="absolute top-4 right-4 z-50 sm:top-6 sm:right-6">
         <Button 
@@ -158,68 +145,59 @@ const Login = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+      <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
         {/* LEFT SIDE - STUDENT-FOCUSED HERO */}
-        <div className="hidden lg:flex flex-col justify-center p-12 xl:p-16 bg-gradient-to-br from-primary via-primary/90 to-[hsl(262,83%,58%)] relative overflow-hidden">
+        <div className="hidden lg:flex flex-col justify-center p-8 xl:p-12 bg-gradient-to-br from-primary via-primary/90 to-[hsl(262,83%,58%)] relative overflow-hidden">
           {/* Decorative elements */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
           <div className="absolute top-20 right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-white/5 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-20 left-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
           
-          {/* Floating elements */}
-          <div className="absolute top-32 right-24 w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center animate-bounce [animation-duration:3s]">
-            <GraduationCap className="w-8 h-8 text-white" />
-          </div>
-          <div className="absolute bottom-40 right-32 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center animate-bounce [animation-duration:4s] [animation-delay:1s]">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          
-          <div className="relative z-10 max-w-xl space-y-10 text-white">
+          <div className="relative z-10 max-w-lg space-y-6 text-white">
             {/* Hero Headline */}
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-sm font-medium">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-sm font-medium">
                 <Sparkles className="w-4 h-4" />
                 <span>Trusted by 10,000+ students</span>
               </div>
               
-              <h1 className="text-4xl xl:text-5xl font-brand font-bold tracking-tight leading-tight">
+              <h1 className="text-3xl xl:text-4xl font-brand font-bold tracking-tight leading-tight">
                 Your Dream University<br />
                 <span className="text-white/90">is Within Reach</span>
               </h1>
               
-              <p className="text-xl text-white/80 leading-relaxed max-w-md">
+              <p className="text-lg text-white/80 leading-relaxed">
                 Don't let finances hold you back. Get matched with the best education loans in minutes.
               </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {stats.map((stat, index) => (
                 <div 
                   key={index}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-colors"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10"
                 >
-                  <stat.icon className="w-5 h-5 mb-2 text-white/70" />
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="text-sm text-white/70">{stat.label}</div>
+                  <stat.icon className="w-4 h-4 mb-1.5 text-white/70" />
+                  <div className="text-xl font-bold">{stat.value}</div>
+                  <div className="text-xs text-white/70">{stat.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Testimonial */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-              <Quote className="w-8 h-8 text-white/40 mb-3" />
-              <p className="text-white/90 italic leading-relaxed">
-                "EduLoanPro helped me secure my MBA dream at London Business School. The process was seamless and the team was incredibly supportive!"
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <Quote className="w-6 h-6 text-white/40 mb-2" />
+              <p className="text-white/90 italic text-sm leading-relaxed">
+                "EduLoanPro helped me secure my MBA dream at London Business School. The process was seamless!"
               </p>
-              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-semibold">
+              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/10">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-semibold">
                   PS
                 </div>
                 <div>
-                  <div className="font-medium">Priya Sharma</div>
-                  <div className="text-sm text-white/60">MBA 2024, London Business School</div>
+                  <div className="text-sm font-medium">Priya Sharma</div>
+                  <div className="text-xs text-white/60">MBA 2024, LBS</div>
                 </div>
               </div>
             </div>
@@ -227,63 +205,51 @@ const Login = () => {
         </div>
 
         {/* RIGHT SIDE - LOGIN FORM */}
-        <div className="flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 bg-background relative overflow-hidden min-h-screen lg:min-h-0">
+        <div className="flex flex-col items-center justify-center p-6 sm:p-8 lg:p-10 bg-background relative overflow-y-auto">
           {/* Mobile Hero - Shown only on small screens */}
-          <div className="lg:hidden text-center mb-8 pt-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <Sparkles className="w-3.5 h-3.5" />
+          <div className="lg:hidden text-center mb-6 pt-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-3">
+              <Sparkles className="w-3 h-3" />
               <span>10,000+ students funded</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-brand font-bold text-foreground mb-2">
-              Your Dream University<br />is Within Reach
+            <h1 className="text-xl sm:text-2xl font-brand font-bold text-foreground mb-1">
+              Your Dream University is Within Reach
             </h1>
-            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-              Get matched with the best education loans in minutes
+            <p className="text-muted-foreground text-sm">
+              Get matched with the best education loans
             </p>
           </div>
           
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.5)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.5)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
-          
           <Card className="w-full max-w-md shadow-xl border relative z-10">
-            <CardHeader className="text-center space-y-4 pb-6 pt-8 px-6 sm:px-8">
-              {/* Brand Logo */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-[hsl(262,83%,58%)] rounded-2xl blur-xl opacity-40" />
-                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-[hsl(262,83%,58%)] flex items-center justify-center shadow-lg">
-                    <GraduationCap className="w-7 h-7 text-white" />
-                  </div>
+            <CardHeader className="text-center space-y-3 pb-4 pt-6 px-6">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-[hsl(262,83%,58%)] flex items-center justify-center shadow-lg">
+                  <GraduationCap className="w-6 h-6 text-white" />
                 </div>
-                
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-brand font-bold text-foreground tracking-tight">
+                <div className="space-y-0.5">
+                  <h2 className="text-xl font-brand font-bold text-foreground">
                     Welcome, Future Graduate!
                   </h2>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-xs">
                     Start your education loan journey today
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-5 px-6 sm:px-8 pb-8">
+            <CardContent className="space-y-4 px-6 pb-6">
               <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-11 mb-6">
-                  <TabsTrigger value="signin" className="text-sm font-medium">
-                    Sign In
-                  </TabsTrigger>
-                  <TabsTrigger value="signup" className="text-sm font-medium">
-                    Sign Up
-                  </TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 h-10 mb-4">
+                  <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="signin" className="space-y-5 mt-0">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                <TabsContent value="signin" className="space-y-4 mt-0">
+                  <form onSubmit={handleSignIn} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="email" className="text-sm flex items-center gap-1.5">
                         <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        Email Address
+                        Email
                       </Label>
                       <Input
                         id="email"
@@ -293,11 +259,11 @@ const Login = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        className="h-11"
+                        className="h-10"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="password" className="text-sm flex items-center gap-1.5">
                         <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                         Password
                       </Label>
@@ -309,12 +275,12 @@ const Login = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         required
-                        className="h-11"
+                        className="h-10"
                       />
                     </div>
                     <LoadingButton 
                       type="submit" 
-                      className="w-full h-11 font-medium gap-2" 
+                      className="w-full h-10 font-medium gap-2" 
                       loading={isLoading}
                       loadingText="Signing in..."
                     >
@@ -322,32 +288,27 @@ const Login = () => {
                       <ArrowRight className="w-4 h-4" />
                     </LoadingButton>
                   </form>
-
                   <p className="text-xs text-center text-muted-foreground">
-                    New here? Switch to <span className="font-medium text-primary">Sign Up</span> to create an account
+                    New here? Switch to <span className="font-medium text-primary">Sign Up</span>
                   </p>
-
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-4 border-t">
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-3 border-t">
                     <Shield className="h-3.5 w-3.5" />
                     <span>Your data is encrypted and secure</span>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="signup" className="space-y-5 mt-0">
-                  {/* Benefits preview */}
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                <TabsContent value="signup" className="space-y-4 mt-0">
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">Track applications</span> • Get updates • Secure documents
+                      <span className="font-medium text-foreground">Track applications</span> • Get updates • Secure docs
                     </p>
                   </div>
 
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-name" className="text-sm font-medium">
-                          Full Name
-                        </Label>
+                  <form onSubmit={handleSignUp} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="signup-name" className="text-sm">Name</Label>
                         <Input
                           id="signup-name"
                           name="name"
@@ -356,13 +317,11 @@ const Login = () => {
                           value={signUpData.name}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-10"
+                          className="h-9"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-phone" className="text-sm font-medium">
-                          Phone
-                        </Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="signup-phone" className="text-sm">Phone</Label>
                         <Input
                           id="signup-phone"
                           name="phone"
@@ -371,15 +330,15 @@ const Login = () => {
                           value={signUpData.phone}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-10"
+                          className="h-9"
                         />
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email" className="text-sm font-medium flex items-center gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-email" className="text-sm flex items-center gap-1.5">
                         <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        Email Address
+                        Email
                       </Label>
                       <Input
                         id="signup-email"
@@ -389,12 +348,12 @@ const Login = () => {
                         value={signUpData.email}
                         onChange={handleSignUpInputChange}
                         required
-                        className="h-10"
+                        className="h-9"
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password" className="text-sm font-medium flex items-center gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-password" className="text-sm flex items-center gap-1.5">
                         <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                         Password
                       </Label>
@@ -407,19 +366,12 @@ const Login = () => {
                         onChange={handleSignUpInputChange}
                         required
                         minLength={6}
-                        className="h-10"
+                        className="h-9"
                       />
-                      {signUpData.password && (
-                        <p className={`text-xs ${signUpData.password.length >= 6 ? "text-green-600" : "text-muted-foreground"}`}>
-                          {signUpData.password.length >= 6 ? "✓ Strong password" : `${6 - signUpData.password.length} more characters needed`}
-                        </p>
-                      )}
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
-                        Confirm Password
-                      </Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-confirm-password" className="text-sm">Confirm Password</Label>
                       <Input
                         id="signup-confirm-password"
                         name="confirmPassword"
@@ -428,7 +380,7 @@ const Login = () => {
                         value={signUpData.confirmPassword}
                         onChange={handleSignUpInputChange}
                         required
-                        className="h-10"
+                        className="h-9"
                       />
                       {signUpData.confirmPassword && (
                         <p className={`text-xs ${signUpData.password === signUpData.confirmPassword ? "text-green-600" : "text-destructive"}`}>
@@ -439,7 +391,7 @@ const Login = () => {
                     
                     <LoadingButton 
                       type="submit" 
-                      className="w-full h-11 font-medium gap-2" 
+                      className="w-full h-10 font-medium gap-2" 
                       loading={isLoading}
                       loadingText="Creating account..."
                     >
@@ -451,8 +403,7 @@ const Login = () => {
                   <p className="text-xs text-center text-muted-foreground">
                     Already have an account? Switch to <span className="font-medium text-primary">Sign In</span>
                   </p>
-
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-4 border-t">
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-3 border-t">
                     <Shield className="h-3.5 w-3.5" />
                     <span>Your data is encrypted and secure</span>
                   </div>
@@ -460,19 +411,6 @@ const Login = () => {
               </Tabs>
             </CardContent>
           </Card>
-          
-          {/* Mobile Stats - Shown only on small screens */}
-          <div className="lg:hidden grid grid-cols-2 gap-3 mt-8 w-full max-w-md">
-            {stats.slice(0, 2).map((stat, index) => (
-              <div 
-                key={index}
-                className="bg-muted/50 rounded-xl p-4 text-center"
-              >
-                <div className="text-lg font-bold text-foreground">{stat.value}</div>
-                <div className="text-xs text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
