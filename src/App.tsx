@@ -7,6 +7,7 @@ import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import Login from "./pages/Login";
+import PartnerLogin from "./pages/PartnerLogin";
 import NotFound from "./pages/NotFound";
 import NewLeadPage from "./pages/NewLeadPage";
 import PartnerDocumentPage from "./pages/PartnerDocumentPage";
@@ -32,6 +33,7 @@ const App = () => (
           
           {/* Authentication */}
           <Route path="/login" element={<Login />} />
+          <Route path="/partner/login" element={<PartnerLogin />} />
           
           {/* Public Routes - No Authentication Required */}
           <Route 

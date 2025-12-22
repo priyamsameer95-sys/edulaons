@@ -14,7 +14,6 @@ import {
   Lock, 
   Shield, 
   CheckCircle2, 
-  Briefcase,
   Zap,
   ArrowRight,
   Quote,
@@ -262,21 +261,6 @@ const Login = () => {
             <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-primary/3 to-transparent rounded-full blur-3xl" />
-          </div>
-          
-          {/* Partner Login - Top Right */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              asChild
-              className="gap-2 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm shadow-sm border-border/50 hover:border-primary/30 transition-all"
-            >
-              <Link to="/partner">
-                <Briefcase className="h-4 w-4" />
-                <span>Partner Login</span>
-              </Link>
-            </Button>
           </div>
 
           {/* Mobile Hero - Shown only on small screens */}
@@ -554,6 +538,7 @@ const Login = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© 2025 EduLoanPro. All rights reserved.</p>
           <div className="flex items-center gap-4">
+            <Link to="/partner/login" className="hover:text-foreground transition-colors">Partner Login</Link>
             <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-foreground transition-colors">Terms of Use</a>
             <a href="#" className="hover:text-foreground transition-colors">Support</a>
