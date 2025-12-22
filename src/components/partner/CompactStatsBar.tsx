@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { PartnerKPIs } from "@/types/partner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Users, ArrowRightCircle, CheckCircle2, Banknote } from "lucide-react";
 
 interface CompactStatsBarProps {
   kpis: PartnerKPIs;
@@ -17,14 +18,19 @@ interface StatItemProps {
   onClick: () => void;
   loading: boolean;
   suffix?: string;
+  icon: React.ReactNode;
+  color: string;
 }
 
-const StatItem = ({ label, value, isActive, onClick, loading, suffix }: StatItemProps) => {
+const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon, color }: StatItemProps) => {
   if (loading) {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5">
-        <Skeleton className="h-4 w-8" />
-        <Skeleton className="h-3 w-16" />
+      <div className="flex items-center gap-2 px-4 py-2">
+        <Skeleton className="h-8 w-8 rounded-lg" />
+        <div className="space-y-1">
+          <Skeleton className="h-5 w-10" />
+          <Skeleton className="h-3 w-14" />
+        </div>
       </div>
     );
   }
@@ -33,14 +39,47 @@ const StatItem = ({ label, value, isActive, onClick, loading, suffix }: StatItem
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-sm",
-        "hover:bg-accent",
-        isActive && "bg-primary/10 text-primary font-medium"
+        "group relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200",
+        "hover:bg-accent/80 hover:shadow-sm",
+        isActive && "bg-primary/10 shadow-sm ring-1 ring-primary/20"
       )}
     >
-      <span className="font-semibold">{value}</span>
-      <span className="text-muted-foreground">{label}</span>
-      {suffix && <span className="text-xs text-green-600 font-medium">{suffix}</span>}
+      {/* Icon container */}
+      <div className={cn(
+        "flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-105",
+        color,
+        isActive && "ring-2 ring-offset-1 ring-primary/30"
+      )}>
+        {icon}
+      </div>
+      
+      {/* Stats text */}
+      <div className="flex flex-col items-start">
+        <div className="flex items-center gap-1.5">
+          <span className={cn(
+            "font-bold text-lg leading-none",
+            isActive ? "text-primary" : "text-foreground"
+          )}>
+            {value}
+          </span>
+          {suffix && (
+            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-full">
+              {suffix}
+            </span>
+          )}
+        </div>
+        <span className={cn(
+          "text-xs font-medium",
+          isActive ? "text-primary/80" : "text-muted-foreground"
+        )}>
+          {label}
+        </span>
+      </div>
+      
+      {/* Active indicator */}
+      {isActive && (
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+      )}
     </button>
   );
 };
@@ -51,35 +90,60 @@ export const CompactStatsBar = ({
   activeFilter,
   onFilterClick,
 }: CompactStatsBarProps) => {
-  // Calculate conversion rate (sanctioned out of total)
   const conversionRate = kpis.totalLeads > 0 
     ? Math.round((kpis.sanctioned / kpis.totalLeads) * 100) 
     : 0;
 
   const stats = [
-    { label: "Total", value: kpis.totalLeads, filterKey: null, suffix: "" },
-    { label: "In Pipeline", value: kpis.inPipeline, filterKey: "in_pipeline", suffix: "" },
-    { label: "Sanctioned", value: kpis.sanctioned, filterKey: "sanctioned", suffix: kpis.totalLeads > 0 ? ` (${conversionRate}%)` : "" },
-    { label: "Disbursed", value: kpis.disbursed, filterKey: "disbursed", suffix: "" },
+    { 
+      label: "Total Leads", 
+      value: kpis.totalLeads, 
+      filterKey: null, 
+      suffix: "",
+      icon: <Users className="h-4 w-4 text-blue-600" />,
+      color: "bg-blue-100 dark:bg-blue-950/50"
+    },
+    { 
+      label: "In Pipeline", 
+      value: kpis.inPipeline, 
+      filterKey: "in_pipeline", 
+      suffix: "",
+      icon: <ArrowRightCircle className="h-4 w-4 text-amber-600" />,
+      color: "bg-amber-100 dark:bg-amber-950/50"
+    },
+    { 
+      label: "Sanctioned", 
+      value: kpis.sanctioned, 
+      filterKey: "sanctioned", 
+      suffix: kpis.totalLeads > 0 ? `${conversionRate}%` : "",
+      icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
+      color: "bg-emerald-100 dark:bg-emerald-950/50"
+    },
+    { 
+      label: "Disbursed", 
+      value: kpis.disbursed, 
+      filterKey: "disbursed", 
+      suffix: "",
+      icon: <Banknote className="h-4 w-4 text-violet-600" />,
+      color: "bg-violet-100 dark:bg-violet-950/50"
+    },
   ];
 
   return (
-    <div className="flex items-center gap-1 flex-wrap bg-card border rounded-lg px-2 py-1">
-      {stats.map((stat, index) => (
-        <div key={stat.label} className="flex items-center">
-          <StatItem
-            label={stat.label}
-            value={stat.value}
-            filterKey={stat.filterKey}
-            isActive={activeFilter === stat.filterKey}
-            onClick={() => onFilterClick(stat.filterKey === activeFilter ? null : stat.filterKey)}
-            loading={loading}
-            suffix={stat.suffix}
-          />
-          {index < stats.length - 1 && (
-            <span className="text-border mx-1">|</span>
-          )}
-        </div>
+    <div className="inline-flex items-center gap-1 bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-1.5 shadow-sm">
+      {stats.map((stat) => (
+        <StatItem
+          key={stat.label}
+          label={stat.label}
+          value={stat.value}
+          filterKey={stat.filterKey}
+          isActive={activeFilter === stat.filterKey}
+          onClick={() => onFilterClick(stat.filterKey === activeFilter ? null : stat.filterKey)}
+          loading={loading}
+          suffix={stat.suffix}
+          icon={stat.icon}
+          color={stat.color}
+        />
       ))}
     </div>
   );
