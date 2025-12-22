@@ -153,6 +153,34 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
     }
   };
 
+  const handleUploadDocsById = async (leadId: string): Promise<void> => {
+    // Fetch the lead and open document upload view
+    const { data: lead, error } = await supabase
+      .from('leads_new')
+      .select(`
+        *,
+        students!leads_new_student_id_fkey(*),
+        co_applicants!leads_new_co_applicant_id_fkey(*),
+        lenders!leads_new_lender_id_fkey(*),
+        partners!leads_new_partner_id_fkey(*)
+      `)
+      .eq('id', leadId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching lead for documents:', error);
+      toast.error('Failed to load lead');
+      return;
+    }
+
+    if (lead) {
+      const mappedLead = mapDbRefactoredLeadToLead(lead as any);
+      setSelectedLead(mappedLead);
+      setLeadDetailInitialTab("documents");
+      setShowLeadDetail(true);
+    }
+  };
+
   const handleViewLead = (lead: RefactoredLead) => {
     setSelectedLead(lead);
     setLeadDetailInitialTab("overview");
@@ -245,6 +273,8 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         open={showNewLead}
         onClose={() => setShowNewLead(false)}
         onSuccess={handleLeadSuccess}
+        onContinueApplication={handleEligibilityContinue}
+        onUploadDocuments={handleUploadDocsById}
         partnerId={partner?.id}
       />
 
@@ -254,6 +284,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         onClose={() => setShowEligibilityCheck(false)}
         onSuccess={handleLeadSuccess}
         onContinueApplication={handleEligibilityContinue}
+        onUploadDocuments={handleUploadDocsById}
         partnerId={partner?.id}
       />
 

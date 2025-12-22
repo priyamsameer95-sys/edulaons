@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { X, Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, FileText, ArrowRight, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,8 @@ interface QuickLeadModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onContinueApplication?: (leadId: string) => void;
+  onUploadDocuments?: (leadId: string) => void;
   partnerId?: string;
 }
 
@@ -84,13 +86,13 @@ const initialFormData: FormData = {
   co_applicant_monthly_salary: "",
 };
 
-export const QuickLeadModal = ({ open, onClose, onSuccess, partnerId }: QuickLeadModalProps) => {
+export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication, onUploadDocuments, partnerId }: QuickLeadModalProps) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdCaseId, setCreatedCaseId] = useState<string | null>(null);
-
+  const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
   const handleInputChange = useCallback((field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error on change
@@ -264,18 +266,10 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, partnerId }: QuickLea
       }
 
       setCreatedCaseId(data.lead.case_id);
+      setCreatedLeadId(data.lead.id);
       setShowSuccess(true);
       toast.success('Lead created successfully!');
-
-      // Reset form and close after delay
-      setTimeout(() => {
-        setFormData(initialFormData);
-        setShowSuccess(false);
-        setCreatedCaseId(null);
-        onSuccess?.();
-        onClose();
-      }, 2000);
-
+      onSuccess?.();
     } catch (error: any) {
       toast.error(error.message || 'Failed to create lead');
     } finally {
@@ -288,7 +282,23 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, partnerId }: QuickLea
       setFormData(initialFormData);
       setErrors({});
       setShowSuccess(false);
+      setCreatedCaseId(null);
+      setCreatedLeadId(null);
       onClose();
+    }
+  };
+
+  const handleCompleteApplication = () => {
+    if (createdLeadId && onContinueApplication) {
+      handleClose();
+      onContinueApplication(createdLeadId);
+    }
+  };
+
+  const handleUploadDocuments = () => {
+    if (createdLeadId && onUploadDocuments) {
+      handleClose();
+      onUploadDocuments(createdLeadId);
     }
   };
 
@@ -337,15 +347,15 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, partnerId }: QuickLea
     
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-sm">
-          <div className="flex flex-col items-center justify-center py-8 gap-4">
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center justify-center py-6 gap-4">
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
             <div className="text-center">
               <h3 className="font-semibold text-lg">Lead Created!</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Case ID: {createdCaseId}
+                Case ID: <span className="font-mono font-medium">{createdCaseId}</span>
               </p>
               
               {/* Quality Score */}
@@ -360,11 +370,44 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, partnerId }: QuickLea
                   {getQualityMessage(score, missingFields)}
                 </p>
               </div>
-              
-              <p className="text-xs text-muted-foreground mt-3">
-                Student will receive notification to complete details
-              </p>
             </div>
+
+            {/* Action Buttons */}
+            <div className="w-full space-y-2 mt-2">
+              {onContinueApplication && (
+                <Button 
+                  onClick={handleCompleteApplication} 
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  Complete Application
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {onUploadDocuments && (
+                <Button 
+                  onClick={handleUploadDocuments} 
+                  variant="outline" 
+                  className="w-full gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Upload Documents
+                </Button>
+              )}
+              
+              <Button 
+                onClick={handleClose} 
+                variant="ghost" 
+                className="w-full text-muted-foreground"
+              >
+                Done for Now
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Student will receive notification to complete details
+            </p>
           </div>
         </DialogContent>
       </Dialog>
