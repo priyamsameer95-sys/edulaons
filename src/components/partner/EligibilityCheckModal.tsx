@@ -626,60 +626,71 @@ export const EligibilityCheckModal = ({
     );
   }
 
-  // Quick Check Form - With Student Info at the top
+  // Quick Check Form - Beautiful redesign with better UX
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-amber-500" />
-            Quick Eligibility Check
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="text-sm text-muted-foreground -mt-2 mb-4">
-          Check eligibility in seconds
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Hero Header */}
+        <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 px-6 py-5 text-primary-foreground">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLTR2Mkgy NHYtMmgxMnptMC00djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
+          <div className="relative flex items-center gap-3">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Quick Eligibility Check</h2>
+              <p className="text-sm text-primary-foreground/80">Get instant results in under 30 seconds</p>
+            </div>
+          </div>
+          {/* Progress dots */}
+          <div className="absolute bottom-3 right-6 flex items-center gap-1.5">
+            <div className="w-8 h-1.5 rounded-full bg-white/90" />
+            <div className="w-8 h-1.5 rounded-full bg-white/30" />
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {/* Student Name */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              Student Name
-            </Label>
-            <Input
-              value={quickForm.student_name}
-              onChange={(e) => handleQuickChange('student_name', e.target.value)}
-              placeholder="Enter student's full name"
-              className={cn("h-11", quickErrors.student_name && 'border-destructive')}
-            />
-            {quickErrors.student_name && (
-              <p className="text-xs text-destructive">{quickErrors.student_name}</p>
-            )}
+        <div className="p-6 space-y-5">
+          {/* Two-column layout for name & phone */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Student Name */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Student Name</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={quickForm.student_name}
+                  onChange={(e) => handleQuickChange('student_name', e.target.value)}
+                  placeholder="Full name"
+                  className={cn("pl-10 h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors", quickErrors.student_name && 'border-destructive')}
+                />
+              </div>
+              {quickErrors.student_name && (
+                <p className="text-xs text-destructive">{quickErrors.student_name}</p>
+              )}
+            </div>
+
+            {/* Student Phone */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={quickForm.student_phone}
+                  onChange={(e) => handleQuickChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10 digits"
+                  className={cn("pl-10 h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors", quickErrors.student_phone && 'border-destructive')}
+                />
+              </div>
+              {quickErrors.student_phone && (
+                <p className="text-xs text-destructive">{quickErrors.student_phone}</p>
+              )}
+            </div>
           </div>
 
-          {/* Student Phone */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Phone className="h-4 w-4 text-primary" />
-              Student Phone
-            </Label>
-            <Input
-              value={quickForm.student_phone}
-              onChange={(e) => handleQuickChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-              placeholder="10-digit mobile number"
-              className={cn("h-11", quickErrors.student_phone && 'border-destructive')}
-            />
-            {quickErrors.student_phone && (
-              <p className="text-xs text-destructive">{quickErrors.student_phone}</p>
-            )}
-          </div>
-
-          {/* Country - Inline Buttons */}
+          {/* Country - Pill Buttons */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Study Destination</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <Label className="text-sm font-medium text-muted-foreground">Study Destination</Label>
+            <div className="flex flex-wrap gap-2">
               {COUNTRIES.map((c) => (
                 <button
                   key={c.value}
@@ -689,10 +700,10 @@ export const EligibilityCheckModal = ({
                     handleQuickChange('university_id', '');
                   }}
                   className={cn(
-                    "py-2 px-3 text-sm rounded-lg border transition-all",
+                    "py-2.5 px-4 text-sm font-medium rounded-full border-2 transition-all duration-200",
                     quickForm.country === c.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted border-border"
+                      ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25 scale-105"
+                      : "bg-background hover:bg-muted border-border hover:border-primary/30"
                   )}
                 >
                   {c.label}
@@ -706,16 +717,19 @@ export const EligibilityCheckModal = ({
 
           {/* University */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-primary" />
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <GraduationCap className="h-4 w-4" />
               University
             </Label>
-            <div className={quickErrors.university_id ? '[&_button]:border-destructive' : ''}>
+            <div className={cn(
+              "rounded-xl overflow-hidden",
+              quickErrors.university_id ? '[&_button]:border-destructive' : ''
+            )}>
               <UniversityCombobox
                 country={quickForm.country}
                 value={quickForm.university_id}
                 onChange={(value) => handleQuickChange('university_id', value)}
-                placeholder="Type to search university..."
+                placeholder={quickForm.country ? "Search and select university..." : "Select country first"}
                 disabled={!quickForm.country}
               />
             </div>
@@ -724,65 +738,62 @@ export const EligibilityCheckModal = ({
             )}
           </div>
 
-          {/* Salary */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              Co-Applicant Monthly Salary
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
-              <Input
-                value={quickForm.co_applicant_monthly_salary}
-                onChange={(e) => handleQuickChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
-                placeholder="75,000"
-                className={cn("pl-7 h-11 text-base", quickErrors.co_applicant_monthly_salary && 'border-destructive')}
-              />
+          {/* Two-column for salary and loan */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Salary */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Co-Applicant Salary</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
+                <Input
+                  value={quickForm.co_applicant_monthly_salary}
+                  onChange={(e) => handleQuickChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
+                  placeholder="Monthly"
+                  className={cn("pl-8 h-12 bg-muted/50 border-border/50 focus:bg-background text-base font-medium", quickErrors.co_applicant_monthly_salary && 'border-destructive')}
+                />
+              </div>
+              {salaryInWords && (
+                <p className="text-xs text-muted-foreground">{salaryInWords}/mo</p>
+              )}
+              {quickErrors.co_applicant_monthly_salary && (
+                <p className="text-xs text-destructive">{quickErrors.co_applicant_monthly_salary}</p>
+              )}
             </div>
-            {salaryInWords && (
-              <p className="text-xs text-muted-foreground">₹ {salaryInWords} per month</p>
-            )}
-            {quickErrors.co_applicant_monthly_salary && (
-              <p className="text-xs text-destructive">{quickErrors.co_applicant_monthly_salary}</p>
-            )}
-          </div>
 
-          {/* Loan Amount */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              Loan Amount Needed
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
-              <Input
-                value={quickForm.loan_amount}
-                onChange={(e) => handleQuickChange('loan_amount', formatCurrencyInput(e.target.value))}
-                placeholder="15,00,000"
-                className={cn("pl-7 h-11 text-base", quickErrors.loan_amount && 'border-destructive')}
-              />
+            {/* Loan Amount */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Loan Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
+                <Input
+                  value={quickForm.loan_amount}
+                  onChange={(e) => handleQuickChange('loan_amount', formatCurrencyInput(e.target.value))}
+                  placeholder="Required"
+                  className={cn("pl-8 h-12 bg-muted/50 border-border/50 focus:bg-background text-base font-medium", quickErrors.loan_amount && 'border-destructive')}
+                />
+              </div>
+              {loanAmountInWords && (
+                <p className="text-xs text-muted-foreground">{loanAmountInWords}</p>
+              )}
+              {quickErrors.loan_amount && (
+                <p className="text-xs text-destructive">{quickErrors.loan_amount}</p>
+              )}
             </div>
-            {loanAmountInWords && (
-              <p className="text-xs text-muted-foreground">₹ {loanAmountInWords}</p>
-            )}
-            {quickErrors.loan_amount && (
-              <p className="text-xs text-destructive">{quickErrors.loan_amount}</p>
-            )}
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="flex flex-col gap-2 pt-4">
+        {/* Footer CTA */}
+        <div className="px-6 pb-6 pt-2">
           <Button 
             onClick={handleCheckEligibility} 
             disabled={isChecking} 
             size="lg"
-            className="w-full h-12 gap-2 text-base"
+            className="w-full h-14 gap-3 text-base font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
           >
             {isChecking ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Checking & Saving...
+                Analyzing Profile...
               </>
             ) : (
               <>
@@ -793,9 +804,20 @@ export const EligibilityCheckModal = ({
             )}
           </Button>
           
-          <p className="text-center text-xs text-muted-foreground">
-            Lead will be saved with eligibility result
-          </p>
+          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Shield className="h-4 w-4 text-emerald-500" />
+              Secure & Private
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4 text-amber-500" />
+              Instant Results
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              Auto-Saved
+            </span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
