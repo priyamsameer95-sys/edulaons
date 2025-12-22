@@ -247,9 +247,10 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="text-muted-foreground"
+              className="text-muted-foreground gap-2"
             >
               <LogOut className="h-4 w-4" />
+              Log out
             </Button>
           </div>
         </div>
