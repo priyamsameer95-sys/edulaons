@@ -37,8 +37,12 @@ interface FormData {
   country: string;
   university_id: string;
   loan_amount: string;
+  intake_month: string;
+  intake_year: string;
   co_applicant_relationship: string;
   co_applicant_name: string;
+  co_applicant_phone: string;
+  co_applicant_pin_code: string;
   co_applicant_monthly_salary: string;
 }
 
@@ -50,8 +54,12 @@ interface FormErrors {
   country?: string;
   university_id?: string;
   loan_amount?: string;
+  intake_month?: string;
+  intake_year?: string;
   co_applicant_relationship?: string;
   co_applicant_name?: string;
+  co_applicant_phone?: string;
+  co_applicant_pin_code?: string;
   co_applicant_monthly_salary?: string;
 }
 
@@ -73,6 +81,30 @@ const RELATIONSHIPS = [
   { value: "other", label: "Other" },
 ];
 
+const MONTHS = [
+  { value: "1", label: "January" },
+  { value: "2", label: "February" },
+  { value: "3", label: "March" },
+  { value: "4", label: "April" },
+  { value: "5", label: "May" },
+  { value: "6", label: "June" },
+  { value: "7", label: "July" },
+  { value: "8", label: "August" },
+  { value: "9", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
+
+const YEARS = (() => {
+  const currentYear = new Date().getFullYear();
+  return [
+    { value: String(currentYear), label: String(currentYear) },
+    { value: String(currentYear + 1), label: String(currentYear + 1) },
+    { value: String(currentYear + 2), label: String(currentYear + 2) },
+  ];
+})();
+
 const initialFormData: FormData = {
   student_name: "",
   student_phone: "",
@@ -81,8 +113,12 @@ const initialFormData: FormData = {
   country: "",
   university_id: "",
   loan_amount: "",
+  intake_month: "",
+  intake_year: "",
   co_applicant_relationship: "",
   co_applicant_name: "",
+  co_applicant_phone: "",
+  co_applicant_pin_code: "",
   co_applicant_monthly_salary: "",
 };
 
@@ -223,6 +259,33 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
       newErrors.co_applicant_name = "Min 2 characters";
     }
 
+    // Intake month
+    if (!formData.intake_month) {
+      newErrors.intake_month = "Required";
+    }
+
+    // Intake year
+    if (!formData.intake_year) {
+      newErrors.intake_year = "Required";
+    }
+
+    // Co-Applicant Phone
+    const cleanCoPhone = formData.co_applicant_phone.replace(/\D/g, '');
+    if (!cleanCoPhone) {
+      newErrors.co_applicant_phone = "Required";
+    } else if (cleanCoPhone.length !== 10) {
+      newErrors.co_applicant_phone = "Must be 10 digits";
+    } else if (!/^[6-9]/.test(cleanCoPhone)) {
+      newErrors.co_applicant_phone = "Invalid number";
+    }
+
+    // Co-Applicant PIN code
+    if (!formData.co_applicant_pin_code.trim()) {
+      newErrors.co_applicant_pin_code = "Required";
+    } else if (!/^\d{6}$/.test(formData.co_applicant_pin_code.trim())) {
+      newErrors.co_applicant_pin_code = "Must be 6 digits";
+    }
+
     // Salary
     const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
     if (!formData.co_applicant_monthly_salary) {
@@ -250,8 +313,12 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
           country: formData.country,
           university_id: formData.university_id || undefined,
           loan_amount: parseInt(formData.loan_amount.replace(/,/g, '')),
+          intake_month: parseInt(formData.intake_month),
+          intake_year: parseInt(formData.intake_year),
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_name: formData.co_applicant_name.trim(),
+          co_applicant_phone: formData.co_applicant_phone.replace(/\D/g, ''),
+          co_applicant_pin_code: formData.co_applicant_pin_code.trim(),
           co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')),
           partner_id: partnerId,
         }
@@ -567,10 +634,65 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
             )}
           </div>
 
+          {/* Intake Month */}
+          <div className="space-y-1.5">
+            <Label htmlFor="intake_month" className="text-xs">
+              Intake Month *
+            </Label>
+            <Select
+              value={formData.intake_month}
+              onValueChange={(value) => handleInputChange('intake_month', value)}
+            >
+              <SelectTrigger className={errors.intake_month ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.intake_month && (
+              <p className="text-xs text-destructive">{errors.intake_month}</p>
+            )}
+          </div>
+
+          {/* Intake Year */}
+          <div className="space-y-1.5">
+            <Label htmlFor="intake_year" className="text-xs">
+              Intake Year *
+            </Label>
+            <Select
+              value={formData.intake_year}
+              onValueChange={(value) => handleInputChange('intake_year', value)}
+            >
+              <SelectTrigger className={errors.intake_year ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {YEARS.map((y) => (
+                  <SelectItem key={y.value} value={y.value}>
+                    {y.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.intake_year && (
+              <p className="text-xs text-destructive">{errors.intake_year}</p>
+            )}
+          </div>
+
+          {/* Divider for Co-Applicant Section */}
+          <div className="col-span-2 border-t pt-3 mt-2">
+            <p className="text-xs font-medium text-muted-foreground mb-3">Co-Applicant Details</p>
+          </div>
+
           {/* Co-Applicant Relationship */}
           <div className="space-y-1.5">
             <Label htmlFor="relationship" className="text-xs">
-              Co-Applicant Type *
+              Relationship *
             </Label>
             <Select
               value={formData.co_applicant_relationship}
@@ -595,7 +717,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
           {/* Co-Applicant Name */}
           <div className="space-y-1.5">
             <Label htmlFor="co_applicant_name" className="text-xs">
-              Co-Applicant Name *
+              Name *
             </Label>
             <Input
               id="co_applicant_name"
@@ -609,10 +731,44 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
             )}
           </div>
 
+          {/* Co-Applicant Phone */}
+          <div className="space-y-1.5">
+            <Label htmlFor="co_applicant_phone" className="text-xs">
+              Phone *
+            </Label>
+            <Input
+              id="co_applicant_phone"
+              value={formData.co_applicant_phone}
+              onChange={(e) => handleInputChange('co_applicant_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="10 digits"
+              className={errors.co_applicant_phone ? 'border-destructive' : ''}
+            />
+            {errors.co_applicant_phone && (
+              <p className="text-xs text-destructive">{errors.co_applicant_phone}</p>
+            )}
+          </div>
+
+          {/* Co-Applicant PIN Code */}
+          <div className="space-y-1.5">
+            <Label htmlFor="co_applicant_pin_code" className="text-xs">
+              PIN Code *
+            </Label>
+            <Input
+              id="co_applicant_pin_code"
+              value={formData.co_applicant_pin_code}
+              onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="6 digits"
+              className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
+            />
+            {errors.co_applicant_pin_code && (
+              <p className="text-xs text-destructive">{errors.co_applicant_pin_code}</p>
+            )}
+          </div>
+
           {/* Salary - full width */}
           <div className="col-span-2 space-y-1.5">
             <Label htmlFor="salary" className="text-xs">
-              Co-Applicant Monthly Salary *
+              Monthly Salary *
             </Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
