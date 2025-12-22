@@ -629,7 +629,7 @@ export const EligibilityCheckModal = ({
   // Quick Check Form - Beautiful redesign with better UX
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-0">
         {/* Hero Header - Compact for mobile */}
         <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 px-5 py-4 sm:px-6 sm:py-5 text-primary-foreground">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLTR2Mkgy NHYtMmgxMnptMC00djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
@@ -695,7 +695,7 @@ export const EligibilityCheckModal = ({
           {/* Country - Flag chips with horizontal scroll on mobile */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-muted-foreground">Study Destination</Label>
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+            <div className="flex flex-wrap gap-2">
               {COUNTRIES.map((c) => {
                 const flags: Record<string, string> = {
                   "United States": "🇺🇸",
@@ -715,7 +715,7 @@ export const EligibilityCheckModal = ({
                       handleQuickChange('university_id', '');
                     }}
                     className={cn(
-                      "flex items-center gap-1.5 py-2 px-3 text-sm font-medium rounded-full border-2 transition-all duration-200 whitespace-nowrap flex-shrink-0",
+                      "flex items-center gap-1.5 py-2 px-3 text-sm font-medium rounded-full border-2 transition-all duration-200",
                       quickForm.country === c.value
                         ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25 scale-105"
                         : "bg-background hover:bg-muted border-border hover:border-primary/30"
