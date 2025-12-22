@@ -103,7 +103,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
     refetchKPIs();
   };
 
-  const handleEligibilityContinue = async (leadId: string) => {
+  const handleEligibilityContinue = async (leadId: string): Promise<void> => {
     // Fetch the newly created lead and open CompleteLeadModal
     const { data: lead } = await supabase
       .from('leads_new')
@@ -120,7 +120,12 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
     if (lead) {
       const mappedLead = mapDbRefactoredLeadToLead(lead as any);
       setSelectedLead(mappedLead);
-      setShowCompleteLeadModal(true);
+      // Close eligibility modal AFTER we have the lead data ready
+      setShowEligibilityCheck(false);
+      // Small delay to let the eligibility modal close before opening complete modal
+      setTimeout(() => {
+        setShowCompleteLeadModal(true);
+      }, 100);
     }
     refetchLeads();
     refetchKPIs();
