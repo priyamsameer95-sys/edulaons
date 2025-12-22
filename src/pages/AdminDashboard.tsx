@@ -109,6 +109,7 @@ const AdminDashboardV2 = () => {
       setFilters({
         status: view.filters.status || null,
         partnerId: view.filters.partnerId || null,
+        documentsStatus: view.filters.documentsStatus || null,
       });
     }
     setSelectedLeads([]);
