@@ -22,7 +22,7 @@ interface EligibilityCheckModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: (leadId: string) => void;
-  onContinueApplication?: (leadId: string) => void;
+  onContinueApplication?: (leadId: string) => Promise<void> | void;
   partnerId?: string;
 }
 
@@ -450,90 +450,166 @@ export const EligibilityCheckModal = ({
     }
   };
 
-  const handleContinueApplication = () => {
-    if (leadId) {
-      onContinueApplication?.(leadId);
+  const handleContinueApplication = async () => {
+    if (leadId && onContinueApplication) {
+      // Wait for parent to open CompleteLeadModal before closing this modal
+      await onContinueApplication(leadId);
       handleClose();
     }
   };
 
+  // Fetch university name for display
+  const [universityName, setUniversityName] = useState<string>("");
+  
+  useEffect(() => {
+    const fetchUniversityName = async () => {
+      if (quickForm.university_id) {
+        const { data } = await supabase
+          .from('universities')
+          .select('name')
+          .eq('id', quickForm.university_id)
+          .single();
+        if (data) setUniversityName(data.name);
+      }
+    };
+    fetchUniversityName();
+  }, [quickForm.university_id]);
 
-  // Result Screen with Save Form
+  // Result Screen - Redesigned
   if (result) {
     const tierConfig = getTierConfig(result.lenderCount);
     const TierIcon = tierConfig.icon;
+    const loanAmountFormatted = parseInt(quickForm.loan_amount.replace(/,/g, '') || '0');
+    const salaryFormatted = parseInt(quickForm.co_applicant_monthly_salary.replace(/,/g, '') || '0');
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md overflow-hidden p-0">
-          {/* Lender Count Header */}
+          {/* Hero Header with Lender Count */}
           <div className={cn(
-            "relative px-6 pt-5 pb-6 bg-gradient-to-br text-center",
+            "relative px-6 pt-6 pb-5 bg-gradient-to-br",
             tierConfig.bgGradient
           )}>
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <span className="text-2xl">{tierConfig.emoji}</span>
-              <h2 className={cn(
-                "text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
-                tierConfig.gradient
-              )}>
-                {tierConfig.headline}
-              </h2>
+            <div className="text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-3xl">{tierConfig.emoji}</span>
+                <h2 className={cn(
+                  "text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+                  tierConfig.gradient
+                )}>
+                  {tierConfig.headline}
+                </h2>
+              </div>
+
+              <LenderDisplay count={result.lenderCount} config={tierConfig} />
             </div>
+          </div>
 
-            <LenderDisplay count={result.lenderCount} config={tierConfig} />
-
-            <p className="mt-3 text-sm text-muted-foreground">
-              {tierConfig.subtext}
-            </p>
+          {/* Student Info Card */}
+          <div className="px-5 -mt-3">
+            <div className="bg-background rounded-xl border shadow-sm p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
+                  <User className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground truncate">
+                    {quickForm.student_name}
+                  </p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3.5 w-3.5" />
+                    +91 {quickForm.student_phone}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-xs font-medium">Saved</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Content */}
-          <div className="px-6 py-4 space-y-4">
-            {/* Co-Applicant Info - Single item, no university grade */}
-            <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">
-              <Users className="h-5 w-5 text-primary mr-2" />
-              <span className="text-sm">
-                Co-Applicant Income: <span className="font-semibold">{result.breakdown.coApplicant.salaryBand}</span>
-              </span>
+          <div className="px-5 py-4 space-y-4">
+            {/* Captured Data Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  <span className="text-xs">University</span>
+                </div>
+                <p className="text-sm font-medium truncate" title={universityName}>
+                  {universityName || 'Loading...'}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span className="text-xs">Loan Amount</span>
+                </div>
+                <p className="text-sm font-medium">
+                  ₹{(loanAmountFormatted / 100000).toFixed(1)}L
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="text-xs">Co-Applicant Salary</span>
+                </div>
+                <p className="text-sm font-medium">
+                  ₹{(salaryFormatted / 1000).toFixed(0)}K/mo
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
+                <div className="flex items-center gap-1.5 text-primary">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span className="text-xs">Est. Rate</span>
+                </div>
+                <p className="text-sm font-medium text-primary">
+                  {result.estimatedRateMin}% - {result.estimatedRateMax}%
+                </p>
+              </div>
             </div>
 
-            {/* Loan Estimate */}
-            <div className="p-3 rounded-xl border bg-primary/5 border-primary/20">
-              <div className="flex items-center justify-between">
+            {/* What's Next Section */}
+            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <div className="flex items-start gap-2">
+                <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Potential Loan</div>
-                  <div className="text-xl font-bold text-primary">
-                    ₹{(result.estimatedLoanMax / 100000).toFixed(0)}L
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Interest Rate</div>
-                  <div className="text-sm font-semibold">
-                    {result.estimatedRateMin}% - {result.estimatedRateMax}%
-                  </div>
+                  <p className="text-sm font-medium text-amber-900">
+                    Just 3 more details needed
+                  </p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Course, Co-Applicant Phone & PIN Code
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Lead is auto-saved - Show Continue Button */}
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center justify-center gap-2 text-emerald-600">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">Lead Saved for {quickForm.student_name}!</span>
-              </div>
-
+            {/* CTA Buttons */}
+            <div className="space-y-2 pt-1">
               <Button 
                 onClick={handleContinueApplication} 
                 size="lg"
-                className="w-full h-12 gap-2"
+                className={cn(
+                  "w-full h-12 gap-2 text-base bg-gradient-to-r shadow-lg",
+                  tierConfig.gradient
+                )}
               >
                 <TierIcon className="h-5 w-5" />
-                {tierConfig.ctaText}
+                Complete Application
                 <ArrowRight className="h-5 w-5" />
               </Button>
 
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <Button 
+                variant="outline" 
+                onClick={handleClose} 
+                className="w-full"
+              >
+                Save for Later
+              </Button>
+
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-1">
                 <span className="flex items-center gap-1">
                   <Shield className="h-3.5 w-3.5 text-green-600" />
                   Secure
@@ -543,10 +619,6 @@ export const EligibilityCheckModal = ({
                   48hr Response
                 </span>
               </div>
-
-              <Button variant="ghost" onClick={handleClose} className="w-full">
-                Close
-              </Button>
             </div>
           </div>
         </DialogContent>
