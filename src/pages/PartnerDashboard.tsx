@@ -10,10 +10,12 @@ import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
 import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
 import { AddNewLeadModal } from "@/components/partner/AddNewLeadModal";
 import { EligibilityCheckModal } from "@/components/partner/EligibilityCheckModal";
+import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
 import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
 import { Partner } from "@/types/partner";
-import { RefactoredLead } from "@/types/refactored-lead";
+import { RefactoredLead, mapDbRefactoredLeadToLead } from "@/types/refactored-lead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 // Status mappings for 18-step process filtering
 const IN_PIPELINE_STATUSES = [
@@ -47,6 +49,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   // Modal states
   const [showNewLead, setShowNewLead] = useState(false);
   const [showEligibilityCheck, setShowEligibilityCheck] = useState(false);
+  const [showCompleteLeadModal, setShowCompleteLeadModal] = useState(false);
   
   // Lead detail sheet state
   const [showLeadDetail, setShowLeadDetail] = useState(false);
@@ -100,17 +103,33 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
     refetchKPIs();
   };
 
-  const handleEligibilityContinue = (leadId: string) => {
-    // Lead is now complete from AddNewLeadModal, just refresh
+  const handleEligibilityContinue = async (leadId: string) => {
+    // Fetch the newly created lead and open CompleteLeadModal
+    const { data: lead } = await supabase
+      .from('leads_new')
+      .select(`
+        *,
+        students(*),
+        co_applicants(*),
+        lenders(*),
+        partners(*)
+      `)
+      .eq('id', leadId)
+      .single();
+    
+    if (lead) {
+      const mappedLead = mapDbRefactoredLeadToLead(lead as any);
+      setSelectedLead(mappedLead);
+      setShowCompleteLeadModal(true);
+    }
     refetchLeads();
     refetchKPIs();
   };
 
   const handleCompleteLead = (lead: RefactoredLead) => {
-    // Open lead detail to view/edit
+    // Open CompleteLeadModal for incomplete quick leads
     setSelectedLead(lead);
-    setLeadDetailInitialTab("overview");
-    setShowLeadDetail(true);
+    setShowCompleteLeadModal(true);
   };
 
   const handleUploadDocs = (lead?: RefactoredLead) => {
@@ -223,6 +242,21 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         onSuccess={handleLeadSuccess}
         onContinueApplication={handleEligibilityContinue}
         partnerId={partner?.id}
+      />
+
+      {/* Complete Lead Modal - for finishing quick leads */}
+      <CompleteLeadModal
+        open={showCompleteLeadModal}
+        onClose={() => {
+          setShowCompleteLeadModal(false);
+          setSelectedLead(null);
+        }}
+        lead={selectedLead}
+        onSuccess={() => {
+          handleLeadSuccess();
+          setShowCompleteLeadModal(false);
+          setSelectedLead(null);
+        }}
       />
 
       {/* Partner Lead Detail Sheet */}
