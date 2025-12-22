@@ -19,10 +19,9 @@ interface StatItemProps {
   loading: boolean;
   suffix?: string;
   icon: React.ReactNode;
-  color: string;
 }
 
-const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon, color }: StatItemProps) => {
+const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon }: StatItemProps) => {
   if (loading) {
     return (
       <div className="flex items-center gap-2 px-4 py-2">
@@ -40,17 +39,17 @@ const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon, colo
       onClick={onClick}
       className={cn(
         "group relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200",
-        "hover:bg-accent/80 hover:shadow-sm",
-        isActive && "bg-primary/10 shadow-sm ring-1 ring-primary/20"
+        "hover:bg-primary/10",
+        isActive && "bg-primary/15 shadow-sm ring-1 ring-primary/20"
       )}
     >
-      {/* Icon container */}
+      {/* Icon container - unified primary color */}
       <div className={cn(
         "flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-105",
-        color,
-        isActive && "ring-2 ring-offset-1 ring-primary/30"
+        "bg-primary/10",
+        isActive && "bg-primary/20 ring-2 ring-offset-1 ring-primary/30"
       )}>
-        {icon}
+        <div className="text-primary">{icon}</div>
       </div>
       
       {/* Stats text */}
@@ -63,7 +62,7 @@ const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon, colo
             {value}
           </span>
           {suffix && (
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-full">
+            <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
               {suffix}
             </span>
           )}
@@ -100,32 +99,28 @@ export const CompactStatsBar = ({
       value: kpis.totalLeads, 
       filterKey: null, 
       suffix: "",
-      icon: <Users className="h-4 w-4 text-blue-600" />,
-      color: "bg-blue-100 dark:bg-blue-950/50"
+      icon: <Users className="h-4 w-4" />
     },
     { 
       label: "In Pipeline", 
       value: kpis.inPipeline, 
       filterKey: "in_pipeline", 
       suffix: "",
-      icon: <ArrowRightCircle className="h-4 w-4 text-amber-600" />,
-      color: "bg-amber-100 dark:bg-amber-950/50"
+      icon: <ArrowRightCircle className="h-4 w-4" />
     },
     { 
       label: "Sanctioned", 
       value: kpis.sanctioned, 
       filterKey: "sanctioned", 
       suffix: kpis.totalLeads > 0 ? `${conversionRate}%` : "",
-      icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
-      color: "bg-emerald-100 dark:bg-emerald-950/50"
+      icon: <CheckCircle2 className="h-4 w-4" />
     },
     { 
       label: "Disbursed", 
       value: kpis.disbursed, 
       filterKey: "disbursed", 
       suffix: "",
-      icon: <Banknote className="h-4 w-4 text-violet-600" />,
-      color: "bg-violet-100 dark:bg-violet-950/50"
+      icon: <Banknote className="h-4 w-4" />
     },
   ];
 
@@ -142,7 +137,6 @@ export const CompactStatsBar = ({
           loading={loading}
           suffix={stat.suffix}
           icon={stat.icon}
-          color={stat.color}
         />
       ))}
     </div>
