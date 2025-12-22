@@ -12,7 +12,13 @@ import {
   PaginationNext, 
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Eye, Upload, Users, Plus, Zap, ClipboardCheck, TrendingUp } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Eye, Upload, Users, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -149,12 +155,12 @@ export const PartnerLeadsTable = ({
       <div className="flex flex-col items-center justify-center py-16 px-4 bg-card border rounded-lg">
         <div className="text-center space-y-6 max-w-md">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Users className="h-8 w-8 text-primary" />
+            <Rocket className="h-8 w-8 text-primary" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Start Your First Application</h2>
+            <h2 className="text-2xl font-bold">No Active Applications Yet</h2>
             <p className="text-muted-foreground">
-              Add a student lead to begin processing education loan applications
+              Start your first eligibility check to help students find the best education loan options
             </p>
           </div>
           {onNewLead && (
@@ -163,8 +169,8 @@ export const PartnerLeadsTable = ({
               size="lg" 
               className="h-14 px-10 text-lg font-semibold gap-3"
             >
-              <Plus className="h-6 w-6" />
-              Add Your First Lead
+              <Sparkles className="h-6 w-6" />
+              Start First Eligibility Check
             </Button>
           )}
         </div>
@@ -209,23 +215,32 @@ export const PartnerLeadsTable = ({
                         <div className="flex items-center gap-2">
                           {lead.case_id}
                           {isIncomplete && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1"
-                            >
-                              <Zap className="h-3 w-3" />
-                              Quick
-                            </Badge>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1 cursor-help"
+                                  >
+                                    <Zap className="h-3 w-3" />
+                                    Quick
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-popover text-popover-foreground border">
+                                  <p className="text-xs">Quick applications get priority lender responses</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                         </div>
                         {isIncomplete && urgency === 'urgent' && (
-                          <span className="text-[10px] text-red-600 font-medium">Complete now!</span>
+                          <span className="text-[10px] text-red-600 font-medium">⚠️ Action needed now!</span>
                         )}
                         {isIncomplete && urgency === 'warning' && (
-                          <span className="text-[10px] text-amber-600">Complete soon</span>
+                          <span className="text-[10px] text-amber-600">⏰ Complete today</span>
                         )}
                         {isIncomplete && urgency === 'normal' && (
-                          <span className="text-[10px] text-muted-foreground">Complete for 2x match</span>
+                          <span className="text-[10px] text-muted-foreground">Complete to unlock 2x lender matches</span>
                         )}
                       </div>
                     </TableCell>
@@ -238,9 +253,18 @@ export const PartnerLeadsTable = ({
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {isIncomplete ? (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 w-fit">
-                            Incomplete
-                          </Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 w-fit cursor-help">
+                                  🟡 Pending
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-popover text-popover-foreground border max-w-[200px]">
+                                <p className="text-xs">Complete missing details to qualify for 2x more lenders</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <StatusBadge status={lead.status as LeadStatus} type="lead" />
                         )}
@@ -278,20 +302,23 @@ export const PartnerLeadsTable = ({
                       {format(new Date(lead.created_at), 'dd MMM')}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex flex-col items-start gap-0.5">
                         {isIncomplete && onCompleteLead ? (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onCompleteLead(lead);
-                            }}
-                            className="h-8 px-3 text-xs gap-1"
-                          >
-                            <ClipboardCheck className="h-3.5 w-3.5" />
-                            Complete
-                          </Button>
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCompleteLead(lead);
+                              }}
+                              className="h-8 px-3 text-xs gap-1"
+                            >
+                              <ClipboardCheck className="h-3.5 w-3.5" />
+                              Resume Application
+                            </Button>
+                            <span className="text-[10px] text-muted-foreground">Takes &lt;2 mins</span>
+                          </>
                         ) : (
                           <Button
                             variant="ghost"
