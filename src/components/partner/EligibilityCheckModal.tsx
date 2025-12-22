@@ -86,6 +86,120 @@ const initialSaveForm: SaveFormData = {
   student_phone: "",
 };
 
+// Tier configuration type
+interface TierConfig {
+  headline: string;
+  emoji: string;
+  subtext: string;
+  gradient: string;
+  bgGradient: string;
+  ringColor: string;
+  icon: React.ComponentType<{ className?: string }>;
+  ctaText: string;
+}
+
+// Tier-based messaging and styling - moved outside component for stability
+const getTierConfig = (score: number): TierConfig => {
+  if (score >= 80) {
+    return {
+      headline: "Excellent Match!",
+      emoji: "🎉",
+      subtext: "Top tier applicant. Lenders are eager to fund!",
+      gradient: "from-emerald-500 via-green-500 to-teal-500",
+      bgGradient: "from-emerald-50 to-teal-50",
+      ringColor: "stroke-emerald-500",
+      icon: Trophy,
+      ctaText: "Fast-Track This Application",
+    };
+  } else if (score >= 65) {
+    return {
+      headline: "Great Opportunity!",
+      emoji: "✨",
+      subtext: "Strong profile! Highly likely to get approved.",
+      gradient: "from-blue-500 via-indigo-500 to-purple-500",
+      bgGradient: "from-blue-50 to-indigo-50",
+      ringColor: "stroke-blue-500",
+      icon: Star,
+      ctaText: "Complete & Get Offers",
+    };
+  } else if (score >= 45) {
+    return {
+      headline: "Good to Go!",
+      emoji: "💪",
+      subtext: "Many similar profiles get funded!",
+      gradient: "from-amber-500 via-orange-500 to-yellow-500",
+      bgGradient: "from-amber-50 to-orange-50",
+      ringColor: "stroke-amber-500",
+      icon: Rocket,
+      ctaText: "Let's Make It Happen",
+    };
+  } else {
+    return {
+      headline: "Let's Explore Options",
+      emoji: "🚀",
+      subtext: "Complete the application to explore all options.",
+      gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
+      bgGradient: "from-violet-50 to-purple-50",
+      ringColor: "stroke-violet-500",
+      icon: Sparkles,
+      ctaText: "Explore All Options",
+    };
+  }
+};
+
+// Animated score ring component - moved outside to prevent re-mounting on parent re-render
+const ScoreRing = ({ score, config }: { score: number; config: TierConfig }) => {
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (animatedScore / 100) * circumference;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedScore(score);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [score]);
+
+  return (
+    <div className="relative w-32 h-32 mx-auto">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+        <circle
+          cx="60"
+          cy="60"
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="8"
+          className="text-muted/20"
+        />
+        <circle
+          cx="60"
+          cy="60"
+          r={radius}
+          fill="none"
+          strokeWidth="8"
+          strokeLinecap="round"
+          className={cn(config.ringColor, "transition-all duration-1000 ease-out")}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: strokeDashoffset,
+          }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={cn(
+          "text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+          config.gradient
+        )}>
+          {animatedScore}
+        </span>
+        <span className="text-xs text-muted-foreground">out of 100</span>
+      </div>
+    </div>
+  );
+};
+
 export const EligibilityCheckModal = ({ 
   open, 
   onClose, 
@@ -386,107 +500,6 @@ export const EligibilityCheckModal = ({
     }
   };
 
-  // Tier-based messaging and styling
-  const getTierConfig = (score: number) => {
-    if (score >= 80) {
-      return {
-        headline: "Excellent Match!",
-        emoji: "🎉",
-        subtext: "Top tier applicant. Lenders are eager to fund!",
-        gradient: "from-emerald-500 via-green-500 to-teal-500",
-        bgGradient: "from-emerald-50 to-teal-50",
-        ringColor: "stroke-emerald-500",
-        icon: Trophy,
-        ctaText: "Fast-Track This Application",
-      };
-    } else if (score >= 65) {
-      return {
-        headline: "Great Opportunity!",
-        emoji: "✨",
-        subtext: "Strong profile! Highly likely to get approved.",
-        gradient: "from-blue-500 via-indigo-500 to-purple-500",
-        bgGradient: "from-blue-50 to-indigo-50",
-        ringColor: "stroke-blue-500",
-        icon: Star,
-        ctaText: "Complete & Get Offers",
-      };
-    } else if (score >= 45) {
-      return {
-        headline: "Good to Go!",
-        emoji: "💪",
-        subtext: "Many similar profiles get funded!",
-        gradient: "from-amber-500 via-orange-500 to-yellow-500",
-        bgGradient: "from-amber-50 to-orange-50",
-        ringColor: "stroke-amber-500",
-        icon: Rocket,
-        ctaText: "Let's Make It Happen",
-      };
-    } else {
-      return {
-        headline: "Let's Explore Options",
-        emoji: "🚀",
-        subtext: "Complete the application to explore all options.",
-        gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
-        bgGradient: "from-violet-50 to-purple-50",
-        ringColor: "stroke-violet-500",
-        icon: Sparkles,
-        ctaText: "Explore All Options",
-      };
-    }
-  };
-
-  // Animated score ring component
-  const ScoreRing = ({ score, config }: { score: number; config: ReturnType<typeof getTierConfig> }) => {
-    const [animatedScore, setAnimatedScore] = useState(0);
-    const radius = 54;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (animatedScore / 100) * circumference;
-
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setAnimatedScore(score);
-      }, 100);
-      return () => clearTimeout(timer);
-    }, [score]);
-
-    return (
-      <div className="relative w-32 h-32 mx-auto">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            className="text-muted/20"
-          />
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            strokeWidth="8"
-            strokeLinecap="round"
-            className={cn(config.ringColor, "transition-all duration-1000 ease-out")}
-            style={{
-              strokeDasharray: circumference,
-              strokeDashoffset: strokeDashoffset,
-            }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn(
-            "text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
-            config.gradient
-          )}>
-            {animatedScore}
-          </span>
-          <span className="text-xs text-muted-foreground">out of 100</span>
-        </div>
-      </div>
-    );
-  };
 
   // Result Screen with Save Form
   if (result) {
