@@ -288,22 +288,22 @@ export const PartnerLeadsTable = ({
                             </Tooltip>
                           </TooltipProvider>
                         ) : (
-                          <>
-                            <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
-                            {canUploadDocs(lead) && (
+                          canUploadDocs(lead) ? (
                             <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onUploadDocs(lead);
-                                }}
-                                className="h-6 px-2 text-xs text-primary hover:text-primary"
-                              >
-                                <Upload className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </>
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUploadDocs(lead);
+                              }}
+                              className="h-7 px-2.5 text-xs gap-1.5 border-dashed hover:border-primary hover:bg-primary/5"
+                            >
+                              <Upload className="h-3 w-3" />
+                              Upload Docs
+                            </Button>
+                          ) : (
+                            <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
+                          )
                         )}
                       </div>
                     </TableCell>
