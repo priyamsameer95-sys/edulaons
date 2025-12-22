@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
-import { Search } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 
 interface SmartFilterBarProps {
   searchTerm: string;
@@ -32,43 +32,65 @@ export function SmartFilterBar({
   onPartnerChange,
   partners,
 }: SmartFilterBarProps) {
+  const hasActiveFilters = statusFilter !== 'all' || partnerFilter !== 'all';
+  
   return (
-    <div className="flex items-center gap-3 flex-1">
+    <div className="flex items-center gap-2 flex-1">
       {/* Search */}
-      <div className="relative flex-1 max-w-xs">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+      <div className="relative flex-1 max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by name, email, case ID..."
+          placeholder="Search leads..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-8 h-8 text-sm"
+          className="pl-9 h-9 bg-background border-border"
         />
       </div>
 
-      <div className="h-4 w-px bg-border" />
+      {/* Filter group */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-lg">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        
+        {/* Status dropdown */}
+        <Select value={statusFilter} onValueChange={onStatusChange}>
+          <SelectTrigger className="w-[120px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((status) => (
+              <SelectItem key={status.value} value={status.value}>
+                {status.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {/* Status dropdown */}
-      <Select value={statusFilter} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-[130px] h-8 text-xs">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          {STATUS_OPTIONS.map((status) => (
-            <SelectItem key={status.value} value={status.value}>
-              {status.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <div className="h-4 w-px bg-border" />
 
-      {/* Partner combobox - searchable for 500+ partners */}
-      <PartnerCombobox
-        partners={partners}
-        value={partnerFilter === 'all' ? null : partnerFilter}
-        onChange={(value) => onPartnerChange(value || 'all')}
-        placeholder="All Partners"
-        className="w-[180px] h-8 text-xs"
-      />
+        {/* Partner combobox */}
+        <PartnerCombobox
+          partners={partners}
+          value={partnerFilter === 'all' ? null : partnerFilter}
+          onChange={(value) => onPartnerChange(value || 'all')}
+          placeholder="All Partners"
+          className="w-[150px] h-7 text-xs border-0 bg-transparent shadow-none"
+        />
+        
+        {hasActiveFilters && (
+          <>
+            <div className="h-4 w-px bg-border" />
+            <button
+              onClick={() => {
+                onStatusChange('all');
+                onPartnerChange('all');
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground px-1"
+            >
+              Clear
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

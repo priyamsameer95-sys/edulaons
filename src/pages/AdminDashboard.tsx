@@ -232,7 +232,7 @@ const AdminDashboardV2 = () => {
             </div>
 
             <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
-              <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <SmartFilterBar searchTerm={filters.search} onSearchChange={value => setFilters({
                 search: value
               })} statusFilter={filters.status || 'all'} onStatusChange={value => setFilters({
@@ -240,7 +240,7 @@ const AdminDashboardV2 = () => {
               })} partnerFilter={filters.partnerId || 'all'} onPartnerChange={value => setFilters({
                 partnerId: value === 'all' ? null : value
               })} partners={allPartners} />
-                <Button size="sm" onClick={handleOpenNewLeadModal}>
+                <Button size="sm" className="ml-3" onClick={handleOpenNewLeadModal}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Lead
                 </Button>
