@@ -22,7 +22,7 @@ export default function PartnerDocumentPage() {
   const { documents, refetch: refetchDocuments } = useLeadDocuments(leadId);
 
   const handleBack = () => {
-    navigate(`/partner/${partnerCode}`);
+    navigate(-1);
   };
 
   const handleDocSelect = (docTypeId: string) => {
