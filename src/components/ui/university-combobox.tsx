@@ -16,12 +16,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useUniversities } from "@/hooks/useUniversities";
+import { useUniversitySelection } from "@/hooks/useUniversitySelection";
 import { useDebounce } from "@/hooks/use-debounce";
+import { University, isValidUUID } from "@/types/selection";
 
 interface UniversityComboboxProps {
   country: string;
-  value: string; // This will be the university ID or name
+  value: string;
   onChange: (value: string, isCustom?: boolean) => void;
   error?: string;
   placeholder?: string;
@@ -37,63 +38,47 @@ export function UniversityCombobox({
   disabled = false,
 }: UniversityComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
-  const [selectedUniversity, setSelectedUniversity] = React.useState<{ id: string; name: string } | null>(null);
-  const { universities, loading, error: fetchError, searchUniversities, totalCount, refetch } = useUniversities(country);
+  const [localInput, setLocalInput] = React.useState("");
   
-  // Debounce search input for better performance
-  const debouncedInputValue = useDebounce(inputValue, 300);
+  const {
+    universities,
+    totalCount,
+    loading,
+    error: fetchError,
+    selectedUniversity,
+    inputValue,
+    searchUniversities,
+    refetch,
+  } = useUniversitySelection({
+    country,
+    initialValue: value,
+  });
 
-  // Find university by ID when value changes
+  const debouncedSearch = useDebounce(localInput || inputValue, 300);
+  
+  const filteredUniversities = React.useMemo(() => {
+    return searchUniversities(debouncedSearch);
+  }, [searchUniversities, debouncedSearch]);
+
+  // Sync local input with selection state
   React.useEffect(() => {
-    if (value) {
-      // Check if value is a UUID (selected from list) or a custom name
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-      
-      if (isUUID) {
-        const university = universities.find(u => u.id === value);
-        if (university) {
-          setSelectedUniversity(university);
-          setInputValue(university.name);
-        }
-      } else {
-        // Custom university name
-        setSelectedUniversity(null);
-        setInputValue(value);
-      }
-    } else {
-      setSelectedUniversity(null);
-      setInputValue("");
-    }
-  }, [value, universities]);
+    setLocalInput(inputValue);
+  }, [inputValue]);
 
-  // Clear input when country changes
-  React.useEffect(() => {
-    if (!country) {
-      setInputValue("");
-      setSelectedUniversity(null);
-    }
-  }, [country]);
-
-  const handleSelect = (universityId: string, universityName: string) => {
-    setSelectedUniversity({ id: universityId, name: universityName });
-    setInputValue(universityName);
-    onChange(universityId, false); // Pass UUID and flag that it's not custom
+  const handleSelect = (university: University) => {
+    setLocalInput(university.name);
+    onChange(university.id, false);
     setOpen(false);
   };
 
   const handleInputChange = (newValue: string) => {
-    setInputValue(newValue);
-    // When typing freely, treat as custom university name
-    onChange(newValue, true); // Pass name and flag that it's custom
+    setLocalInput(newValue);
+    onChange(newValue, true);
   };
 
-  const filteredUniversities = React.useMemo(() => {
-    return searchUniversities(debouncedInputValue);
-  }, [searchUniversities, debouncedInputValue]);
-
-  const showNoResults = !loading && !fetchError && inputValue && filteredUniversities.length === 0;
-  const showSuggestions = !loading && !fetchError && (!inputValue || filteredUniversities.length > 0);
+  const displayValue = selectedUniversity?.name || localInput || "";
+  const showNoResults = !loading && !fetchError && localInput && filteredUniversities.length === 0;
+  const showSuggestions = !loading && !fetchError && (!localInput || filteredUniversities.length > 0);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -105,7 +90,7 @@ export function UniversityCombobox({
           aria-expanded={open}
           className={cn(
             "w-full justify-between font-normal",
-            !inputValue && "text-muted-foreground",
+            !displayValue && "text-muted-foreground",
             error && "border-destructive"
           )}
           disabled={disabled || !country}
@@ -113,7 +98,7 @@ export function UniversityCombobox({
           <div className="flex items-center min-w-0">
             <GraduationCap className="mr-2 h-4 w-4 flex-shrink-0" />
             <span className="truncate">
-              {inputValue || placeholder}
+              {displayValue || placeholder}
             </span>
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -123,7 +108,7 @@ export function UniversityCombobox({
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={placeholder}
-            value={inputValue}
+            value={localInput}
             onValueChange={handleInputChange}
             className="border-0 focus:ring-0"
           />
@@ -176,7 +161,7 @@ export function UniversityCombobox({
             {showNoResults && (
               <div className="text-center py-6">
                 <p className="text-sm text-muted-foreground mb-2">
-                  No universities found for "{inputValue}"
+                  No universities found for "{localInput}"
                 </p>
                 <p className="text-xs text-muted-foreground">
                   You can still submit this custom university name
@@ -193,7 +178,7 @@ export function UniversityCombobox({
                   <CommandItem
                     key={university.id}
                     value={university.name}
-                    onSelect={() => handleSelect(university.id, university.name)}
+                    onSelect={() => handleSelect(university)}
                     className="cursor-pointer"
                   >
                     <div className="flex items-center justify-between w-full">
