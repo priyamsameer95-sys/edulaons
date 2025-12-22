@@ -222,6 +222,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         open={showQuickLead}
         onClose={() => setShowQuickLead(false)}
         onSuccess={handleLeadSuccess}
+        partnerId={partner?.id}
       />
 
       {/* Eligibility Check Modal */}

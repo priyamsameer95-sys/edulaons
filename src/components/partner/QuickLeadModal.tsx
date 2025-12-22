@@ -24,6 +24,7 @@ interface QuickLeadModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  partnerId?: string;
 }
 
 interface FormData {
@@ -83,7 +84,7 @@ const initialFormData: FormData = {
   co_applicant_monthly_salary: "",
 };
 
-export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps) => {
+export const QuickLeadModal = ({ open, onClose, onSuccess, partnerId }: QuickLeadModalProps) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -250,6 +251,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_name: formData.co_applicant_name.trim(),
           co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')),
+          partner_id: partnerId,
         }
       });
 
