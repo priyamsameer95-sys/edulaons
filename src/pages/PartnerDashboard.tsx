@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,12 +36,29 @@ interface PartnerDashboardProps {
 const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const navigate = useNavigate();
   const { partnerCode } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { signOut, isAdmin } = useAuth();
   
   // CRITICAL: On partner dashboard, ALWAYS filter by partner_id - never show global KPIs
   // This ensures partners only see their own data, even when an admin views the partner dashboard
   const { kpis, loading: kpisLoading, refetch: refetchKPIs } = usePartnerKPIs(partner?.id, false);
   const { leads, loading: leadsLoading, error: leadsError, refetch: refetchLeads } = useRefactoredLeads(partner?.id);
+
+  // Handle openLead query param to auto-open lead detail sheet
+  useEffect(() => {
+    const openLeadId = searchParams.get('openLead');
+    if (openLeadId && leads.length > 0 && !leadsLoading) {
+      const leadToOpen = leads.find(l => l.id === openLeadId);
+      if (leadToOpen) {
+        setSelectedLead(leadToOpen);
+        setLeadDetailInitialTab("overview");
+        setShowLeadDetail(true);
+        // Clear the query param after opening
+        searchParams.delete('openLead');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, leads, leadsLoading, setSearchParams]);
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
