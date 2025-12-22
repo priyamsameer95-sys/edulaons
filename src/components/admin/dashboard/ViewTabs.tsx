@@ -22,10 +22,12 @@ interface ViewTabsProps {
 // Default views
 export const DEFAULT_VIEWS: ViewConfig[] = [
   { id: 'all', label: 'All', filters: {} },
-  { id: 'new', label: 'New', filters: { status: 'new' } },
+  { id: 'new', label: 'New', filters: { status: 'lead_intake' } },
   { id: 'pending-docs', label: 'Pending Docs', filters: { documentsStatus: 'pending' } },
-  { id: 'in-progress', label: 'In Progress', filters: { status: 'in_progress' } },
-  { id: 'approved', label: 'Approved', filters: { status: 'approved' } },
+  { id: 'docs-uploaded', label: 'Docs Uploaded', filters: { documentsStatus: 'uploaded' } },
+  { id: 'with-lender', label: 'With Lender', filters: { status: 'logged_with_lender' } },
+  { id: 'sanctioned', label: 'Sanctioned', filters: { status: 'sanctioned' } },
+  { id: 'disbursed', label: 'Disbursed', filters: { status: 'disbursed' } },
   { id: 'rejected', label: 'Rejected', filters: { status: 'rejected' } },
 ];
 
