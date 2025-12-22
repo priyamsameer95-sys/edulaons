@@ -92,7 +92,7 @@ export const PartnerLeadDetailSheet = ({
   return (
     <TooltipProvider>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="sm:max-w-md overflow-y-auto flex flex-col">
+        <SheetContent className="sm:max-w-lg overflow-y-auto flex flex-col">
           <SheetHeader className="space-y-3 pb-4 border-b">
             <SheetTitle className="text-lg font-semibold">
               Lead {shortLeadId} • Added on {createdDate}
