@@ -497,7 +497,7 @@ export const EligibilityCheckModal = ({
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-lg overflow-hidden p-0">
+        <DialogContent className="sm:max-w-lg overflow-hidden p-0 max-h-[90vh] flex flex-col">
           {/* Clean Hero Header */}
           <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-muted/50 to-background">
             {/* Success Badge */}
@@ -511,17 +511,36 @@ export const EligibilityCheckModal = ({
               </div>
             </div>
 
-            {/* Big Lender Count */}
-            <LenderDisplay count={result.lenderCount} config={tierConfig} />
+            {/* Big Lender Count - Clickable */}
+            <button 
+              className="w-full group cursor-pointer hover:scale-105 transition-transform duration-200"
+              onClick={() => {/* Future: show matched lenders */}}
+            >
+              <LenderDisplay count={result.lenderCount} config={tierConfig} />
+              <p className="text-center text-xs text-primary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                View matched lenders →
+              </p>
+            </button>
             
             {/* Subtext */}
             <p className="text-center text-sm text-muted-foreground mt-3">
               {tierConfig.subtext}
             </p>
+
+            {/* Progress Bar - 90% complete */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-muted-foreground">Profile Completion</span>
+                <span className="font-semibold text-emerald-600">90%</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full w-[90%] bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000" />
+              </div>
+            </div>
           </div>
 
-          {/* Content Section */}
-          <div className="px-6 pb-6 space-y-5">
+          {/* Scrollable Content Section */}
+          <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1">
             {/* Student Card - Compact */}
             <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
               <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
@@ -588,44 +607,69 @@ export const EligibilityCheckModal = ({
               </div>
             </div>
 
-            {/* CTA Section */}
-            <div className="space-y-3 pt-1">
-              <Button 
-                onClick={handleContinueApplication} 
-                size="lg"
-                className={cn(
-                  "w-full h-14 gap-2.5 text-base font-semibold bg-gradient-to-r shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]",
-                  tierConfig.gradient
-                )}
-              >
-                <TierIcon className="h-5 w-5" />
-                Complete Application Now
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-
-              <Button 
-                variant="ghost" 
-                onClick={handleClose} 
-                className="w-full text-muted-foreground hover:text-foreground"
-              >
-                Save & Continue Later
-              </Button>
-
-              {/* Trust badges */}
-              <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
-                <span className="flex items-center gap-1.5">
-                  <Shield className="h-4 w-4 text-emerald-500" />
-                  Secure
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Zap className="h-4 w-4 text-amber-500" />
-                  24hr Response
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <BadgeCheck className="h-4 w-4 text-blue-500" />
-                  Verified
-                </span>
+            {/* Cashback Incentive */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500 text-white">
+                <span className="text-xs font-bold">₹</span>
               </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                  Complete today & get ₹500 Cashback!
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                  On successful loan disbursal
+                </p>
+              </div>
+            </div>
+
+            {/* Social Proof */}
+            <p className="text-center text-xs text-muted-foreground">
+              <span className="font-medium">Trusted by 10,000+ students</span> who got approved last year
+            </p>
+          </div>
+
+          {/* Sticky CTA Section - Always visible */}
+          <div className="px-6 pb-6 pt-4 bg-background border-t space-y-3 sticky bottom-0">
+            <Button 
+              onClick={handleContinueApplication} 
+              size="lg"
+              className={cn(
+                "w-full h-14 gap-2.5 text-base font-semibold bg-gradient-to-r shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]",
+                tierConfig.gradient
+              )}
+            >
+              <TierIcon className="h-5 w-5" />
+              Complete Application Now
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+
+            {/* Reassurance under CTA */}
+            <p className="text-center text-xs text-muted-foreground">
+              No credit score impact • Takes less than 2 mins
+            </p>
+
+            <Button 
+              variant="ghost" 
+              onClick={handleClose} 
+              className="w-full text-muted-foreground hover:text-foreground"
+            >
+              Save & Continue Later
+            </Button>
+
+            {/* Trust badges */}
+            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-1">
+              <span className="flex items-center gap-1">
+                <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                100% Secure
+              </span>
+              <span className="flex items-center gap-1">
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                24hr Response
+              </span>
+              <span className="flex items-center gap-1">
+                <BadgeCheck className="h-3.5 w-3.5 text-blue-500" />
+                Verified
+              </span>
             </div>
           </div>
         </DialogContent>
