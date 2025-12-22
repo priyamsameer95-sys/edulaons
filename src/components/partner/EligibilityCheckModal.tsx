@@ -27,27 +27,21 @@ interface EligibilityCheckModalProps {
 }
 
 interface QuickFormData {
+  student_name: string;
+  student_phone: string;
   country: string;
   university_id: string;
   loan_amount: string;
   co_applicant_monthly_salary: string;
 }
 
-interface SaveFormData {
-  student_name: string;
-  student_phone: string;
-}
-
 interface QuickFormErrors {
+  student_name?: string;
+  student_phone?: string;
   country?: string;
   university_id?: string;
   loan_amount?: string;
   co_applicant_monthly_salary?: string;
-}
-
-interface SaveFormErrors {
-  student_name?: string;
-  student_phone?: string;
 }
 
 const COUNTRIES = [
@@ -76,15 +70,12 @@ interface EligibilityResult {
 }
 
 const initialQuickForm: QuickFormData = {
+  student_name: "",
+  student_phone: "",
   country: "",
   university_id: "",
   loan_amount: "",
   co_applicant_monthly_salary: "",
-};
-
-const initialSaveForm: SaveFormData = {
-  student_name: "",
-  student_phone: "",
 };
 
 // Tier configuration type
@@ -194,22 +185,14 @@ export const EligibilityCheckModal = ({
   partnerId
 }: EligibilityCheckModalProps) => {
   const [quickForm, setQuickForm] = useState<QuickFormData>(initialQuickForm);
-  const [saveForm, setSaveForm] = useState<SaveFormData>(initialSaveForm);
   const [quickErrors, setQuickErrors] = useState<QuickFormErrors>({});
-  const [saveErrors, setSaveErrors] = useState<SaveFormErrors>({});
   const [isChecking, setIsChecking] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
 
   const handleQuickChange = useCallback((field: keyof QuickFormData, value: string) => {
     setQuickForm(prev => ({ ...prev, [field]: value }));
     setQuickErrors(prev => ({ ...prev, [field]: undefined }));
-  }, []);
-
-  const handleSaveChange = useCallback((field: keyof SaveFormData, value: string) => {
-    setSaveForm(prev => ({ ...prev, [field]: value }));
-    setSaveErrors(prev => ({ ...prev, [field]: undefined }));
   }, []);
 
   const formatCurrencyInput = useCallback((value: string): string => {
@@ -267,6 +250,23 @@ export const EligibilityCheckModal = ({
   const validateQuickForm = (): boolean => {
     const newErrors: QuickFormErrors = {};
 
+    // Validate student name
+    if (!quickForm.student_name.trim()) {
+      newErrors.student_name = "Required";
+    } else if (quickForm.student_name.trim().length < 2) {
+      newErrors.student_name = "Min 2 characters";
+    }
+
+    // Validate student phone
+    const cleanPhone = quickForm.student_phone.replace(/\D/g, '');
+    if (!cleanPhone) {
+      newErrors.student_phone = "Required";
+    } else if (cleanPhone.length !== 10) {
+      newErrors.student_phone = "Must be 10 digits";
+    } else if (!/^[6-9]/.test(cleanPhone)) {
+      newErrors.student_phone = "Invalid number";
+    }
+
     if (!quickForm.country) {
       newErrors.country = "Select a country";
     }
@@ -292,28 +292,6 @@ export const EligibilityCheckModal = ({
     }
 
     setQuickErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateSaveForm = (): boolean => {
-    const newErrors: SaveFormErrors = {};
-
-    if (!saveForm.student_name.trim()) {
-      newErrors.student_name = "Required";
-    } else if (saveForm.student_name.trim().length < 2) {
-      newErrors.student_name = "Min 2 characters";
-    }
-
-    const cleanPhone = saveForm.student_phone.replace(/\D/g, '');
-    if (!cleanPhone) {
-      newErrors.student_phone = "Required";
-    } else if (cleanPhone.length !== 10) {
-      newErrors.student_phone = "Must be 10 digits";
-    } else if (!/^[6-9]/.test(cleanPhone)) {
-      newErrors.student_phone = "Invalid number";
-    }
-
-    setSaveErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -409,27 +387,10 @@ export const EligibilityCheckModal = ({
     try {
       const loanAmount = parseInt(quickForm.loan_amount.replace(/,/g, ''));
       const salary = parseFloat(quickForm.co_applicant_monthly_salary.replace(/,/g, ''));
+      const studentPhone = quickForm.student_phone.replace(/\D/g, '');
       
       const eligibility = await calculateEligibility(loanAmount, salary, quickForm.university_id);
       setResult(eligibility);
-      toast.success('Score calculated!');
-
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to check eligibility');
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  const handleSaveLead = async () => {
-    if (!validateSaveForm() || !result) return;
-
-    setIsSaving(true);
-
-    try {
-      const loanAmount = parseInt(quickForm.loan_amount.replace(/,/g, ''));
-      const salary = parseFloat(quickForm.co_applicant_monthly_salary.replace(/,/g, ''));
-      const studentPhone = saveForm.student_phone.replace(/\D/g, '');
       
       // Calculate default intake (next available intake - 3 months from now)
       const now = new Date();
@@ -437,12 +398,13 @@ export const EligibilityCheckModal = ({
       const defaultIntakeMonth = futureDate.getMonth() + 1; // 1-indexed
       const defaultIntakeYear = futureDate.getFullYear();
 
+      // Auto-save the lead with the eligibility result
       const { data, error } = await supabase.functions.invoke('create-lead-quick', {
         body: {
-          student_name: saveForm.student_name.trim(),
+          student_name: quickForm.student_name.trim(),
           student_phone: studentPhone,
           student_pin_code: '000000',
-          country: result.universityCountry,
+          country: eligibility.universityCountry,
           university_id: quickForm.university_id,
           loan_amount: loanAmount,
           intake_month: defaultIntakeMonth,
@@ -453,8 +415,8 @@ export const EligibilityCheckModal = ({
           co_applicant_phone: studentPhone, // Use student phone as placeholder
           co_applicant_pin_code: '000000',
           source: 'eligibility_check',
-          eligibility_score: result.score,
-          eligibility_result: result.result,
+          eligibility_score: eligibility.score,
+          eligibility_result: eligibility.result,
           partner_id: partnerId,
         }
       });
@@ -468,22 +430,20 @@ export const EligibilityCheckModal = ({
       }
 
       setLeadId(data.lead.id);
-      toast.success('Lead saved successfully!');
+      toast.success('Eligibility checked & lead saved!');
       onSuccess?.(data.lead.id);
 
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save lead');
+      toast.error(error.message || 'Failed to check eligibility');
     } finally {
-      setIsSaving(false);
+      setIsChecking(false);
     }
   };
 
   const handleClose = () => {
-    if (!isChecking && !isSaving) {
+    if (!isChecking) {
       setQuickForm(initialQuickForm);
-      setSaveForm(initialSaveForm);
       setQuickErrors({});
-      setSaveErrors({});
       setResult(null);
       setLeadId(null);
       onClose();
@@ -556,116 +516,94 @@ export const EligibilityCheckModal = ({
               </div>
             </div>
 
-            {/* Save Lead Form */}
-            {!leadId ? (
-              <div className="space-y-3 pt-2 border-t">
-                <div className="text-center">
-                  <h3 className="font-semibold text-sm">Save This Result</h3>
-                  <p className="text-xs text-muted-foreground">Enter student details to continue</p>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={saveForm.student_name}
-                      onChange={(e) => handleSaveChange('student_name', e.target.value)}
-                      placeholder="Student Name"
-                      className={cn("pl-9 h-10", saveErrors.student_name && 'border-destructive')}
-                    />
-                  </div>
-                  {saveErrors.student_name && (
-                    <p className="text-xs text-destructive">{saveErrors.student_name}</p>
-                  )}
-
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={saveForm.student_phone}
-                      onChange={(e) => handleSaveChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="Phone Number (10 digits)"
-                      className={cn("pl-9 h-10", saveErrors.student_phone && 'border-destructive')}
-                    />
-                  </div>
-                  {saveErrors.student_phone && (
-                    <p className="text-xs text-destructive">{saveErrors.student_phone}</p>
-                  )}
-                </div>
-
-                <Button 
-                  onClick={handleSaveLead} 
-                  disabled={isSaving}
-                  className="w-full h-11 gap-2"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" />
-                      Save & Continue
-                    </>
-                  )}
-                </Button>
+            {/* Lead is auto-saved - Show Continue Button */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-center gap-2 text-emerald-600">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="font-medium">Lead Saved for {quickForm.student_name}!</span>
               </div>
-            ) : (
-              /* Lead Saved - Show Continue Button */
-              <div className="space-y-3 pt-2 border-t">
-                <div className="flex items-center justify-center gap-2 text-emerald-600">
-                  <CheckCircle2 className="h-5 w-5" />
-                  <span className="font-medium">Lead Saved!</span>
-                </div>
 
-                <Button 
-                  onClick={handleContinueApplication} 
-                  size="lg"
-                  className="w-full h-12 gap-2"
-                >
-                  <TierIcon className="h-5 w-5" />
-                  {tierConfig.ctaText}
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
+              <Button 
+                onClick={handleContinueApplication} 
+                size="lg"
+                className="w-full h-12 gap-2"
+              >
+                <TierIcon className="h-5 w-5" />
+                {tierConfig.ctaText}
+                <ArrowRight className="h-5 w-5" />
+              </Button>
 
-                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Shield className="h-3.5 w-3.5 text-green-600" />
-                    Secure
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
-                    48hr Response
-                  </span>
-                </div>
-
-                <Button variant="ghost" onClick={handleClose} className="w-full">
-                  Close
-                </Button>
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Shield className="h-3.5 w-3.5 text-green-600" />
+                  Secure
+                </span>
+                <span className="flex items-center gap-1">
+                  <Zap className="h-3.5 w-3.5 text-amber-500" />
+                  48hr Response
+                </span>
               </div>
-            )}
+
+              <Button variant="ghost" onClick={handleClose} className="w-full">
+                Close
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // Quick Check Form - Just 3 Fields!
+  // Quick Check Form - With Student Info at the top
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-amber-500" />
-            30-Second Eligibility Check
+            Quick Eligibility Check
           </DialogTitle>
         </DialogHeader>
 
         <div className="text-sm text-muted-foreground -mt-2 mb-4">
-          Just 3 quick questions to see the score
+          Check eligibility in seconds
         </div>
 
         <div className="space-y-4">
+          {/* Student Name */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Student Name
+            </Label>
+            <Input
+              value={quickForm.student_name}
+              onChange={(e) => handleQuickChange('student_name', e.target.value)}
+              placeholder="Enter student's full name"
+              className={cn("h-11", quickErrors.student_name && 'border-destructive')}
+            />
+            {quickErrors.student_name && (
+              <p className="text-xs text-destructive">{quickErrors.student_name}</p>
+            )}
+          </div>
+
+          {/* Student Phone */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Phone className="h-4 w-4 text-primary" />
+              Student Phone
+            </Label>
+            <Input
+              value={quickForm.student_phone}
+              onChange={(e) => handleQuickChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="10-digit mobile number"
+              className={cn("h-11", quickErrors.student_phone && 'border-destructive')}
+            />
+            {quickErrors.student_phone && (
+              <p className="text-xs text-destructive">{quickErrors.student_phone}</p>
+            )}
+          </div>
+
           {/* Country - Inline Buttons */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Study Destination</Label>
@@ -772,7 +710,7 @@ export const EligibilityCheckModal = ({
             {isChecking ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Calculating...
+                Checking & Saving...
               </>
             ) : (
               <>
@@ -784,7 +722,7 @@ export const EligibilityCheckModal = ({
           </Button>
           
           <p className="text-center text-xs text-muted-foreground">
-            No lead created until you save
+            Lead will be saved with eligibility result
           </p>
         </div>
       </DialogContent>
