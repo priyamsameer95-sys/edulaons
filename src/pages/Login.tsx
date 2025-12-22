@@ -1,13 +1,28 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, GraduationCap, Mail, Lock, Shield, Info, CheckCircle2, Zap, FileCheck, TrendingUp } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { 
+  Loader2, 
+  GraduationCap, 
+  Mail, 
+  Lock, 
+  Shield, 
+  CheckCircle2, 
+  Briefcase,
+  Sparkles,
+  Globe,
+  Clock,
+  Users,
+  Star,
+  ArrowRight,
+  Quote
+} from 'lucide-react';
 import DashboardRouter from '@/components/DashboardRouter';
 import { LoadingButton } from '@/components/ui/loading-button';
 
@@ -34,8 +49,14 @@ const Login = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            <Loader2 className="h-10 w-10 animate-spin text-primary relative" />
+          </div>
+          <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -112,318 +133,347 @@ const Login = () => {
     setIsLoading(false);
   };
 
+  const stats = [
+    { icon: Users, value: '10,000+', label: 'Students Funded' },
+    { icon: Globe, value: '₹2,500Cr+', label: 'Loans Processed' },
+    { icon: Clock, value: '48 Hours', label: 'Avg. Approval' },
+    { icon: Star, value: '4.8/5', label: 'Student Rating' },
+  ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
-      {/* LEFT SIDE - BRANDING PANEL */}
-      <div className="hidden lg:flex flex-col justify-center items-center p-12 bg-gradient-to-br from-[hsl(217,91%,55%)] to-[hsl(262,83%,58%)] relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-        
-        {/* Content */}
-        <div className="relative z-10 max-w-md space-y-12 text-white">
-          {/* Brand */}
-          <div className="space-y-4">
-            <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl">
-              <GraduationCap className="w-10 h-10 text-white" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-brand font-bold tracking-tight">
-                EduLoan<span className="text-white/90">Pro</span>
-              </h1>
-              <p className="text-xl text-white/90 mt-3 font-medium">
-                Empowering Your Education Journey
-              </p>
-            </div>
-          </div>
-
-          {/* Features */}
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Smart Loan Matching</h3>
-                <p className="text-white/80 text-sm">Get matched with the best lenders based on your profile and needs</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <FileCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Real-time Tracking</h3>
-                <p className="text-white/80 text-sm">Monitor your application status and get instant updates at every stage</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Shield className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Secure & Private</h3>
-                <p className="text-white/80 text-sm">Bank-grade encryption keeps your documents and data completely safe</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Zap className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Fast Approval</h3>
-                <p className="text-white/80 text-sm">Streamlined process designed to get you approved quickly and efficiently</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust indicator */}
-          <div className="pt-8 border-t border-white/20">
-            <p className="text-white/70 text-sm">
-              Trusted by <span className="font-semibold text-white">10,000+</span> students across the country
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background relative">
+      {/* Partner Login - Top Right */}
+      <div className="absolute top-4 right-4 z-50 sm:top-6 sm:right-6">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          asChild
+          className="gap-2 bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm"
+        >
+          <Link to="/partner">
+            <Briefcase className="h-4 w-4" />
+            <span className="hidden sm:inline">Partner Login</span>
+            <span className="sm:hidden">Partner</span>
+          </Link>
+        </Button>
       </div>
 
-      {/* RIGHT SIDE - LOGIN FORM */}
-      <div className="flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-background relative overflow-hidden">
-        {/* Subtle background pattern for right side */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
-        
-        <Card className="w-full max-w-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] border relative z-10">
-        <CardHeader className="text-center space-y-6 pb-8 pt-10 px-8">
-          {/* Brand Logo */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(217,91%,55%)] to-[hsl(262,83%,58%)] rounded-2xl blur-xl opacity-40" />
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[hsl(217,91%,55%)] to-[hsl(262,83%,58%)] flex items-center justify-center shadow-lg">
-                <GraduationCap className="w-8 h-8 text-white" />
-              </div>
-            </div>
-            
-            {/* Brand Name */}
-            <div className="space-y-1">
-              <h1 className="text-3xl font-brand font-bold text-foreground tracking-tight">
-                EduLoan<span className="text-[hsl(217,91%,55%)]">Pro</span>
-              </h1>
-              <p className="text-sm text-muted-foreground font-medium">
-                Your Education Finance Partner
-              </p>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+        {/* LEFT SIDE - STUDENT-FOCUSED HERO */}
+        <div className="hidden lg:flex flex-col justify-center p-12 xl:p-16 bg-gradient-to-br from-primary via-primary/90 to-[hsl(262,83%,58%)] relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
+          <div className="absolute top-20 right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-white/5 to-transparent rounded-full blur-3xl" />
+          
+          {/* Floating elements */}
+          <div className="absolute top-32 right-24 w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center animate-bounce [animation-duration:3s]">
+            <GraduationCap className="w-8 h-8 text-white" />
+          </div>
+          <div className="absolute bottom-40 right-32 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center animate-bounce [animation-duration:4s] [animation-delay:1s]">
+            <Sparkles className="w-6 h-6 text-white" />
           </div>
           
-          <div className="pt-2">
-            <CardDescription className="text-base">
-              Empowering students with smart loan solutions
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6 px-8 pb-8">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-11">
-              <TabsTrigger value="signin">
-                Sign In
-              </TabsTrigger>
-              <TabsTrigger value="signup">
-                Sign Up
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin" className="mt-6 space-y-5">
-              <Alert className="bg-muted/50 border-muted-foreground/20">
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  Returning students: Sign in to track your loan applications and view status updates
-                </AlertDescription>
-              </Alert>
-
-              <form onSubmit={handleSignIn} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email Address
-                  </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="h-11"
-                  />
-                  <p className="text-xs text-muted-foreground">We'll never share your email with anyone</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    Password
-                  </Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    className="h-11"
-                  />
-                </div>
-                <LoadingButton 
-                  type="submit" 
-                  className="w-full h-11 font-medium" 
-                  loading={isLoading}
-                  loadingText="Signing in..."
-                >
-                  Sign In
-                </LoadingButton>
-                <p className="text-xs text-center text-muted-foreground">
-                  First time here? Switch to Sign Up to create an account
-                </p>
-              </form>
-
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t">
-                <Shield className="h-4 w-4" />
-                <span>Your data is encrypted and secure</span>
+          <div className="relative z-10 max-w-xl space-y-10 text-white">
+            {/* Hero Headline */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-sm font-medium">
+                <Sparkles className="w-4 h-4" />
+                <span>Trusted by 10,000+ students</span>
               </div>
-            </TabsContent>
+              
+              <h1 className="text-4xl xl:text-5xl font-brand font-bold tracking-tight leading-tight">
+                Your Dream University<br />
+                <span className="text-white/90">is Within Reach</span>
+              </h1>
+              
+              <p className="text-xl text-white/80 leading-relaxed max-w-md">
+                Don't let finances hold you back. Get matched with the best education loans in minutes.
+              </p>
+            </div>
 
-            <TabsContent value="signup" className="mt-6 space-y-5">
-              <Alert className="bg-primary/5 border-primary/20">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-sm">
-                  <strong>Create your account to:</strong>
-                  <ul className="mt-2 space-y-1 text-xs">
-                    <li>✓ Track all your loan applications in one place</li>
-                    <li>✓ Get real-time updates on application status</li>
-                    <li>✓ Upload and manage documents securely</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {stats.map((stat, index) => (
+                <div 
+                  key={index}
+                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 hover:bg-white/15 transition-colors"
+                >
+                  <stat.icon className="w-5 h-5 mb-2 text-white/70" />
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-sm text-white/70">{stat.label}</div>
+                </div>
+              ))}
+            </div>
 
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name" className="text-sm font-medium">
-                    Full Name
-                  </Label>
-                  <Input
-                    id="signup-name"
-                    name="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={signUpData.name}
-                    onChange={handleSignUpInputChange}
-                    required
-                    className="h-11"
-                  />
+            {/* Testimonial */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <Quote className="w-8 h-8 text-white/40 mb-3" />
+              <p className="text-white/90 italic leading-relaxed">
+                "EduLoanPro helped me secure my MBA dream at London Business School. The process was seamless and the team was incredibly supportive!"
+              </p>
+              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-semibold">
+                  PS
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-phone" className="text-sm font-medium">
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="signup-phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="+1 (555) 000-0000"
-                    value={signUpData.phone}
-                    onChange={handleSignUpInputChange}
-                    required
-                    className="h-11"
-                  />
+                <div>
+                  <div className="font-medium">Priya Sharma</div>
+                  <div className="text-sm text-white/60">MBA 2024, London Business School</div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-sm font-medium flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email Address
-                  </Label>
-                  <Input
-                    id="signup-email"
-                    name="email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={signUpData.email}
-                    onChange={handleSignUpInputChange}
-                    required
-                    className="h-11"
-                  />
-                  <p className="text-xs text-muted-foreground">You'll receive a verification email after signing up</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-sm font-medium flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    Password
-                  </Label>
-                  <Input
-                    id="signup-password"
-                    name="password"
-                    type="password"
-                    placeholder="Create a secure password"
-                    value={signUpData.password}
-                    onChange={handleSignUpInputChange}
-                    required
-                    minLength={6}
-                    className="h-11"
-                  />
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Password requirements:</p>
-                    <ul className="text-xs text-muted-foreground space-y-0.5">
-                      <li className={signUpData.password.length >= 6 ? "text-green-600" : ""}>
-                        {signUpData.password.length >= 6 ? "✓" : "•"} At least 6 characters
-                      </li>
-                    </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE - LOGIN FORM */}
+        <div className="flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 bg-background relative overflow-hidden min-h-screen lg:min-h-0">
+          {/* Mobile Hero - Shown only on small screens */}
+          <div className="lg:hidden text-center mb-8 pt-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>10,000+ students funded</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-brand font-bold text-foreground mb-2">
+              Your Dream University<br />is Within Reach
+            </h1>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+              Get matched with the best education loans in minutes
+            </p>
+          </div>
+          
+          {/* Subtle background pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.5)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.5)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+          
+          <Card className="w-full max-w-md shadow-xl border relative z-10">
+            <CardHeader className="text-center space-y-4 pb-6 pt-8 px-6 sm:px-8">
+              {/* Brand Logo */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-[hsl(262,83%,58%)] rounded-2xl blur-xl opacity-40" />
+                  <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-[hsl(262,83%,58%)] flex items-center justify-center shadow-lg">
+                    <GraduationCap className="w-7 h-7 text-white" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
-                    Confirm Password
-                  </Label>
-                  <Input
-                    id="signup-confirm-password"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="Re-enter your password"
-                    value={signUpData.confirmPassword}
-                    onChange={handleSignUpInputChange}
-                    required
-                    className="h-11"
-                  />
-                  {signUpData.confirmPassword && signUpData.password !== signUpData.confirmPassword && (
-                    <p className="text-xs text-destructive">Passwords don't match</p>
-                  )}
-                  {signUpData.confirmPassword && signUpData.password === signUpData.confirmPassword && (
-                    <p className="text-xs text-green-600">✓ Passwords match</p>
-                  )}
+                
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-brand font-bold text-foreground tracking-tight">
+                    Welcome, Future Graduate!
+                  </h2>
+                  <CardDescription className="text-sm">
+                    Start your education loan journey today
+                  </CardDescription>
                 </div>
-                <LoadingButton 
-                  type="submit" 
-                  className="w-full h-11 font-medium mt-6" 
-                  loading={isLoading}
-                  loadingText="Creating account..."
-                >
-                  Create Account
-                </LoadingButton>
-                <p className="text-xs text-center text-muted-foreground">
-                  Already have an account? Switch to Sign In
-                </p>
-              </form>
-
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-4 border-t">
-                <Shield className="h-4 w-4" />
-                <span>Your data is encrypted and secure</span>
               </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        </Card>
+            </CardHeader>
+            
+            <CardContent className="space-y-5 px-6 sm:px-8 pb-8">
+              <Tabs defaultValue="signin" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 h-11 mb-6">
+                  <TabsTrigger value="signin" className="text-sm font-medium">
+                    Sign In
+                  </TabsTrigger>
+                  <TabsTrigger value="signup" className="text-sm font-medium">
+                    Sign Up
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signin" className="space-y-5 mt-0">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                        Email Address
+                      </Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="student@university.edu"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                        Password
+                      </Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required
+                        className="h-11"
+                      />
+                    </div>
+                    <LoadingButton 
+                      type="submit" 
+                      className="w-full h-11 font-medium gap-2" 
+                      loading={isLoading}
+                      loadingText="Signing in..."
+                    >
+                      Continue Your Journey
+                      <ArrowRight className="w-4 h-4" />
+                    </LoadingButton>
+                  </form>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    New here? Switch to <span className="font-medium text-primary">Sign Up</span> to create an account
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-4 border-t">
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>Your data is encrypted and secure</span>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="signup" className="space-y-5 mt-0">
+                  {/* Benefits preview */}
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Track applications</span> • Get updates • Secure documents
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-name" className="text-sm font-medium">
+                          Full Name
+                        </Label>
+                        <Input
+                          id="signup-name"
+                          name="name"
+                          type="text"
+                          placeholder="John Doe"
+                          value={signUpData.name}
+                          onChange={handleSignUpInputChange}
+                          required
+                          className="h-10"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-phone" className="text-sm font-medium">
+                          Phone
+                        </Label>
+                        <Input
+                          id="signup-phone"
+                          name="phone"
+                          type="tel"
+                          placeholder="+91 98765 43210"
+                          value={signUpData.phone}
+                          onChange={handleSignUpInputChange}
+                          required
+                          className="h-10"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email" className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                        Email Address
+                      </Label>
+                      <Input
+                        id="signup-email"
+                        name="email"
+                        type="email"
+                        placeholder="student@university.edu"
+                        value={signUpData.email}
+                        onChange={handleSignUpInputChange}
+                        required
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password" className="text-sm font-medium flex items-center gap-2">
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                        Password
+                      </Label>
+                      <Input
+                        id="signup-password"
+                        name="password"
+                        type="password"
+                        placeholder="Min. 6 characters"
+                        value={signUpData.password}
+                        onChange={handleSignUpInputChange}
+                        required
+                        minLength={6}
+                        className="h-10"
+                      />
+                      {signUpData.password && (
+                        <p className={`text-xs ${signUpData.password.length >= 6 ? "text-green-600" : "text-muted-foreground"}`}>
+                          {signUpData.password.length >= 6 ? "✓ Strong password" : `${6 - signUpData.password.length} more characters needed`}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm-password" className="text-sm font-medium">
+                        Confirm Password
+                      </Label>
+                      <Input
+                        id="signup-confirm-password"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="Re-enter password"
+                        value={signUpData.confirmPassword}
+                        onChange={handleSignUpInputChange}
+                        required
+                        className="h-10"
+                      />
+                      {signUpData.confirmPassword && (
+                        <p className={`text-xs ${signUpData.password === signUpData.confirmPassword ? "text-green-600" : "text-destructive"}`}>
+                          {signUpData.password === signUpData.confirmPassword ? "✓ Passwords match" : "Passwords don't match"}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <LoadingButton 
+                      type="submit" 
+                      className="w-full h-11 font-medium gap-2" 
+                      loading={isLoading}
+                      loadingText="Creating account..."
+                    >
+                      Begin Your Journey
+                      <ArrowRight className="w-4 h-4" />
+                    </LoadingButton>
+                  </form>
+                  
+                  <p className="text-xs text-center text-muted-foreground">
+                    Already have an account? Switch to <span className="font-medium text-primary">Sign In</span>
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-4 border-t">
+                    <Shield className="h-3.5 w-3.5" />
+                    <span>Your data is encrypted and secure</span>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+          
+          {/* Mobile Stats - Shown only on small screens */}
+          <div className="lg:hidden grid grid-cols-2 gap-3 mt-8 w-full max-w-md">
+            {stats.slice(0, 2).map((stat, index) => (
+              <div 
+                key={index}
+                className="bg-muted/50 rounded-xl p-4 text-center"
+              >
+                <div className="text-lg font-bold text-foreground">{stat.value}</div>
+                <div className="text-xs text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
