@@ -44,7 +44,22 @@ export const PartnerLeadsTable = ({
   const paginatedLeads = leads.slice(startIndex, startIndex + itemsPerPage);
 
   const isIncompleteQuickLead = (lead: RefactoredLead) => {
-    return lead.is_quick_lead === true && !lead.quick_lead_completed_at;
+    // Check if explicitly marked as quick lead that's incomplete
+    if (lead.is_quick_lead === true && !lead.quick_lead_completed_at) {
+      return true;
+    }
+    
+    // Also check for eligibility-check leads that have placeholder data
+    // These are leads created via eligibility check that need to be completed
+    const coApplicant = lead.co_applicant;
+    if (coApplicant) {
+      // Check for placeholder PIN code (000000 is default for eligibility check)
+      if (coApplicant.pin_code === '000000') {
+        return true;
+      }
+    }
+    
+    return false;
   };
 
   const isEligibilityCheckedLead = (lead: RefactoredLead) => {
