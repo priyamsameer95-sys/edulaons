@@ -93,109 +93,89 @@ interface TierConfig {
   subtext: string;
   gradient: string;
   bgGradient: string;
-  ringColor: string;
   icon: React.ComponentType<{ className?: string }>;
   ctaText: string;
 }
 
-// Tier-based messaging and styling - moved outside component for stability
-const getTierConfig = (score: number): TierConfig => {
-  if (score >= 80) {
+// Tier-based messaging and styling - based on lender count
+const getTierConfig = (lenderCount: number): TierConfig => {
+  if (lenderCount >= 4) {
     return {
       headline: "Excellent Match!",
       emoji: "🎉",
-      subtext: "Top tier applicant. Lenders are eager to fund!",
+      subtext: "Multiple lenders are eager to fund this application!",
       gradient: "from-emerald-500 via-green-500 to-teal-500",
       bgGradient: "from-emerald-50 to-teal-50",
-      ringColor: "stroke-emerald-500",
       icon: Trophy,
       ctaText: "Fast-Track This Application",
     };
-  } else if (score >= 65) {
+  } else if (lenderCount >= 3) {
     return {
       headline: "Great Opportunity!",
       emoji: "✨",
-      subtext: "Strong profile! Highly likely to get approved.",
+      subtext: "Strong options available. Highly likely to get approved.",
       gradient: "from-blue-500 via-indigo-500 to-purple-500",
       bgGradient: "from-blue-50 to-indigo-50",
-      ringColor: "stroke-blue-500",
       icon: Star,
       ctaText: "Complete & Get Offers",
     };
-  } else if (score >= 45) {
+  } else if (lenderCount >= 2) {
     return {
-      headline: "Good to Go!",
+      headline: "Good Options!",
       emoji: "💪",
-      subtext: "Many similar profiles get funded!",
+      subtext: "Solid lending options available for this profile.",
       gradient: "from-amber-500 via-orange-500 to-yellow-500",
       bgGradient: "from-amber-50 to-orange-50",
-      ringColor: "stroke-amber-500",
       icon: Rocket,
       ctaText: "Let's Make It Happen",
     };
-  } else {
+  } else if (lenderCount >= 1) {
     return {
-      headline: "Let's Explore Options",
+      headline: "Option Available",
       emoji: "🚀",
-      subtext: "Complete the application to explore all options.",
+      subtext: "Complete the application to explore this option.",
       gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
       bgGradient: "from-violet-50 to-purple-50",
-      ringColor: "stroke-violet-500",
       icon: Sparkles,
-      ctaText: "Explore All Options",
+      ctaText: "Explore This Option",
+    };
+  } else {
+    return {
+      headline: "Let's Explore",
+      emoji: "🔍",
+      subtext: "Complete application for personalized options.",
+      gradient: "from-slate-500 via-gray-500 to-zinc-500",
+      bgGradient: "from-slate-50 to-gray-50",
+      icon: Sparkles,
+      ctaText: "Complete Application",
     };
   }
 };
 
-// Animated score ring component - moved outside to prevent re-mounting on parent re-render
-const ScoreRing = ({ score, config }: { score: number; config: TierConfig }) => {
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (animatedScore / 100) * circumference;
+// Lender count display component
+const LenderDisplay = ({ count, config }: { count: number; config: TierConfig }) => {
+  const [animatedCount, setAnimatedCount] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setAnimatedScore(score);
+      setAnimatedCount(count);
     }, 100);
     return () => clearTimeout(timer);
-  }, [score]);
+  }, [count]);
 
   return (
-    <div className="relative w-32 h-32 mx-auto">
-      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="8"
-          className="text-muted/20"
-        />
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          strokeWidth="8"
-          strokeLinecap="round"
-          className={cn(config.ringColor, "transition-all duration-1000 ease-out")}
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset: strokeDashoffset,
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn(
-          "text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
-          config.gradient
-        )}>
-          {animatedScore}
+    <div className="text-center">
+      <div className={cn(
+        "inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br shadow-lg",
+        config.gradient
+      )}>
+        <span className="text-4xl font-bold text-white">
+          {animatedCount}
         </span>
-        <span className="text-xs text-muted-foreground">out of 100</span>
       </div>
+      <p className="mt-3 text-lg font-semibold text-foreground">
+        {count === 1 ? 'Lender' : 'Lenders'} Ready to Fund
+      </p>
     </div>
   );
 };
@@ -443,18 +423,29 @@ export const EligibilityCheckModal = ({
     try {
       const loanAmount = parseInt(quickForm.loan_amount.replace(/,/g, ''));
       const salary = parseFloat(quickForm.co_applicant_monthly_salary.replace(/,/g, ''));
+      const studentPhone = saveForm.student_phone.replace(/\D/g, '');
+      
+      // Calculate default intake (next available intake - 3 months from now)
+      const now = new Date();
+      const futureDate = new Date(now.setMonth(now.getMonth() + 3));
+      const defaultIntakeMonth = futureDate.getMonth() + 1; // 1-indexed
+      const defaultIntakeYear = futureDate.getFullYear();
 
       const { data, error } = await supabase.functions.invoke('create-lead-quick', {
         body: {
           student_name: saveForm.student_name.trim(),
-          student_phone: saveForm.student_phone.replace(/\D/g, ''),
+          student_phone: studentPhone,
           student_pin_code: '000000',
           country: result.universityCountry,
           university_id: quickForm.university_id,
           loan_amount: loanAmount,
+          intake_month: defaultIntakeMonth,
+          intake_year: defaultIntakeYear,
           co_applicant_relationship: 'parent',
           co_applicant_name: 'Co-Applicant',
           co_applicant_monthly_salary: salary,
+          co_applicant_phone: studentPhone, // Use student phone as placeholder
+          co_applicant_pin_code: '000000',
           source: 'eligibility_check',
           eligibility_score: result.score,
           eligibility_result: result.result,
@@ -503,18 +494,18 @@ export const EligibilityCheckModal = ({
 
   // Result Screen with Save Form
   if (result) {
-    const tierConfig = getTierConfig(result.score);
+    const tierConfig = getTierConfig(result.lenderCount);
     const TierIcon = tierConfig.icon;
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md overflow-hidden p-0">
-          {/* Score Header */}
+          {/* Lender Count Header */}
           <div className={cn(
             "relative px-6 pt-5 pb-6 bg-gradient-to-br text-center",
             tierConfig.bgGradient
           )}>
-            <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="flex items-center justify-center gap-2 mb-4">
               <span className="text-2xl">{tierConfig.emoji}</span>
               <h2 className={cn(
                 "text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
@@ -524,7 +515,7 @@ export const EligibilityCheckModal = ({
               </h2>
             </div>
 
-            <ScoreRing score={result.score} config={tierConfig} />
+            <LenderDisplay count={result.lenderCount} config={tierConfig} />
 
             <p className="mt-3 text-sm text-muted-foreground">
               {tierConfig.subtext}
@@ -786,7 +777,7 @@ export const EligibilityCheckModal = ({
             ) : (
               <>
                 <TrendingUp className="h-5 w-5" />
-                Check Score
+                Check Eligibility
                 <ArrowRight className="h-5 w-5" />
               </>
             )}
