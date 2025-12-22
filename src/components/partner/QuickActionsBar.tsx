@@ -23,11 +23,15 @@ export const QuickActionsBar = ({
         Add New Lead
       </Button>
 
-      {/* Secondary Action - Eligibility Check */}
+      {/* Quick CTA - Eligibility Check */}
       {onEligibilityCheck && (
-        <Button onClick={onEligibilityCheck} variant="outline" className="gap-2">
-          <TrendingUp className="h-4 w-4" />
-          Check Eligibility
+        <Button 
+          onClick={onEligibilityCheck} 
+          className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-105 font-semibold"
+        >
+          <TrendingUp className="h-4 w-4 animate-pulse" />
+          <span>Quick Check</span>
+          <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-bold">⚡</span>
         </Button>
       )}
 
