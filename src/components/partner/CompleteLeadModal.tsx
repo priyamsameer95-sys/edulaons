@@ -326,23 +326,37 @@ export const CompleteLeadModal = ({
                 <GraduationCap className="h-4 w-4" />
                 Course / Program <span className="text-destructive">*</span>
               </Label>
-              <CourseCombobox
-                universityId={existingData?.universityId || undefined}
-                value={courseId}
-                onChange={(value, isCustom) => {
-                  setCourseId(value);
-                  setIsCustomCourse(isCustom || false);
-                  if (errors.courseId) {
-                    setErrors(prev => ({ ...prev, courseId: undefined }));
-                  }
-                }}
-                placeholder="Search or enter course name..."
-                disabled={!existingData?.universityId}
-                error={errors.courseId}
-              />
+              {existingData?.universityId ? (
+                <CourseCombobox
+                  universityId={existingData.universityId}
+                  value={courseId}
+                  onChange={(value, isCustom) => {
+                    setCourseId(value);
+                    setIsCustomCourse(isCustom || false);
+                    if (errors.courseId) {
+                      setErrors(prev => ({ ...prev, courseId: undefined }));
+                    }
+                  }}
+                  placeholder="Search or enter course name..."
+                  error={errors.courseId}
+                />
+              ) : (
+                <Input
+                  placeholder="Enter course/program name"
+                  value={courseId}
+                  onChange={(e) => {
+                    setCourseId(e.target.value);
+                    setIsCustomCourse(true);
+                    if (errors.courseId) {
+                      setErrors(prev => ({ ...prev, courseId: undefined }));
+                    }
+                  }}
+                  className={errors.courseId ? 'border-destructive' : ''}
+                />
+              )}
               {!existingData?.universityId && (
                 <p className="text-xs text-amber-600">
-                  University not found. You can still enter a custom course name.
+                  No university on file. Enter your course name manually.
                 </p>
               )}
               {errors.courseId && (

@@ -84,8 +84,8 @@ export function CourseCombobox({
     c.program_name.toLowerCase() === localInput.toLowerCase()
   );
 
-  // Allow custom course entry even when university is not a valid UUID
-  const isDisabled = disabled || (!universityId && !value);
+  // Only disable if explicitly disabled via prop
+  const isDisabled = disabled;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
