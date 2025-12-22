@@ -29,9 +29,12 @@ import {
   Building2,
   Check,
   User,
-  Users
+  Users,
+  ShieldCheck,
+  Sparkles
 } from "lucide-react";
 import { CourseCombobox } from "@/components/ui/course-combobox";
+import { Progress } from "@/components/ui/progress";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 import { Database } from "@/integrations/supabase/types";
 
@@ -344,24 +347,32 @@ export const CompleteLeadModal = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            Complete Application Details
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Final Step: Complete Your Application
           </DialogTitle>
-          <DialogDescription>
-            Complete the application for {lead.student?.name} ({lead.case_id})
+          <DialogDescription className="text-sm">
+            We've saved your profile for <span className="font-medium text-foreground">{lead.student?.name}</span>. Just confirm the last few details below to finalize.
           </DialogDescription>
+          {/* Progress Indicator */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Application progress</span>
+              <span className="font-medium text-primary">90% Complete</span>
+            </div>
+            <Progress value={90} className="h-2" />
+          </div>
         </DialogHeader>
 
         {fetchingData ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-8 flex-1">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Loading existing data...</span>
+            <span className="ml-2 text-muted-foreground">Loading your saved data...</span>
           </div>
         ) : (
-          <div className="space-y-5 py-4">
+          <div className="space-y-5 py-4 overflow-y-auto flex-1">
             {/* Already Captured Data - Read Only Confirmation */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -472,8 +483,8 @@ export const CompleteLeadModal = ({
                 />
               )}
               {!existingData?.universityId && (
-                <p className="text-xs text-amber-600">
-                  No university on file. Enter your course name manually.
+                <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md">
+                  💡 We couldn't fetch your university automatically — please enter your course name manually.
                 </p>
               )}
               {errors.courseId && (
@@ -588,21 +599,29 @@ export const CompleteLeadModal = ({
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        {/* Trust Signal */}
+        {!fetchingData && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
+            <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
+            <span>Your data is encrypted and never shared with third parties.</span>
+          </div>
+        )}
+
+        {/* Sticky Footer */}
+        <div className="flex justify-end gap-3 pt-4 border-t bg-background sticky bottom-0">
           <Button variant="outline" onClick={handleClose} disabled={loading || fetchingData}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || fetchingData}>
+          <Button onClick={handleSubmit} disabled={loading || fetchingData} className="min-w-[140px]">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
+                Finalizing...
               </>
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Complete Lead
+                Complete Application
               </>
             )}
           </Button>
