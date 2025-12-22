@@ -16,6 +16,7 @@ import { Partner } from "@/types/partner";
 import { RefactoredLead, mapDbRefactoredLeadToLead } from "@/types/refactored-lead";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Status mappings for 18-step process filtering
 const IN_PIPELINE_STATUSES = [
@@ -105,18 +106,25 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
 
   const handleEligibilityContinue = async (leadId: string): Promise<void> => {
     // Fetch the newly created lead and open CompleteLeadModal
-    const { data: lead } = await supabase
+    // Use explicit FK hints to avoid ambiguous relationship error
+    const { data: lead, error } = await supabase
       .from('leads_new')
       .select(`
         *,
-        students(*),
-        co_applicants(*),
-        lenders(*),
-        partners(*)
+        students!leads_new_student_id_fkey(*),
+        co_applicants!leads_new_co_applicant_id_fkey(*),
+        lenders!leads_new_lender_id_fkey(*),
+        partners!leads_new_partner_id_fkey(*)
       `)
       .eq('id', leadId)
       .single();
     
+    if (error) {
+      console.error('Error fetching lead for complete modal:', error);
+      toast.error('Failed to load lead details');
+      return;
+    }
+
     if (lead) {
       const mappedLead = mapDbRefactoredLeadToLead(lead as any);
       setSelectedLead(mappedLead);
