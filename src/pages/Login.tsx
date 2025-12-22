@@ -308,7 +308,7 @@ const Login = () => {
             </div>
           </div>
           
-          <Card className="w-full max-w-md shadow-2xl shadow-primary/5 border border-border/50 rounded-3xl relative z-10 bg-background/95 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-2xl shadow-black/10 border-0 rounded-3xl relative z-10 bg-background ring-1 ring-border/50">
             <CardHeader className="text-center space-y-4 pb-2 pt-8 px-8">
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
@@ -330,11 +330,11 @@ const Login = () => {
             
             <CardContent className="space-y-5 px-8 pb-8">
               <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-12 mb-6 rounded-xl bg-muted/50 p-1">
-                  <TabsTrigger value="signin" className="text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <TabsList className="grid w-full grid-cols-2 h-12 mb-6 rounded-xl bg-muted p-1.5">
+                  <TabsTrigger value="signin" className="text-sm font-semibold rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-foreground transition-all">
                     Sign In
                   </TabsTrigger>
-                  <TabsTrigger value="signup" className="text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                  <TabsTrigger value="signup" className="text-sm font-semibold rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:text-foreground transition-all">
                     Sign Up
                   </TabsTrigger>
                 </TabsList>
@@ -342,8 +342,8 @@ const Login = () => {
                 <TabsContent value="signin" className="space-y-5 mt-0 animate-fade-in">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-primary/60" />
+                      <Label htmlFor="email" className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                        <Mail className="h-4 w-4 text-primary" />
                         Email
                       </Label>
                       <Input
@@ -354,12 +354,12 @@ const Login = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        className="h-12 rounded-xl bg-muted/30 border-border/50 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                        className="h-12 rounded-xl bg-muted/50 border-border focus:bg-background focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder:text-muted-foreground/70"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                        <Lock className="h-4 w-4 text-primary/60" />
+                      <Label htmlFor="password" className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                        <Lock className="h-4 w-4 text-primary" />
                         Password
                       </Label>
                       <Input
@@ -370,7 +370,7 @@ const Login = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         required
-                        className="h-12 rounded-xl bg-muted/30 border-border/50 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/50"
+                        className="h-12 rounded-xl bg-muted/50 border-border focus:bg-background focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder:text-muted-foreground/70"
                       />
                     </div>
                     
@@ -396,18 +396,18 @@ const Login = () => {
                   </p>
 
                   {/* Trust Indicators */}
-                  <div className="flex items-center justify-center gap-6 pt-5 border-t border-border/50">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                        <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                  <div className="flex items-center justify-center gap-8 pt-5 border-t">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                        <Shield className="h-4 w-4 text-emerald-600" />
                       </div>
-                      <span>Encrypted</span>
+                      <span className="text-sm font-medium text-foreground/80">Encrypted</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                        <Zap className="h-3.5 w-3.5 text-amber-600" />
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                        <Zap className="h-4 w-4 text-amber-600" />
                       </div>
-                      <span>30s Pre-approval</span>
+                      <span className="text-sm font-medium text-foreground/80">30s Approval</span>
                     </div>
                   </div>
                 </TabsContent>
@@ -427,7 +427,7 @@ const Login = () => {
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="signup-name" className="text-sm font-medium">Full Name</Label>
+                        <Label htmlFor="signup-name" className="text-sm font-semibold text-foreground">Full Name</Label>
                         <Input
                           id="signup-name"
                           name="name"
@@ -436,11 +436,11 @@ const Login = () => {
                           value={signUpData.name}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                          className="h-11 rounded-xl bg-muted/50 border-border focus:bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="signup-phone" className="text-sm font-medium">Phone</Label>
+                        <Label htmlFor="signup-phone" className="text-sm font-semibold text-foreground">Phone</Label>
                         <Input
                           id="signup-phone"
                           name="phone"
@@ -449,14 +449,14 @@ const Login = () => {
                           value={signUpData.phone}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                          className="h-11 rounded-xl bg-muted/50 border-border focus:bg-background"
                         />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email" className="text-sm font-medium flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-primary/60" />
+                      <Label htmlFor="signup-email" className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                        <Mail className="h-4 w-4 text-primary" />
                         Email
                       </Label>
                       <Input
@@ -467,13 +467,13 @@ const Login = () => {
                         value={signUpData.email}
                         onChange={handleSignUpInputChange}
                         required
-                        className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                        className="h-11 rounded-xl bg-muted/50 border-border focus:bg-background"
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
+                        <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground">Password</Label>
                         <Input
                           id="signup-password"
                           name="password"
@@ -483,11 +483,11 @@ const Login = () => {
                           onChange={handleSignUpInputChange}
                           required
                           minLength={6}
-                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                          className="h-11 rounded-xl bg-muted/50 border-border focus:bg-background"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="signup-confirm-password" className="text-sm font-medium">Confirm</Label>
+                        <Label htmlFor="signup-confirm-password" className="text-sm font-semibold text-foreground">Confirm</Label>
                         <Input
                           id="signup-confirm-password"
                           name="confirmPassword"
@@ -496,7 +496,7 @@ const Login = () => {
                           value={signUpData.confirmPassword}
                           onChange={handleSignUpInputChange}
                           required
-                          className="h-11 rounded-xl bg-muted/30 border-border/50 focus:bg-background"
+                          className="h-11 rounded-xl bg-muted/50 border-border focus:bg-background"
                         />
                       </div>
                     </div>
@@ -528,18 +528,18 @@ const Login = () => {
                   </p>
 
                   {/* Trust Indicators */}
-                  <div className="flex items-center justify-center gap-6 pt-5 border-t border-border/50">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                        <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                  <div className="flex items-center justify-center gap-8 pt-5 border-t">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                        <Shield className="h-4 w-4 text-emerald-600" />
                       </div>
-                      <span>Encrypted</span>
+                      <span className="text-sm font-medium text-foreground/80">Encrypted</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                        <Zap className="h-3.5 w-3.5 text-amber-600" />
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                        <Zap className="h-4 w-4 text-amber-600" />
                       </div>
-                      <span>30s Pre-approval</span>
+                      <span className="text-sm font-medium text-foreground/80">30s Approval</span>
                     </div>
                   </div>
                 </TabsContent>
