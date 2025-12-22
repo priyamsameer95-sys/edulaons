@@ -88,7 +88,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   }, [leads, statusFilter, searchQuery]);
 
   const handleNewLead = () => {
-    setShowQuickLead(true);
+    setShowNewLead(true);
   };
 
   const handleEligibilityCheck = () => {
@@ -101,22 +101,16 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   };
 
   const handleEligibilityContinue = (leadId: string) => {
-    // Find the lead and open complete modal
-    const lead = leads.find(l => l.id === leadId);
-    if (lead) {
-      setSelectedQuickLead(lead);
-      setShowCompleteModal(true);
-    }
+    // Lead is now complete from AddNewLeadModal, just refresh
+    refetchLeads();
+    refetchKPIs();
   };
 
   const handleCompleteLead = (lead: RefactoredLead) => {
-    setSelectedQuickLead(lead);
-    setShowCompleteModal(true);
-  };
-
-  const handleCompleteSuccess = () => {
-    refetchLeads();
-    refetchKPIs();
+    // Open lead detail to view/edit
+    setSelectedLead(lead);
+    setLeadDetailInitialTab("overview");
+    setShowLeadDetail(true);
   };
 
   const handleUploadDocs = (lead?: RefactoredLead) => {
@@ -214,10 +208,10 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         />
       </main>
 
-      {/* Quick Lead Modal */}
-      <QuickLeadModal
-        open={showQuickLead}
-        onClose={() => setShowQuickLead(false)}
+      {/* Add New Lead Modal */}
+      <AddNewLeadModal
+        open={showNewLead}
+        onClose={() => setShowNewLead(false)}
         onSuccess={handleLeadSuccess}
         partnerId={partner?.id}
       />
@@ -229,17 +223,6 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         onSuccess={handleLeadSuccess}
         onContinueApplication={handleEligibilityContinue}
         partnerId={partner?.id}
-      />
-
-      {/* Complete Lead Modal */}
-      <CompleteLeadModal
-        open={showCompleteModal}
-        onClose={() => {
-          setShowCompleteModal(false);
-          setSelectedQuickLead(null);
-        }}
-        lead={selectedQuickLead}
-        onSuccess={handleCompleteSuccess}
       />
 
       {/* Partner Lead Detail Sheet */}
