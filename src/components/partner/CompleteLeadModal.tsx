@@ -9,6 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,10 +27,15 @@ import {
   Calendar, 
   Banknote,
   Building2,
-  Check
+  Check,
+  User,
+  Users
 } from "lucide-react";
 import { CourseCombobox } from "@/components/ui/course-combobox";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
+import { Database } from "@/integrations/supabase/types";
+
+type RelationshipEnum = Database["public"]["Enums"]["relationship_enum"];
 
 interface CompleteLeadModalProps {
   open: boolean;
@@ -33,7 +45,10 @@ interface CompleteLeadModalProps {
 }
 
 interface FormErrors {
+  studentPinCode?: string;
   courseId?: string;
+  coApplicantName?: string;
+  coApplicantRelationship?: string;
   coApplicantPhone?: string;
   coApplicantPinCode?: string;
 }
@@ -46,11 +61,22 @@ interface ExistingData {
   loanAmount: number | null;
   studyDestination: string | null;
   loanType: string | null;
+  studentPinCode: string | null;
+  coApplicantName: string | null;
+  coApplicantRelationship: RelationshipEnum | null;
 }
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
+];
+
+const RELATIONSHIP_OPTIONS: { value: RelationshipEnum; label: string }[] = [
+  { value: "parent", label: "Parent" },
+  { value: "spouse", label: "Spouse" },
+  { value: "sibling", label: "Sibling" },
+  { value: "guardian", label: "Guardian" },
+  { value: "other", label: "Other" },
 ];
 
 export const CompleteLeadModal = ({
@@ -63,11 +89,19 @@ export const CompleteLeadModal = ({
   const [fetchingData, setFetchingData] = useState(false);
   const [existingData, setExistingData] = useState<ExistingData | null>(null);
   
-  // Only truly missing fields
+  // Student field
+  const [studentPinCode, setStudentPinCode] = useState<string>("");
+  
+  // Course field
   const [courseId, setCourseId] = useState<string>("");
   const [isCustomCourse, setIsCustomCourse] = useState(false);
+  
+  // Co-applicant fields
+  const [coApplicantName, setCoApplicantName] = useState<string>("");
+  const [coApplicantRelationship, setCoApplicantRelationship] = useState<RelationshipEnum | "">("");
   const [coApplicantPhone, setCoApplicantPhone] = useState<string>("");
   const [coApplicantPinCode, setCoApplicantPinCode] = useState<string>("");
+  
   const [errors, setErrors] = useState<FormErrors>({});
 
   // Fetch existing data when modal opens
@@ -87,20 +121,39 @@ export const CompleteLeadModal = ({
           .eq("lead_id", lead.id)
           .single();
 
-        // Fetch co-applicant data to check if phone/pin already exist
+        // Fetch student data for PIN code
+        const { data: studentData } = await supabase
+          .from("students")
+          .select("postal_code")
+          .eq("id", lead.student_id)
+          .single();
+
+        // Fetch co-applicant data
         const { data: coAppData } = await supabase
           .from("co_applicants")
-          .select("phone, pin_code")
+          .select("name, relationship, phone, pin_code")
           .eq("id", lead.co_applicant_id)
           .single();
 
-        // Pre-populate if co-applicant already has phone/pin
-        if (coAppData?.phone) {
-          setCoApplicantPhone(coAppData.phone);
+        // Pre-populate fields - check for placeholder values
+        const studentPin = studentData?.postal_code;
+        const isStudentPinPlaceholder = !studentPin || studentPin === "000000";
+        setStudentPinCode(isStudentPinPlaceholder ? "" : studentPin);
+
+        const coName = coAppData?.name;
+        const isCoNamePlaceholder = !coName || coName === "Co-Applicant";
+        setCoApplicantName(isCoNamePlaceholder ? "" : coName);
+
+        if (coAppData?.relationship) {
+          setCoApplicantRelationship(coAppData.relationship);
         }
-        if (coAppData?.pin_code) {
-          setCoApplicantPinCode(coAppData.pin_code);
-        }
+
+        const coPhone = coAppData?.phone;
+        setCoApplicantPhone(coPhone || "");
+
+        const coPin = coAppData?.pin_code;
+        const isCoPinPlaceholder = !coPin || coPin === "000000";
+        setCoApplicantPinCode(isCoPinPlaceholder ? "" : coPin);
 
         setExistingData({
           universityId: uniData?.university_id || null,
@@ -110,10 +163,12 @@ export const CompleteLeadModal = ({
           loanAmount: lead.loan_amount,
           studyDestination: lead.study_destination,
           loanType: lead.loan_type,
+          studentPinCode: studentPin || null,
+          coApplicantName: coName || null,
+          coApplicantRelationship: coAppData?.relationship || null,
         });
       } catch (error) {
         console.error("Error fetching existing data:", error);
-        // Still set basic data from lead
         setExistingData({
           universityId: null,
           universityName: null,
@@ -122,6 +177,9 @@ export const CompleteLeadModal = ({
           loanAmount: lead.loan_amount,
           studyDestination: lead.study_destination,
           loanType: lead.loan_type,
+          studentPinCode: null,
+          coApplicantName: null,
+          coApplicantRelationship: null,
         });
       } finally {
         setFetchingData(false);
@@ -132,8 +190,11 @@ export const CompleteLeadModal = ({
   }, [open, lead]);
 
   const resetForm = () => {
+    setStudentPinCode("");
     setCourseId("");
     setIsCustomCourse(false);
+    setCoApplicantName("");
+    setCoApplicantRelationship("");
     setCoApplicantPhone("");
     setCoApplicantPinCode("");
     setErrors({});
@@ -148,9 +209,28 @@ export const CompleteLeadModal = ({
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
+    // Student PIN Code validation (6 digits)
+    if (!studentPinCode.trim()) {
+      newErrors.studentPinCode = "Required";
+    } else if (!/^\d{6}$/.test(studentPinCode.trim())) {
+      newErrors.studentPinCode = "Enter valid 6-digit PIN";
+    }
+
     // Course is required
     if (!courseId.trim()) {
       newErrors.courseId = "Please select or enter a course/program";
+    }
+
+    // Co-Applicant Name validation
+    if (!coApplicantName.trim()) {
+      newErrors.coApplicantName = "Required";
+    } else if (coApplicantName.trim().length < 2) {
+      newErrors.coApplicantName = "Name must be at least 2 characters";
+    }
+
+    // Co-Applicant Relationship validation
+    if (!coApplicantRelationship) {
+      newErrors.coApplicantRelationship = "Required";
     }
 
     // Co-Applicant Phone validation (10 digits, starts with 6-9)
@@ -181,6 +261,16 @@ export const CompleteLeadModal = ({
     setLoading(true);
 
     try {
+      // Update student with PIN code
+      const { error: studentError } = await supabase
+        .from("students")
+        .update({
+          postal_code: studentPinCode.trim(),
+        })
+        .eq("id", lead.student_id);
+
+      if (studentError) throw studentError;
+
       // Update lead to mark as completed
       const { error: leadError } = await supabase
         .from("leads_new")
@@ -193,23 +283,19 @@ export const CompleteLeadModal = ({
 
       // Save course association
       if (isCustomCourse) {
-        // For custom course, we store it differently
-        // First check if there's a course entry we can use or create a record
         const { error: courseError } = await supabase
           .from("lead_courses")
           .insert({
             lead_id: lead.id,
-            course_id: null as any, // Will be handled by custom_course_name
+            course_id: null as any,
             is_custom_course: true,
             custom_course_name: courseId,
           });
         
-        // If constraint fails, that's okay - we tried
         if (courseError && !courseError.message.includes("null value")) {
           console.warn("Could not save custom course:", courseError);
         }
       } else if (existingData.universityId) {
-        // For selected course, save the association
         const { error: courseError } = await supabase
           .from("lead_courses")
           .insert({
@@ -223,10 +309,12 @@ export const CompleteLeadModal = ({
         }
       }
 
-      // Update co-applicant with phone and pin_code
+      // Update co-applicant with all fields
       const { error: coAppError } = await supabase
         .from("co_applicants")
         .update({
+          name: coApplicantName.trim(),
+          relationship: coApplicantRelationship as RelationshipEnum,
           phone: coApplicantPhone.trim(),
           pin_code: coApplicantPinCode.trim(),
         })
@@ -260,7 +348,7 @@ export const CompleteLeadModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-primary" />
-            Almost Done! Just 3 Quick Details
+            Complete Application Details
           </DialogTitle>
           <DialogDescription>
             Complete the application for {lead.student?.name} ({lead.case_id})
@@ -320,6 +408,35 @@ export const CompleteLeadModal = ({
               </div>
             </div>
 
+            {/* Student Details Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Student Details
+              </h4>
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  Student PIN Code <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  placeholder="6-digit PIN code"
+                  value={studentPinCode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setStudentPinCode(value);
+                    if (errors.studentPinCode) {
+                      setErrors(prev => ({ ...prev, studentPinCode: undefined }));
+                    }
+                  }}
+                  maxLength={6}
+                  className={errors.studentPinCode ? 'border-destructive' : ''}
+                />
+                {errors.studentPinCode && (
+                  <p className="text-xs text-destructive">{errors.studentPinCode}</p>
+                )}
+              </div>
+            </div>
+
             {/* Course Selection - Required */}
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
@@ -367,9 +484,62 @@ export const CompleteLeadModal = ({
             {/* Co-Applicant Details - Required */}
             <div className="border-t pt-4 mt-4">
               <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Co-Applicant Contact <span className="text-destructive">*</span>
+                <Users className="h-4 w-4" />
+                Co-Applicant Details <span className="text-destructive">*</span>
               </h4>
+              
+              {/* Name and Relationship Row */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    placeholder="Full name"
+                    value={coApplicantName}
+                    onChange={(e) => {
+                      setCoApplicantName(e.target.value);
+                      if (errors.coApplicantName) {
+                        setErrors(prev => ({ ...prev, coApplicantName: undefined }));
+                      }
+                    }}
+                    className={errors.coApplicantName ? 'border-destructive' : ''}
+                  />
+                  {errors.coApplicantName && (
+                    <p className="text-xs text-destructive">{errors.coApplicantName}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    Relationship <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={coApplicantRelationship}
+                    onValueChange={(value: RelationshipEnum) => {
+                      setCoApplicantRelationship(value);
+                      if (errors.coApplicantRelationship) {
+                        setErrors(prev => ({ ...prev, coApplicantRelationship: undefined }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className={errors.coApplicantRelationship ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELATIONSHIP_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.coApplicantRelationship && (
+                    <p className="text-xs text-destructive">{errors.coApplicantRelationship}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Phone and PIN Code Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm">
