@@ -257,21 +257,17 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl overflow-y-auto p-0">
-        {/* Gradient Header */}
-        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-5 border-b">
-          <SheetHeader className="space-y-3">
+        {/* Clean Header */}
+        <div className="px-6 py-4 border-b">
+          <SheetHeader className="space-y-2">
             <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <SheetTitle className="text-xl font-bold tracking-tight">
+              <div className="space-y-0.5">
+                <SheetTitle className="text-lg font-semibold">
                   {lead.student?.name || 'Lead Details'}
                 </SheetTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="font-medium">{lead.case_id}</span>
-                  <span>•</span>
-                  <span>{createdDate}</span>
-                  <span>•</span>
-                  <span>{partnerName}</span>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  {lead.case_id} • {createdDate} • {partnerName}
+                </p>
               </div>
               {isAdmin() && (
                 <Button
@@ -279,209 +275,164 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                   size="sm"
                   onClick={handleDownloadZip}
                   disabled={isDownloadingZip}
-                  className="shrink-0 bg-background/80 backdrop-blur-sm hover:bg-background"
+                  className="shrink-0"
                 >
                   {isDownloadingZip ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
                   ) : (
-                    <FileArchive className="h-4 w-4 mr-2" />
+                    <FileArchive className="h-4 w-4 mr-1.5" />
                   )}
-                  {isDownloadingZip ? 'Creating...' : 'Download ZIP'}
+                  {isDownloadingZip ? 'Creating...' : 'ZIP'}
                 </Button>
               )}
             </div>
             
-            {/* Status Badge Row */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <StatusBadge status={lead.status as LeadStatus} type="lead" />
               {isAdmin() && (
                 <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={() => setStatusUpdateModalOpen(true)}
-                  className="h-7 text-xs hover:bg-primary/10"
+                  className="h-6 px-2 text-xs"
                 >
-                  Update Status
+                  Update
                 </Button>
               )}
             </div>
           </SheetHeader>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-6 py-4 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-lg">
-              <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="documents" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Documents
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Activity
-              </TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+              <TabsTrigger value="documents" className="text-xs">Documents</TabsTrigger>
+              <TabsTrigger value="activity" className="text-xs">Activity</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-5 mt-5 animate-fade-in">
+            <TabsContent value="overview" className="space-y-4 mt-4">
               {/* Info Cards Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Student Card */}
-                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/20 dark:to-blue-900/10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                      <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/50">
-                        <User className="h-3.5 w-3.5" />
-                      </div>
-                      Student
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 space-y-2">
-                    <p className="font-semibold text-base">{lead.student?.name || 'N/A'}</p>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-3.5 w-3.5" />
-                        <span>{lead.student?.phone || 'N/A'}</span>
-                        {lead.student?.phone && (
-                          <a 
-                            href={`https://wa.me/91${lead.student.phone}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-auto p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
-                          >
-                            <MessageSquare className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
-                      {lead.student?.email && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{lead.student.email}</span>
-                        </div>
+                <div className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Student</span>
+                  </div>
+                  <p className="font-medium text-sm mb-1.5">{lead.student?.name || 'N/A'}</p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3 w-3" />
+                      <span>{lead.student?.phone || 'N/A'}</span>
+                      {lead.student?.phone && (
+                        <a 
+                          href={`https://wa.me/91${lead.student.phone}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-auto text-green-600 hover:text-green-700"
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                        </a>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                    {lead.student?.email && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{lead.student.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Co-Applicant Card */}
-                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-purple-50/50 dark:from-purple-950/20 dark:to-purple-900/10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2">
-                      <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900/50">
-                        <Users className="h-3.5 w-3.5" />
-                      </div>
-                      Co-Applicant
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 space-y-2">
-                    <p className="font-semibold text-base">{lead.co_applicant?.name || 'N/A'}</p>
-                    <div className="space-y-1.5">
-                      {lead.co_applicant?.phone && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-3.5 w-3.5" />
-                          <span>{lead.co_applicant.phone}</span>
-                        </div>
-                      )}
-                      <button 
-                        onClick={() => setShowCoApplicantDetails(!showCoApplicantDetails)}
-                        className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-medium"
-                      >
-                        {showCoApplicantDetails ? 'Hide details' : 'Show details'}
-                        {showCoApplicantDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      </button>
-                    </div>
-                    {showCoApplicantDetails && (
-                      <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-purple-200/50 dark:border-purple-800/50 animate-fade-in">
-                        <p>Relation: <span className="capitalize font-medium text-foreground">{lead.co_applicant?.relationship || 'N/A'}</span></p>
-                        <p>Salary: <span className="font-medium text-foreground">{lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/yr` : 'N/A'}</span></p>
+                <div className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Co-Applicant</span>
+                  </div>
+                  <p className="font-medium text-sm mb-1.5">{lead.co_applicant?.name || 'N/A'}</p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    {lead.co_applicant?.phone && (
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="h-3 w-3" />
+                        <span>{lead.co_applicant.phone}</span>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                    <button 
+                      onClick={() => setShowCoApplicantDetails(!showCoApplicantDetails)}
+                      className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                    >
+                      {showCoApplicantDetails ? 'Hide' : 'More'}
+                      {showCoApplicantDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </button>
+                  </div>
+                  {showCoApplicantDetails && (
+                    <div className="text-xs text-muted-foreground space-y-0.5 pt-1.5 mt-1.5 border-t">
+                      <p>Relation: <span className="capitalize text-foreground">{lead.co_applicant?.relationship || 'N/A'}</span></p>
+                      <p>Salary: <span className="text-foreground">{lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/yr` : 'N/A'}</span></p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Loan Details Card */}
-                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-emerald-50/50 dark:from-emerald-950/20 dark:to-emerald-900/10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                      <div className="p-1.5 rounded-md bg-emerald-100 dark:bg-emerald-900/50">
-                        <CreditCard className="h-3.5 w-3.5" />
-                      </div>
-                      Loan Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 space-y-2">
-                    <p className="font-bold text-xl text-emerald-700 dark:text-emerald-300">₹{lead.loan_amount?.toLocaleString()}</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs capitalize bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-0">
-                        {lead.loan_type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-medium">{lead.lender?.name || 'N/A'}</span>
-                      </div>
-                      {isAdmin() && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLenderAssignmentModalOpen(true)}
-                          className="h-6 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50"
-                        >
-                          Change
-                        </Button>
-                      )}
-                    </div>
-                    {preferredLenders.length > 0 && (
-                      <div className="pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                          <span>Preferred: </span>
-                          <span className="text-foreground font-medium">
-                            {preferredLenders.map(l => l.name).join(', ')}
-                          </span>
-                        </div>
-                      </div>
+                <div className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan</span>
+                  </div>
+                  <p className="font-semibold text-base">₹{lead.loan_amount?.toLocaleString()}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Badge variant="secondary" className="text-xs capitalize h-5 px-1.5">
+                      {lead.loan_type}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs">
+                    <span className="text-muted-foreground">{lead.lender?.name || 'N/A'}</span>
+                    {isAdmin() && (
+                      <button
+                        onClick={() => setLenderAssignmentModalOpen(true)}
+                        className="text-primary hover:underline"
+                      >
+                        Change
+                      </button>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                  {preferredLenders.length > 0 && (
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t text-xs text-muted-foreground">
+                      <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                      <span>{preferredLenders.map(l => l.name).join(', ')}</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Study Destination Card */}
-                <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-amber-50/50 dark:from-amber-950/20 dark:to-amber-900/10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                      <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/50">
-                        <GraduationCap className="h-3.5 w-3.5" />
-                      </div>
-                      Study Destination
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 space-y-2">
-                    <p className="font-semibold text-base">{lead.study_destination}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Intake: <span className="font-medium text-foreground">{lead.intake_month}/{lead.intake_year}</span>
-                    </p>
-                    {leadUniversities.length > 0 && (
-                      <div className="pt-2 border-t border-amber-200/50 dark:border-amber-800/50 space-y-1.5">
-                        {leadUniversities.slice(0, 2).map((uni) => (
-                          <div key={uni.id} className="flex items-start gap-2 text-xs">
-                            <Building2 className="h-3 w-3 mt-0.5 text-amber-600/70 shrink-0" />
-                            <div>
-                              <p className="font-medium leading-tight">{uni.name}</p>
-                              <p className="text-muted-foreground">{uni.city}</p>
-                            </div>
+                <div className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</span>
+                  </div>
+                  <p className="font-medium text-sm">{lead.study_destination}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Intake: {lead.intake_month}/{lead.intake_year}
+                  </p>
+                  {leadUniversities.length > 0 && (
+                    <div className="mt-2 pt-2 border-t space-y-1">
+                      {leadUniversities.slice(0, 2).map((uni) => (
+                        <div key={uni.id} className="flex items-start gap-1.5 text-xs">
+                          <Building2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="leading-tight">{uni.name}</p>
+                            <p className="text-muted-foreground">{uni.city}</p>
                           </div>
-                        ))}
-                        {leadUniversities.length > 2 && (
-                          <p className="text-xs text-muted-foreground pl-5">+{leadUniversities.length - 2} more</p>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                        </div>
+                      ))}
+                      {leadUniversities.length > 2 && (
+                        <p className="text-xs text-muted-foreground">+{leadUniversities.length - 2} more</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Loan Configuration - Admin Only */}
@@ -499,80 +450,52 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                 />
               )}
 
-              {/* Document Progress Card */}
-              <Card className="border shadow-sm overflow-hidden">
-                <CardHeader className="pb-3 pt-4 px-4 bg-gradient-to-r from-muted/30 to-transparent">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Document Progress
-                    </CardTitle>
-                    <Badge variant="outline" className="text-xs font-medium">
-                      {completedRequired}/{requiredDocsFiltered.length} required
-                    </Badge>
-                  </div>
-                  <div className="mt-3">
-                    <Progress value={progressPercentage} className="h-2" />
-                  </div>
-                </CardHeader>
-                <CardContent className="px-4 pb-4">
-                  <div className="space-y-1">
-                    {quickDocCheck.map((doc, index) => (
-                      <div 
-                        key={doc.id} 
-                        className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <div className="flex items-center gap-3">
-                          {doc.status === 'uploaded' ? (
-                            <div className="p-1 rounded-full bg-success/10">
-                              <CheckCircle className="h-4 w-4 text-success" />
-                            </div>
-                          ) : (
-                            <div className="p-1 rounded-full bg-muted">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <span className={`text-sm ${doc.status === 'uploaded' ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {doc.name}
-                          </span>
-                        </div>
-                        <Badge 
-                          variant={doc.status === 'uploaded' ? 'default' : 'secondary'}
-                          className={`text-xs ${doc.status === 'uploaded' ? 'bg-success/10 text-success hover:bg-success/20 border-0' : ''}`}
-                        >
-                          {doc.status === 'uploaded' ? 'Uploaded' : 'Pending'}
-                        </Badge>
+              {/* Document Progress */}
+              <div className="p-3 rounded-lg border bg-card">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Document Progress</span>
+                  <span className="text-xs text-muted-foreground">
+                    {completedRequired}/{requiredDocsFiltered.length} required
+                  </span>
+                </div>
+                <Progress value={progressPercentage} className="h-1.5 mb-3" />
+                <div className="space-y-1.5">
+                  {quickDocCheck.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between text-xs py-1">
+                      <div className="flex items-center gap-2">
+                        {doc.status === 'uploaded' ? (
+                          <CheckCircle className="h-3.5 w-3.5 text-success" />
+                        ) : (
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                        <span className={doc.status === 'uploaded' ? 'text-foreground' : 'text-muted-foreground'}>
+                          {doc.name}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="mt-3 w-full justify-center text-primary hover:text-primary hover:bg-primary/5"
-                    onClick={() => setActiveTab('documents')}
-                  >
-                    View all documents
-                    <ExternalLink className="h-3.5 w-3.5 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
+                      <span className={doc.status === 'uploaded' ? 'text-success' : 'text-muted-foreground'}>
+                        {doc.status === 'uploaded' ? 'Uploaded' : 'Pending'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  onClick={() => setActiveTab('documents')}
+                  className="text-xs text-primary hover:underline mt-2 flex items-center gap-1"
+                >
+                  View all documents <ExternalLink className="h-3 w-3" />
+                </button>
+              </div>
 
               {/* Partner Info Footer */}
               {isAdmin() && (
-                <div className="flex items-center justify-between text-sm text-muted-foreground px-2 py-2 bg-muted/30 rounded-lg">
-                  <span>
-                    <span className="font-medium text-foreground">Partner:</span> {partnerName} 
-                    {lead.partners?.partner_code && <span className="text-xs ml-1">({lead.partners.partner_code})</span>}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Partner: {partnerName}</span>
+                  <button
                     onClick={() => setPartnerAssignmentModalOpen(true)}
-                    className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    className="text-primary hover:underline"
                   >
                     Change
-                  </Button>
+                  </button>
                 </div>
               )}
             </TabsContent>
