@@ -46,6 +46,23 @@ function cleanPhoneNumber(phone: string): string {
   return phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
 }
 
+// Map country names to study_destination_enum values
+function mapCountryToEnum(country: string): string {
+  const mapping: Record<string, string> = {
+    'United Kingdom': 'UK',
+    'United States': 'USA',
+    'United States of America': 'USA',
+    'New Zealand': 'New Zealand',
+    'Australia': 'Australia',
+    'Canada': 'Canada',
+    'Germany': 'Germany',
+    'Ireland': 'Ireland',
+    'UK': 'UK',
+    'USA': 'USA',
+  };
+  return mapping[country] || 'Other';
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -243,6 +260,9 @@ serve(async (req) => {
     // Calculate intake
     const intake = getNextIntake();
 
+    // Map country to valid enum value
+    const studyDestination = mapCountryToEnum(body.country);
+
     // Create lead with provided loan amount
     const caseId = `EDU-${Date.now()}`;
     const loanAmount = body.loan_amount || 3000000; // Use provided or default ₹30 lakhs
@@ -254,7 +274,7 @@ serve(async (req) => {
       lender_id: lender.id,
       loan_amount: loanAmount,
       loan_type: 'unsecured', // Most common
-      study_destination: body.country,
+      study_destination: studyDestination,
       intake_month: intake.month,
       intake_year: intake.year,
       status: 'new',
