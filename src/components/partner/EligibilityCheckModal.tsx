@@ -144,34 +144,47 @@ const getTierConfig = (lenderCount: number): TierConfig => {
   }
 };
 
-// Lender count display component - cleaner layout
+// Lender count display component - Premium redesign
 const LenderDisplay = ({ count, config }: { count: number; config: TierConfig }) => {
   const [animatedCount, setAnimatedCount] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAnimatedCount(count);
-    }, 100);
-    return () => clearTimeout(timer);
+    // Animate count up
+    let start = 0;
+    const end = count;
+    const duration = 600;
+    const increment = end / (duration / 50);
+    
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setAnimatedCount(end);
+        clearInterval(timer);
+      } else {
+        setAnimatedCount(Math.floor(start));
+      }
+    }, 50);
+    
+    return () => clearInterval(timer);
   }, [count]);
 
   return (
-    <div className="flex items-center justify-center gap-4">
-      <div className={cn(
-        "flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br shadow-lg",
-        config.gradient
-      )}>
-        <span className="text-3xl font-bold text-white">
+    <div className="relative">
+      {/* Big number with glow effect */}
+      <div className="flex flex-col items-center">
+        <div className={cn(
+          "text-7xl font-black bg-gradient-to-br bg-clip-text text-transparent",
+          config.gradient
+        )}>
           {animatedCount}
-        </span>
-      </div>
-      <div className="text-left">
-        <p className="text-xl font-bold text-foreground">
-          {count === 1 ? 'Lender' : 'Lenders'}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          ready to lend
-        </p>
+        </div>
+        <div className="flex items-center gap-2 -mt-1">
+          <div className={cn("h-1 w-8 rounded-full bg-gradient-to-r", config.gradient)} />
+          <span className="text-lg font-semibold text-foreground">
+            {count === 1 ? 'Lender' : 'Lenders'} Matched
+          </span>
+          <div className={cn("h-1 w-8 rounded-full bg-gradient-to-r", config.gradient)} />
+        </div>
       </div>
     </div>
   );
@@ -484,139 +497,133 @@ export const EligibilityCheckModal = ({
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md overflow-hidden p-0">
-          {/* Hero Header with Lender Count */}
-          <div className={cn(
-            "relative px-6 pt-6 pb-5 bg-gradient-to-br",
-            tierConfig.bgGradient
-          )}>
-            <div className="text-center space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-3xl">{tierConfig.emoji}</span>
-                <h2 className={cn(
-                  "text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
-                  tierConfig.gradient
-                )}>
-                  {tierConfig.headline}
-                </h2>
-              </div>
-
-              <LenderDisplay count={result.lenderCount} config={tierConfig} />
-            </div>
-          </div>
-
-          {/* Student Info Card */}
-          <div className="px-5 -mt-3">
-            <div className="bg-background rounded-xl border shadow-sm p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-primary/10">
-                  <User className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">
-                    {quickForm.student_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5" />
-                    +91 {quickForm.student_phone}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-xs font-medium">Saved</span>
-                </div>
+        <DialogContent className="sm:max-w-lg overflow-hidden p-0">
+          {/* Clean Hero Header */}
+          <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-muted/50 to-background">
+            {/* Success Badge */}
+            <div className="flex justify-center mb-4">
+              <div className={cn(
+                "inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r text-white font-medium shadow-lg",
+                tierConfig.gradient
+              )}>
+                <TierIcon className="h-4 w-4" />
+                <span>{tierConfig.headline}</span>
               </div>
             </div>
+
+            {/* Big Lender Count */}
+            <LenderDisplay count={result.lenderCount} config={tierConfig} />
+            
+            {/* Subtext */}
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              {tierConfig.subtext}
+            </p>
           </div>
 
-          {/* Content */}
-          <div className="px-5 py-4 space-y-4">
-            {/* Captured Data Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <GraduationCap className="h-3.5 w-3.5" />
-                  <span className="text-xs">University</span>
-                </div>
-                <p className="text-sm font-medium truncate" title={universityName}>
-                  {universityName || 'Loading...'}
+          {/* Content Section */}
+          <div className="px-6 pb-6 space-y-5">
+            {/* Student Card - Compact */}
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+              <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">
+                  {quickForm.student_name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  +91 {quickForm.student_phone}
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Building2 className="h-3.5 w-3.5" />
-                  <span className="text-xs">Loan Amount</span>
-                </div>
-                <p className="text-sm font-medium">
+              <div className="flex items-center gap-1 text-emerald-600 bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span className="text-xs font-medium">Lead Saved</span>
+              </div>
+            </div>
+
+            {/* Key Metrics - Clean horizontal layout */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="p-3 rounded-xl bg-muted/50">
+                <GraduationCap className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+                <p className="text-xs text-muted-foreground mb-0.5">University</p>
+                <p className="text-sm font-semibold truncate" title={universityName}>
+                  {universityName?.split(' ').slice(0, 2).join(' ') || '...'}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-muted/50">
+                <Building2 className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+                <p className="text-xs text-muted-foreground mb-0.5">Loan</p>
+                <p className="text-sm font-semibold">
                   ₹{(loanAmountFormatted / 100000).toFixed(1)}L
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50 space-y-1">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Users className="h-3.5 w-3.5" />
-                  <span className="text-xs">Co-Applicant Salary</span>
-                </div>
-                <p className="text-sm font-medium">
-                  ₹{(salaryFormatted / 1000).toFixed(0)}K/mo
+              <div className="p-3 rounded-xl bg-muted/50">
+                <Users className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+                <p className="text-xs text-muted-foreground mb-0.5">Salary</p>
+                <p className="text-sm font-semibold">
+                  ₹{(salaryFormatted / 1000).toFixed(0)}K
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
-                <div className="flex items-center gap-1.5 text-primary">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span className="text-xs">Est. Rate</span>
-                </div>
-                <p className="text-sm font-medium text-primary">
-                  {result.estimatedRateMin}% - {result.estimatedRateMax}%
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                <TrendingUp className="h-5 w-5 mx-auto text-primary mb-1" />
+                <p className="text-xs text-primary/70 mb-0.5">Rate</p>
+                <p className="text-sm font-semibold text-primary">
+                  {result.estimatedRateMin}-{result.estimatedRateMax}%
                 </p>
               </div>
             </div>
 
-            {/* What's Next Section */}
-            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <div className="flex items-start gap-2">
-                <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-amber-900">
-                    Just 3 more details needed
-                  </p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    Course, Co-Applicant Phone & PIN Code
-                  </p>
-                </div>
+            {/* Next Steps - Compact */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/50">
+                <Clock className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  Just 3 more details to complete
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Course • Co-Applicant Phone • PIN Code
+                </p>
               </div>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="space-y-2 pt-1">
+            {/* CTA Section */}
+            <div className="space-y-3 pt-1">
               <Button 
                 onClick={handleContinueApplication} 
                 size="lg"
                 className={cn(
-                  "w-full h-12 gap-2 text-base bg-gradient-to-r shadow-lg",
+                  "w-full h-14 gap-2.5 text-base font-semibold bg-gradient-to-r shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]",
                   tierConfig.gradient
                 )}
               >
                 <TierIcon className="h-5 w-5" />
-                Complete Application
+                Complete Application Now
                 <ArrowRight className="h-5 w-5" />
               </Button>
 
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 onClick={handleClose} 
-                className="w-full"
+                className="w-full text-muted-foreground hover:text-foreground"
               >
-                Save for Later
+                Save & Continue Later
               </Button>
 
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-1">
-                <span className="flex items-center gap-1">
-                  <Shield className="h-3.5 w-3.5 text-green-600" />
+              {/* Trust badges */}
+              <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground pt-2">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-4 w-4 text-emerald-500" />
                   Secure
                 </span>
-                <span className="flex items-center gap-1">
-                  <Zap className="h-3.5 w-3.5 text-amber-500" />
-                  48hr Response
+                <span className="flex items-center gap-1.5">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  24hr Response
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <BadgeCheck className="h-4 w-4 text-blue-500" />
+                  Verified
                 </span>
               </div>
             </div>
