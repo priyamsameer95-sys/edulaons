@@ -102,49 +102,49 @@ interface TierConfig {
 const getTierConfig = (lenderCount: number): TierConfig => {
   if (lenderCount >= 4) {
     return {
-      headline: "Excellent Match!",
+      headline: "Strong Profile!",
       emoji: "🎉",
-      subtext: "Multiple lenders are eager to fund this application!",
+      subtext: "This profile qualifies with multiple lending partners.",
       gradient: "from-emerald-500 via-green-500 to-teal-500",
       bgGradient: "from-emerald-50 to-teal-50",
       icon: Trophy,
-      ctaText: "Fast-Track This Application",
+      ctaText: "Complete Application",
     };
   } else if (lenderCount >= 3) {
     return {
-      headline: "Great Opportunity!",
+      headline: "Good Match!",
       emoji: "✨",
-      subtext: "Strong options available. Highly likely to get approved.",
+      subtext: "Strong lending options available for this profile.",
       gradient: "from-blue-500 via-indigo-500 to-purple-500",
       bgGradient: "from-blue-50 to-indigo-50",
       icon: Star,
-      ctaText: "Complete & Get Offers",
+      ctaText: "Complete Application",
     };
   } else if (lenderCount >= 2) {
     return {
-      headline: "Good Options!",
+      headline: "Options Available",
       emoji: "💪",
-      subtext: "Solid lending options available for this profile.",
+      subtext: "Lending partners available for this profile.",
       gradient: "from-amber-500 via-orange-500 to-yellow-500",
       bgGradient: "from-amber-50 to-orange-50",
       icon: Rocket,
-      ctaText: "Let's Make It Happen",
+      ctaText: "Complete Application",
     };
   } else if (lenderCount >= 1) {
     return {
-      headline: "Option Available",
+      headline: "Option Found",
       emoji: "🚀",
-      subtext: "Complete the application to explore this option.",
+      subtext: "A lending partner is available for this profile.",
       gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
       bgGradient: "from-violet-50 to-purple-50",
       icon: Sparkles,
-      ctaText: "Explore This Option",
+      ctaText: "Complete Application",
     };
   } else {
     return {
       headline: "Let's Explore",
       emoji: "🔍",
-      subtext: "Complete application for personalized options.",
+      subtext: "Complete the application for personalized options.",
       gradient: "from-slate-500 via-gray-500 to-zinc-500",
       bgGradient: "from-slate-50 to-gray-50",
       icon: Sparkles,
@@ -153,7 +153,7 @@ const getTierConfig = (lenderCount: number): TierConfig => {
   }
 };
 
-// Lender count display component
+// Lender count display component - cleaner layout
 const LenderDisplay = ({ count, config }: { count: number; config: TierConfig }) => {
   const [animatedCount, setAnimatedCount] = useState(0);
 
@@ -165,18 +165,23 @@ const LenderDisplay = ({ count, config }: { count: number; config: TierConfig })
   }, [count]);
 
   return (
-    <div className="text-center">
+    <div className="flex items-center justify-center gap-4">
       <div className={cn(
-        "inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br shadow-lg",
+        "flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br shadow-lg",
         config.gradient
       )}>
-        <span className="text-4xl font-bold text-white">
+        <span className="text-3xl font-bold text-white">
           {animatedCount}
         </span>
       </div>
-      <p className="mt-3 text-lg font-semibold text-foreground">
-        {count === 1 ? 'Lender' : 'Lenders'} Ready to Fund
-      </p>
+      <div className="text-left">
+        <p className="text-xl font-bold text-foreground">
+          {count === 1 ? 'Lender' : 'Lenders'}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          ready to lend
+        </p>
+      </div>
     </div>
   );
 };
@@ -525,18 +530,12 @@ export const EligibilityCheckModal = ({
 
           {/* Content */}
           <div className="px-6 py-4 space-y-4">
-            {/* Quick Breakdown */}
-            <div className="flex gap-4">
-              <div className="flex-1 text-center p-3 rounded-lg bg-muted/50">
-                <GraduationCap className="h-5 w-5 mx-auto text-primary mb-1" />
-                <div className="text-sm font-semibold">Grade {result.breakdown.university.grade}</div>
-                <div className="text-xs text-muted-foreground">University</div>
-              </div>
-              <div className="flex-1 text-center p-3 rounded-lg bg-muted/50">
-                <Users className="h-5 w-5 mx-auto text-primary mb-1" />
-                <div className="text-sm font-semibold">{result.breakdown.coApplicant.salaryBand}</div>
-                <div className="text-xs text-muted-foreground">Co-Applicant</div>
-              </div>
+            {/* Co-Applicant Info - Single item, no university grade */}
+            <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">
+              <Users className="h-5 w-5 text-primary mr-2" />
+              <span className="text-sm">
+                Co-Applicant Income: <span className="font-semibold">{result.breakdown.coApplicant.salaryBand}</span>
+              </span>
             </div>
 
             {/* Loan Estimate */}
