@@ -22,7 +22,8 @@ export default function PartnerDocumentPage() {
   const { documents, refetch: refetchDocuments } = useLeadDocuments(leadId);
 
   const handleBack = () => {
-    navigate(-1);
+    // Navigate explicitly to partner dashboard with query param to reopen lead sheet
+    navigate(`/partner/${partnerCode}?openLead=${leadId}`);
   };
 
   const handleDocSelect = (docTypeId: string) => {
