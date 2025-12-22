@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eye, Upload, Users, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles } from "lucide-react";
+import { Eye, Upload, Users, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles, Lock } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -274,7 +274,19 @@ export const PartnerLeadsTable = ({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {isIncomplete ? (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-dashed cursor-help text-xs">
+                                  <Lock className="h-3 w-3 mr-1" />
+                                  Locked
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-popover text-popover-foreground border max-w-[200px]">
+                                <p className="text-xs">Complete the application to unlock document uploads</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <>
                             <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
