@@ -33,7 +33,7 @@ export const DEFAULT_VIEWS: ViewConfig[] = [
 
 export function ViewTabs({ views, activeView, onViewChange, leadCounts }: ViewTabsProps) {
   return (
-    <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg mx-4 my-2 overflow-x-auto">
+    <div className="flex items-center gap-1 bg-muted p-1 rounded-lg mx-4 my-2 overflow-x-auto">
       {views.map((view) => {
         const isActive = activeView === view.id;
         const count = leadCounts?.[view.id];
