@@ -8,9 +8,8 @@ import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { CompactStatsBar } from "@/components/partner/CompactStatsBar";
 import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
 import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
-import { QuickLeadModal } from "@/components/partner/QuickLeadModal";
+import { AddNewLeadModal } from "@/components/partner/AddNewLeadModal";
 import { EligibilityCheckModal } from "@/components/partner/EligibilityCheckModal";
-import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
 import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
 import { Partner } from "@/types/partner";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -46,10 +45,8 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal states
-  const [showQuickLead, setShowQuickLead] = useState(false);
+  const [showNewLead, setShowNewLead] = useState(false);
   const [showEligibilityCheck, setShowEligibilityCheck] = useState(false);
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [selectedQuickLead, setSelectedQuickLead] = useState<RefactoredLead | null>(null);
   
   // Lead detail sheet state
   const [showLeadDetail, setShowLeadDetail] = useState(false);
