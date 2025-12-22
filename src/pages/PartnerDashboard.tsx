@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, AlertCircle } from "lucide-react";
+import { LogOut, AlertCircle, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerKPIs } from "@/hooks/usePartnerKPIs";
 import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
@@ -216,14 +216,21 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold">
-              {partner?.name || 'Partner Dashboard'}
-            </h1>
-            {partner?.partner_code && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                {partner.partner_code}
-              </span>
-            )}
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-sm">
+              <Building2 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-base font-semibold leading-tight">
+                {partner?.name || 'Partner Dashboard'}
+              </h1>
+              {partner?.partner_code && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
+                    {partner.partner_code}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1">
             {isAdmin() && (
