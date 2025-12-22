@@ -14,7 +14,6 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { ViewTabs, DEFAULT_VIEWS, ViewConfig } from '@/components/admin/dashboard/ViewTabs';
 import { SmartFilterBar } from '@/components/admin/dashboard/SmartFilterBar';
 import { LeadQueueTable } from '@/components/admin/dashboard/LeadQueueTable';
-
 import { SettingsTab } from '@/components/admin/dashboard/SettingsTab';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab';
@@ -29,24 +28,28 @@ import { BulkStatusUpdate } from '@/components/lead-status/BulkStatusUpdate';
 import { DocumentVerificationModal } from '@/components/admin/DocumentVerificationModal';
 import { CompleteLeadModal } from '@/components/partner/CompleteLeadModal';
 import { supabase } from '@/integrations/supabase/client';
-
 const AdminDashboardV2 = () => {
-  const { signOut, appUser } = useAuth();
-  const { toast } = useToast();
-  
+  const {
+    signOut,
+    appUser
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
+
   // Paginated leads hook - server-side pagination
-  const { 
-    leads, 
-    totalCount, 
-    page, 
-    pageSize, 
-    totalPages, 
-    isLoading, 
-    setPage, 
-    setPageSize, 
-    setFilters, 
-    filters, 
-    refetch 
+  const {
+    leads,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    isLoading,
+    setPage,
+    setPageSize,
+    setFilters,
+    filters,
+    refetch
   } = usePaginatedLeads(50);
 
   // View state
@@ -66,16 +69,18 @@ const AdminDashboardV2 = () => {
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showCompleteLeadModal, setShowCompleteLeadModal] = useState(false);
-  const [allPartners, setAllPartners] = useState<Array<{ id: string; name: string; partner_code: string }>>([]);
+  const [allPartners, setAllPartners] = useState<Array<{
+    id: string;
+    name: string;
+    partner_code: string;
+  }>>([]);
   const [activeTab, setActiveTab] = useState('queue');
 
   // Fetch all partners for filters and Add Lead modal
   const fetchPartners = useCallback(async () => {
-    const { data } = await supabase
-      .from('partners')
-      .select('id, name, partner_code')
-      .eq('is_active', true)
-      .order('name');
+    const {
+      data
+    } = await supabase.from('partners').select('id, name, partner_code').eq('is_active', true).order('name');
     if (data) setAllPartners(data);
   }, []);
 
@@ -98,7 +103,7 @@ const AdminDashboardV2 = () => {
       setShowCommandPalette(false);
       setShowNewLeadModal(false);
     },
-    enabled: true,
+    enabled: true
   });
 
   // Handle view change - apply filters from view config
@@ -109,33 +114,26 @@ const AdminDashboardV2 = () => {
       setFilters({
         status: view.filters.status || null,
         partnerId: view.filters.partnerId || null,
-        documentsStatus: view.filters.documentsStatus || null,
+        documentsStatus: view.filters.documentsStatus || null
       });
     }
     setSelectedLeads([]);
   }, [setFilters]);
-
 
   // Handlers
   const handleViewLead = (lead: PaginatedLead) => {
     setSelectedLead(lead);
     setShowLeadDetailSheet(true);
   };
-
   const handleUpdateStatus = (lead: PaginatedLead) => {
     setSelectedLead(lead);
     setShowStatusUpdateModal(true);
   };
-
   const handleVerifyDocs = async (lead: PaginatedLead) => {
     try {
-      const { data: documents } = await supabase
-        .from('lead_documents')
-        .select('*')
-        .eq('lead_id', lead.id)
-        .eq('verification_status', 'uploaded')
-        .limit(1);
-
+      const {
+        data: documents
+      } = await supabase.from('lead_documents').select('*').eq('lead_id', lead.id).eq('verification_status', 'uploaded').limit(1);
       if (documents && documents.length > 0) {
         setSelectedDocument(documents[0]);
         setDocumentLeadId(lead.id);
@@ -143,49 +141,47 @@ const AdminDashboardV2 = () => {
       } else {
         toast({
           title: 'No Documents',
-          description: 'No documents pending verification for this lead',
+          description: 'No documents pending verification for this lead'
         });
       }
     } catch (error) {
       console.error('Error fetching documents:', error);
     }
   };
-
   const handleStatusUpdated = () => {
     refetch();
     setShowStatusUpdateModal(false);
     setSelectedLead(null);
-    toast({ title: 'Status Updated', description: 'Lead status has been updated successfully' });
+    toast({
+      title: 'Status Updated',
+      description: 'Lead status has been updated successfully'
+    });
   };
-
   const handleCompleteLead = (lead: PaginatedLead) => {
     setSelectedLead(lead);
     setShowCompleteLeadModal(true);
   };
-
   const handleRefresh = () => {
     refetch();
-    toast({ title: 'Refreshed', description: 'Data has been refreshed' });
+    toast({
+      title: 'Refreshed',
+      description: 'Data has been refreshed'
+    });
   };
 
   // Access check
   if (!appUser || !assertAdminRole(appUser.role)) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>You don't have permission to access the admin dashboard</CardDescription>
           </CardHeader>
         </Card>
-      </div>
-    );
+      </div>;
   }
-
   const isSuperAdmin = appUser.role === 'super_admin';
-
-  return (
-    <AdminErrorBoundary>
+  return <AdminErrorBoundary>
       <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <header className="border-b bg-card px-6 py-4">
@@ -195,18 +191,7 @@ const AdminDashboardV2 = () => {
               <p className="text-sm text-muted-foreground">Manage leads and partners</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowCommandPalette(true)}
-                className="gap-1.5"
-              >
-                <Command className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Search</span>
-                <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs">
-                  ⌘K
-                </kbd>
-              </Button>
+              
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
@@ -220,11 +205,7 @@ const AdminDashboardV2 = () => {
         </header>
 
         {/* View Tabs - replaces PriorityActionBar */}
-        <ViewTabs 
-          views={DEFAULT_VIEWS} 
-          activeView={activeView} 
-          onViewChange={handleViewChange}
-        />
+        <ViewTabs views={DEFAULT_VIEWS} activeView={activeView} onViewChange={handleViewChange} />
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -252,15 +233,13 @@ const AdminDashboardV2 = () => {
 
             <TabsContent value="queue" className="flex-1 flex flex-col mt-0 overflow-hidden data-[state=inactive]:hidden">
               <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-                <SmartFilterBar
-                  searchTerm={filters.search}
-                  onSearchChange={(value) => setFilters({ search: value })}
-                  statusFilter={filters.status || 'all'}
-                  onStatusChange={(value) => setFilters({ status: value === 'all' ? null : value })}
-                  partnerFilter={filters.partnerId || 'all'}
-                  onPartnerChange={(value) => setFilters({ partnerId: value === 'all' ? null : value })}
-                  partners={allPartners}
-                />
+                <SmartFilterBar searchTerm={filters.search} onSearchChange={value => setFilters({
+                search: value
+              })} statusFilter={filters.status || 'all'} onStatusChange={value => setFilters({
+                status: value === 'all' ? null : value
+              })} partnerFilter={filters.partnerId || 'all'} onPartnerChange={value => setFilters({
+                partnerId: value === 'all' ? null : value
+              })} partners={allPartners} />
                 <Button size="sm" onClick={handleOpenNewLeadModal}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Lead
@@ -268,55 +247,32 @@ const AdminDashboardV2 = () => {
               </div>
               
               {/* Bulk Actions Bar */}
-              {selectedLeads.length > 0 && (
-                <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
+              {selectedLeads.length > 0 && <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20">
                   <span className="text-sm font-medium">
                     {selectedLeads.length} lead{selectedLeads.length > 1 ? 's' : ''} selected
                   </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowBulkStatusModal(true)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => setShowBulkStatusModal(true)}>
                     Bulk Update Status
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedLeads([])}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedLeads([])}>
                     Clear Selection
                   </Button>
-                </div>
-              )}
+                </div>}
               
               <div className="flex-1 overflow-auto">
-                <LeadQueueTable
-                  leads={leads}
-                  loading={isLoading}
-                  onViewLead={handleViewLead}
-                  onUpdateStatus={handleUpdateStatus}
-                  onCompleteLead={handleCompleteLead}
-                  selectedLeads={selectedLeads}
-                  onSelectionChange={setSelectedLeads}
-                  // Pagination props
-                  page={page}
-                  pageSize={pageSize}
-                  totalCount={totalCount}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                />
+                <LeadQueueTable leads={leads} loading={isLoading} onViewLead={handleViewLead} onUpdateStatus={handleUpdateStatus} onCompleteLead={handleCompleteLead} selectedLeads={selectedLeads} onSelectionChange={setSelectedLeads}
+              // Pagination props
+              page={page} pageSize={pageSize} totalCount={totalCount} totalPages={totalPages} onPageChange={setPage} onPageSizeChange={setPageSize} />
               </div>
             </TabsContent>
 
             <TabsContent value="partners" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
-              <AdminPartnersTab 
-                onViewLeads={(partnerId) => {
-                  setFilters({ partnerId });
-                  setActiveTab('queue');
-                }}
-              />
+              <AdminPartnersTab onViewLeads={partnerId => {
+              setFilters({
+                partnerId
+              });
+              setActiveTab('queue');
+            }} />
             </TabsContent>
 
             <TabsContent value="lenders" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
@@ -324,112 +280,69 @@ const AdminDashboardV2 = () => {
             </TabsContent>
 
             <TabsContent value="settings" className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden">
-              <SettingsTab
-                isSuperAdmin={isSuperAdmin}
-                currentUserRole={appUser.role as 'admin' | 'super_admin'}
-                currentUserId={appUser.id}
-              />
+              <SettingsTab isSuperAdmin={isSuperAdmin} currentUserRole={appUser.role as 'admin' | 'super_admin'} currentUserId={appUser.id} />
             </TabsContent>
           </Tabs>
         </main>
 
         {/* Command Palette */}
-        <CommandPalette
-          open={showCommandPalette}
-          onOpenChange={setShowCommandPalette}
-          onNewLead={() => setShowNewLeadModal(true)}
-          onSelectLead={(leadId) => {
-            const lead = leads.find(l => l.id === leadId);
-            if (lead) handleViewLead(lead);
-          }}
-          onSelectPartner={(partnerId) => {
-            setFilters({ partnerId });
-            setActiveTab('queue');
-          }}
-        />
+        <CommandPalette open={showCommandPalette} onOpenChange={setShowCommandPalette} onNewLead={() => setShowNewLeadModal(true)} onSelectLead={leadId => {
+        const lead = leads.find(l => l.id === leadId);
+        if (lead) handleViewLead(lead);
+      }} onSelectPartner={partnerId => {
+        setFilters({
+          partnerId
+        });
+        setActiveTab('queue');
+      }} />
 
         {/* Modals */}
-        {selectedLead && (
-          <>
-            <LeadDetailSheet
-              open={showLeadDetailSheet}
-              onOpenChange={setShowLeadDetailSheet}
-              lead={selectedLead as any}
-              onLeadUpdated={handleStatusUpdated}
-            />
-            <StatusUpdateSheet
-              open={showStatusUpdateModal}
-              onOpenChange={setShowStatusUpdateModal}
-              leadId={selectedLead.id}
-              studentName={selectedLead.student?.name}
-              currentStatus={selectedLead.status as any}
-              currentDocumentsStatus={selectedLead.documents_status as any}
-              stageStartedAt={selectedLead.current_stage_started_at}
-              onStatusUpdated={handleStatusUpdated}
-            />
-          </>
-        )}
+        {selectedLead && <>
+            <LeadDetailSheet open={showLeadDetailSheet} onOpenChange={setShowLeadDetailSheet} lead={selectedLead as any} onLeadUpdated={handleStatusUpdated} />
+            <StatusUpdateSheet open={showStatusUpdateModal} onOpenChange={setShowStatusUpdateModal} leadId={selectedLead.id} studentName={selectedLead.student?.name} currentStatus={selectedLead.status as any} currentDocumentsStatus={selectedLead.documents_status as any} stageStartedAt={selectedLead.current_stage_started_at} onStatusUpdated={handleStatusUpdated} />
+          </>}
 
         {/* Bulk Status Update Modal */}
-        <BulkStatusUpdate
-          open={showBulkStatusModal}
-          onOpenChange={setShowBulkStatusModal}
-          leadIds={selectedLeads}
-          onStatusUpdated={() => {
-            refetch();
-            setSelectedLeads([]);
-            setShowBulkStatusModal(false);
-            toast({ title: 'Bulk Update Complete', description: `Updated ${selectedLeads.length} leads` });
-          }}
-        />
+        <BulkStatusUpdate open={showBulkStatusModal} onOpenChange={setShowBulkStatusModal} leadIds={selectedLeads} onStatusUpdated={() => {
+        refetch();
+        setSelectedLeads([]);
+        setShowBulkStatusModal(false);
+        toast({
+          title: 'Bulk Update Complete',
+          description: `Updated ${selectedLeads.length} leads`
+        });
+      }} />
 
-        {showDocVerificationModal && selectedDocument && (
-          <DocumentVerificationModal
-            open={showDocVerificationModal}
-            onOpenChange={(open) => {
-              setShowDocVerificationModal(open);
-              if (!open) {
-                setSelectedDocument(null);
-                setDocumentLeadId(null);
-              }
-            }}
-            document={selectedDocument}
-            onVerificationComplete={() => {
-              refetch();
-              setShowDocVerificationModal(false);
-            }}
-          />
-        )}
+        {showDocVerificationModal && selectedDocument && <DocumentVerificationModal open={showDocVerificationModal} onOpenChange={open => {
+        setShowDocVerificationModal(open);
+        if (!open) {
+          setSelectedDocument(null);
+          setDocumentLeadId(null);
+        }
+      }} document={selectedDocument} onVerificationComplete={() => {
+        refetch();
+        setShowDocVerificationModal(false);
+      }} />}
 
         {/* Admin New Lead Modal */}
-        <AdminNewLeadModal
-          open={showNewLeadModal}
-          onOpenChange={setShowNewLeadModal}
-          onSuccess={() => {
-            refetch();
-          }}
-          partners={allPartners}
-          defaultPartnerId={filters.partnerId}
-        />
+        <AdminNewLeadModal open={showNewLeadModal} onOpenChange={setShowNewLeadModal} onSuccess={() => {
+        refetch();
+      }} partners={allPartners} defaultPartnerId={filters.partnerId} />
 
         {/* Complete Lead Modal for Quick Leads */}
-        <CompleteLeadModal
-          open={showCompleteLeadModal}
-          onClose={() => {
-            setShowCompleteLeadModal(false);
-            setSelectedLead(null);
-          }}
-          lead={selectedLead as any}
-          onSuccess={() => {
-            refetch();
-            setShowCompleteLeadModal(false);
-            setSelectedLead(null);
-            toast({ title: 'Lead Completed', description: 'Quick lead has been completed successfully' });
-          }}
-        />
+        <CompleteLeadModal open={showCompleteLeadModal} onClose={() => {
+        setShowCompleteLeadModal(false);
+        setSelectedLead(null);
+      }} lead={selectedLead as any} onSuccess={() => {
+        refetch();
+        setShowCompleteLeadModal(false);
+        setSelectedLead(null);
+        toast({
+          title: 'Lead Completed',
+          description: 'Quick lead has been completed successfully'
+        });
+      }} />
       </div>
-    </AdminErrorBoundary>
-  );
+    </AdminErrorBoundary>;
 };
-
 export default AdminDashboardV2;
