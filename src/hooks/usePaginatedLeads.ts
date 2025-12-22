@@ -67,6 +67,7 @@ export interface PaginationFilters {
   search: string;
   status: string | null;
   partnerId: string | null;
+  documentsStatus: string | null;
 }
 
 export interface UsePaginatedLeadsReturn {
@@ -95,6 +96,7 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
     search: '',
     status: null,
     partnerId: null,
+    documentsStatus: null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 300);
@@ -150,9 +152,16 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
       if (leadsError) throw leadsError;
 
       // Map to preserve the order from search results
-      const orderedLeads = leadIds.map((id: string) => 
+      let orderedLeads = leadIds.map((id: string) => 
         fullLeads?.find(l => l.id === id)
       ).filter(Boolean) as PaginatedLead[];
+
+      // Apply client-side documents_status filter if set
+      if (filters.documentsStatus) {
+        orderedLeads = orderedLeads.filter(
+          lead => lead.documents_status === filters.documentsStatus
+        );
+      }
 
       setLeads(orderedLeads);
     } catch (err) {
@@ -161,7 +170,7 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, filters.status, filters.partnerId, page, pageSize]);
+  }, [debouncedSearch, filters.status, filters.partnerId, filters.documentsStatus, page, pageSize]);
 
   useEffect(() => {
     fetchLeads();
@@ -170,7 +179,7 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filters.status, filters.partnerId]);
+  }, [debouncedSearch, filters.status, filters.partnerId, filters.documentsStatus]);
 
   const setFilters = useCallback((newFilters: Partial<PaginationFilters>) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }));

@@ -7,6 +7,7 @@ export interface ViewConfig {
   filters: {
     status?: string | null;
     partnerId?: string | null;
+    documentsStatus?: string | null;
   };
   count?: number;
 }
@@ -22,7 +23,7 @@ interface ViewTabsProps {
 export const DEFAULT_VIEWS: ViewConfig[] = [
   { id: 'all', label: 'All', filters: {} },
   { id: 'new', label: 'New', filters: { status: 'new' } },
-  { id: 'pending-docs', label: 'Pending Docs', filters: { status: 'document_review' } },
+  { id: 'pending-docs', label: 'Pending Docs', filters: { documentsStatus: 'pending' } },
   { id: 'in-progress', label: 'In Progress', filters: { status: 'in_progress' } },
   { id: 'approved', label: 'Approved', filters: { status: 'approved' } },
   { id: 'rejected', label: 'Rejected', filters: { status: 'rejected' } },
