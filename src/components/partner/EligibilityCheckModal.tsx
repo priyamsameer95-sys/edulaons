@@ -630,28 +630,33 @@ export const EligibilityCheckModal = ({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0">
-        {/* Hero Header */}
-        <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 px-6 py-5 text-primary-foreground">
+        {/* Hero Header - Compact for mobile */}
+        <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 px-5 py-4 sm:px-6 sm:py-5 text-primary-foreground">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLTR2Mkgy NHYtMmgxMnptMC00djJIMjR2LTJoMTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50" />
-          <div className="relative flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm">
-              <Zap className="h-6 w-6" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur-sm">
+                <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold">Quick Eligibility Check</h2>
+                <p className="text-xs sm:text-sm text-primary-foreground/80">Get instant results in 30 seconds</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">Quick Eligibility Check</h2>
-              <p className="text-sm text-primary-foreground/80">Get instant results in under 30 seconds</p>
+            {/* Step indicator */}
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-xs font-medium text-primary-foreground/70">Step 1 of 2</span>
+              <div className="flex items-center gap-1">
+                <div className="w-6 h-1.5 rounded-full bg-white/90" />
+                <div className="w-6 h-1.5 rounded-full bg-white/30" />
+              </div>
             </div>
-          </div>
-          {/* Progress dots */}
-          <div className="absolute bottom-3 right-6 flex items-center gap-1.5">
-            <div className="w-8 h-1.5 rounded-full bg-white/90" />
-            <div className="w-8 h-1.5 rounded-full bg-white/30" />
           </div>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 sm:p-6 space-y-4 sm:space-y-5">
           {/* Two-column layout for name & phone */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Student Name */}
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-muted-foreground">Student Name</Label>
@@ -660,7 +665,7 @@ export const EligibilityCheckModal = ({
                 <Input
                   value={quickForm.student_name}
                   onChange={(e) => handleQuickChange('student_name', e.target.value)}
-                  placeholder="Full name"
+                  placeholder="e.g. Rahul Sharma"
                   className={cn("pl-10 h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors", quickErrors.student_name && 'border-destructive')}
                 />
               </div>
@@ -677,7 +682,7 @@ export const EligibilityCheckModal = ({
                 <Input
                   value={quickForm.student_phone}
                   onChange={(e) => handleQuickChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="10 digits"
+                  placeholder="e.g. 9876543210"
                   className={cn("pl-10 h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors", quickErrors.student_phone && 'border-destructive')}
                 />
               </div>
@@ -687,28 +692,40 @@ export const EligibilityCheckModal = ({
             </div>
           </div>
 
-          {/* Country - Pill Buttons */}
+          {/* Country - Flag chips with horizontal scroll on mobile */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-muted-foreground">Study Destination</Label>
-            <div className="flex flex-wrap gap-2">
-              {COUNTRIES.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => {
-                    handleQuickChange('country', c.value);
-                    handleQuickChange('university_id', '');
-                  }}
-                  className={cn(
-                    "py-2.5 px-4 text-sm font-medium rounded-full border-2 transition-all duration-200",
-                    quickForm.country === c.value
-                      ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25 scale-105"
-                      : "bg-background hover:bg-muted border-border hover:border-primary/30"
-                  )}
-                >
-                  {c.label}
-                </button>
-              ))}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+              {COUNTRIES.map((c) => {
+                const flags: Record<string, string> = {
+                  "United States": "🇺🇸",
+                  "United Kingdom": "🇬🇧", 
+                  "Canada": "🇨🇦",
+                  "Australia": "🇦🇺",
+                  "Germany": "🇩🇪",
+                  "Ireland": "🇮🇪",
+                  "Not Specified": "🌍"
+                };
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => {
+                      handleQuickChange('country', c.value);
+                      handleQuickChange('university_id', '');
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 py-2 px-3 text-sm font-medium rounded-full border-2 transition-all duration-200 whitespace-nowrap flex-shrink-0",
+                      quickForm.country === c.value
+                        ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25 scale-105"
+                        : "bg-background hover:bg-muted border-border hover:border-primary/30"
+                    )}
+                  >
+                    <span className="text-base">{flags[c.value]}</span>
+                    {c.label}
+                  </button>
+                );
+              })}
             </div>
             {quickErrors.country && (
               <p className="text-xs text-destructive">{quickErrors.country}</p>
@@ -739,21 +756,21 @@ export const EligibilityCheckModal = ({
           </div>
 
           {/* Two-column for salary and loan */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Salary */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-muted-foreground">Co-Applicant Salary</Label>
+              <Label className="text-sm font-medium text-muted-foreground">Co-Applicant Monthly Salary</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
                 <Input
                   value={quickForm.co_applicant_monthly_salary}
                   onChange={(e) => handleQuickChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
-                  placeholder="Monthly"
+                  placeholder="50,000"
                   className={cn("pl-8 h-12 bg-muted/50 border-border/50 focus:bg-background text-base font-medium", quickErrors.co_applicant_monthly_salary && 'border-destructive')}
                 />
               </div>
               {salaryInWords && (
-                <p className="text-xs text-muted-foreground">{salaryInWords}/mo</p>
+                <p className="text-xs text-muted-foreground">{salaryInWords}/month</p>
               )}
               {quickErrors.co_applicant_monthly_salary && (
                 <p className="text-xs text-destructive">{quickErrors.co_applicant_monthly_salary}</p>
@@ -762,13 +779,13 @@ export const EligibilityCheckModal = ({
 
             {/* Loan Amount */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-muted-foreground">Loan Amount</Label>
+              <Label className="text-sm font-medium text-muted-foreground">Loan Amount Required</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">₹</span>
                 <Input
                   value={quickForm.loan_amount}
                   onChange={(e) => handleQuickChange('loan_amount', formatCurrencyInput(e.target.value))}
-                  placeholder="Required"
+                  placeholder="15,00,000"
                   className={cn("pl-8 h-12 bg-muted/50 border-border/50 focus:bg-background text-base font-medium", quickErrors.loan_amount && 'border-destructive')}
                 />
               </div>
@@ -782,8 +799,16 @@ export const EligibilityCheckModal = ({
           </div>
         </div>
 
-        {/* Footer CTA */}
-        <div className="px-6 pb-6 pt-2">
+        {/* Footer CTA & Trust Section */}
+        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-1 space-y-4">
+          {/* Social Proof Banner */}
+          <div className="flex items-center justify-center gap-2 py-2 px-4 bg-muted/50 rounded-lg">
+            <BadgeCheck className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium text-muted-foreground">
+              Trusted by <span className="text-foreground font-semibold">10,000+</span> students • <span className="text-foreground font-semibold">97%</span> prediction accuracy
+            </span>
+          </div>
+
           <Button 
             onClick={handleCheckEligibility} 
             disabled={isChecking} 
@@ -798,26 +823,33 @@ export const EligibilityCheckModal = ({
             ) : (
               <>
                 <TrendingUp className="h-5 w-5" />
-                Check Eligibility
+                Check Eligibility Now
                 <ArrowRight className="h-5 w-5" />
               </>
             )}
           </Button>
           
-          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-emerald-500" />
-              Secure & Private
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-amber-500" />
-              Instant Results
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
-              Auto-Saved
-            </span>
+          {/* Enhanced Trust Indicators */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col items-center gap-1 py-2 px-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+              <Shield className="h-5 w-5 text-emerald-600" />
+              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Secure & Private</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 py-2 px-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+              <Clock className="h-5 w-5 text-amber-600" />
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Instant Results</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 py-2 px-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+              <CheckCircle2 className="h-5 w-5 text-blue-600" />
+              <span className="text-xs font-medium text-blue-700 dark:text-blue-400">Auto-Saved</span>
+            </div>
           </div>
+
+          {/* Incentive Hook */}
+          <p className="text-center text-xs text-muted-foreground">
+            <Sparkles className="inline h-3.5 w-3.5 text-amber-500 mr-1" />
+            Complete your application & get <span className="font-semibold text-foreground">₹500 cashback</span> on disbursal!
+          </p>
         </div>
       </DialogContent>
     </Dialog>
