@@ -33,7 +33,7 @@ export const DEFAULT_VIEWS: ViewConfig[] = [
 
 export function ViewTabs({ views, activeView, onViewChange, leadCounts }: ViewTabsProps) {
   return (
-    <div className="flex items-center gap-1 border-b border-border bg-card px-4 overflow-x-auto">
+    <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg mx-4 my-2 overflow-x-auto">
       {views.map((view) => {
         const isActive = activeView === view.id;
         const count = leadCounts?.[view.id];
@@ -43,27 +43,27 @@ export function ViewTabs({ views, activeView, onViewChange, leadCounts }: ViewTa
             key={view.id}
             onClick={() => onViewChange(view.id)}
             className={cn(
-              'relative px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
-              'hover:text-foreground focus:outline-none',
+              'px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               isActive 
-                ? 'text-foreground' 
-                : 'text-muted-foreground'
+                ? 'bg-background text-foreground shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
             )}
           >
             <span className="flex items-center gap-1.5">
               {view.label}
               {count !== undefined && count > 0 && (
                 <Badge 
-                  variant={isActive ? 'default' : 'secondary'} 
-                  className="h-5 px-1.5 text-xs font-normal"
+                  variant={isActive ? 'default' : 'outline'} 
+                  className={cn(
+                    "h-5 px-1.5 text-xs font-medium",
+                    !isActive && "border-muted-foreground/30 text-muted-foreground"
+                  )}
                 >
                   {count > 999 ? '999+' : count}
                 </Badge>
               )}
             </span>
-            {isActive && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
           </button>
         );
       })}
