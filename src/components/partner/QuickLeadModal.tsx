@@ -375,7 +375,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess }: QuickLeadModalProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-primary">⚡</span>
-            Quick Lead
+            Add New Lead
           </DialogTitle>
         </DialogHeader>
 
