@@ -68,105 +68,119 @@ const StudentDashboard = () => {
   const studentName = eligibilityData?.student_name?.split(' ')[0] || 'there';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b">
-        <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50">
+        <div className="max-w-xl mx-auto px-5 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
               <span className="text-primary-foreground font-bold text-sm">E</span>
             </div>
-            <span className="font-semibold">EduLoans</span>
-            <span className="text-xs text-muted-foreground">by Cashkaro</span>
+            <span className="font-semibold text-foreground">EduLoans</span>
+            <span className="text-[10px] text-muted-foreground/70 font-medium">by Cashkaro</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
+          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-foreground h-8 px-2">
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-10">
-        {/* Welcome Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-sm font-medium mb-4">
-            <CheckCircle2 className="h-4 w-4" />
-            Phone Verified
+      <main className="max-w-xl mx-auto px-5 py-8">
+        {/* Success Hero */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold mb-5 ring-1 ring-emerald-500/20">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Verified
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Great news, {studentName}!
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-1.5">
+            You're pre-approved, {studentName}
           </h1>
-          <p className="text-muted-foreground">
-            You're pre-approved for education loans
+          <p className="text-muted-foreground text-sm">
+            Complete your application to unlock offers
           </p>
         </div>
 
-        {/* Stats Card */}
-        <Card className="mb-8 border-0 shadow-sm bg-muted/40">
-          <CardContent className="p-0">
-            <div className="grid grid-cols-4 divide-x divide-border">
-              <div className="p-5 text-center">
-                <Building2 className="h-5 w-5 text-primary mx-auto mb-2" />
-                <p className="text-xl font-bold text-foreground">{matchedLenders}</p>
-                <p className="text-xs text-muted-foreground">Lenders</p>
-              </div>
-              <div className="p-5 text-center">
-                <Percent className="h-5 w-5 text-primary mx-auto mb-2" />
-                <p className="text-xl font-bold text-foreground">{estimatedRate.min}%</p>
-                <p className="text-xs text-muted-foreground">From</p>
-              </div>
-              <div className="p-5 text-center">
-                <IndianRupee className="h-5 w-5 text-primary mx-auto mb-2" />
-                <p className="text-xl font-bold text-foreground">₹{loanAmountLakhs}L</p>
-                <p className="text-xs text-muted-foreground">Amount</p>
-              </div>
-              <div className="p-5 text-center">
-                <Clock className="h-5 w-5 text-primary mx-auto mb-2" />
-                <p className="text-xl font-bold text-foreground">48h</p>
-                <p className="text-xs text-muted-foreground">Approval</p>
-              </div>
+        {/* Stats Grid - Modern Glass Cards */}
+        <div className="grid grid-cols-4 gap-2 mb-10">
+          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/25">
+              <Building2 className="h-4 w-4 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-lg font-bold text-foreground">{matchedLenders}</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Lenders</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-500/25">
+              <Percent className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-lg font-bold text-foreground">{estimatedRate.min}%</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Rate</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-violet-500/25">
+              <IndianRupee className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-lg font-bold text-foreground">₹{loanAmountLakhs}L</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Amount</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-amber-500/25">
+              <Clock className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-lg font-bold text-foreground">48h</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Approval</p>
+          </div>
+        </div>
 
-        {/* Journey Steps */}
-        <div className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">Your Progress</h2>
-          <div className="space-y-2">
-            {/* Completed Step 1 */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-              <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="h-4 w-4" />
+        {/* Progress Timeline */}
+        <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10 mb-8">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-1 h-4 rounded-full bg-gradient-to-b from-primary to-primary/50" />
+            <h2 className="text-xs font-semibold text-foreground uppercase tracking-wide">Your Progress</h2>
+          </div>
+          
+          <div className="space-y-1">
+            {/* Completed Steps */}
+            <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/30">
+                <CheckCircle2 className="h-4 w-4 text-white" />
               </div>
-              <p className="flex-1 text-sm text-foreground">Eligibility check</p>
-              <span className="text-xs text-emerald-600 font-medium">Done</span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Eligibility check</p>
+              </div>
+              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Done</span>
             </div>
 
-            {/* Completed Step 2 */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-              <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="h-4 w-4" />
+            <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/30">
+                <CheckCircle2 className="h-4 w-4 text-white" />
               </div>
-              <p className="flex-1 text-sm text-foreground">Phone verified</p>
-              <span className="text-xs text-emerald-600 font-medium">Done</span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Phone verified</p>
+              </div>
+              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Done</span>
             </div>
 
-            {/* Current Step */}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
-                <FileText className="h-3.5 w-3.5" />
+            {/* Current Step - Highlighted */}
+            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 ring-1 ring-primary/20">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30 animate-pulse">
+                <FileText className="h-4 w-4 text-white" />
               </div>
-              <p className="flex-1 text-sm font-medium text-foreground">Complete application</p>
-              <span className="text-xs text-primary font-medium">~5 min</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">Complete application</p>
+              </div>
+              <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">~5 min</span>
             </div>
 
             {/* Future Step */}
-            <div className="flex items-center gap-3 p-3 rounded-lg opacity-50">
-              <div className="w-7 h-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-3 p-2.5 rounded-xl opacity-40">
+              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-slate-400" />
               </div>
-              <p className="flex-1 text-sm text-muted-foreground">Get approval</p>
-              <span className="text-xs text-muted-foreground">24-48h</span>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Get approval</p>
+              </div>
+              <span className="text-[10px] text-muted-foreground">24-48h</span>
             </div>
           </div>
         </div>
@@ -174,25 +188,26 @@ const StudentDashboard = () => {
         {/* CTA */}
         <Button 
           size="lg" 
-          className="w-full h-14 text-base font-semibold shadow-lg shadow-primary/20"
+          className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-[0_10px_40px_-10px] shadow-primary/50 transition-all hover:shadow-[0_15px_50px_-10px] hover:shadow-primary/40 hover:-translate-y-0.5"
           onClick={handleContinueApplication}
         >
           Complete Application
           <ArrowRight className="h-5 w-5 ml-2" />
         </Button>
-        <p className="text-center text-xs text-muted-foreground mt-3">
-          Progress saved automatically
+        <p className="text-center text-[11px] text-muted-foreground mt-3 font-medium">
+          Your progress is saved automatically
         </p>
 
         {/* Trust Footer */}
-        <div className="flex items-center justify-center gap-6 mt-12 pt-6 border-t text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Shield className="h-3.5 w-3.5" />
+        <div className="flex items-center justify-center gap-5 mt-10 pt-6 border-t border-slate-200/50 dark:border-slate-800/50">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+            <Shield className="h-3.5 w-3.5 text-slate-400" />
             <span>Bank-grade security</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>RBI registered lenders</span>
+          <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+            <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
+            <span>RBI registered</span>
           </div>
         </div>
       </main>
