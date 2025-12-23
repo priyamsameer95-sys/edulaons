@@ -357,7 +357,7 @@ const StudentLanding = () => {
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
                   <BadgeCheck className="h-4 w-4 text-emerald-600" />
-                  <span className="text-foreground font-medium">RBI Registered</span>
+                  <span className="text-foreground font-medium">RBI Approved Lenders</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
                   <Star className="h-4 w-4 text-amber-500" />
