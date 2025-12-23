@@ -26,7 +26,7 @@ export const StudentNavBar = ({ studentName }: StudentNavBarProps) => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate('/');
   };
 
   const isActive = (path: string) => location.pathname === path;

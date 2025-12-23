@@ -30,15 +30,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Redirect root to dashboard router */}
-          <Route path="/" element={<DashboardRouter />} />
+          {/* Root = Student Landing Page (Primary) */}
+          <Route path="/" element={<StudentLanding />} />
           
-          {/* Authentication */}
-          <Route path="/login" element={<Login />} />
+          {/* Legacy redirect for old student landing URL */}
+          <Route path="/student/landing" element={<Navigate to="/" replace />} />
+          
+          {/* Dashboard Router for authenticated users */}
+          <Route path="/dashboard" element={<DashboardRouter />} />
+          
+          {/* Authentication - Role Separated */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/partner/login" element={<PartnerLogin />} />
-          
-          {/* Student Landing & Auth */}
-          <Route path="/student/landing" element={<StudentLanding />} />
           <Route path="/student/auth" element={<StudentAuth />} />
           
           {/* Public Routes - No Authentication Required */}
