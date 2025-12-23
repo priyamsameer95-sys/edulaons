@@ -46,28 +46,19 @@ const destinations = [
   { value: 'Other', label: 'Other', emoji: '🌍' },
 ];
 
-const loanTypes = [
-  { value: 'unsecured', label: 'Without Collateral', icon: '🚀', tag: 'Fast approval' },
-  { value: 'secured', label: 'With Collateral', icon: '🏠', tag: 'Best rates' },
+const amountRanges = [
+  { value: '7.5-10L', label: '₹7.5 - 10 Lakhs', min: 750000, max: 1000000 },
+  { value: '10-25L', label: '₹10 - 25 Lakhs', min: 1000000, max: 2500000 },
+  { value: '25-50L', label: '₹25 - 50 Lakhs', min: 2500000, max: 5000000 },
+  { value: '50-75L', label: '₹50 - 75 Lakhs', min: 5000000, max: 7500000 },
+  { value: '75L-1Cr', label: '₹75 Lakhs - 1 Cr', min: 7500000, max: 10000000 },
+  { value: '1Cr+', label: '₹1 Crore+', min: 10000000, max: 15000000 },
 ];
 
-const quickAmounts = [
-  { value: 1000000, label: '₹10L' },
-  { value: 2500000, label: '₹25L' },
-  { value: 5000000, label: '₹50L' },
-  { value: 7500000, label: '₹75L' },
-  { value: 10000000, label: '₹1Cr' },
+const intakeOptions = [
+  { value: 'next_9_months', label: 'Next 9 months', icon: '🚀', description: 'Starting soon' },
+  { value: 'plan_later', label: 'I plan for later', icon: '📅', description: 'Future intake' },
 ];
-
-const formatCurrency = (v: number) => {
-  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)} Cr`;
-  if (v >= 100000) return `₹${(v / 100000).toFixed(0)} L`;
-  return `₹${v.toLocaleString('en-IN')}`;
-};
-
-const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const currentYear = new Date().getFullYear();
-const years = [currentYear, currentYear + 1, currentYear + 2];
 
 const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -111,9 +102,8 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
   const validate = () => {
     const e: Record<string, string> = {};
     if (!data.studyDestination) e.destination = 'Select destination';
-    if (!data.loanType) e.loanType = 'Select loan type';
-    if (!data.loanAmount || data.loanAmount < 500000) e.amount = 'Min ₹5L required';
-    if (!data.intakeMonth || !data.intakeYear) e.intake = 'Select intake';
+    if (!data.loanAmount || data.loanAmount < 750000) e.amount = 'Select loan amount range';
+    if (!data.intakeMonth || !data.intakeYear) e.intake = 'Select when you plan to start';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -200,43 +190,37 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           {errors.destination && <p className="text-xs text-destructive">{errors.destination}</p>}
         </div>
 
-        {/* Loan Type */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">💰 Loan Type *</label>
-          <div className="grid grid-cols-2 gap-3">
-            {loanTypes.map(t => (
-              <motion.button key={t.value} type="button" onClick={() => { onUpdate({ loanType: t.value as 'secured' | 'unsecured' }); setErrors(p => ({ ...p, loanType: '' })); }}
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                className={cn("relative flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all",
-                  data.loanType === t.value ? "border-primary bg-primary/10 shadow-md shadow-primary/20" : "border-border hover:border-primary/40"
-                )}>
-                <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{t.tag}</span>
-                <span className="text-2xl">{t.icon}</span>
-                <span className="font-semibold text-foreground text-sm">{t.label}</span>
-              </motion.button>
-            ))}
-          </div>
-          {errors.loanType && <p className="text-xs text-destructive">{errors.loanType}</p>}
-        </div>
-
-        {/* Loan Amount */}
+        {/* Loan Amount Range */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-foreground flex items-center gap-2"><Wallet className="w-4 h-4 text-muted-foreground" /> How much do you need? *</label>
-          <div className="text-center py-5 px-4 rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20">
-            <motion.div key={data.loanAmount} initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="text-3xl sm:text-4xl font-bold text-foreground">
-              {formatCurrency(data.loanAmount || 2500000)}
-            </motion.div>
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-muted-foreground" /> How much do you need? *
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {amountRanges.map(range => {
+              const isSelected = data.loanAmount === range.min;
+              return (
+                <motion.button
+                  key={range.value}
+                  type="button"
+                  onClick={() => { 
+                    onUpdate({ loanAmount: range.min }); 
+                    setErrors(p => ({ ...p, amount: '' })); 
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 p-4 rounded-xl border-2 transition-all min-h-[72px]",
+                    isSelected
+                      ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
+                      : "border-border hover:border-primary/40"
+                  )}
+                >
+                  <span className="font-semibold text-foreground text-sm text-center">{range.label}</span>
+                </motion.button>
+              );
+            })}
           </div>
-          <Slider value={[data.loanAmount || 2500000]} onValueChange={v => onUpdate({ loanAmount: v[0] })} min={500000} max={15000000} step={100000} className="py-2" />
-          <div className="flex justify-between text-xs text-muted-foreground"><span>₹5L</span><span>₹1.5Cr</span></div>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {quickAmounts.map(a => (
-              <button key={a.value} type="button" onClick={() => onUpdate({ loanAmount: a.value })}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  data.loanAmount === a.value ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                )}>{a.label}</button>
-            ))}
-          </div>
+          {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
           {data.studyDestination && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <Sparkles className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
@@ -285,28 +269,47 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           </div>
         </div>
 
-        {/* Intake */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground flex items-center gap-2"><Calendar className="w-4 h-4 text-muted-foreground" /> When do you start? *</label>
-          <div className="flex gap-2 mb-2">
-            {years.map(y => (
-              <button key={y} type="button" onClick={() => onUpdate({ intakeYear: y })}
-                className={cn("flex-1 py-2 rounded-xl border-2 font-semibold text-sm transition-all",
-                  data.intakeYear === y ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"
-                )}>{y}</button>
-            ))}
-          </div>
-          <div className="grid grid-cols-6 gap-1.5">
-            {months.map((m, i) => {
-              const pop = [0, 4, 7, 8].includes(i);
+        {/* Intake - Simplified */}
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" /> When do you plan to start? *
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {intakeOptions.map(opt => {
+              // For "next_9_months", we set a month/year; for "plan_later", we use a special indicator
+              const isSelected = opt.value === 'next_9_months' 
+                ? (data.intakeMonth && data.intakeYear && data.intakeYear <= new Date().getFullYear() + 1)
+                : (data.intakeYear && data.intakeYear > new Date().getFullYear() + 1);
+              
               return (
-                <button key={m} type="button" onClick={() => { onUpdate({ intakeMonth: i + 1 }); setErrors(p => ({ ...p, intake: '' })); }}
-                  className={cn("relative py-2 rounded-lg border text-xs font-medium transition-all",
-                    data.intakeMonth === i + 1 ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary/50"
-                  )}>
-                  {pop && data.intakeMonth !== i + 1 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber-500 rounded-full" />}
-                  {m}
-                </button>
+                <motion.button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => { 
+                    if (opt.value === 'next_9_months') {
+                      // Set to next available month
+                      const now = new Date();
+                      const futureDate = new Date(now.setMonth(now.getMonth() + 3));
+                      onUpdate({ intakeMonth: futureDate.getMonth() + 1, intakeYear: futureDate.getFullYear() }); 
+                    } else {
+                      // Set to 2 years from now to indicate "later"
+                      onUpdate({ intakeMonth: 9, intakeYear: new Date().getFullYear() + 2 }); 
+                    }
+                    setErrors(p => ({ ...p, intake: '' })); 
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={cn(
+                    "relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all",
+                    isSelected
+                      ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
+                      : "border-border hover:border-primary/40"
+                  )}
+                >
+                  <span className="text-2xl">{opt.icon}</span>
+                  <span className="font-semibold text-foreground text-sm">{opt.label}</span>
+                  <span className="text-xs text-muted-foreground">{opt.description}</span>
+                </motion.button>
               );
             })}
           </div>
