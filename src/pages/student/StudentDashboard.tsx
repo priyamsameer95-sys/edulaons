@@ -132,7 +132,40 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Quick Stats */}
+            {/* Your Loan Stats */}
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Your Loan</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <IndianRupee className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground">₹{loanAmountLakhs}L</p>
+                    <p className="text-xs text-muted-foreground">Loan Amount</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Percent className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground">{estimatedRate.min}%</p>
+                    <p className="text-xs text-muted-foreground">Interest Rate</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground">{matchedLenders}</p>
+                    <p className="text-xs text-muted-foreground">Matched Lenders</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl p-5 border border-primary/10">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Platform Stats</p>
               <div className="grid grid-cols-2 gap-3">
@@ -195,31 +228,6 @@ const StudentDashboard = () => {
                 <p className="text-white/80 text-base sm:text-lg">
                   You're 60% complete. Finish your application to get your funds.
                 </p>
-              </div>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
-                  <IndianRupee className="w-5 h-5 text-emerald-600" />
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">₹{loanAmountLakhs}L</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">Loan Amount</p>
-              </div>
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
-                  <Percent className="w-5 h-5 text-blue-600" />
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">{estimatedRate.min}%</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">Interest Rate</p>
-              </div>
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mb-3">
-                  <Building2 className="w-5 h-5 text-violet-600" />
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-foreground">{matchedLenders}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">Matched Lenders</p>
               </div>
             </div>
 
