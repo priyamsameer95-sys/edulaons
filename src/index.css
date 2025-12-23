@@ -220,11 +220,28 @@
   animation: fall linear forwards;
 }
 
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-shimmer,
   .animate-slide-in-right,
   .animate-glow,
+  .animate-fade-in,
   .stagger-fade-1,
   .stagger-fade-2,
   .stagger-fade-3,
