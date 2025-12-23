@@ -132,23 +132,6 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Testimonials */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">What Students Say</p>
-              <div className="space-y-4">
-                {testimonials.map((t, i) => (
-                  <div key={i} className="relative">
-                    <Quote className="w-5 h-5 text-primary/20 absolute -top-1 -left-1" />
-                    <p className="text-sm text-foreground pl-4 italic leading-relaxed">"{t.text}"</p>
-                    <div className="flex items-center gap-2 mt-2 pl-4">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-indigo-500" />
-                      <p className="text-xs font-medium text-foreground">{t.name} <span className="text-muted-foreground">· {t.university}</span></p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Quick Stats */}
             <div className="bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl p-5 border border-primary/10">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Platform Stats</p>
