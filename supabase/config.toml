@@ -59,3 +59,6 @@ verify_jwt = true
 
 [functions.verify-student-otp]
 verify_jwt = false
+
+[functions.create-lead-student]
+verify_jwt = false

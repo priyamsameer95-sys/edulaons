@@ -14,6 +14,7 @@ import {
   ArrowRight,
   AlertTriangle,
   Sparkles,
+  Users,
 } from "lucide-react";
 
 interface GuidedWizardDashboardProps {
@@ -66,6 +67,25 @@ export const GuidedWizardDashboard = ({
       {/* Milestone Celebration */}
       {showCelebration && (
         <MilestoneCelebration status={primaryApp.status} onDismiss={handleDismissCelebration} />
+      )}
+
+      {/* Partner Attribution Banner */}
+      {primaryApp?.partner && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Partner Assisted Application</p>
+                <p className="text-xs text-muted-foreground">
+                  Your application was started by <span className="font-semibold text-primary">{primaryApp.partner.name}</span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Personalized Header */}
