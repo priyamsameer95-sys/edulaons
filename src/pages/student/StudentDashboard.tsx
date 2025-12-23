@@ -1,21 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { formatIndianNumber } from '@/utils/currencyFormatter';
 import { 
   ArrowRight, 
-  CheckCircle2, 
+  Check,
   LogOut, 
-  TrendingUp, 
   Shield, 
   Clock,
   Building2,
   Percent,
   IndianRupee,
-  FileText,
   Sparkles
 } from 'lucide-react';
 
@@ -38,7 +33,6 @@ const StudentDashboard = () => {
   const [eligibilityData, setEligibilityData] = useState<EligibilityData | null>(null);
 
   useEffect(() => {
-    // Load eligibility data from session storage
     const stored = sessionStorage.getItem('eligibility_form');
     if (stored) {
       try {
@@ -60,155 +54,163 @@ const StudentDashboard = () => {
     navigate('/student/apply');
   };
 
-  // Calculate estimated values based on eligibility data
   const loanAmountLakhs = eligibilityData ? Math.round(eligibilityData.loan_amount / 100000) : 35;
   const estimatedRate = { min: 10.5, max: 12.5 };
   const matchedLenders = 4;
-
   const studentName = eligibilityData?.student_name?.split(' ')[0] || 'there';
 
+  const steps = [
+    { label: 'Eligibility', done: true },
+    { label: 'Verified', done: true },
+    { label: 'Application', done: false, current: true },
+    { label: 'Approval', done: false },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50">
-        <div className="max-w-xl mx-auto px-5 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
-              <span className="text-primary-foreground font-bold text-sm">E</span>
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-zinc-950">
+      {/* Minimal Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-2xl border-b border-zinc-100 dark:border-zinc-800/50">
+        <div className="max-w-lg mx-auto px-5 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-white flex items-center justify-center">
+              <span className="text-white dark:text-zinc-900 font-bold text-xs">E</span>
             </div>
-            <span className="font-semibold text-foreground">EduLoans</span>
-            <span className="text-[10px] text-muted-foreground/70 font-medium">by Cashkaro</span>
+            <span className="font-display font-semibold text-sm text-zinc-900 dark:text-white">EduLoans</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-foreground h-8 px-2">
+          <button 
+            onClick={handleLogout} 
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-2 -mr-2"
+          >
             <LogOut className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-5 py-8">
-        {/* Success Hero */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold mb-5 ring-1 ring-emerald-500/20">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Verified
+      <main className="max-w-lg mx-auto px-5 pt-24 pb-12">
+        {/* Hero Section */}
+        <div className="mb-10">
+          <div className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-medium mb-4">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Pre-approved
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-1.5">
-            You're pre-approved, {studentName}
+          <h1 className="font-display text-[28px] leading-tight font-bold text-zinc-900 dark:text-white mb-2 tracking-tight">
+            Hey {studentName}, you're<br />almost there
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Complete your application to unlock offers
+          <p className="text-zinc-500 dark:text-zinc-400 text-[15px]">
+            Complete your application to unlock loan offers
           </p>
         </div>
 
-        {/* Stats Grid - Modern Glass Cards */}
-        <div className="grid grid-cols-4 gap-2 mb-10">
-          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/25">
-              <Building2 className="h-4 w-4 text-white" />
+        {/* Stats Row */}
+        <div className="flex gap-3 mb-10">
+          <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-            <p className="text-lg font-bold text-foreground">{matchedLenders}</p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Lenders</p>
+            <p className="font-display text-2xl font-bold text-zinc-900 dark:text-white">{matchedLenders}</p>
+            <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Lenders matched</p>
           </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-500/25">
-              <Percent className="h-4 w-4 text-white" />
+          <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
+                <Percent className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </div>
-            <p className="text-lg font-bold text-foreground">{estimatedRate.min}%</p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Rate</p>
+            <p className="font-display text-2xl font-bold text-zinc-900 dark:text-white">{estimatedRate.min}%</p>
+            <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Interest rate</p>
           </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-violet-500/25">
-              <IndianRupee className="h-4 w-4 text-white" />
+          <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
+                <IndianRupee className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
             </div>
-            <p className="text-lg font-bold text-foreground">₹{loanAmountLakhs}L</p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Amount</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-amber-500/25">
-              <Clock className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-lg font-bold text-foreground">48h</p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Approval</p>
+            <p className="font-display text-2xl font-bold text-zinc-900 dark:text-white">₹{loanAmountLakhs}L</p>
+            <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Loan amount</p>
           </div>
         </div>
 
-        {/* Progress Timeline */}
-        <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_40px_-20px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 dark:ring-white/10 mb-8">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-1 h-4 rounded-full bg-gradient-to-b from-primary to-primary/50" />
-            <h2 className="text-xs font-semibold text-foreground uppercase tracking-wide">Your Progress</h2>
+        {/* Progress Steps */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            {steps.map((step, i) => (
+              <div key={step.label} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all
+                    ${step.done 
+                      ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900' 
+                      : step.current 
+                        ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 ring-4 ring-zinc-900/10 dark:ring-white/10' 
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                    }
+                  `}>
+                    {step.done ? <Check className="h-4 w-4" /> : i + 1}
+                  </div>
+                  <span className={`
+                    text-[10px] font-medium mt-2
+                    ${step.done || step.current ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}
+                  `}>
+                    {step.label}
+                  </span>
+                </div>
+                {i < steps.length - 1 && (
+                  <div className={`
+                    w-12 sm:w-16 h-[2px] mx-1 mt-[-16px]
+                    ${step.done ? 'bg-zinc-900 dark:bg-white' : 'bg-zinc-200 dark:bg-zinc-800'}
+                  `} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Current Task Card */}
+        <div className="bg-zinc-900 dark:bg-white rounded-3xl p-6 mb-6">
+          <div className="flex items-start gap-4 mb-5">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 dark:bg-zinc-900/10 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-white dark:text-zinc-900" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-semibold text-white dark:text-zinc-900 text-lg mb-1">
+                Complete Application
+              </h3>
+              <p className="text-zinc-400 dark:text-zinc-500 text-sm">
+                Fill in your details to get personalized loan offers
+              </p>
+            </div>
           </div>
           
-          <div className="space-y-1">
-            {/* Completed Steps */}
-            <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/30">
-                <CheckCircle2 className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Eligibility check</p>
-              </div>
-              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Done</span>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 text-xs">
+              <Clock className="h-3.5 w-3.5" />
+              <span>~5 minutes</span>
             </div>
-
-            <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/30">
-                <CheckCircle2 className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Phone verified</p>
-              </div>
-              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Done</span>
-            </div>
-
-            {/* Current Step - Highlighted */}
-            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 ring-1 ring-primary/20">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30 animate-pulse">
-                <FileText className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Complete application</p>
-              </div>
-              <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">~5 min</span>
-            </div>
-
-            {/* Future Step */}
-            <div className="flex items-center gap-3 p-2.5 rounded-xl opacity-40">
-              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-slate-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Get approval</p>
-              </div>
-              <span className="text-[10px] text-muted-foreground">24-48h</span>
+            <div className="w-1 h-1 rounded-full bg-zinc-700 dark:bg-zinc-300" />
+            <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 text-xs">
+              <Shield className="h-3.5 w-3.5" />
+              <span>Secure & encrypted</span>
             </div>
           </div>
+
+          <Button 
+            onClick={handleContinueApplication}
+            className="w-full h-12 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Continue
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
         </div>
 
-        {/* CTA */}
-        <Button 
-          size="lg" 
-          className="w-full h-14 text-base font-semibold rounded-2xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-[0_10px_40px_-10px] shadow-primary/50 transition-all hover:shadow-[0_15px_50px_-10px] hover:shadow-primary/40 hover:-translate-y-0.5"
-          onClick={handleContinueApplication}
-        >
-          Complete Application
-          <ArrowRight className="h-5 w-5 ml-2" />
-        </Button>
-        <p className="text-center text-[11px] text-muted-foreground mt-3 font-medium">
-          Your progress is saved automatically
-        </p>
-
-        {/* Trust Footer */}
-        <div className="flex items-center justify-center gap-5 mt-10 pt-6 border-t border-slate-200/50 dark:border-slate-800/50">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
-            <Shield className="h-3.5 w-3.5 text-slate-400" />
-            <span>Bank-grade security</span>
-          </div>
-          <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
-            <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
-            <span>RBI registered</span>
-          </div>
+        {/* Trust Strip */}
+        <div className="flex items-center justify-center gap-4 text-[11px] text-zinc-400">
+          <span>Bank-grade security</span>
+          <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+          <span>RBI registered lenders</span>
+          <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+          <span>No spam</span>
         </div>
       </main>
     </div>
