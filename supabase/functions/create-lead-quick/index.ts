@@ -348,16 +348,22 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('💥 [create-lead] Error:', error.message);
-    
+    const message = error?.message || 'An unexpected error occurred';
+    console.error('💥 [create-lead] Error:', message);
+
+    // Treat duplicate lead as a business-rule response (not an HTTP error)
+    // so the client doesn't get a non-2xx "Edge function returned 400" exception.
+    const isDuplicateLead = message === 'A lead already exists for this student for the selected intake';
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'An unexpected error occurred'
+        error: message,
+        error_code: isDuplicateLead ? 'DUPLICATE_LEAD' : 'BAD_REQUEST'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: isDuplicateLead ? 200 : 400,
       }
     );
   }
