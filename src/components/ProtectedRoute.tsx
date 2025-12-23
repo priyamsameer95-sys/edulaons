@@ -19,7 +19,12 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   }
 
   if (!user || !appUser) {
-    return <Navigate to="/login" replace />;
+    // Redirect to appropriate login based on required role
+    if (requiredRole === 'partner') {
+      return <Navigate to="/partner/login" replace />;
+    }
+    // Default: students and others go to home (student landing with auth)
+    return <Navigate to="/student/auth" replace />;
   }
 
   if (!appUser.is_active) {
@@ -51,6 +56,16 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     };
 
     if (!hasRequiredRole()) {
+      // Instead of unauthorized, redirect to correct dashboard based on their actual role
+      if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+        return <Navigate to="/admin" replace />;
+      }
+      if (appUser.role === 'partner') {
+        return <Navigate to="/dashboard" replace />;
+      }
+      if ((appUser.role as any) === 'student') {
+        return <Navigate to="/student" replace />;
+      }
       return <Navigate to="/unauthorized" replace />;
     }
   }

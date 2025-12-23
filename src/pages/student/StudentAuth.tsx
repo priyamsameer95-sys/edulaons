@@ -257,9 +257,12 @@ const StudentAuth = () => {
       {/* Header */}
       <header className="p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link to="/student/landing" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Home
+          </Link>
+          <Link to="/partner/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Partner Login →
           </Link>
         </div>
       </header>

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { OTPInput } from "@/components/student/OTPInput";
+import GlobalPublicHeader from "@/components/layouts/GlobalPublicHeader";
 import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, BadgeCheck, ChevronLeft, Sparkles, Clock, FileCheck, TrendingUp, Building2, Users, CheckCircle2, Smartphone, RefreshCw } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 
@@ -482,25 +483,8 @@ const StudentLanding = () => {
   const loanAmountLakhs = formData.loan_amount[0];
   const estimatedEMI = result ? calculateEMI(loanAmountLakhs * 100000, result.estimatedRateMin) : 0;
   return <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-foreground">EduLoanPro</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground hover:text-foreground">
-              <Link to="/partner/login">Partner</Link>
-            </Button>
-            <Button size="sm" asChild className="text-xs">
-              <Link to="/student/auth">Login</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Global Header with Student/Partner Login */}
+      <GlobalPublicHeader />
 
       {/* Main Content - Single Scroll Design */}
       <main className="pt-14">

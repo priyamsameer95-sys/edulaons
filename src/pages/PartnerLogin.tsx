@@ -329,8 +329,8 @@ const PartnerLogin = () => {
           <div className="mt-6 text-center relative z-10">
             <p className="text-sm text-muted-foreground">
               Are you a student?{' '}
-              <Link to="/login" className="font-semibold text-primary hover:underline underline-offset-2">
-                Sign in here
+              <Link to="/student/auth" className="font-semibold text-primary hover:underline underline-offset-2">
+                Student Login
               </Link>
             </p>
           </div>

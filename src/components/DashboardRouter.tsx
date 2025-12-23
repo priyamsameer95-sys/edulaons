@@ -72,8 +72,8 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
   }
 
   if (!user || !appUser) {
-    console.log('DashboardRouter: No user or appUser, redirecting to login');
-    return <Navigate to="/login" replace />;
+    console.log('DashboardRouter: No user or appUser, redirecting to home');
+    return <Navigate to="/" replace />;
   }
 
   if (!appUser.is_active) {
@@ -135,9 +135,9 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     }
   }
 
-  // Fallback to login if no valid route found
-  console.log('DashboardRouter: No valid route found, fallback to login');
-  return <Navigate to="/login" replace />;
+  // Fallback to home if no valid route found
+  console.log('DashboardRouter: No valid route found, fallback to home');
+  return <Navigate to="/" replace />;
 };
 
 export default DashboardRouter;
