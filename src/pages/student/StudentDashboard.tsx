@@ -12,18 +12,15 @@ import {
   Percent,
   IndianRupee,
   Sparkles,
-  Users,
-  Lock,
   BadgeCheck,
-  Star,
-  MessageCircle,
   Phone,
-  HelpCircle,
-  Quote,
-  TrendingUp,
   GraduationCap,
-  FileText
+  FileText,
+  FileCheck,
+  Zap,
+  Trophy
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface EligibilityData {
   student_name: string;
@@ -38,10 +35,20 @@ interface EligibilityData {
   source: string;
 }
 
+// Steps with time anchors - matching landing page style
+const STEPS = [
+  { icon: FileCheck, label: 'Eligibility', time: 'Done', done: true },
+  { icon: Shield, label: 'Verified', time: 'Done', done: true },
+  { icon: Zap, label: 'Application', time: '~8 mins', done: false, current: true },
+  { icon: FileText, label: 'Documents', time: 'Upload', done: false },
+  { icon: Trophy, label: 'Approval', time: '24-48 hrs', done: false },
+];
+
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [eligibilityData, setEligibilityData] = useState<EligibilityData | null>(null);
+  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('eligibility_form');
@@ -70,231 +77,233 @@ const StudentDashboard = () => {
   const matchedLenders = 4;
   const studentName = eligibilityData?.student_name?.split(' ')[0] || 'there';
 
-  const steps = [
-    { label: 'Eligibility', done: true },
-    { label: 'Verified', done: true },
-    { label: 'Application', done: false, current: true },
-    { label: 'Documents', done: false },
-    { label: 'Approval', done: false },
-  ];
-
-  const testimonials = [
-    { name: "Priya S.", university: "MIT", text: "Got approved in just 3 days! The process was seamless." },
-    { name: "Rahul M.", university: "Stanford", text: "Best rates I found. Highly recommend!" },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-white/80 dark:bg-zinc-950/80 border-b border-slate-200/60 dark:border-zinc-800/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
-                <GraduationCap className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-background">
+      {/* Header - Clean like landing */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <GraduationCap className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-display font-semibold text-lg text-foreground">Eduloans by Cashkaro</span>
+              <span className="font-semibold text-foreground">Eduloans by Cashkaro</span>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleLogout}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground h-8 text-xs"
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-3.5 h-3.5 mr-1.5" />
               Logout
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content - 2 Column Layout: Left sidebar + Right form */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 lg:gap-8">
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-8">
           
-          {/* Left Sidebar - All supporting content */}
-          <aside className="hidden lg:flex flex-col gap-5">
+          {/* Left Sidebar */}
+          <aside className="hidden lg:flex flex-col gap-4">
             {/* Referred By Card */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Referred By</p>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+            <div className="bg-card rounded-xl p-4 border border-border shadow-sm">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Referred By</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Building2 className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="font-semibold text-foreground text-sm">Skyline Education</p>
-                  <p className="text-xs text-muted-foreground">Verified Partner</p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <BadgeCheck className="w-3 h-3 text-emerald-500" />
+                    <span>Verified Partner</span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <BadgeCheck className="w-3.5 h-3.5 text-green-500" />
-                <span>Tracking your application</span>
               </div>
             </div>
 
             {/* Your Loan Stats */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Your Loan</p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                    <IndianRupee className="w-4 h-4 text-emerald-600" />
+            <div className="bg-card rounded-xl p-4 border border-border shadow-sm">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Your Loan Details</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <IndianRupee className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Amount</span>
                   </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">₹{loanAmountLakhs}L</p>
-                    <p className="text-xs text-muted-foreground">Loan Amount</p>
-                  </div>
+                  <span className="text-base font-bold text-foreground">₹{loanAmountLakhs}L</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                    <Percent className="w-4 h-4 text-blue-600" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Percent className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Est. Rate</span>
                   </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{estimatedRate.min}%</p>
-                    <p className="text-xs text-muted-foreground">Interest Rate</p>
-                  </div>
+                  <span className="text-base font-bold text-foreground">{estimatedRate.min}%</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-violet-600" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                      <Building2 className="w-4 h-4 text-violet-600" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Lenders</span>
                   </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{matchedLenders}</p>
-                    <p className="text-xs text-muted-foreground">Matched Lenders</p>
-                  </div>
+                  <span className="text-base font-bold text-foreground">{matchedLenders}</span>
                 </div>
               </div>
             </div>
 
             {/* Need Help */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Need Help?</p>
+            <div className="bg-card rounded-xl p-4 border border-border shadow-sm">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Need Help?</p>
               <a 
                 href="tel:8238452277" 
-                className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 hover:bg-green-500/15 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/15 transition-colors"
               >
-                <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Phone className="w-4 h-4 text-green-600" />
+                <div className="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Call your RM</p>
+                  <p className="text-[10px] text-muted-foreground">Call your RM</p>
                   <p className="text-sm font-semibold text-foreground">8238452277</p>
                 </div>
               </a>
             </div>
-
           </aside>
 
-          {/* Right Content - Main Form Area */}
-          <div className="flex flex-col gap-6">
-            {/* Hero Card */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-indigo-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-primary/20">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-400/10 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
-              
-              <div className="relative">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur rounded-full text-sm font-medium mb-4">
-                  <Sparkles className="w-4 h-4" />
-                  Pre-approved
-                </div>
-                
-                <h1 className="font-display text-2xl sm:text-3xl font-bold mb-2">
-                  Welcome back, {studentName}!
-                </h1>
-                <p className="text-white/80 text-base sm:text-lg">
-                  You're 60% complete. Finish your application to get your funds.
-                </p>
-              </div>
+          {/* Right Content - Main Area */}
+          <div className="flex flex-col gap-5">
+            {/* Trust Badge - Like landing */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium w-fit">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Pre-approved for ₹{loanAmountLakhs}L with {matchedLenders} lenders
             </div>
 
-            {/* Progress Steps */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 sm:p-6 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-5">Application Progress</p>
-              <div className="flex items-center justify-between">
-                {steps.map((step, i) => (
-                  <div key={step.label} className="flex items-center">
-                    <div className="flex flex-col items-center">
-                      <div 
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                          step.done 
-                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' 
-                            : step.current 
-                              ? 'bg-primary text-white shadow-lg shadow-primary/30 ring-4 ring-primary/20' 
-                              : 'bg-slate-100 dark:bg-zinc-800 text-muted-foreground'
-                        }`}
-                      >
-                        {step.done ? <Check className="w-5 h-5" /> : i + 1}
-                      </div>
-                      <span className={`mt-2 text-xs font-medium ${
-                        step.current ? 'text-primary' : step.done ? 'text-foreground' : 'text-muted-foreground'
-                      }`}>
-                        {step.label}
-                      </span>
+            {/* Hero Section - Typography focused like landing */}
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground leading-tight tracking-tight">
+                Welcome back, <span className="text-primary">{studentName}!</span>
+              </h1>
+              <p className="text-base sm:text-lg text-muted-foreground">
+                You're 60% complete. Complete your application to get your loan approved.
+              </p>
+            </div>
+
+            {/* Progress Steps - Landing page style with hover */}
+            <div className="bg-card rounded-xl p-5 border border-border shadow-sm">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-4">How it works</p>
+              <div className="grid grid-cols-5 gap-2">
+                {STEPS.map((step, i) => (
+                  <div 
+                    key={step.label} 
+                    className="text-center group cursor-default"
+                    onMouseEnter={() => setHoveredStep(i)}
+                    onMouseLeave={() => setHoveredStep(null)}
+                  >
+                    <div className={cn(
+                      "w-11 h-11 mx-auto rounded-xl flex items-center justify-center mb-1.5 transition-all duration-300 border",
+                      step.done 
+                        ? "bg-emerald-500 border-emerald-500 text-white" 
+                        : step.current 
+                          ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" 
+                          : "bg-muted border-transparent text-muted-foreground",
+                      hoveredStep === i && !step.done && !step.current && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10"
+                    )}>
+                      {step.done ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <step.icon className={cn(
+                          "h-5 w-5 transition-colors duration-300",
+                          hoveredStep === i && !step.current ? "text-primary" : ""
+                        )} />
+                      )}
                     </div>
-                    {i < steps.length - 1 && (
-                      <div className={`w-8 sm:w-12 lg:w-16 h-0.5 mx-1 sm:mx-2 ${
-                        step.done ? 'bg-green-500' : 'bg-slate-200 dark:bg-zinc-700'
-                      }`} />
-                    )}
+                    <p className="text-xs font-medium text-foreground leading-tight">{step.label}</p>
+                    <p className={cn(
+                      "text-[10px] font-semibold transition-colors mt-0.5",
+                      step.done ? "text-emerald-600" : step.current ? "text-primary" : "text-muted-foreground"
+                    )}>{step.time}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* CTA Card */}
-            <div className="bg-gradient-to-br from-slate-900 to-zinc-900 dark:from-white dark:to-slate-100 rounded-3xl p-6 sm:p-8 shadow-xl">
-              <div className="flex items-start justify-between mb-6">
+            {/* CTA Card - Clean and prominent */}
+            <div className="bg-card rounded-xl p-5 sm:p-6 border border-border shadow-xl shadow-primary/5">
+              <div className="flex items-start justify-between mb-5">
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-5 h-5 text-white dark:text-zinc-900" />
-                    <span className="text-white/60 dark:text-zinc-600 text-sm font-medium">Current Task</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Task</span>
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white dark:text-zinc-900">
+                  <h3 className="text-xl sm:text-2xl font-bold text-foreground">
                     Complete Your Application
                   </h3>
-                  <p className="text-white/70 dark:text-zinc-600 mt-1">
-                    Fill in your personal and academic details
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Fill in your personal and academic details to proceed
                   </p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 dark:bg-zinc-200 rounded-full">
-                  <Clock className="w-4 h-4 text-white/80 dark:text-zinc-600" />
-                  <span className="text-sm text-white/80 dark:text-zinc-600">~8 mins</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-muted rounded-full">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">~8 mins</span>
                 </div>
               </div>
               
               <Button 
                 onClick={handleContinueApplication}
                 size="lg"
-                className="w-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white hover:bg-white/90 dark:hover:bg-zinc-800 font-semibold h-14 text-base rounded-xl shadow-lg"
+                className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20"
               >
                 Continue Application
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
 
-              <div className="flex items-center justify-center gap-4 mt-5 text-white/50 dark:text-zinc-500 text-xs">
+              <div className="flex items-center justify-center gap-4 mt-4 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5" />
-                  Secure & encrypted
+                  <Shield className="w-3 h-3" />
+                  No credit score impact
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="w-3 h-3" />
                   Auto-save enabled
                 </span>
               </div>
             </div>
 
-            {/* Mobile: Trust Signals (shown on mobile only) */}
-            <div className="lg:hidden grid grid-cols-2 gap-3">
-              <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-slate-200/60 dark:border-zinc-800">
-                <Shield className="w-5 h-5 text-green-600 mb-2" />
-                <p className="text-sm font-medium text-foreground">RBI Regulated</p>
-                <p className="text-xs text-muted-foreground">Licensed lenders</p>
+            {/* Mobile: Loan Stats (shown on mobile only) */}
+            <div className="lg:hidden grid grid-cols-3 gap-3">
+              <div className="bg-card rounded-xl p-3 border border-border text-center">
+                <IndianRupee className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">₹{loanAmountLakhs}L</p>
+                <p className="text-[10px] text-muted-foreground">Loan Amount</p>
               </div>
-              <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-slate-200/60 dark:border-zinc-800">
-                <Users className="w-5 h-5 text-blue-600 mb-2" />
-                <p className="text-sm font-medium text-foreground">50K+ Students</p>
-                <p className="text-xs text-muted-foreground">Funded dreams</p>
+              <div className="bg-card rounded-xl p-3 border border-border text-center">
+                <Percent className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">{estimatedRate.min}%</p>
+                <p className="text-[10px] text-muted-foreground">Interest Rate</p>
               </div>
+              <div className="bg-card rounded-xl p-3 border border-border text-center">
+                <Building2 className="w-5 h-5 text-violet-600 mx-auto mb-1" />
+                <p className="text-lg font-bold text-foreground">{matchedLenders}</p>
+                <p className="text-[10px] text-muted-foreground">Lenders</p>
+              </div>
+            </div>
+
+            {/* Mobile: Need Help */}
+            <div className="lg:hidden">
+              <a 
+                href="tel:8238452277" 
+                className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/15 transition-colors"
+              >
+                <Phone className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-medium text-foreground">Call RM: 8238452277</span>
+              </a>
             </div>
           </div>
         </div>
