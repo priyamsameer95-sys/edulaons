@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, GraduationCap, DollarSign, Building, FileText, ShieldAlert } from "lucide-react";
+import { User, GraduationCap, DollarSign, Building, FileText, ShieldAlert, MessageSquare, History } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StudentScoreBreakdown from "./StudentScoreBreakdown";
 import StudentAcademicProfile from "./StudentAcademicProfile";
 import StudentFinancialProfile from "./StudentFinancialProfile";
 import StudentUniversityProfile from "./StudentUniversityProfile";
+import { ClarificationHistoryTab } from "./ClarificationHistoryTab";
+import { RaiseClarificationModal } from "./RaiseClarificationModal";
+import { FieldAuditTrail } from "./FieldAuditTrail";
 import { Badge } from "@/components/ui/badge";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { isSuperAdmin } from "@/utils/roleCheck";
+import { useClarifications } from "@/hooks/useClarifications";
 
 interface StudentProfileSheetProps {
   open: boolean;
@@ -20,6 +25,8 @@ interface StudentProfileSheetProps {
 const StudentProfileSheet = ({ open, onOpenChange, leadId }: StudentProfileSheetProps) => {
   const { appUser } = useAuth();
   const { profile, scores, loading, error } = useStudentProfile(leadId);
+  const { clarifications, templates, loading: clarificationsLoading, pendingCount, createClarification, resolveClarification, dismissClarification } = useClarifications({ leadId });
+  const [showRaiseClarification, setShowRaiseClarification] = useState(false);
 
   // Only super_admin can access Student Profile
   if (!isSuperAdmin(appUser?.role)) {
@@ -93,26 +100,39 @@ const StudentProfileSheet = ({ open, onOpenChange, leadId }: StudentProfileSheet
           </div>
         ) : profile ? (
           <Tabs defaultValue="personal" className="mt-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="personal" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="personal" className="flex items-center gap-1">
                 <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Personal</span>
+                <span className="hidden lg:inline">Personal</span>
               </TabsTrigger>
-              <TabsTrigger value="scoring" className="flex items-center gap-2">
+              <TabsTrigger value="scoring" className="flex items-center gap-1">
                 <GraduationCap className="h-4 w-4" />
-                <span className="hidden sm:inline">Scoring</span>
+                <span className="hidden lg:inline">Scoring</span>
               </TabsTrigger>
-              <TabsTrigger value="financial" className="flex items-center gap-2">
+              <TabsTrigger value="financial" className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4" />
-                <span className="hidden sm:inline">Financial</span>
+                <span className="hidden lg:inline">Financial</span>
               </TabsTrigger>
-              <TabsTrigger value="universities" className="flex items-center gap-2">
+              <TabsTrigger value="universities" className="flex items-center gap-1">
                 <Building className="h-4 w-4" />
-                <span className="hidden sm:inline">Universities</span>
+                <span className="hidden lg:inline">Unis</span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="flex items-center gap-2">
+              <TabsTrigger value="documents" className="flex items-center gap-1">
                 <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Documents</span>
+                <span className="hidden lg:inline">Docs</span>
+              </TabsTrigger>
+              <TabsTrigger value="clarifications" className="flex items-center gap-1 relative">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden lg:inline">Q&A</span>
+                {pendingCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] flex items-center justify-center">
+                    {pendingCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="flex items-center gap-1">
+                <History className="h-4 w-4" />
+                <span className="hidden lg:inline">Audit</span>
               </TabsTrigger>
             </TabsList>
 
@@ -169,8 +189,34 @@ const StudentProfileSheet = ({ open, onOpenChange, leadId }: StudentProfileSheet
                 Document management coming soon
               </div>
             </TabsContent>
+
+            <TabsContent value="clarifications" className="mt-6">
+              <ClarificationHistoryTab
+                clarifications={clarifications}
+                loading={clarificationsLoading}
+                onResolve={resolveClarification}
+                onDismiss={dismissClarification}
+                onRaiseNew={() => setShowRaiseClarification(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="audit" className="mt-6">
+              <FieldAuditTrail leadId={leadId} />
+            </TabsContent>
           </Tabs>
         ) : null}
+
+        {leadId && (
+          <RaiseClarificationModal
+            open={showRaiseClarification}
+            onOpenChange={setShowRaiseClarification}
+            leadId={leadId}
+            templates={templates}
+            onSubmit={createClarification}
+            createdBy={appUser?.id}
+            createdByRole="admin"
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
