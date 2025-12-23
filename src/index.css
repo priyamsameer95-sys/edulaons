@@ -25,6 +25,14 @@
     --primary-foreground: 0 0% 100%;
     --primary-hover: 217 91% 48%;
 
+    /* Brand tokens (for lender "logos"; keep in HSL) */
+    --brand-sbi: 214 71% 36%;
+    --brand-pnb: 351 78% 47%;
+    --brand-icici: 20 84% 55%;
+    --brand-hdfc: 208 100% 28%;
+    --brand-axis: 334 77% 33%;
+    --brand-bob: 20 89% 54%;
+
     /* Secondary - Neutral Gray */
     --secondary: 214 15% 96%;
     --secondary-foreground: 215 25% 15%;

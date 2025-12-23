@@ -41,14 +41,14 @@ const COUNTRIES = [
   { code: "Ireland", name: "Ireland", flag: "🇮🇪", value: "Ireland" },
 ];
 
-// Lender data for carousel
+// Lender data for carousel (brand colors come from design tokens in index.css)
 const LENDERS = [
-  { code: "SBI", name: "State Bank of India", shortName: "SBI", bgColor: "#1a4f9c", textColor: "white", rate: "8.65%" },
-  { code: "PNB", name: "Punjab National Bank", shortName: "PNB", bgColor: "#d91a32", textColor: "white", rate: "7.50%" },
-  { code: "ICICI", name: "ICICI Bank", shortName: "ICICI", bgColor: "#ed6c2d", textColor: "white", rate: "10.25%" },
-  { code: "HDFC", name: "HDFC Credila", shortName: "Credila", bgColor: "#004c8f", textColor: "white", rate: "10.00%" },
-  { code: "AXIS", name: "Axis Bank", shortName: "Axis", bgColor: "#97144d", textColor: "white", rate: "9.75%" },
-  { code: "BOB", name: "Bank of Baroda", shortName: "BoB", bgColor: "#f26522", textColor: "white", rate: "8.85%" },
+  { code: "SBI", name: "State Bank of India", shortName: "SBI", brandVar: "--brand-sbi", rate: "8.65%" },
+  { code: "PNB", name: "Punjab National Bank", shortName: "PNB", brandVar: "--brand-pnb", rate: "7.50%" },
+  { code: "ICICI", name: "ICICI Bank", shortName: "ICICI", brandVar: "--brand-icici", rate: "10.25%" },
+  { code: "HDFC", name: "HDFC Credila", shortName: "Credila", brandVar: "--brand-hdfc", rate: "10.00%" },
+  { code: "AXIS", name: "Axis Bank", shortName: "Axis", brandVar: "--brand-axis", rate: "9.75%" },
+  { code: "BOB", name: "Bank of Baroda", shortName: "BoB", brandVar: "--brand-bob", rate: "8.85%" },
 ];
 
 // Steps with time anchors
@@ -348,8 +348,8 @@ const StudentLanding = () => {
                         className="flex-shrink-0 flex items-center gap-3 px-4 py-3 mx-2 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm"
-                          style={{ backgroundColor: lender.bgColor, color: lender.textColor }}
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm text-primary-foreground"
+                          style={{ backgroundColor: `hsl(var(${lender.brandVar}))` }}
                         >
                           {lender.shortName.slice(0, 3)}
                         </div>
