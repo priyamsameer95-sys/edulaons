@@ -7,6 +7,7 @@ import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentLanding from "./pages/student/StudentLanding";
 import StudentAuth from "./pages/student/StudentAuth";
+import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentApplicationFlow from "./components/student/StudentApplicationFlow";
 import Login from "./pages/Login";
 import PartnerLogin from "./pages/PartnerLogin";
@@ -97,9 +98,19 @@ const App = () => (
           {/* Redirect old v2 route to main admin */}
           <Route path="/admin/v2" element={<Navigate to="/admin" replace />} />
           
-          {/* Student Dashboard - Complete Application Flow */}
+          {/* Student Dashboard - Pitch/Value Page */}
           <Route 
             path="/student" 
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Student Application Form */}
+          <Route 
+            path="/student/apply" 
             element={
               <ProtectedRoute requiredRole="student">
                 <StudentApplicationFlow />
