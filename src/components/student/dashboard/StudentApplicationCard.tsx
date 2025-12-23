@@ -1,9 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { StatusBadge } from '@/components/lead-status/StatusBadge';
 import { formatCurrency, formatDate } from '@/utils/formatters';
-import { MapPin, Calendar, FileText, DollarSign, Upload, AlertCircle } from 'lucide-react';
+import { MapPin, Calendar, FileText, Building2, Upload, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Application {
@@ -16,6 +15,10 @@ interface Application {
   intake_month?: number;
   intake_year?: number;
   created_at: string;
+  lender?: {
+    name: string;
+    code: string;
+  };
 }
 
 interface StudentApplicationCardProps {
@@ -23,117 +26,115 @@ interface StudentApplicationCardProps {
   onClick: () => void;
 }
 
-export const StudentApplicationCard = ({ application, onClick }: StudentApplicationCardProps) => {
-  // Calculate progress based on status
-  const getProgress = (status: string, docStatus: string) => {
-    if (status === 'approved') return 100;
-    if (status === 'rejected') return 100;
-    if (docStatus === 'verified') return 75;
-    if (docStatus === 'uploaded') return 50;
-    return 25;
+const getStatusConfig = (status: string, docStatus: string) => {
+  if (status === 'approved') {
+    return { 
+      color: 'emerald', 
+      icon: CheckCircle2, 
+      label: 'Approved',
+      bgClass: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+    };
+  }
+  if (status === 'rejected') {
+    return { 
+      color: 'red', 
+      icon: AlertCircle, 
+      label: 'Rejected',
+      bgClass: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
+    };
+  }
+  if (docStatus === 'pending' || docStatus === 'resubmission_required') {
+    return { 
+      color: 'amber', 
+      icon: Upload, 
+      label: 'Docs Needed',
+      bgClass: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+    };
+  }
+  return { 
+    color: 'blue', 
+    icon: Clock, 
+    label: 'In Progress',
+    bgClass: 'bg-card border-border'
   };
+};
 
-  const progress = getProgress(application.status, application.documents_status);
+export const StudentApplicationCard = ({ application, onClick }: StudentApplicationCardProps) => {
+  const statusConfig = getStatusConfig(application.status, application.documents_status);
+  const StatusIcon = statusConfig.icon;
   const needsAction = application.documents_status === 'pending' || application.documents_status === 'resubmission_required';
+  
   const intakeDate = application.intake_month && application.intake_year 
-    ? `${application.intake_month}/${application.intake_year}` 
+    ? new Date(application.intake_year, application.intake_month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : 'TBD';
 
   return (
     <Card 
       className={cn(
-        "cursor-pointer bg-card border border-border rounded-lg group",
-        "transition-shadow duration-200",
-        "hover:shadow-lg",
-        needsAction && "border-l-2 border-l-amber-500",
-        application.status === 'approved' && !needsAction && "border-l-2 border-l-emerald-500",
-        application.status === 'rejected' && !needsAction && "border-l-2 border-l-red-500"
+        "cursor-pointer group transition-all duration-200",
+        "hover:shadow-md hover:-translate-y-0.5",
+        statusConfig.bgClass
       )}
       onClick={onClick}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
+      <CardContent className="p-4 md:p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
           <div>
-            <CardTitle className="text-base font-semibold text-foreground">
-              Application #{application.case_id}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Started {formatDate(application.created_at)}
+            <p className="text-xs text-muted-foreground font-mono">#{application.case_id}</p>
+            <p className="text-lg font-bold text-foreground mt-0.5">
+              {formatCurrency(application.loan_amount)}
             </p>
           </div>
-          {needsAction && (
-            <Badge variant="destructive" className="text-xs">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              Action Required
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-3">
-        {/* Progress Bar */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Progress</span>
-          <div className="flex-1 bg-muted rounded-full h-1.5">
-            <div 
-              className={cn(
-                "h-1.5 rounded-full transition-all",
-                progress < 50 ? "bg-amber-500" : progress < 100 ? "bg-blue-500" : "bg-emerald-500"
-              )}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="text-xs font-semibold text-foreground whitespace-nowrap">{progress}%</span>
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "gap-1 shrink-0",
+              statusConfig.color === 'emerald' && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
+              statusConfig.color === 'red' && "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
+              statusConfig.color === 'amber' && "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+              statusConfig.color === 'blue' && "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+            )}
+          >
+            <StatusIcon className="h-3 w-3" />
+            {statusConfig.label}
+          </Badge>
         </div>
 
         {/* Details Grid */}
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Loan Amount
-            </span>
-            <span className="font-semibold text-foreground">
-              {formatCurrency(application.loan_amount)}
-            </span>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{application.study_destination}</span>
           </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Destination
-            </span>
-            <span className="font-medium text-foreground">{application.study_destination}</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span>{intakeDate}</span>
           </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Intake
-            </span>
-            <span className="text-foreground">{intakeDate}</span>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Documents
-            </span>
-            <StatusBadge status={application.documents_status} type="document" />
+          {application.lender?.name && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="truncate">{application.lender.name}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="capitalize">{application.documents_status.replace('_', ' ')}</span>
           </div>
         </div>
 
         {/* Action Button */}
         {needsAction && (
           <Button 
-            className="w-full mt-2" 
+            className="w-full mt-4 gap-2" 
             size="sm"
+            variant="default"
             onClick={(e) => {
               e.stopPropagation();
               onClick();
             }}
           >
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4" />
             Upload Documents
           </Button>
         )}
