@@ -33,7 +33,13 @@ const destinations = [
   { value: 'Canada', label: 'Canada', emoji: '🇨🇦' },
   { value: 'Australia', label: 'Australia', emoji: '🇦🇺' },
   { value: 'Germany', label: 'Germany', emoji: '🇩🇪' },
-  { value: 'Ireland', label: 'Ireland', emoji: '🇮🇪' },
+  { value: 'New Zealand', label: 'New Zealand', emoji: '🇳🇿' },
+  { value: 'Singapore', label: 'Singapore', emoji: '🇸🇬' },
+  { value: 'Hong Kong', label: 'Hong Kong', emoji: '🇭🇰' },
+  { value: 'Japan', label: 'Japan', emoji: '🇯🇵' },
+  { value: 'Switzerland', label: 'Switzerland', emoji: '🇨🇭' },
+  { value: 'China', label: 'China', emoji: '🇨🇳' },
+  { value: 'Other', label: 'Other', emoji: '🌍' },
 ];
 
 const loanTypes = [
@@ -257,21 +263,21 @@ const StudyLoanPage = ({ data, onUpdate, onNext }: StudyLoanPageProps) => {
       {/* Study Destination */}
       <div className="border-t border-border pt-6">
         <label className="text-sm font-medium text-foreground mb-3 block">Where do you want to study? *</label>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3">
           {destinations.map((d) => (
             <button
               key={d.value}
               type="button"
               onClick={() => onUpdate({ studyDestination: d.value })}
               className={cn(
-                "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all",
+                "flex flex-col items-center justify-center gap-1.5 p-3 sm:p-4 rounded-xl border-2 transition-all min-h-[72px]",
                 data.studyDestination === d.value
-                  ? "border-primary bg-primary/10"
-                  : "border-border hover:border-primary/50"
+                  ? "border-primary bg-primary/10 shadow-sm"
+                  : "border-border hover:border-primary/50 hover:bg-muted/30"
               )}
             >
-              <span className="text-2xl">{d.emoji}</span>
-              <span className="text-xs font-medium text-foreground">{d.label}</span>
+              <span className="text-2xl sm:text-3xl">{d.emoji}</span>
+              <span className="text-xs font-medium text-foreground leading-tight text-center">{d.label}</span>
             </button>
           ))}
         </div>
