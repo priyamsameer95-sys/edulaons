@@ -370,36 +370,19 @@ const StudentDashboard = () => {
 
             {/* Need Help */}
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Need Help?</p>
-              <div className="space-y-2">
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-left">
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                    <MessageCircle className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Live Chat</p>
-                    <p className="text-xs text-muted-foreground">Usually replies in 2 mins</p>
-                  </div>
-                </button>
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-left">
-                  <div className="w-9 h-9 rounded-lg bg-green-500/10 flex items-center justify-center">
-                    <Phone className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Call Us</p>
-                    <p className="text-xs text-muted-foreground">Mon-Sat, 9am-7pm</p>
-                  </div>
-                </button>
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-left">
-                  <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                    <HelpCircle className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">FAQs</p>
-                    <p className="text-xs text-muted-foreground">Common questions</p>
-                  </div>
-                </button>
-              </div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Need Help?</p>
+              <a 
+                href="tel:8238452277" 
+                className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 hover:bg-green-500/15 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Call your RM at</p>
+                  <p className="text-base font-semibold text-foreground">8238452277</p>
+                </div>
+              </a>
             </div>
           </aside>
         </div>
