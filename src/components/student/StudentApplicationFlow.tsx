@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStudentApplication, StudentApplicationData } from '@/hooks/useStudentApplication';
 import PersonalDetailsStep from './PersonalDetailsStep';
@@ -8,17 +8,17 @@ import CoApplicantDetailsStep from './CoApplicantDetailsStep';
 import ReviewStep from './ReviewStep';
 import SuccessStep from './SuccessStep';
 import { useState } from 'react';
-import { LogOut, ArrowLeft } from 'lucide-react';
+import { LogOut, ArrowLeft, User, GraduationCap, Plane, Users, FileCheck, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 
 const steps = [
-  { id: 1, title: 'Personal', description: 'Tell us about yourself' },
-  { id: 2, title: 'Academic', description: 'Your education history' },
-  { id: 3, title: 'Study Plans', description: 'Your education plans' },
-  { id: 4, title: 'Co-Applicant', description: 'Guardian information' },
-  { id: 5, title: 'Review', description: 'Confirm your details' },
-  { id: 6, title: 'Success', description: 'Application submitted' }
+  { id: 0, title: 'Personal', icon: User },
+  { id: 1, title: 'Academic', icon: GraduationCap },
+  { id: 2, title: 'Study Plans', icon: Plane },
+  { id: 3, title: 'Co-Applicant', icon: Users },
+  { id: 4, title: 'Review', icon: FileCheck },
 ];
 
 const StudentApplicationFlow = () => {
@@ -51,11 +51,11 @@ const StudentApplicationFlow = () => {
     }
   };
 
-  // Success step - full width, no sidebar
+  // Success step
   if (currentStep === 5 && submissionResult) {
     return (
       <div className="min-h-screen bg-background py-8 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <SuccessStep 
             caseId={submissionResult.lead?.case_id || submissionResult.case_id} 
             leadId={submissionResult.lead?.id} 
@@ -68,59 +68,74 @@ const StudentApplicationFlow = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 bg-background border-b border-border">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/student/dashboard')}
-              className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Dashboard
             </Button>
-            <div className="h-6 w-px bg-border hidden sm:block" />
-            <h1 className="text-lg font-semibold text-foreground hidden sm:block">
-              Eduloans <span className="text-muted-foreground font-normal">by Cashkaro</span>
-            </h1>
+            <span className="text-lg font-semibold hidden sm:block">Loan Application</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Simple Progress Indicator */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="font-medium">Step {currentStep + 1} of {steps.length - 1}</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${((currentStep + 1) / (steps.length - 1)) * 100}%` }}
-            />
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Step Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isCompleted = index < currentStep;
+              const isCurrent = index === currentStep;
+              
+              return (
+                <div key={step.id} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors",
+                      isCompleted && "bg-primary border-primary text-primary-foreground",
+                      isCurrent && "border-primary text-primary bg-primary/10",
+                      !isCompleted && !isCurrent && "border-muted-foreground/30 text-muted-foreground"
+                    )}>
+                      {isCompleted ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                    </div>
+                    <span className={cn(
+                      "text-xs mt-2 font-medium hidden sm:block",
+                      isCurrent && "text-primary",
+                      !isCurrent && !isCompleted && "text-muted-foreground"
+                    )}>
+                      {step.title}
+                    </span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={cn(
+                      "flex-1 h-0.5 mx-2 sm:mx-4",
+                      index < currentStep ? "bg-primary" : "bg-border"
+                    )} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Form Card */}
-        <Card className="border border-border shadow-sm rounded-xl overflow-hidden">
-          <CardHeader className="bg-muted/30 border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <span className="text-lg font-bold text-primary">{currentStep + 1}</span>
-              </div>
-              <div>
-                <CardTitle className="text-xl">{steps[currentStep].title}</CardTitle>
-                <CardDescription>{steps[currentStep].description}</CardDescription>
-              </div>
-            </div>
+        <Card className="border-border shadow-sm">
+          <CardHeader className="border-b border-border bg-muted/50 px-6 py-4">
+            <CardTitle className="text-lg font-semibold">
+              {steps[currentStep]?.title}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             {currentStep === 0 && (
