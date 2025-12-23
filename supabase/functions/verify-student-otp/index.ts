@@ -68,8 +68,24 @@ Deno.serve(async (req) => {
       // Existing student - use their details
       console.log('Found existing student:', existingStudent.id)
       studentId = existingStudent.id
-      studentEmail = existingStudent.email
       studentName = existingStudent.name
+      
+      // IMPORTANT: Check if email needs to be updated (placeholder emails)
+      if (existingStudent.email.includes('placeholder') || existingStudent.email.includes('@lead.')) {
+        // Generate proper auth email
+        studentEmail = `${cleanPhone}@student.loan.app`
+        console.log('Updating placeholder email to:', studentEmail)
+        
+        // Update student email in database
+        await supabase
+          .from('students')
+          .update({ email: studentEmail })
+          .eq('id', studentId)
+        
+        console.log('Updated student email from placeholder')
+      } else {
+        studentEmail = existingStudent.email
+      }
     } else {
       // New student - create one
       isNewUser = true
