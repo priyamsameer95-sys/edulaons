@@ -236,6 +236,20 @@
   animation: fade-in 0.4s ease-out forwards;
 }
 
+/* Infinite scroll carousel animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.hover\:pause:hover {
+  animation-play-state: paused;
+}
+
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-shimmer,

@@ -41,12 +41,14 @@ const COUNTRIES = [
   { code: "Ireland", name: "Ireland", flag: "🇮🇪", value: "Ireland" },
 ];
 
-// Lender data with opacity for hierarchy
+// Lender data for carousel
 const LENDERS = [
-  { code: "SBI", name: "SBI", color: "bg-blue-600", rate: "8.65%", primary: true },
-  { code: "PNB", name: "PNB", color: "bg-rose-600", rate: "7.50%", primary: true },
-  { code: "ICICI", name: "ICICI", color: "bg-orange-500", rate: "10.25%", primary: false },
-  { code: "CREDILA", name: "Credila", color: "bg-emerald-600", rate: "10.00%", primary: false },
+  { code: "SBI", name: "State Bank of India", shortName: "SBI", bgColor: "#1a4f9c", textColor: "white", rate: "8.65%" },
+  { code: "PNB", name: "Punjab National Bank", shortName: "PNB", bgColor: "#d91a32", textColor: "white", rate: "7.50%" },
+  { code: "ICICI", name: "ICICI Bank", shortName: "ICICI", bgColor: "#ed6c2d", textColor: "white", rate: "10.25%" },
+  { code: "HDFC", name: "HDFC Credila", shortName: "Credila", bgColor: "#004c8f", textColor: "white", rate: "10.00%" },
+  { code: "AXIS", name: "Axis Bank", shortName: "Axis", bgColor: "#97144d", textColor: "white", rate: "9.75%" },
+  { code: "BOB", name: "Bank of Baroda", shortName: "BoB", bgColor: "#f26522", textColor: "white", rate: "8.85%" },
 ];
 
 // Steps with time anchors
@@ -330,27 +332,36 @@ const StudentLanding = () => {
                 </div>
               </div>
 
-              {/* Lenders - With Hierarchy */}
+              {/* Lenders - Auto-scrolling Carousel */}
               <div className="mb-6">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Our Top Lenders</p>
-                <div className="flex flex-wrap gap-2">
-                  {LENDERS.map((lender) => (
-                    <div 
-                      key={lender.code} 
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border transition-all hover:border-primary/30 hover:bg-muted",
-                        lender.primary ? "opacity-100" : "opacity-80"
-                      )}
-                    >
-                      <div className={cn("w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-bold shadow-sm", lender.color)}>
-                        {lender.code.slice(0, 2)}
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Our Top Lenders</p>
+                <div className="relative overflow-hidden">
+                  {/* Gradient fades */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
+                  
+                  {/* Scrolling container */}
+                  <div className="flex animate-[scroll_20s_linear_infinite] hover:pause">
+                    {[...LENDERS, ...LENDERS].map((lender, idx) => (
+                      <div 
+                        key={`${lender.code}-${idx}`} 
+                        className="flex-shrink-0 flex items-center gap-3 px-4 py-3 mx-2 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div 
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm"
+                          style={{ backgroundColor: lender.bgColor, color: lender.textColor }}
+                        >
+                          {lender.shortName.slice(0, 3)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-foreground whitespace-nowrap">{lender.name}</span>
+                          <span className="text-xs text-emerald-600 font-medium">From {lender.rate}</span>
+                        </div>
                       </div>
-                      <span className="text-sm font-medium text-foreground">{lender.name}</span>
-                      <span className="text-xs text-emerald-600 font-semibold">{lender.rate}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-2">All lenders are RBI-approved and offer education-focused loans only.</p>
+                <p className="text-[10px] text-muted-foreground mt-3 text-center">All lenders are RBI-approved and offer education-focused loans only.</p>
               </div>
 
               {/* Trust Indicators - Enhanced */}
