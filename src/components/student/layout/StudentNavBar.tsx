@@ -45,7 +45,8 @@ export const StudentNavBar = ({ studentName }: StudentNavBarProps) => {
             className="flex items-center space-x-2 text-lg md:text-xl font-bold text-foreground hover:text-primary transition-colors"
           >
             <GraduationCap className="h-6 w-6 md:h-8 md:w-8 text-primary" />
-            <span className="hidden sm:inline">EduLoanPro</span>
+            <span className="hidden sm:inline">EduLoans</span>
+            <span className="hidden sm:inline text-xs text-muted-foreground font-normal">by Cashkaro</span>
           </button>
 
           {/* Center: Desktop Navigation */}

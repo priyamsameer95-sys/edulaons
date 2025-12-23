@@ -7,20 +7,20 @@ export interface SEOConfig {
 }
 
 export const defaultSEO: SEOConfig = {
-  title: 'EduLoanPro - Your Education Finance Partner',
+  title: 'EduLoans by Cashkaro - Your Education Finance Partner',
   description: 'Manage education loan applications, track status, upload documents, and get approved faster. Secure funding for your dream university.',
-  keywords: ['education loan', 'student loan', 'study abroad', 'loan application', 'university funding'],
+  keywords: ['education loan', 'student loan', 'study abroad', 'loan application', 'university funding', 'cashkaro'],
   canonical: 'https://yourdomain.com',
 };
 
 export const pageSEO = {
   studentDashboard: {
-    title: 'Student Dashboard - Track Your Education Loans | EduLoanPro',
+    title: 'Student Dashboard - Track Your Education Loans | EduLoans by Cashkaro',
     description: 'Manage your education loan applications, track status, upload documents, and get approved faster. View all your applications in one place.',
     keywords: ['student dashboard', 'loan tracking', 'application status', 'education loan management'],
   },
   studentApplication: {
-    title: 'New Loan Application - EduLoanPro',
+    title: 'New Loan Application - EduLoans by Cashkaro',
     description: 'Apply for education loan in minutes. Get matched with best lenders and secure funding for your dream university.',
     keywords: ['loan application', 'apply for loan', 'education financing', 'student loan application'],
   },
@@ -31,7 +31,7 @@ export function generateStructuredData(type: 'WebApplication' | 'Organization' |
     WebApplication: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'EduLoanPro Student Portal',
+      name: 'EduLoans by Cashkaro Student Portal',
       description: 'Education loan application management system for students',
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web',
@@ -43,7 +43,7 @@ export function generateStructuredData(type: 'WebApplication' | 'Organization' |
     Organization: {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'EduLoanPro',
+      name: 'EduLoans by Cashkaro',
       description: 'Leading education loan provider helping students achieve their dreams',
       url: 'https://yourdomain.com',
     },

@@ -24,7 +24,7 @@ import { LoadingButton } from '@/components/ui/loading-button';
 
 const partnerTestimonials = [
   {
-    quote: "EduLoanPro transformed our consultancy — we've processed ₹50Cr in loans this year!",
+    quote: "EduLoans by Cashkaro transformed our consultancy — we've processed ₹50Cr in loans this year!",
     name: "Rajesh Kumar",
     meta: "ABC Education Consultants, Mumbai",
     rating: 5,
@@ -317,7 +317,7 @@ const PartnerLogin = () => {
               <div className="text-center pt-4 border-t">
                 <p className="text-sm text-muted-foreground">
                   Want to become a partner?{' '}
-                  <a href="mailto:partners@eduloanpro.com" className="font-semibold text-teal-600 hover:underline underline-offset-2">
+                  <a href="mailto:partners@eduloans.cashkaro.com" className="font-semibold text-teal-600 hover:underline underline-offset-2">
                     Contact us
                   </a>
                 </p>
@@ -340,7 +340,7 @@ const PartnerLogin = () => {
       {/* Footer */}
       <footer className="border-t bg-muted/30 py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© 2025 EduLoanPro. All rights reserved.</p>
+          <p>© 2025 EduLoans by Cashkaro. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-foreground transition-colors">Terms of Use</a>

@@ -25,7 +25,7 @@ import { LoadingButton } from '@/components/ui/loading-button';
 
 const testimonials = [
   {
-    quote: "EduLoanPro helped me secure my MBA at LBS — the process was seamless!",
+    quote: "EduLoans by Cashkaro helped me secure my MBA at LBS — the process was seamless!",
     name: "Priya Sharma",
     meta: "MBA 2024, London Business School",
     rating: 5,
@@ -552,7 +552,7 @@ const Login = () => {
       {/* Footer */}
       <footer className="border-t bg-muted/30 py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© 2025 EduLoanPro. All rights reserved.</p>
+          <p>© 2025 EduLoans by Cashkaro. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link to="/partner/login" className="hover:text-foreground transition-colors">Partner Login</Link>
             <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>

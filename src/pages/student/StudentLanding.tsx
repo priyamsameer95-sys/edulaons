@@ -859,14 +859,15 @@ const StudentLanding = () => {
               <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
                 <GraduationCap className="h-3 w-3 text-primary-foreground" />
               </div>
-              <span className="font-medium text-foreground">EduLoanPro</span>
+              <span className="font-medium text-foreground">EduLoans</span>
+              <span className="text-muted-foreground">by Cashkaro</span>
             </div>
             <div className="flex gap-4">
               <Link to="/student/auth" className="hover:text-foreground transition-colors">Student Login</Link>
               <Link to="/partner/login" className="hover:text-foreground transition-colors">Partner Login</Link>
-              <span>support@eduloanpro.com</span>
+              <span>support@eduloans.cashkaro.com</span>
             </div>
-            <span>© {new Date().getFullYear()} EduLoanPro</span>
+            <span>© {new Date().getFullYear()} EduLoans by Cashkaro</span>
           </div>
         </footer>
       </main>
