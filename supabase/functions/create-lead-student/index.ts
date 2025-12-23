@@ -221,33 +221,61 @@ serve(async (req) => {
       studentId = existingStudent.id;
       console.log('✅ Using existing student:', studentId);
       
-      // IMPORTANT: If authenticated, sync student email to auth user email
+      // IMPORTANT: If authenticated, sync student email to auth user email (if not already taken)
       if (isAuthenticated && authenticatedUser?.email) {
         const authEmail = authenticatedUser.email.toLowerCase();
-        console.log('🔄 Syncing student email to auth user email:', authEmail);
         
-        const { error: syncError } = await supabaseAdmin
+        // Check if this email is already used by a different student
+        const { data: emailCheck } = await supabaseAdmin
           .from('students')
-          .update({ email: authEmail })
-          .eq('id', studentId);
-          
-        if (syncError) {
-          console.warn('⚠️ Failed to sync student email:', syncError.message);
+          .select('id')
+          .eq('email', authEmail)
+          .neq('id', studentId)
+          .maybeSingle();
+        
+        if (emailCheck) {
+          console.log('⚠️ Email already in use by another student, skipping sync');
         } else {
-          console.log('✅ Student email synced to:', authEmail);
+          console.log('🔄 Syncing student email to auth user email:', authEmail);
+          
+          const { error: syncError } = await supabaseAdmin
+            .from('students')
+            .update({ email: authEmail })
+            .eq('id', studentId);
+            
+          if (syncError) {
+            console.warn('⚠️ Failed to sync student email:', syncError.message);
+          } else {
+            console.log('✅ Student email synced to:', authEmail);
+          }
         }
       }
     } else {
-      // Create new student
-      const studentEmail = isAuthenticated 
-        ? authenticatedUser!.email 
+      // Create new student - check if email is already taken
+      let studentEmail = isAuthenticated 
+        ? authenticatedUser!.email?.toLowerCase()
         : `${cleanStudentPhone}@student.placeholder`;
+      
+      // If authenticated and email exists, check if it's already used
+      if (isAuthenticated && studentEmail) {
+        const { data: existingByEmail } = await supabaseAdmin
+          .from('students')
+          .select('id')
+          .eq('email', studentEmail)
+          .maybeSingle();
+        
+        if (existingByEmail) {
+          // Email already in use - use phone-based placeholder instead
+          console.log('⚠️ Email already in use, using phone-based placeholder');
+          studentEmail = `${cleanStudentPhone}@student.placeholder`;
+        }
+      }
       
       const { data: newStudent, error: studentError } = await supabaseAdmin
         .from('students')
         .insert({
           name: body.student_name.trim(),
-          email: studentEmail?.toLowerCase(),
+          email: studentEmail,
           phone: cleanStudentPhone,
           postal_code: body.student_pin_code?.trim() || '000000',
           country: 'India',
