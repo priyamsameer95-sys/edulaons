@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 
 interface Lender {
   id: string;
@@ -17,6 +17,7 @@ interface Lender {
   code: string;
   description: string | null;
   is_active: boolean;
+  preferred_rank: number | null;
 }
 
 interface LenderSelectorProps {
@@ -91,7 +92,14 @@ export function LenderSelector({
         ...lender,
         score: preferences[lender.id] || 50,
       }))
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => {
+        // Preferred lenders first (by rank)
+        if (a.preferred_rank && !b.preferred_rank) return -1;
+        if (!a.preferred_rank && b.preferred_rank) return 1;
+        if (a.preferred_rank && b.preferred_rank) return a.preferred_rank - b.preferred_rank;
+        // Then by compatibility score
+        return b.score - a.score;
+      });
   };
 
   const suggestedLenders = getSuggestedLenders();
@@ -118,7 +126,13 @@ export function LenderSelector({
             <SelectItem key={lender.id} value={lender.id}>
               <div className="flex items-center gap-2">
                 <span>{lender.name}</span>
-                {preferences[lender.id] && preferences[lender.id] > 70 && (
+                {lender.preferred_rank && (
+                  <Badge variant="default" className="text-xs bg-amber-500 text-white">
+                    <Star className="h-3 w-3 mr-1 fill-current" />
+                    Preferred
+                  </Badge>
+                )}
+                {!lender.preferred_rank && preferences[lender.id] && preferences[lender.id] > 70 && (
                   <Badge variant="secondary" className="text-xs">
                     Recommended
                   </Badge>

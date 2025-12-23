@@ -1308,6 +1308,7 @@ export type Database = {
           logo_url: string | null
           moratorium_period: string | null
           name: string
+          preferred_rank: number | null
           processing_fee: number | null
           processing_time_days: number | null
           required_documents: Json | null
@@ -1335,6 +1336,7 @@ export type Database = {
           logo_url?: string | null
           moratorium_period?: string | null
           name: string
+          preferred_rank?: number | null
           processing_fee?: number | null
           processing_time_days?: number | null
           required_documents?: Json | null
@@ -1362,6 +1364,7 @@ export type Database = {
           logo_url?: string | null
           moratorium_period?: string | null
           name?: string
+          preferred_rank?: number | null
           processing_fee?: number | null
           processing_time_days?: number | null
           required_documents?: Json | null
