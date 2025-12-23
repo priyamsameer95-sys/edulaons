@@ -166,30 +166,6 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl p-5 border border-primary/10">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Platform Stats</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-lg font-bold text-primary">₹2,400Cr+</p>
-                  <p className="text-xs text-muted-foreground">Disbursed</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-green-600">98%</p>
-                  <p className="text-xs text-muted-foreground">Approval</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-foreground">48 hrs</p>
-                  <p className="text-xs text-muted-foreground">Processing</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-amber-500 flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-current" />4.8
-                  </p>
-                  <p className="text-xs text-muted-foreground">Rating</p>
-                </div>
-              </div>
-            </div>
-
             {/* Need Help */}
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Need Help?</p>
