@@ -108,72 +108,128 @@ const StudentDashboard = () => {
         </div>
       </header>
 
-      {/* Main Content - 3 Column Layout */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6 lg:gap-8">
+      {/* Main Content - 2 Column Layout: Left sidebar + Right form */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 lg:gap-8">
           
-          {/* Left Sidebar */}
-          <aside className="hidden lg:flex flex-col gap-6">
+          {/* Left Sidebar - All supporting content */}
+          <aside className="hidden lg:flex flex-col gap-5">
             {/* Referred By Card */}
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Referred By</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Referred By</p>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Skyline Education</p>
-                  <p className="text-sm text-muted-foreground">Verified Partner</p>
+                  <p className="font-semibold text-foreground text-sm">Skyline Education</p>
+                  <p className="text-xs text-muted-foreground">Verified Partner</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <BadgeCheck className="w-4 h-4 text-green-500" />
-                <span>Your counselor is tracking your application</span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <BadgeCheck className="w-3.5 h-3.5 text-green-500" />
+                <span>Tracking your application</span>
               </div>
             </div>
 
             {/* Why Trust Us */}
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Why Trust Us</p>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Why Trust Us</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
                     <Shield className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground text-sm">RBI Regulated</p>
-                    <p className="text-xs text-muted-foreground">All partner lenders are RBI registered</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                     <Users className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground text-sm">50,000+ Students</p>
-                    <p className="text-xs text-muted-foreground">Successfully funded their education</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                     <Lock className="w-4 h-4 text-purple-600" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground text-sm">Bank-grade Security</p>
-                    <p className="text-xs text-muted-foreground">256-bit SSL encryption</p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Testimonials */}
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">What Students Say</p>
+              <div className="space-y-4">
+                {testimonials.map((t, i) => (
+                  <div key={i} className="relative">
+                    <Quote className="w-5 h-5 text-primary/20 absolute -top-1 -left-1" />
+                    <p className="text-sm text-foreground pl-4 italic leading-relaxed">"{t.text}"</p>
+                    <div className="flex items-center gap-2 mt-2 pl-4">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-indigo-500" />
+                      <p className="text-xs font-medium text-foreground">{t.name} <span className="text-muted-foreground">· {t.university}</span></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl p-5 border border-primary/10">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Platform Stats</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-lg font-bold text-primary">₹2,400Cr+</p>
+                  <p className="text-xs text-muted-foreground">Disbursed</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-green-600">98%</p>
+                  <p className="text-xs text-muted-foreground">Approval</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-foreground">48 hrs</p>
+                  <p className="text-xs text-muted-foreground">Processing</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-amber-500 flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-current" />4.8
+                  </p>
+                  <p className="text-xs text-muted-foreground">Rating</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Need Help */}
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Need Help?</p>
+              <a 
+                href="tel:8238452277" 
+                className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 hover:bg-green-500/15 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Call your RM</p>
+                  <p className="text-sm font-semibold text-foreground">8238452277</p>
+                </div>
+              </a>
+            </div>
+
             {/* Partner Banks */}
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Partner Banks</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Partner Banks</p>
               <div className="flex flex-wrap gap-2">
                 {['SBI', 'HDFC', 'ICICI', 'Axis', 'PNB'].map((bank) => (
                   <div 
                     key={bank}
-                    className="px-3 py-2 bg-slate-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-foreground"
+                    className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-foreground"
                   >
                     {bank}
                   </div>
@@ -182,7 +238,7 @@ const StudentDashboard = () => {
             </div>
           </aside>
 
-          {/* Center Content */}
+          {/* Right Content - Main Form Area */}
           <div className="flex flex-col gap-6">
             {/* Hero Card */}
             <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-indigo-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-primary/20">
@@ -319,72 +375,6 @@ const StudentDashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* Right Sidebar */}
-          <aside className="hidden lg:flex flex-col gap-6">
-            {/* Testimonials */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">What Students Say</p>
-              <div className="space-y-4">
-                {testimonials.map((t, i) => (
-                  <div key={i} className="relative">
-                    <Quote className="w-6 h-6 text-primary/20 absolute -top-1 -left-1" />
-                    <p className="text-sm text-foreground pl-4 italic">"{t.text}"</p>
-                    <div className="flex items-center gap-2 mt-2 pl-4">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-indigo-500" />
-                      <div>
-                        <p className="text-xs font-medium text-foreground">{t.name}</p>
-                        <p className="text-xs text-muted-foreground">{t.university}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-gradient-to-br from-primary/5 to-indigo-500/5 rounded-2xl p-5 border border-primary/10">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Platform Stats</p>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Disbursed</span>
-                  <span className="text-sm font-bold text-primary">₹2,400 Cr+</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Approval Rate</span>
-                  <span className="text-sm font-bold text-green-600">98%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Avg. Processing</span>
-                  <span className="text-sm font-bold text-foreground">48 hrs</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">User Rating</span>
-                  <span className="text-sm font-bold text-amber-500 flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-current" />
-                    4.8/5
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Need Help */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Need Help?</p>
-              <a 
-                href="tel:8238452277" 
-                className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 hover:bg-green-500/15 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Call your RM at</p>
-                  <p className="text-base font-semibold text-foreground">8238452277</p>
-                </div>
-              </a>
-            </div>
-          </aside>
         </div>
       </main>
     </div>
