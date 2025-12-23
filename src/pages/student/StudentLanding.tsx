@@ -183,10 +183,11 @@ const StudentLanding = () => {
       const eligibility = await calculateEligibility(loanAmount, salary, formData.university_id);
       setResult(eligibility);
       
+      // Try to save lead (optional - doesn't block eligibility check)
       const now = new Date();
       const futureDate = new Date(now.setMonth(now.getMonth() + 3));
       try {
-        const { data } = await supabase.functions.invoke('create-lead-quick', {
+        const { data, error } = await supabase.functions.invoke('create-lead-quick', {
           body: {
             student_name: formData.student_name.trim(),
             student_phone: studentPhone,
@@ -206,8 +207,20 @@ const StudentLanding = () => {
             eligibility_result: eligibility.lenderCount >= 3 ? 'eligible' : eligibility.lenderCount >= 1 ? 'conditional' : 'unlikely',
           }
         });
-        if (data?.success && data?.lead?.id) setLeadId(data.lead.id);
-      } catch { console.log('Lead save skipped'); }
+        
+        // Handle response - lead already exists is OK, we just won't show the saved badge
+        if (error) {
+          console.log('Lead save failed (network error):', error.message);
+        } else if (data?.success && data?.lead?.id) {
+          setLeadId(data.lead.id);
+        } else if (data?.success === false) {
+          // Lead already exists or other business logic error - this is fine
+          console.log('Lead not created:', data?.error || 'Unknown reason');
+        }
+      } catch (e) {
+        // Catch any unexpected errors
+        console.log('Lead save error:', e);
+      }
       toast.success('Eligibility check complete!');
     } catch (error: any) {
       toast.error(error.message || 'Something went wrong');
