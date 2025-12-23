@@ -117,6 +117,28 @@ const StudentLanding = () => {
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Auto-countdown navigation after eligibility results
+  useEffect(() => {
+    if (result && countdown === null) {
+      setCountdown(10);
+    }
+  }, [result]);
+
+  useEffect(() => {
+    if (countdown === null || countdown < 0) return;
+    
+    if (countdown === 0) {
+      sessionStorage.setItem('eligibility_form', JSON.stringify({ ...formData, loan_amount: formData.loan_amount[0] * 100000 }));
+      toast.success('Taking you to phone verification...');
+      navigate("/student/auth");
+      return;
+    }
+
+    const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, formData, navigate]);
 
   const formatAmount = (value: number): string => value >= 100 ? "₹1Cr+" : `₹${value}L`;
 
@@ -234,7 +256,7 @@ const StudentLanding = () => {
     }
   };
 
-  const handleStartOver = () => { setResult(null); setLeadId(null); };
+  const handleStartOver = () => { setResult(null); setLeadId(null); setCountdown(null); };
 
   const handleContinue = () => {
     sessionStorage.setItem('eligibility_form', JSON.stringify({ ...formData, loan_amount: formData.loan_amount[0] * 100000 }));
@@ -583,25 +605,40 @@ const StudentLanding = () => {
                     </div>
 
                     <div className="space-y-2">
-                      {/* CTA - Persuasive */}
+                      {/* Auto-countdown notice */}
+                      {countdown !== null && countdown > 0 && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-primary font-medium animate-pulse">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Continuing in {countdown}s...</span>
+                        </div>
+                      )}
+                      
+                      {/* CTA - Pulsing with glow animation */}
                       <Button 
                         size="lg" 
-                        className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 bg-gradient-to-r from-primary to-primary/90" 
+                        className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] animate-cta-pulse shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-primary/90 relative overflow-hidden" 
                         onClick={handleContinue}
                       >
-                        Get My Loan Offers<ArrowRight className="h-4 w-4 ml-2" />
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                        Get My Loan Offers<ArrowRight className="h-4 w-4 ml-2 animate-bounce-x" />
                       </Button>
                       
-                      {/* Reassurance text */}
-                      <p className="text-center text-xs text-muted-foreground px-4">
-                        You're almost done! Completing your application ensures faster lender response.
-                      </p>
+                      {/* Progress continuity text */}
+                      <div className="text-center space-y-1">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 text-xs font-medium">
+                          <Check className="h-3 w-3" />
+                          Step 1 of 3 Complete
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Continue to verify your phone →
+                        </p>
+                      </div>
                       
                       <button 
                         onClick={handleStartOver}
                         className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
                       >
-                        ← Start over
+                        ← Start over (stops countdown)
                       </button>
                     </div>
 
