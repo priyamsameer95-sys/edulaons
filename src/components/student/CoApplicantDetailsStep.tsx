@@ -140,27 +140,27 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
       {/* Pre-filled data notice */}
       {isSalaryPrefilled && (
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <span className="text-sm text-green-700 dark:text-green-300">
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <span className="text-sm text-emerald-700 dark:text-emerald-300">
             Monthly salary is pre-filled from your eligibility check. Please complete the remaining details.
           </span>
         </div>
       )}
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
+      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3">
+        <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+        <div>
           <strong>Why do we need a co-applicant?</strong>
-          <p className="mt-1 text-sm">
+          <p className="mt-1 text-sm text-muted-foreground">
             Most lenders require a co-applicant (usually a parent or guardian) who can support your loan application. 
             Their income and employment significantly affect your eligibility (worth up to 30 eligibility points).
           </p>
-        </AlertDescription>
-      </Alert>
+        </div>
+      </div>
 
       <Card className="p-6">
         <div className="space-y-6">
