@@ -29,11 +29,17 @@ export const TrustIndicators = () => {
       {/* Live Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {stats.map((stat, index) => {
-        const Icon = stat.icon;
-        return <Card key={index} className={`premium-card text-center stagger-fade-${index % 4 + 1}`}>
-              
-            </Card>;
-      })}
+          const Icon = stat.icon;
+          return (
+            <Card key={index} className="bg-card/50 backdrop-blur border-border/50 text-center hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6 pb-4">
+                <Icon className="h-8 w-8 mx-auto mb-2 text-primary" />
+                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Security Badges */}
