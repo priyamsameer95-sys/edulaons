@@ -76,7 +76,8 @@ const StudentDashboard = () => {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">E</span>
             </div>
-            <span className="font-semibold">EduLoanPro</span>
+            <span className="font-semibold">EduLoans</span>
+            <span className="text-xs text-muted-foreground">by Cashkaro</span>
           </div>
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />

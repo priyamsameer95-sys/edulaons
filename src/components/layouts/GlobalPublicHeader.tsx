@@ -22,8 +22,9 @@ const GlobalPublicHeader = () => {
               <GraduationCap className="h-6 w-6 text-primary" />
             </div>
             <span className="text-xl font-bold tracking-tight">
-              Edu<span className="text-primary">Loan</span>Pro
+              Edu<span className="text-primary">Loans</span>
             </span>
+            <span className="text-xs text-muted-foreground ml-1.5">by Cashkaro</span>
           </Link>
 
           {/* Auth Navigation */}

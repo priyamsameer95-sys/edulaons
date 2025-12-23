@@ -78,7 +78,8 @@ const StudentApplicationFlow = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">E</span>
               </div>
-              <span className="font-semibold hidden sm:inline">EduLoanPro</span>
+              <span className="font-semibold hidden sm:inline">EduLoans</span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">by Cashkaro</span>
             </div>
             
             <Button variant="ghost" size="sm" onClick={handleLogout}>
