@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
 import StudentLanding from "./pages/student/StudentLanding";
 import StudentAuth from "./pages/student/StudentAuth";
 import Login from "./pages/Login";
@@ -94,14 +93,10 @@ const App = () => (
           {/* Redirect old v2 route to main admin */}
           <Route path="/admin/v2" element={<Navigate to="/admin" replace />} />
           
-          {/* Student Dashboard */}
+          {/* Student Dashboard - Temporarily redirect to landing while rebuilding */}
           <Route 
             path="/student" 
-            element={
-              <ProtectedRoute requiredRole="student">
-                <StudentDashboard />
-              </ProtectedRoute>
-            } 
+            element={<Navigate to="/student/landing" replace />} 
           />
           
           {/* Unauthorized page */}
