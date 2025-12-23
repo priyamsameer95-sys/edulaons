@@ -46,9 +46,6 @@ export function AdminDocumentManager({ leadId }: AdminDocumentManagerProps) {
       <InlineDocumentUpload 
         leadId={leadId} 
         onUploadComplete={refetch}
-        uploadedDocuments={documents}
-        onDownload={handleDownload}
-        onVerify={handleVerificationAction}
       />
 
       {/* Verification Modal */}
