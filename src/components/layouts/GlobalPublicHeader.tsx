@@ -6,8 +6,8 @@ const GlobalPublicHeader = () => {
   const location = useLocation();
   
   // Determine which page we're on for active states
-  const isStudentAuth = location.pathname === '/student/auth';
-  const isPartnerLogin = location.pathname === '/partner/login';
+  const isStudentAuth = location.pathname === '/student/auth' || location.pathname === '/login/student';
+  const isPartnerLogin = location.pathname === '/partner/login' || location.pathname === '/login/partner';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
@@ -35,7 +35,7 @@ const GlobalPublicHeader = () => {
               asChild
               className="text-muted-foreground hover:text-foreground"
             >
-              <Link to="/partner/login" className="flex items-center gap-1.5">
+              <Link to="/login/partner" className="flex items-center gap-1.5">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Partner Login</span>
                 <span className="sm:hidden">Partner</span>
@@ -48,7 +48,7 @@ const GlobalPublicHeader = () => {
               asChild
               className="shadow-sm"
             >
-              <Link to="/student/auth" className="flex items-center gap-1.5">
+              <Link to="/login/student" className="flex items-center gap-1.5">
                 <GraduationCap className="h-4 w-4" />
                 <span className="hidden sm:inline">Student Login</span>
                 <span className="sm:hidden">Login</span>

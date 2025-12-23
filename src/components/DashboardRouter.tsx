@@ -90,13 +90,13 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
 
   // Route based on user role
   if (appUser.role === 'admin' || appUser.role === 'super_admin') {
-    console.log('DashboardRouter: Admin/Super Admin detected, redirecting to /admin');
-    return <Navigate to="/admin" replace />;
+    console.log('DashboardRouter: Admin/Super Admin detected, redirecting to /dashboard/admin');
+    return <Navigate to="/dashboard/admin" replace />;
   }
 
   if (appUser.role === 'student' as any) {
-    console.log('DashboardRouter: Student detected, redirecting to /student');
-    return <Navigate to="/student" replace />;
+    console.log('DashboardRouter: Student detected, redirecting to /dashboard/student');
+    return <Navigate to="/dashboard/student" replace />;
   }
 
   if (appUser.role === 'partner') {
