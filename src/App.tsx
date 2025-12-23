@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
 import StudentLanding from "./pages/student/StudentLanding";
 import StudentAuth from "./pages/student/StudentAuth";
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -34,16 +35,51 @@ const App = () => (
           {/* Root = Student Landing Page (Primary) */}
           <Route path="/" element={<StudentLanding />} />
           
-          {/* Legacy redirect for old student landing URL */}
+          {/* ============ NEW STANDARDIZED ROUTES ============ */}
+          
+          {/* Login Routes - Standardized */}
+          <Route path="/login/student" element={<StudentAuth />} />
+          <Route path="/login/partner" element={<PartnerLogin />} />
+          <Route path="/login/admin" element={<AdminLogin />} />
+          
+          {/* Dashboard Routes - Standardized */}
+          <Route path="/dashboard" element={<DashboardRouter />} />
+          <Route 
+            path="/dashboard/admin" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/student" 
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Partner dashboard uses dynamic route with partner code */}
+          <Route 
+            path="/dashboard/partner" 
+            element={<DashboardRouter />} 
+          />
+          
+          {/* ============ BACKWARD-COMPATIBLE REDIRECTS ============ */}
+          
+          {/* Legacy login routes */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/partner/login" element={<Navigate to="/login/partner" replace />} />
+          <Route path="/student/auth" element={<Navigate to="/login/student" replace />} />
           <Route path="/student/landing" element={<Navigate to="/" replace />} />
           
-          {/* Dashboard Router for authenticated users */}
-          <Route path="/dashboard" element={<DashboardRouter />} />
+          {/* Legacy dashboard routes */}
+          <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
+          <Route path="/admin/v2" element={<Navigate to="/dashboard/admin" replace />} />
+          <Route path="/student" element={<Navigate to="/dashboard/student" replace />} />
           
-          {/* Authentication - Role Separated */}
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/partner/login" element={<PartnerLogin />} />
-          <Route path="/student/auth" element={<StudentAuth />} />
+          {/* ============ FUNCTIONAL ROUTES ============ */}
           
           {/* Public Routes - No Authentication Required */}
           <Route 
@@ -81,29 +117,6 @@ const App = () => (
             element={
               <ProtectedRoute requiredRole="partner">
                 <PartnerDocumentPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Admin Dashboard */}
-          <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Redirect old v2 route to main admin */}
-          <Route path="/admin/v2" element={<Navigate to="/admin" replace />} />
-          
-          {/* Student Dashboard - Pitch/Value Page */}
-          <Route 
-            path="/student" 
-            element={
-              <ProtectedRoute requiredRole="student">
-                <StudentDashboard />
               </ProtectedRoute>
             } 
           />
