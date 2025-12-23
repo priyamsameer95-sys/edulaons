@@ -63,6 +63,7 @@ const StudentDashboard = () => {
     { label: 'Eligibility', done: true },
     { label: 'Verified', done: true },
     { label: 'Application', done: false, current: true },
+    { label: 'Documents', done: false },
     { label: 'Approval', done: false },
   ];
 
