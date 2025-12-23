@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Search, Plus, Edit, Eye, Power, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit, Eye, Power, Loader2, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CreateLenderModal } from './CreateLenderModal';
 import { EditLenderModal } from './EditLenderModal';
@@ -49,6 +49,7 @@ interface Lender {
   required_documents: any;
   eligible_expenses: any;
   display_order: number | null;
+  preferred_rank: number | null;
 }
 
 export function LenderManagementTab() {
@@ -139,6 +140,51 @@ export function LenderManagementTab() {
     }
   };
 
+  const togglePreferred = async (lender: Lender) => {
+    try {
+      if (lender.preferred_rank) {
+        // Remove preferred status
+        const { error } = await supabase
+          .from('lenders')
+          .update({ preferred_rank: null })
+          .eq('id', lender.id);
+        if (error) throw error;
+        toast({ title: 'Removed from preferred lenders' });
+      } else {
+        // Check how many preferred lenders exist
+        const currentPreferred = lenders.filter(l => l.preferred_rank !== null);
+        
+        if (currentPreferred.length >= 2) {
+          toast({
+            title: 'Limit reached',
+            description: 'Remove an existing preferred lender first (max 2)',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        // Assign next available rank (1 or 2)
+        const nextRank = currentPreferred.some(l => l.preferred_rank === 1) ? 2 : 1;
+        
+        const { error } = await supabase
+          .from('lenders')
+          .update({ preferred_rank: nextRank })
+          .eq('id', lender.id);
+        if (error) throw error;
+        toast({ title: `Set as preferred lender #${nextRank}` });
+      }
+      
+      fetchLenders();
+    } catch (error) {
+      console.error('Error updating preferred status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update preferred status',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleEdit = (lender: Lender) => {
     setSelectedLender(lender);
     setShowEditModal(true);
@@ -203,6 +249,7 @@ export function LenderManagementTab() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">⭐</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Status</TableHead>
@@ -215,13 +262,28 @@ export function LenderManagementTab() {
               <TableBody>
                 {filteredLenders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
                       No lenders found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLenders.map((lender) => (
+                  [...filteredLenders]
+                    .sort((a, b) => {
+                      // Preferred lenders first
+                      if (a.preferred_rank && !b.preferred_rank) return -1;
+                      if (!a.preferred_rank && b.preferred_rank) return 1;
+                      if (a.preferred_rank && b.preferred_rank) return a.preferred_rank - b.preferred_rank;
+                      return 0;
+                    })
+                    .map((lender) => (
                     <TableRow key={lender.id}>
+                      <TableCell>
+                        {lender.preferred_rank && (
+                          <Badge variant="default" className="bg-amber-500 text-white">
+                            {lender.preferred_rank === 1 ? '1st' : '2nd'}
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{lender.name}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{lender.code}</Badge>
@@ -251,6 +313,16 @@ export function LenderManagementTab() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => togglePreferred(lender)}
+                            title={lender.preferred_rank ? 'Remove from preferred' : 'Set as preferred'}
+                          >
+                            <Star
+                              className={`h-4 w-4 ${lender.preferred_rank ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'}`}
+                            />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleViewDetails(lender)}
                           >
                             <Eye className="h-4 w-4" />
@@ -268,7 +340,7 @@ export function LenderManagementTab() {
                             onClick={() => toggleLenderStatus(lender)}
                           >
                             <Power
-                              className={`h-4 w-4 ${lender.is_active ? 'text-green-600' : 'text-gray-400'}`}
+                              className={`h-4 w-4 ${lender.is_active ? 'text-green-600' : 'text-muted-foreground'}`}
                             />
                           </Button>
                         </div>
