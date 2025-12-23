@@ -209,8 +209,8 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="p-6">
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center gap-1">
@@ -502,15 +502,15 @@ export function AcademicBackgroundStep({ data, onUpdate, onNext, onPrev }: Acade
             )}
           </div>
         </div>
-      </Card>
+      </div>
 
-      <div className="flex gap-4">
-        <Button type="button" variant="outline" onClick={onPrev}>
-          <ChevronLeft className="h-4 w-4 mr-2" />
+      <div className="flex gap-4 pt-4 border-t">
+        <Button type="button" variant="outline" onClick={onPrev} className="gap-2">
+          <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
-        <Button type="submit" className="flex-1">
-          Continue
+        <Button type="submit" className="flex-1 h-12 text-base font-semibold shadow-lg shadow-primary/20">
+          Continue to Study Details →
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
       </div>

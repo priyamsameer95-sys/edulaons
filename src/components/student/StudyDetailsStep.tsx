@@ -92,12 +92,12 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
       {/* Pre-filled data notice */}
       {hasPrefilledData && (
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <span className="text-sm text-green-700 dark:text-green-300">
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <span className="text-sm text-emerald-700 dark:text-emerald-300">
             Some fields are pre-filled from your eligibility check. You can edit them if needed.
           </span>
         </div>
@@ -287,9 +287,13 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
         </div>
       </div>
 
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onPrev}>Previous</Button>
-        <Button type="submit" size="lg">Next: Co-Applicant Details</Button>
+      <div className="flex justify-between pt-6 border-t">
+        <Button type="button" variant="outline" onClick={onPrev} size="lg" className="gap-2">
+          ← Previous
+        </Button>
+        <Button type="submit" size="lg" className="min-w-[200px] h-12 font-semibold shadow-lg shadow-primary/20">
+          Continue to Co-Applicant →
+        </Button>
       </div>
     </form>
   );
