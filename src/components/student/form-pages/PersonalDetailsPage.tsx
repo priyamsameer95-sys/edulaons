@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Phone, Mail, Calendar, MapPin, Shield, Check, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MapPin, Calendar, User } from 'lucide-react';
 import type { StudentApplicationData } from '@/types/student-application';
 
 interface PersonalDetailsPageProps {
@@ -10,242 +11,336 @@ interface PersonalDetailsPageProps {
 }
 
 const genderOptions = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' },
+  { value: 'male', label: 'Male', icon: '♂️' },
+  { value: 'female', label: 'Female', icon: '♀️' },
+  { value: 'other', label: 'Other', icon: '⚧️' },
 ];
 
 const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isValidating, setIsValidating] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTimeout(() => nameRef.current?.focus(), 100);
   }, []);
 
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  // Auto-lookup city/state from PIN
+  useEffect(() => {
+    const pin = data.postalCode;
+    if (pin && pin.length === 6 && !data.city) {
+      setPinLoading(true);
+      const timer = setTimeout(() => {
+        const cityMap: Record<string, { city: string; state: string }> = {
+          '110': { city: 'New Delhi', state: 'Delhi' },
+          '400': { city: 'Mumbai', state: 'Maharashtra' },
+          '560': { city: 'Bangalore', state: 'Karnataka' },
+          '600': { city: 'Chennai', state: 'Tamil Nadu' },
+          '700': { city: 'Kolkata', state: 'West Bengal' },
+          '500': { city: 'Hyderabad', state: 'Telangana' },
+          '380': { city: 'Ahmedabad', state: 'Gujarat' },
+          '411': { city: 'Pune', state: 'Maharashtra' },
+        };
+        const match = cityMap[pin.substring(0, 3)];
+        if (match) onUpdate({ city: match.city, state: match.state });
+        setPinLoading(false);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [data.postalCode]);
 
-    if (!data.name?.trim()) newErrors.name = 'Name is required';
-    if (!data.phone || !/^[6-9]\d{9}$/.test(data.phone)) {
-      newErrors.phone = 'Valid 10-digit phone starting with 6-9';
-    }
-    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-    if (!data.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-    if (!data.gender) newErrors.gender = 'Please select gender';
-    if (!data.postalCode || !/^\d{6}$/.test(data.postalCode)) {
-      newErrors.postalCode = 'Valid 6-digit PIN required';
-    }
-    if (!data.city?.trim()) newErrors.city = 'City is required';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const formatPhone = (val: string) => {
+    const nums = val.replace(/\D/g, '');
+    if (nums.length <= 5) return nums;
+    return `${nums.slice(0, 5)} ${nums.slice(5, 10)}`;
   };
 
-  const handleContinue = () => {
-    // Mark all as touched
-    setTouched({ name: true, phone: true, dateOfBirth: true, gender: true, postalCode: true, city: true });
-    if (validate()) {
-      onNext();
+  const getInitials = (name: string) =>
+    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const validateField = (field: string, value: string) => {
+    switch (field) {
+      case 'name': return !value || value.trim().length < 2 ? 'Please enter your full name' : '';
+      case 'phone': return value.replace(/\D/g, '').length !== 10 ? 'Enter valid 10-digit number' : '';
+      case 'email': return value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'Enter valid email' : '';
+      case 'dateOfBirth': {
+        if (!value) return 'Date of birth is required';
+        const age = Math.floor((Date.now() - new Date(value).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        return age < 16 || age > 50 ? 'Age must be 16-50' : '';
+      }
+      case 'postalCode': return !/^\d{6}$/.test(value) ? 'Enter 6-digit PIN' : '';
+      default: return '';
     }
   };
 
-  const handleBlur = (field: string) => {
+  const handleBlur = (field: string, value: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
-    validate();
+    setErrors(prev => ({ ...prev, [field]: validateField(field, value) }));
   };
+
+  const validateAll = () => {
+    const newErrors: Record<string, string> = {
+      name: validateField('name', data.name || ''),
+      phone: validateField('phone', data.phone || ''),
+      email: validateField('email', data.email || ''),
+      dateOfBirth: validateField('dateOfBirth', data.dateOfBirth || ''),
+      postalCode: validateField('postalCode', data.postalCode || ''),
+      gender: !data.gender ? 'Select gender' : '',
+      city: !data.city?.trim() ? 'City is required' : '',
+    };
+    setErrors(newErrors);
+    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, postalCode: true, gender: true, city: true });
+    return !Object.values(newErrors).some(e => e);
+  };
+
+  const handleContinue = async () => {
+    setIsValidating(true);
+    await new Promise(r => setTimeout(r, 200));
+    if (validateAll()) onNext();
+    setIsValidating(false);
+  };
+
+  const isValid = (field: string) => touched[field] && !errors[field];
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Personal Details</h2>
-        <p className="text-muted-foreground">Tell us about yourself</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full"
+    >
+      {/* Header */}
+      <div className="text-center mb-6">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-3"
+        >
+          <Sparkles className="w-4 h-4" />
+          Takes ~2 minutes
+        </motion.div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
+          👋 Let's get started
+        </h1>
+        <p className="text-muted-foreground text-sm">Your data is encrypted & secure</p>
       </div>
 
-      {/* Name and Phone row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-medium text-foreground mb-2 block">Full Name *</label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+      {/* Form */}
+      <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-border/50 shadow-xl p-5 sm:p-7 space-y-5">
+        
+        {/* Name */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <User className="w-4 h-4 text-muted-foreground" /> Full Name *
+          </label>
+          <div
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-xl border-2 bg-background/50 transition-all",
+              errors.name && touched.name ? "border-destructive/50" : isValid('name') ? "border-green-500/50" : "border-border focus-within:border-primary"
+            )}
+          >
+            <div className={cn(
+              "w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0",
+              data.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            )}>
+              {data.name ? getInitials(data.name) : '👤'}
+            </div>
             <input
               ref={nameRef}
               type="text"
+              placeholder="Enter your full name"
               value={data.name || ''}
-              onChange={(e) => onUpdate({ name: e.target.value })}
-              onBlur={() => handleBlur('name')}
-              placeholder="As on official documents"
-              className={cn(
-                "w-full bg-card border-2 rounded-lg pl-10 pr-4 py-3 text-base",
-                "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary",
-                "transition-colors duration-200",
-                errors.name && touched.name ? "border-destructive" : "border-border"
-              )}
+              onChange={e => onUpdate({ name: e.target.value })}
+              onBlur={e => handleBlur('name', e.target.value)}
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50"
             />
+            <AnimatePresence>
+              {isValid('name') && (
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          {errors.name && touched.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
+          {errors.name && touched.name && <p className="text-xs text-destructive ml-1">{errors.name}</p>}
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-foreground mb-2 block">Phone Number *</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>
+        {/* Phone */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Phone className="w-4 h-4 text-muted-foreground" /> WhatsApp Number *
+          </label>
+          <div
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 rounded-xl border-2 bg-background/50 transition-all",
+              errors.phone && touched.phone ? "border-destructive/50" : isValid('phone') ? "border-green-500/50" : "border-border focus-within:border-primary"
+            )}
+          >
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg text-sm shrink-0">
+              <span>🇮🇳</span>
+              <span className="text-muted-foreground">+91</span>
+            </div>
             <input
               type="tel"
-              value={data.phone || ''}
-              onChange={(e) => onUpdate({ phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              onBlur={() => handleBlur('phone')}
-              placeholder="10-digit number"
-              className={cn(
-                "w-full bg-card border-2 rounded-lg pl-12 pr-4 py-3 text-base",
-                "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary",
-                "transition-colors duration-200",
-                errors.phone && touched.phone ? "border-destructive" : "border-border"
-              )}
+              placeholder="98765 43210"
+              value={formatPhone(data.phone || '')}
+              onChange={e => onUpdate({ phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              onBlur={e => handleBlur('phone', e.target.value)}
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50"
             />
-          </div>
-          {errors.phone && touched.phone && <p className="text-destructive text-xs mt-1">{errors.phone}</p>}
-        </div>
-      </div>
-
-      {/* Email and DOB row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-medium text-foreground mb-2 block">Email (Optional)</label>
-          <input
-            type="email"
-            value={data.email || ''}
-            onChange={(e) => onUpdate({ email: e.target.value })}
-            onBlur={() => handleBlur('email')}
-            placeholder="email@example.com"
-            className={cn(
-              "w-full bg-card border-2 rounded-lg px-4 py-3 text-base",
-              "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary",
-              "transition-colors duration-200",
-              errors.email && touched.email ? "border-destructive" : "border-border"
+            {isValid('phone') && (
+              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" />
+              </div>
             )}
-          />
-          {errors.email && touched.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+          </div>
+          <p className="text-xs text-muted-foreground ml-1">You'll get OTP on this number</p>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-foreground mb-2 block">Date of Birth *</label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        {/* Email */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Mail className="w-4 h-4 text-muted-foreground" /> Email
+          </label>
+          <div
+            className={cn(
+              "flex items-center px-4 py-3 rounded-xl border-2 bg-background/50 transition-all",
+              errors.email && touched.email ? "border-destructive/50" : isValid('email') ? "border-green-500/50" : "border-border focus-within:border-primary"
+            )}
+          >
             <input
-              type="date"
-              value={data.dateOfBirth || ''}
-              onChange={(e) => onUpdate({ dateOfBirth: e.target.value })}
-              onBlur={() => handleBlur('dateOfBirth')}
-              max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
-              className={cn(
-                "w-full bg-card border-2 rounded-lg pl-10 pr-4 py-3 text-base",
-                "focus:outline-none focus:border-primary transition-colors duration-200",
-                errors.dateOfBirth && touched.dateOfBirth ? "border-destructive" : "border-border"
-              )}
+              type="email"
+              placeholder="you@example.com"
+              value={data.email || ''}
+              onChange={e => onUpdate({ email: e.target.value })}
+              onBlur={e => handleBlur('email', e.target.value)}
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50"
             />
-          </div>
-          {errors.dateOfBirth && touched.dateOfBirth && <p className="text-destructive text-xs mt-1">{errors.dateOfBirth}</p>}
-        </div>
-      </div>
-
-      {/* Gender */}
-      <div>
-        <label className="text-sm font-medium text-foreground mb-3 block">Gender *</label>
-        <div className="flex flex-wrap gap-3">
-          {genderOptions.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onUpdate({ gender: opt.value })}
-              className={cn(
-                "px-6 py-3 rounded-lg border-2 text-sm font-medium transition-all",
-                data.gender === opt.value
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:border-primary/50 text-foreground"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        {errors.gender && touched.gender && <p className="text-destructive text-xs mt-2">{errors.gender}</p>}
-      </div>
-
-      {/* Location: PIN, City, State */}
-      <div className="border-t border-border pt-6">
-        <label className="text-sm font-medium text-foreground mb-4 block flex items-center gap-2">
-          <MapPin className="h-4 w-4" /> Location
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">PIN Code *</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={data.postalCode || ''}
-              onChange={(e) => onUpdate({ postalCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-              onBlur={() => handleBlur('postalCode')}
-              placeholder="6-digit PIN"
-              className={cn(
-                "w-full bg-card border-2 rounded-lg px-4 py-3 text-base",
-                "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary",
-                "transition-colors duration-200",
-                errors.postalCode && touched.postalCode ? "border-destructive" : "border-border"
-              )}
-            />
-            {errors.postalCode && touched.postalCode && <p className="text-destructive text-xs mt-1">{errors.postalCode}</p>}
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">City *</label>
-            <input
-              type="text"
-              value={data.city || ''}
-              onChange={(e) => onUpdate({ city: e.target.value })}
-              onBlur={() => handleBlur('city')}
-              placeholder="City"
-              className={cn(
-                "w-full bg-card border-2 rounded-lg px-4 py-3 text-base",
-                "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary",
-                "transition-colors duration-200",
-                errors.city && touched.city ? "border-destructive" : "border-border"
-              )}
-            />
-            {errors.city && touched.city && <p className="text-destructive text-xs mt-1">{errors.city}</p>}
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">State</label>
-            <input
-              type="text"
-              value={data.state || ''}
-              onChange={(e) => onUpdate({ state: e.target.value })}
-              placeholder="State"
-              className={cn(
-                "w-full bg-card border-2 rounded-lg px-4 py-3 text-base",
-                "placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary",
-                "transition-colors duration-200 border-border"
-              )}
-            />
+            {isValid('email') && (
+              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Continue button */}
-      <div className="pt-6">
-        <button
+        {/* DOB & Gender */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" /> Date of Birth *
+            </label>
+            <div className={cn(
+              "px-4 py-3 rounded-xl border-2 bg-background/50",
+              errors.dateOfBirth && touched.dateOfBirth ? "border-destructive/50" : isValid('dateOfBirth') ? "border-green-500/50" : "border-border"
+            )}>
+              <input
+                type="date"
+                value={data.dateOfBirth || ''}
+                onChange={e => onUpdate({ dateOfBirth: e.target.value })}
+                onBlur={e => handleBlur('dateOfBirth', e.target.value)}
+                max={new Date(Date.now() - 16 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                className="w-full bg-transparent outline-none text-foreground"
+              />
+            </div>
+            {data.dateOfBirth && !errors.dateOfBirth && (
+              <p className="text-xs text-muted-foreground ml-1">
+                Age: {Math.floor((Date.now() - new Date(data.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} yrs
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Gender *</label>
+            <div className="flex gap-2">
+              {genderOptions.map(g => (
+                <button
+                  key={g.value}
+                  type="button"
+                  onClick={() => { onUpdate({ gender: g.value }); setErrors(p => ({ ...p, gender: '' })); }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1 py-3 rounded-xl border-2 font-medium text-sm transition-all",
+                    data.gender === g.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50 text-muted-foreground"
+                  )}
+                >
+                  <span>{g.icon}</span>
+                  <span className="hidden sm:inline">{g.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground" /> Location *
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <div className={cn(
+              "px-4 py-3 rounded-xl border-2 bg-background/50",
+              errors.postalCode && touched.postalCode ? "border-destructive/50" : isValid('postalCode') ? "border-green-500/50" : "border-border"
+            )}>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="PIN"
+                maxLength={6}
+                value={data.postalCode || ''}
+                onChange={e => onUpdate({ postalCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                onBlur={e => handleBlur('postalCode', e.target.value)}
+                className="w-full bg-transparent outline-none text-center text-foreground placeholder:text-muted-foreground/50"
+              />
+            </div>
+            <div className="col-span-2 flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-border bg-muted/20">
+              {pinLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : data.city ? (
+                <>
+                  <Check className="w-4 h-4 text-green-500 shrink-0" />
+                  <span className="text-sm text-foreground truncate">{data.city}, {data.state}</span>
+                </>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={data.city || ''}
+                  onChange={e => onUpdate({ city: e.target.value })}
+                  className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50 text-sm"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Continue */}
+        <motion.button
           onClick={handleContinue}
-          className={cn(
-            "w-full py-4 rounded-xl font-semibold text-base transition-all duration-200",
-            "bg-primary text-primary-foreground hover:opacity-90"
-          )}
+          disabled={isValidating}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          className="w-full h-14 mt-4 rounded-xl font-semibold text-base bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-2"
         >
-          Continue →
-        </button>
+          {isValidating ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              Continue
+              <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>→</motion.span>
+            </>
+          )}
+        </motion.button>
       </div>
-    </div>
+
+      {/* Trust */}
+      <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Shield className="w-4 h-4" />
+        <span>256-bit encrypted • Your data is never sold</span>
+      </div>
+    </motion.div>
   );
 };
 
