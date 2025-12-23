@@ -549,7 +549,7 @@ const StudentLanding = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs text-foreground">Your name</Label>
-                        <Input value={formData.student_name} onChange={e => handleChange('student_name', e.target.value)} placeholder="Write name as per Aadhaar" className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_name && 'border-destructive')} />
+                        <Input value={formData.student_name} onChange={e => handleChange('student_name', e.target.value)} placeholder="Name as per Aadhaar" className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_name && 'border-destructive')} />
                         {errors.student_name && <p className="text-[10px] text-destructive">{errors.student_name}</p>}
                       </div>
                       <div className="space-y-1">
