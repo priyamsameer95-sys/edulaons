@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,25 +20,59 @@ import {
   Loader2,
   Smartphone,
   KeyRound,
-  Sparkles
+  Sparkles,
+  PartyPopper
 } from "lucide-react";
 
-type AuthStep = 'phone' | 'otp';
+type AuthStep = 'phone' | 'otp' | 'success';
 
 const StudentAuth = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<AuthStep>('phone');
   const [isLoading, setIsLoading] = useState(false);
+  const [otpError, setOtpError] = useState(false);
   
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [otp, setOtp] = useState('');
+  
+  // Resend timer state
+  const [resendTimer, setResendTimer] = useState(0);
+  const [canResend, setCanResend] = useState(false);
+
+  // Pre-fill from sessionStorage (from landing page eligibility form)
+  useEffect(() => {
+    try {
+      const savedData = sessionStorage.getItem('eligibility_form');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        if (parsed.phone && !phone) {
+          setPhone(parsed.phone.replace(/\D/g, '').slice(-10));
+        }
+        if (parsed.name && !name) {
+          setName(parsed.name);
+        }
+      }
+    } catch (e) {
+      console.log('No saved eligibility data');
+    }
+  }, []);
+
+  // Resend timer countdown
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (step === 'otp') {
+      setCanResend(true);
+    }
+  }, [resendTimer, step]);
 
   // Redirect if already logged in
   useEffect(() => {
     if (user && !loading) {
-      navigate('/student/dashboard', { replace: true });
+      navigate('/student', { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -55,9 +89,7 @@ const StudentAuth = () => {
   }
 
   const formatPhoneDisplay = (value: string) => {
-    // Remove non-digits
     const digits = value.replace(/\D/g, '');
-    // Format as: 98765 43210
     if (digits.length <= 5) return digits;
     return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
   };
@@ -81,14 +113,28 @@ const StudentAuth = () => {
 
     setIsLoading(true);
     
-    // Simulate OTP send delay (in production, this would call SMS API)
+    // Simulate OTP send delay
     await new Promise(resolve => setTimeout(resolve, 500));
     
     setStep('otp');
+    setResendTimer(30);
+    setCanResend(false);
     setIsLoading(false);
     
     toast({ 
       title: "OTP Sent!", 
+      description: "Use 9955 to verify (testing mode)" 
+    });
+  };
+
+  const handleResendOTP = async () => {
+    if (!canResend) return;
+    
+    setCanResend(false);
+    setResendTimer(30);
+    
+    toast({ 
+      title: "OTP Resent!", 
       description: "Use 9955 to verify (testing mode)" 
     });
   };
@@ -106,6 +152,7 @@ const StudentAuth = () => {
     }
 
     setIsLoading(true);
+    setOtpError(false);
 
     try {
       const fullPhone = `+91${phone}`;
@@ -120,6 +167,7 @@ const StudentAuth = () => {
 
       if (error) {
         console.error('OTP verification error:', error);
+        setOtpError(true);
         toast({ 
           title: "Verification failed", 
           description: error.message || "Could not verify OTP", 
@@ -130,6 +178,7 @@ const StudentAuth = () => {
       }
 
       if (!data?.success) {
+        setOtpError(true);
         toast({ 
           title: "Invalid OTP", 
           description: data?.error || "Please check and try again. Use 9955 for testing.", 
@@ -140,11 +189,12 @@ const StudentAuth = () => {
         return;
       }
 
-      // OTP verified successfully - now sign in using the magic link
+      // OTP verified successfully - show success screen
+      setStep('success');
+      
       console.log('OTP verified, signing in...');
       
       if (data.auth?.actionLink) {
-        // Use the magic link to complete sign-in
         const { error: signInError } = await supabase.auth.verifyOtp({
           token_hash: data.auth.token,
           type: 'magiclink'
@@ -152,26 +202,19 @@ const StudentAuth = () => {
 
         if (signInError) {
           console.error('Sign in error:', signInError);
-          // Try alternative method - redirect to magic link
           window.location.href = data.auth.actionLink;
           return;
         }
       }
 
-      toast({ 
-        title: data.isNewUser ? "Welcome!" : "Welcome back!", 
-        description: data.isNewUser 
-          ? "Your account has been created successfully" 
-          : "You're now signed in" 
-      });
-
-      // Wait a moment for auth state to update
+      // Wait for success animation then redirect
       setTimeout(() => {
-        navigate('/student/dashboard', { replace: true });
-      }, 500);
+        navigate('/student', { replace: true });
+      }, 2000);
 
     } catch (err: any) {
       console.error('Unexpected error:', err);
+      setOtpError(true);
       toast({ 
         title: "Something went wrong", 
         description: "Please try again", 
@@ -185,7 +228,29 @@ const StudentAuth = () => {
   const handleBack = () => {
     setStep('phone');
     setOtp('');
+    setOtpError(false);
   };
+
+  // Success screen after OTP verification
+  if (step === 'success') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-emerald-500/10 flex items-center justify-center p-4">
+        <div className="text-center animate-fade-in">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 mb-6 animate-scale-in">
+            <PartyPopper className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Verified!</h1>
+          <p className="text-lg text-muted-foreground mb-4">
+            Welcome to your student portal
+          </p>
+          <div className="flex items-center justify-center gap-2 text-primary">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm">Redirecting to dashboard...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-blue-500/5 flex flex-col">
@@ -303,10 +368,31 @@ const StudentAuth = () => {
 
                   <OTPInput
                     value={otp}
-                    onChange={setOtp}
+                    onChange={(val) => {
+                      setOtp(val);
+                      setOtpError(false);
+                    }}
                     disabled={isLoading}
                     autoFocus
+                    hasError={otpError}
                   />
+
+                  {/* Resend Timer */}
+                  <div className="text-center">
+                    {canResend ? (
+                      <button
+                        type="button"
+                        onClick={handleResendOTP}
+                        className="text-sm text-primary font-medium hover:underline"
+                      >
+                        Resend OTP
+                      </button>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Resend OTP in <span className="font-semibold text-foreground">{resendTimer}s</span>
+                      </p>
+                    )}
+                  </div>
 
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
                     <p className="text-sm text-amber-700 dark:text-amber-400">

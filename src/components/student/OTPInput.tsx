@@ -8,6 +8,7 @@ interface OTPInputProps {
   disabled?: boolean;
   autoFocus?: boolean;
   className?: string;
+  hasError?: boolean;
 }
 
 export const OTPInput = ({
@@ -17,9 +18,11 @@ export const OTPInput = ({
   disabled = false,
   autoFocus = true,
   className,
+  hasError = false,
 }: OTPInputProps) => {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [shake, setShake] = useState(false);
 
   // Split value into individual digits
   const digits = value.split('').slice(0, length);
@@ -32,6 +35,15 @@ export const OTPInput = ({
       inputRefs.current[0].focus();
     }
   }, [autoFocus]);
+
+  // Trigger shake animation on error
+  useEffect(() => {
+    if (hasError) {
+      setShake(true);
+      const timer = setTimeout(() => setShake(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hasError]);
 
   const focusInput = (index: number) => {
     const clampedIndex = Math.max(0, Math.min(index, length - 1));
@@ -89,7 +101,11 @@ export const OTPInput = ({
   };
 
   return (
-    <div className={cn('flex gap-3 justify-center', className)}>
+    <div className={cn(
+      'flex gap-3 justify-center transition-transform',
+      shake && 'animate-shake',
+      className
+    )}>
       {digits.map((digit, index) => (
         <input
           key={index}
@@ -109,10 +125,11 @@ export const OTPInput = ({
             'bg-background text-foreground',
             'focus:outline-none focus:ring-2 focus:ring-primary/20',
             activeIndex === index && !disabled
-              ? 'border-primary shadow-lg shadow-primary/20'
+              ? 'border-primary shadow-lg shadow-primary/20 scale-105'
               : 'border-border hover:border-muted-foreground/50',
             disabled && 'opacity-50 cursor-not-allowed bg-muted',
-            digit && 'border-primary/50 bg-primary/5'
+            digit && !hasError && 'border-primary/50 bg-primary/5',
+            hasError && 'border-destructive bg-destructive/5'
           )}
           aria-label={`Digit ${index + 1} of ${length}`}
         />
