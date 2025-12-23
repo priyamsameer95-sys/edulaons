@@ -9,59 +9,103 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { OTPInput } from "@/components/student/OTPInput";
-import { 
-  GraduationCap, 
-  ArrowRight, 
-  Check,
-  Shield,
-  Star,
-  Zap,
-  User,
-  Loader2,
-  Trophy,
-  Rocket,
-  BadgeCheck,
-  ChevronLeft,
-  Sparkles,
-  Clock,
-  FileCheck,
-  TrendingUp,
-  Building2,
-  Users,
-  CheckCircle2,
-  Smartphone,
-  RefreshCw
-} from "lucide-react";
+import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, BadgeCheck, ChevronLeft, Sparkles, Clock, FileCheck, TrendingUp, Building2, Users, CheckCircle2, Smartphone, RefreshCw } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 
 // Country data
-const COUNTRIES = [
-  { code: "USA", name: "USA", flag: "🇺🇸", value: "United States" },
-  { code: "UK", name: "UK", flag: "🇬🇧", value: "United Kingdom" },
-  { code: "Canada", name: "Canada", flag: "🇨🇦", value: "Canada" },
-  { code: "Australia", name: "Australia", flag: "🇦🇺", value: "Australia" },
-  { code: "Germany", name: "Germany", flag: "🇩🇪", value: "Germany" },
-  { code: "Ireland", name: "Ireland", flag: "🇮🇪", value: "Ireland" },
-];
+const COUNTRIES = [{
+  code: "USA",
+  name: "USA",
+  flag: "🇺🇸",
+  value: "United States"
+}, {
+  code: "UK",
+  name: "UK",
+  flag: "🇬🇧",
+  value: "United Kingdom"
+}, {
+  code: "Canada",
+  name: "Canada",
+  flag: "🇨🇦",
+  value: "Canada"
+}, {
+  code: "Australia",
+  name: "Australia",
+  flag: "🇦🇺",
+  value: "Australia"
+}, {
+  code: "Germany",
+  name: "Germany",
+  flag: "🇩🇪",
+  value: "Germany"
+}, {
+  code: "Ireland",
+  name: "Ireland",
+  flag: "🇮🇪",
+  value: "Ireland"
+}];
 
 // Lender data for carousel (brand colors come from design tokens in index.css)
-const LENDERS = [
-  { code: "SBI", name: "State Bank of India", shortName: "SBI", brandVar: "--brand-sbi", rate: "8.65%" },
-  { code: "PNB", name: "Punjab National Bank", shortName: "PNB", brandVar: "--brand-pnb", rate: "7.50%" },
-  { code: "ICICI", name: "ICICI Bank", shortName: "ICICI", brandVar: "--brand-icici", rate: "10.25%" },
-  { code: "HDFC", name: "HDFC Credila", shortName: "Credila", brandVar: "--brand-hdfc", rate: "10.00%" },
-  { code: "AXIS", name: "Axis Bank", shortName: "Axis", brandVar: "--brand-axis", rate: "9.75%" },
-  { code: "BOB", name: "Bank of Baroda", shortName: "BoB", brandVar: "--brand-bob", rate: "8.85%" },
-];
+const LENDERS = [{
+  code: "SBI",
+  name: "State Bank of India",
+  shortName: "SBI",
+  brandVar: "--brand-sbi",
+  rate: "8.65%"
+}, {
+  code: "PNB",
+  name: "Punjab National Bank",
+  shortName: "PNB",
+  brandVar: "--brand-pnb",
+  rate: "7.50%"
+}, {
+  code: "ICICI",
+  name: "ICICI Bank",
+  shortName: "ICICI",
+  brandVar: "--brand-icici",
+  rate: "10.25%"
+}, {
+  code: "HDFC",
+  name: "HDFC Credila",
+  shortName: "Credila",
+  brandVar: "--brand-hdfc",
+  rate: "10.00%"
+}, {
+  code: "AXIS",
+  name: "Axis Bank",
+  shortName: "Axis",
+  brandVar: "--brand-axis",
+  rate: "9.75%"
+}, {
+  code: "BOB",
+  name: "Bank of Baroda",
+  shortName: "BoB",
+  brandVar: "--brand-bob",
+  rate: "8.85%"
+}];
 
 // Steps with time anchors
-const STEPS = [
-  { icon: FileCheck, title: "Check Eligibility", time: "60 sec", desc: "Quick assessment" },
-  { icon: Shield, title: "Verify OTP", time: "Instant", desc: "Mobile verify" },
-  { icon: Zap, title: "Upload Docs", time: "Upload once", desc: "Simple forms" },
-  { icon: Trophy, title: "Get Approved", time: "24-48 hrs", desc: "Fast approval" },
-];
-
+const STEPS = [{
+  icon: FileCheck,
+  title: "Check Eligibility",
+  time: "60 sec",
+  desc: "Quick assessment"
+}, {
+  icon: Shield,
+  title: "Verify OTP",
+  time: "Instant",
+  desc: "Mobile verify"
+}, {
+  icon: Zap,
+  title: "Upload Docs",
+  time: "Upload once",
+  desc: "Simple forms"
+}, {
+  icon: Trophy,
+  title: "Get Approved",
+  time: "24-48 hrs",
+  desc: "Fast approval"
+}];
 interface FormData {
   student_name: string;
   student_phone: string;
@@ -70,7 +114,6 @@ interface FormData {
   loan_amount: number[];
   co_applicant_monthly_salary: string;
 }
-
 interface FormErrors {
   student_name?: string;
   student_phone?: string;
@@ -78,7 +121,6 @@ interface FormErrors {
   university_id?: string;
   co_applicant_monthly_salary?: string;
 }
-
 interface EligibilityResult {
   score: number;
   lenderCount: number;
@@ -87,32 +129,52 @@ interface EligibilityResult {
   estimatedLoanMin: number;
   estimatedLoanMax: number;
 }
-
 const getTierConfig = (lenderCount: number) => {
-  if (lenderCount >= 4) return { headline: "Excellent Match!", subtext: "Multiple top lenders ready for you", icon: Trophy, color: "text-emerald-600" };
-  if (lenderCount >= 3) return { headline: "Strong Profile!", subtext: "Great options available", icon: Star, color: "text-primary" };
-  if (lenderCount >= 2) return { headline: "Good Options!", subtext: "Lenders ready to help", icon: Rocket, color: "text-primary" };
-  if (lenderCount >= 1) return { headline: "Match Found!", subtext: "A lender is interested", icon: Sparkles, color: "text-primary" };
-  return { headline: "Let's Explore", subtext: "Complete for more options", icon: Sparkles, color: "text-muted-foreground" };
+  if (lenderCount >= 4) return {
+    headline: "Excellent Match!",
+    subtext: "Multiple top lenders ready for you",
+    icon: Trophy,
+    color: "text-emerald-600"
+  };
+  if (lenderCount >= 3) return {
+    headline: "Strong Profile!",
+    subtext: "Great options available",
+    icon: Star,
+    color: "text-primary"
+  };
+  if (lenderCount >= 2) return {
+    headline: "Good Options!",
+    subtext: "Lenders ready to help",
+    icon: Rocket,
+    color: "text-primary"
+  };
+  if (lenderCount >= 1) return {
+    headline: "Match Found!",
+    subtext: "A lender is interested",
+    icon: Sparkles,
+    color: "text-primary"
+  };
+  return {
+    headline: "Let's Explore",
+    subtext: "Complete for more options",
+    icon: Sparkles,
+    color: "text-muted-foreground"
+  };
 };
-
 const calculateEMI = (principal: number, rate: number, years: number = 10): number => {
   const monthlyRate = rate / 12 / 100;
   const months = years * 12;
-  return Math.round((principal * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1));
+  return Math.round(principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1));
 };
-
 const initialFormData: FormData = {
   student_name: "",
   student_phone: "",
   country: "",
   university_id: "",
   loan_amount: [35],
-  co_applicant_monthly_salary: "",
+  co_applicant_monthly_salary: ""
 };
-
 type AuthStep = 'results' | 'otp' | 'verifying' | 'success';
-
 const StudentLanding = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLDivElement>(null);
@@ -122,7 +184,7 @@ const StudentLanding = () => {
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
-  
+
   // Inline OTP verification states
   const [authStep, setAuthStep] = useState<AuthStep>('results');
   const [otp, setOtp] = useState('');
@@ -149,7 +211,6 @@ const StudentLanding = () => {
     const phone = formData.student_phone.replace(/\D/g, '');
     setOtpError('');
     setOtp('');
-    
     try {
       // For now, we'll simulate OTP sending (the verify-student-otp edge function handles this)
       // In production, you'd call a send-otp edge function here
@@ -160,30 +221,31 @@ const StudentLanding = () => {
       toast.error('Failed to send OTP');
     }
   };
-
   const verifyOTP = async () => {
     setAuthStep('verifying');
     setOtpError('');
-    
     const phone = formData.student_phone.replace(/\D/g, '');
-    
     try {
-      const { data, error } = await supabase.functions.invoke('verify-student-otp', {
-        body: { phone, otp }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('verify-student-otp', {
+        body: {
+          phone,
+          otp
+        }
       });
-
       if (error) throw error;
-      
       if (data?.success) {
         setAuthStep('success');
         toast.success('Phone verified successfully!');
-        
+
         // Wait for success animation, then navigate
         setTimeout(() => {
-          sessionStorage.setItem('eligibility_form', JSON.stringify({ 
-            ...formData, 
+          sessionStorage.setItem('eligibility_form', JSON.stringify({
+            ...formData,
             loan_amount: formData.loan_amount[0] * 100000,
-            verified: true 
+            verified: true
           }));
           navigate('/student');
         }, 1500);
@@ -198,25 +260,20 @@ const StudentLanding = () => {
       setOtp('');
     }
   };
-
   const handleContinueToOTP = () => {
     setAuthStep('otp');
     sendOTP();
   };
-
   const handleBackToResults = () => {
     setAuthStep('results');
     setOtp('');
     setOtpError('');
   };
-
   const formatAmount = (value: number): string => value >= 100 ? "₹1Cr+" : `₹${value}L`;
-
   const formatCurrencyInput = useCallback((value: string): string => {
     const num = value.replace(/,/g, '').replace(/\D/g, '');
     return num ? parseInt(num).toLocaleString('en-IN') : '';
   }, []);
-
   const getAmountInWords = useCallback((value: string): string => {
     const num = parseInt(value.replace(/,/g, '') || '0');
     if (num === 0) return '';
@@ -224,16 +281,21 @@ const StudentLanding = () => {
     if (num >= 1000) return `${(num / 1000).toFixed(0)}K/mo`;
     return `₹${num.toLocaleString('en-IN')}/mo`;
   }, []);
-
   const salaryInWords = useMemo(() => getAmountInWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary, getAmountInWords]);
-
   const handleChange = useCallback((field: keyof FormData, value: string | number[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => ({ ...prev, [field]: undefined }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setErrors(prev => ({
+      ...prev,
+      [field]: undefined
+    }));
   }, []);
-
-  const scrollToForm = () => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
+  const scrollToForm = () => formRef.current?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     if (!formData.student_name.trim() || formData.student_name.trim().length < 2) newErrors.student_name = "Enter your name";
@@ -246,11 +308,12 @@ const StudentLanding = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const calculateEligibility = async (loanAmount: number, salary: number, universityId: string): Promise<EligibilityResult> => {
     let universityScore = 20;
     if (universityId && universityId.length > 10) {
-      const { data: university } = await supabase.from('universities').select('score').eq('id', universityId).single();
+      const {
+        data: university
+      } = await supabase.from('universities').select('score').eq('id', universityId).single();
       if (university) {
         const uniScore = university.score || 0;
         universityScore = uniScore >= 90 ? 40 : uniScore >= 70 ? 32 : uniScore >= 50 ? 25 : 18;
@@ -258,17 +321,46 @@ const StudentLanding = () => {
     }
     const salaryScore = salary >= 100000 ? 35 : salary >= 75000 ? 28 : salary >= 50000 ? 20 : 12;
     const score = Math.min(100, Math.max(0, universityScore + salaryScore + 15));
-    
-    let rateMin = 14, rateMax = 16, loanMin = 0, loanMax = 0;
-    if (score >= 80) { loanMin = loanAmount * 0.9; loanMax = loanAmount; rateMin = 10.5; rateMax = 11.5; }
-    else if (score >= 65) { loanMin = loanAmount * 0.7; loanMax = loanAmount * 0.9; rateMin = 11.5; rateMax = 12.5; }
-    else if (score >= 50) { loanMin = loanAmount * 0.5; loanMax = loanAmount * 0.7; rateMin = 12.5; rateMax = 13.5; }
-    else if (score >= 40) { loanMin = loanAmount * 0.3; loanMax = loanAmount * 0.5; rateMin = 13.5; rateMax = 14.5; }
-    
-    const { count } = await supabase.from('lenders').select('*', { count: 'exact', head: true }).eq('is_active', true);
-    return { score: Math.round(score), lenderCount: count || 4, estimatedLoanMin: loanMin, estimatedLoanMax: loanMax, estimatedRateMin: rateMin, estimatedRateMax: rateMax };
+    let rateMin = 14,
+      rateMax = 16,
+      loanMin = 0,
+      loanMax = 0;
+    if (score >= 80) {
+      loanMin = loanAmount * 0.9;
+      loanMax = loanAmount;
+      rateMin = 10.5;
+      rateMax = 11.5;
+    } else if (score >= 65) {
+      loanMin = loanAmount * 0.7;
+      loanMax = loanAmount * 0.9;
+      rateMin = 11.5;
+      rateMax = 12.5;
+    } else if (score >= 50) {
+      loanMin = loanAmount * 0.5;
+      loanMax = loanAmount * 0.7;
+      rateMin = 12.5;
+      rateMax = 13.5;
+    } else if (score >= 40) {
+      loanMin = loanAmount * 0.3;
+      loanMax = loanAmount * 0.5;
+      rateMin = 13.5;
+      rateMax = 14.5;
+    }
+    const {
+      count
+    } = await supabase.from('lenders').select('*', {
+      count: 'exact',
+      head: true
+    }).eq('is_active', true);
+    return {
+      score: Math.round(score),
+      lenderCount: count || 4,
+      estimatedLoanMin: loanMin,
+      estimatedLoanMax: loanMax,
+      estimatedRateMin: rateMin,
+      estimatedRateMax: rateMax
+    };
   };
-
   const handleCheckEligibility = async () => {
     if (!validateForm()) return;
     setIsChecking(true);
@@ -279,12 +371,15 @@ const StudentLanding = () => {
       const countryData = COUNTRIES.find(c => c.code === formData.country);
       const eligibility = await calculateEligibility(loanAmount, salary, formData.university_id);
       setResult(eligibility);
-      
+
       // Try to save lead (optional - doesn't block eligibility check)
       const now = new Date();
       const futureDate = new Date(now.setMonth(now.getMonth() + 3));
       try {
-        const { data, error } = await supabase.functions.invoke('create-lead-quick', {
+        const {
+          data,
+          error
+        } = await supabase.functions.invoke('create-lead-quick', {
           body: {
             student_name: formData.student_name.trim(),
             student_phone: studentPhone,
@@ -301,10 +396,10 @@ const StudentLanding = () => {
             co_applicant_pin_code: '000000',
             source: 'student_landing',
             eligibility_score: eligibility.score,
-            eligibility_result: eligibility.lenderCount >= 3 ? 'eligible' : eligibility.lenderCount >= 1 ? 'conditional' : 'unlikely',
+            eligibility_result: eligibility.lenderCount >= 3 ? 'eligible' : eligibility.lenderCount >= 1 ? 'conditional' : 'unlikely'
           }
         });
-        
+
         // Handle response - lead already exists is OK, we just won't show the saved badge
         if (error) {
           console.log('Lead save failed (network error):', error.message);
@@ -325,23 +420,19 @@ const StudentLanding = () => {
       setIsChecking(false);
     }
   };
-
-  const handleStartOver = () => { 
-    setResult(null); 
-    setLeadId(null); 
+  const handleStartOver = () => {
+    setResult(null);
+    setLeadId(null);
     setAuthStep('results');
     setOtp('');
     setOtpError('');
     setOtpSent(false);
   };
-
   const tierConfig = result ? getTierConfig(result.lenderCount) : null;
   const TierIcon = tierConfig?.icon || Sparkles;
   const loanAmountLakhs = formData.loan_amount[0];
   const estimatedEMI = result ? calculateEMI(loanAmountLakhs * 100000, result.estimatedRateMin) : 0;
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Navigation */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -400,29 +491,13 @@ const StudentLanding = () => {
               <div className="mb-6">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">How it works</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {STEPS.map((step, i) => (
-                    <div 
-                      key={i} 
-                      className="text-center group cursor-default"
-                      onMouseEnter={() => setHoveredStep(i)}
-                      onMouseLeave={() => setHoveredStep(null)}
-                    >
-                      <div className={cn(
-                        "w-11 h-11 mx-auto rounded-xl bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent",
-                        hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10"
-                      )}>
-                        <step.icon className={cn(
-                          "h-5 w-5 transition-colors duration-300",
-                          hoveredStep === i ? "text-primary" : "text-muted-foreground"
-                        )} />
+                  {STEPS.map((step, i) => <div key={i} className="text-center group cursor-default" onMouseEnter={() => setHoveredStep(i)} onMouseLeave={() => setHoveredStep(null)}>
+                      <div className={cn("w-11 h-11 mx-auto rounded-xl bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent", hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10")}>
+                        <step.icon className={cn("h-5 w-5 transition-colors duration-300", hoveredStep === i ? "text-primary" : "text-muted-foreground")} />
                       </div>
                       <p className="text-xs font-medium text-foreground leading-tight">{step.title}</p>
-                      <p className={cn(
-                        "text-[10px] font-semibold transition-colors mt-0.5",
-                        hoveredStep === i ? "text-primary" : "text-emerald-600"
-                      )}>{step.time}</p>
-                    </div>
-                  ))}
+                      <p className={cn("text-[10px] font-semibold transition-colors mt-0.5", hoveredStep === i ? "text-primary" : "text-emerald-600")}>{step.time}</p>
+                    </div>)}
                 </div>
               </div>
 
@@ -436,43 +511,24 @@ const StudentLanding = () => {
                   
                   {/* Scrolling container */}
                   <div className="flex animate-[scroll_20s_linear_infinite] hover:pause">
-                    {[...LENDERS, ...LENDERS].map((lender, idx) => (
-                      <div 
-                        key={`${lender.code}-${idx}`} 
-                        className="flex-shrink-0 flex items-center gap-3 px-4 py-3 mx-2 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <div 
-                          className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm text-primary-foreground"
-                          style={{ backgroundColor: `hsl(var(${lender.brandVar}))` }}
-                        >
+                    {[...LENDERS, ...LENDERS].map((lender, idx) => <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex items-center gap-3 px-4 py-3 mx-2 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm text-primary-foreground" style={{
+                      backgroundColor: `hsl(var(${lender.brandVar}))`
+                    }}>
                           {lender.shortName.slice(0, 3)}
                         </div>
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-foreground whitespace-nowrap">{lender.name}</span>
                           <span className="text-xs text-emerald-600 font-medium">From {lender.rate}</span>
                         </div>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-3 text-center">All lenders are RBI-approved and offer education-focused loans only.</p>
               </div>
 
               {/* Trust Indicators - Enhanced */}
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
-                  <BadgeCheck className="h-4 w-4 text-emerald-600" />
-                  <span className="text-foreground font-medium">RBI Approved Lenders</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
-                  <Star className="h-4 w-4 text-amber-500" />
-                  <span className="text-foreground font-medium">4.8/5 Rating</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span className="text-foreground font-medium">24-48h Approval</span>
-                </div>
-              </div>
+              
             </div>
           </div>
 
@@ -480,9 +536,8 @@ const StudentLanding = () => {
           <div ref={formRef} className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 lg:py-0 bg-gradient-to-b from-muted/30 to-muted/10">
             <div className="w-full max-w-md">
               <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-xl shadow-primary/5">
-                {!result ? (
-                  /* Form State */
-                  <div className="space-y-4 animate-fade-in">
+                {!result ? (/* Form State */
+              <div className="space-y-4 animate-fade-in">
                     <div className="mb-1">
                       <h2 className="text-xl font-semibold text-foreground">Quick Eligibility Check</h2>
                       <p className="text-sm text-muted-foreground">See matching lenders instantly — takes 60 seconds</p>
@@ -492,22 +547,12 @@ const StudentLanding = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs text-foreground">Your name</Label>
-                        <Input
-                          value={formData.student_name}
-                          onChange={(e) => handleChange('student_name', e.target.value)}
-                          placeholder="Rahul Sharma"
-                          className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_name && 'border-destructive')}
-                        />
+                        <Input value={formData.student_name} onChange={e => handleChange('student_name', e.target.value)} placeholder="Rahul Sharma" className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_name && 'border-destructive')} />
                         {errors.student_name && <p className="text-[10px] text-destructive">{errors.student_name}</p>}
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-foreground">Phone</Label>
-                        <Input
-                          value={formData.student_phone}
-                          onChange={(e) => handleChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          placeholder="9876543210"
-                          className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_phone && 'border-destructive')}
-                        />
+                        <Input value={formData.student_phone} onChange={e => handleChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="9876543210" className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_phone && 'border-destructive')} />
                         {errors.student_phone && <p className="text-[10px] text-destructive">{errors.student_phone}</p>}
                       </div>
                     </div>
@@ -516,22 +561,13 @@ const StudentLanding = () => {
                     <div className="space-y-1">
                       <Label className="text-xs text-foreground">Study destination</Label>
                       <div className="grid grid-cols-6 gap-1.5">
-                        {COUNTRIES.map((country) => (
-                          <button
-                            key={country.code}
-                            type="button"
-                            onClick={() => { handleChange('country', country.code); handleChange('university_id', ''); }}
-                            className={cn(
-                              "flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-200",
-                              formData.country === country.code 
-                                ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-sm' 
-                                : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50'
-                            )}
-                          >
+                        {COUNTRIES.map(country => <button key={country.code} type="button" onClick={() => {
+                      handleChange('country', country.code);
+                      handleChange('university_id', '');
+                    }} className={cn("flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-200", formData.country === country.code ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-sm' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50')}>
                             <span className="text-lg">{country.flag}</span>
                             <span className="text-[9px] font-medium mt-0.5 text-foreground">{country.name}</span>
-                          </button>
-                        ))}
+                          </button>)}
                       </div>
                       {errors.country && <p className="text-[10px] text-destructive">{errors.country}</p>}
                     </div>
@@ -540,13 +576,7 @@ const StudentLanding = () => {
                     <div className="space-y-1">
                       <Label className="text-xs text-foreground">University</Label>
                       <div className={cn(errors.university_id && '[&_button]:border-destructive')}>
-                        <UniversityCombobox
-                          country={COUNTRIES.find(c => c.code === formData.country)?.value || ""}
-                          value={formData.university_id}
-                          onChange={(value) => handleChange('university_id', value)}
-                          placeholder={formData.country ? "Search university..." : "Select country first"}
-                          disabled={!formData.country}
-                        />
+                        <UniversityCombobox country={COUNTRIES.find(c => c.code === formData.country)?.value || ""} value={formData.university_id} onChange={value => handleChange('university_id', value)} placeholder={formData.country ? "Search university..." : "Select country first"} disabled={!formData.country} />
                       </div>
                       {errors.university_id && <p className="text-[10px] text-destructive">{errors.university_id}</p>}
                     </div>
@@ -558,14 +588,7 @@ const StudentLanding = () => {
                           <Label className="text-xs text-foreground">Loan amount</Label>
                           <span className="text-sm font-semibold text-primary">{formatAmount(formData.loan_amount[0])}</span>
                         </div>
-                        <Slider
-                          value={formData.loan_amount}
-                          onValueChange={(val) => handleChange('loan_amount', val)}
-                          min={5}
-                          max={100}
-                          step={5}
-                          className="cursor-pointer"
-                        />
+                        <Slider value={formData.loan_amount} onValueChange={val => handleChange('loan_amount', val)} min={5} max={100} step={5} className="cursor-pointer" />
                         <div className="flex justify-between text-[10px] text-muted-foreground">
                           <span>₹5L</span>
                           <span>₹1Cr</span>
@@ -575,12 +598,7 @@ const StudentLanding = () => {
                         <Label className="text-xs text-foreground">Co-applicant salary</Label>
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₹</span>
-                          <Input
-                            value={formData.co_applicant_monthly_salary}
-                            onChange={(e) => handleChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
-                            placeholder="75,000"
-                            className={cn("h-10 pl-6 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.co_applicant_monthly_salary && 'border-destructive')}
-                          />
+                          <Input value={formData.co_applicant_monthly_salary} onChange={e => handleChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))} placeholder="75,000" className={cn("h-10 pl-6 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.co_applicant_monthly_salary && 'border-destructive')} />
                         </div>
                         {salaryInWords && <p className="text-[10px] text-muted-foreground">{salaryInWords}</p>}
                         {errors.co_applicant_monthly_salary && <p className="text-[10px] text-destructive">{errors.co_applicant_monthly_salary}</p>}
@@ -588,17 +606,8 @@ const StudentLanding = () => {
                     </div>
 
                     {/* CTA - Enhanced */}
-                    <Button 
-                      size="lg" 
-                      className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20"
-                      onClick={handleCheckEligibility}
-                      disabled={isChecking}
-                    >
-                      {isChecking ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-2" />Finding Best Lenders...</>
-                      ) : (
-                        <>Check Eligibility<ArrowRight className="h-4 w-4 ml-2" /></>
-                      )}
+                    <Button size="lg" className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20" onClick={handleCheckEligibility} disabled={isChecking}>
+                      {isChecking ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Finding Best Lenders...</> : <>Check Eligibility<ArrowRight className="h-4 w-4 ml-2" /></>}
                     </Button>
 
                     <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
@@ -611,10 +620,8 @@ const StudentLanding = () => {
                         <span>100% secure</span>
                       </div>
                     </div>
-                  </div>
-                ) : authStep === 'success' ? (
-                  /* Success State - Verified! */
-                  <div className="space-y-6 animate-fade-in py-8">
+                  </div>) : authStep === 'success' ? (/* Success State - Verified! */
+              <div className="space-y-6 animate-fade-in py-8">
                     <div className="text-center">
                       <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/50 mb-4">
                         <CheckCircle2 className="h-10 w-10 text-emerald-600" />
@@ -625,10 +632,8 @@ const StudentLanding = () => {
                     <div className="flex items-center justify-center">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     </div>
-                  </div>
-                ) : authStep === 'otp' || authStep === 'verifying' ? (
-                  /* OTP Verification State */
-                  <div className="space-y-4 animate-fade-in">
+                  </div>) : authStep === 'otp' || authStep === 'verifying' ? (/* OTP Verification State */
+              <div className="space-y-4 animate-fade-in">
                     {/* Progress Indicator - Step 2 Active */}
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
@@ -662,53 +667,30 @@ const StudentLanding = () => {
 
                     {/* OTP Input */}
                     <div className="py-4">
-                      <OTPInput
-                        length={4}
-                        value={otp}
-                        onChange={setOtp}
-                        disabled={authStep === 'verifying'}
-                        hasError={!!otpError}
-                        autoFocus
-                      />
+                      <OTPInput length={4} value={otp} onChange={setOtp} disabled={authStep === 'verifying'} hasError={!!otpError} autoFocus />
                       
-                      {otpError && (
-                        <p className="text-sm text-destructive text-center mt-3 animate-shake">
+                      {otpError && <p className="text-sm text-destructive text-center mt-3 animate-shake">
                           {otpError}
-                        </p>
-                      )}
+                        </p>}
                       
-                      {authStep === 'verifying' && (
-                        <div className="flex items-center justify-center gap-2 mt-4 text-sm text-primary">
+                      {authStep === 'verifying' && <div className="flex items-center justify-center gap-2 mt-4 text-sm text-primary">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span>Verifying...</span>
-                        </div>
-                      )}
+                        </div>}
                     </div>
 
                     {/* Resend OTP */}
                     <div className="text-center">
-                      {resendTimer > 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                      {resendTimer > 0 ? <p className="text-sm text-muted-foreground">
                           Resend OTP in <span className="font-medium text-foreground">{resendTimer}s</span>
-                        </p>
-                      ) : (
-                        <button
-                          onClick={sendOTP}
-                          disabled={authStep === 'verifying'}
-                          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors disabled:opacity-50"
-                        >
+                        </p> : <button onClick={sendOTP} disabled={authStep === 'verifying'} className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors disabled:opacity-50">
                           <RefreshCw className="h-3.5 w-3.5" />
                           Resend OTP
-                        </button>
-                      )}
+                        </button>}
                     </div>
 
                     {/* Back Button */}
-                    <button
-                      onClick={handleBackToResults}
-                      disabled={authStep === 'verifying'}
-                      className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center justify-center gap-1 disabled:opacity-50"
-                    >
+                    <button onClick={handleBackToResults} disabled={authStep === 'verifying'} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center justify-center gap-1 disabled:opacity-50">
                       <ChevronLeft className="h-3 w-3" />
                       Back to results
                     </button>
@@ -724,10 +706,8 @@ const StudentLanding = () => {
                         <span>OTP valid for 10 min</span>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  /* Result State - authStep === 'results' */
-                  <div className="space-y-4 animate-fade-in">
+                  </div>) : (/* Result State - authStep === 'results' */
+              <div className="space-y-4 animate-fade-in">
                     {/* Progress Indicator */}
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
@@ -782,20 +762,14 @@ const StudentLanding = () => {
                         <p className="text-sm font-medium text-foreground truncate">{formData.student_name}</p>
                         <p className="text-xs text-muted-foreground">+91 {formData.student_phone}</p>
                       </div>
-                      {leadId && (
-                        <div className="flex items-center gap-1 text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-1 rounded-full">
+                      {leadId && <div className="flex items-center gap-1 text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-1 rounded-full">
                           <Check className="h-3 w-3" />Saved
-                        </div>
-                      )}
+                        </div>}
                     </div>
 
                     <div className="space-y-2">
                       {/* CTA - Pulsing with glow animation */}
-                      <Button 
-                        size="lg" 
-                        className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] animate-cta-pulse shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-primary/90 relative overflow-hidden" 
-                        onClick={handleContinueToOTP}
-                      >
+                      <Button size="lg" className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] animate-cta-pulse shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-primary/90 relative overflow-hidden" onClick={handleContinueToOTP}>
                         <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
                         Verify Phone & Continue<ArrowRight className="h-4 w-4 ml-2 animate-bounce-x" />
                       </Button>
@@ -811,10 +785,7 @@ const StudentLanding = () => {
                         </p>
                       </div>
                       
-                      <button 
-                        onClick={handleStartOver}
-                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-                      >
+                      <button onClick={handleStartOver} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
                         ← Start over
                       </button>
                     </div>
@@ -830,34 +801,14 @@ const StudentLanding = () => {
                         <span>Takes 30 seconds</span>
                       </div>
                     </div>
-                  </div>
-                )}
+                  </div>)}
               </div>
             </div>
           </div>
         </section>
 
         {/* Why Choose Us - Enhanced Strip */}
-        <section className="py-8 px-4 sm:px-6 bg-muted/30 border-t border-border/50">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-center mb-4">Trusted by 15,000+ Students</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              {[
-                { icon: TrendingUp, text: "Compare 4+ Lenders", color: "text-primary" },
-                { icon: Shield, text: "No Credit Impact", color: "text-emerald-600" },
-                { icon: Clock, text: "24-48h Approval", color: "text-amber-600" },
-                { icon: Building2, text: "100% Online", color: "text-blue-600" },
-                { icon: Users, text: "15,000+ Students", color: "text-purple-600" },
-                { icon: BadgeCheck, text: "RBI Registered", color: "text-emerald-600" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                  <item.icon className={cn("h-4 w-4 shrink-0", item.color)} />
-                  <span className="text-xs font-medium text-foreground">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        
 
         {/* Footer */}
         <footer className="py-4 px-4 sm:px-6 border-t border-border bg-background">
@@ -877,8 +828,6 @@ const StudentLanding = () => {
           </div>
         </footer>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default StudentLanding;
