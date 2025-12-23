@@ -42,7 +42,7 @@ interface RaiseClarificationModalProps {
     due_date?: string;
     created_by?: string;
     created_by_role?: 'admin' | 'partner' | 'system';
-  }) => Promise<void>;
+  }) => Promise<Clarification | void>;
   createdBy?: string;
   createdByRole?: 'admin' | 'partner';
 }
