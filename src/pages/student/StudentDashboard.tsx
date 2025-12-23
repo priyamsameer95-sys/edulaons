@@ -93,7 +93,7 @@ const StudentDashboard = () => {
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-display font-semibold text-lg text-foreground">EduFinance</span>
+              <span className="font-display font-semibold text-lg text-foreground">Eduloans by Cashkaro</span>
             </div>
             <Button 
               variant="ghost" 
