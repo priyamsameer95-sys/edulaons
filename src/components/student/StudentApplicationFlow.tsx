@@ -12,7 +12,6 @@ import { LogOut, Home, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { TrustIndicators } from './TrustIndicators';
-import { SocialProof } from './SocialProof';
 import { ProgressSaver } from './ProgressSaver';
 
 const steps = [
@@ -99,8 +98,6 @@ const StudentApplicationFlow = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-      <SocialProof />
-      
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         {currentStep < 5 && (
@@ -109,7 +106,12 @@ const StudentApplicationFlow = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => navigate('/student')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate('/student');
+                }}
+                type="button"
                 className="gap-2 hover-lift"
               >
                 <Home className="h-4 w-4" />
