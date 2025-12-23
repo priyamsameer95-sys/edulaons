@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentLanding from "./pages/student/StudentLanding";
+import StudentAuth from "./pages/student/StudentAuth";
 import Login from "./pages/Login";
 import PartnerLogin from "./pages/PartnerLogin";
 import NotFound from "./pages/NotFound";
@@ -34,6 +36,10 @@ const App = () => (
           {/* Authentication */}
           <Route path="/login" element={<Login />} />
           <Route path="/partner/login" element={<PartnerLogin />} />
+          
+          {/* Student Landing & Auth */}
+          <Route path="/student/landing" element={<StudentLanding />} />
+          <Route path="/student/auth" element={<StudentAuth />} />
           
           {/* Public Routes - No Authentication Required */}
           <Route 
