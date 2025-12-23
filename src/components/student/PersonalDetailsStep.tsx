@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
-import { CoachingTooltip } from './CoachingTooltip';
-import { FloatingLabelInput } from './FloatingLabelInput';
-import { GENDERS, COACHING_MESSAGES, VALIDATION_PATTERNS, MIN_AGE } from '@/constants/studentApplication';
-import { User, UserCircle2, CheckCircle2 } from 'lucide-react';
+import { GENDERS, VALIDATION_PATTERNS, MIN_AGE } from '@/constants/studentApplication';
+import { ArrowRight, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PersonalDetailsStepProps {
   data: Partial<StudentApplicationData>;
@@ -17,10 +16,6 @@ interface PersonalDetailsStepProps {
 const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Check if phone was pre-filled from eligibility (verified via OTP)
-  const isPhoneVerified = Boolean(data.phone && data.phone.length === 10 && data.phoneVerified !== false);
-  const isNamePrefilled = Boolean(data.name && data.name.trim().length >= 2);
-
   const validateField = (field: string, value: any): string | null => {
     switch (field) {
       case 'name':
@@ -29,7 +24,7 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
       case 'phone':
         const cleanPhone = value.replace(/\D/g, '').replace(/^91/, '');
         if (!VALIDATION_PATTERNS.phone.test(cleanPhone)) {
-          return 'Enter valid 10-digit phone number starting with 6-9';
+          return 'Enter valid 10-digit phone number';
         }
         return null;
       case 'email':
@@ -80,176 +75,124 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
     onNext();
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
-      {/* Pre-filled data notice */}
-      {(isNamePrefilled || isPhoneVerified) && (
-        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          <span className="text-sm text-emerald-700 dark:text-emerald-300">
-            Some fields are pre-filled from your eligibility check
-          </span>
-        </div>
+  const InputField = ({ 
+    label, 
+    field, 
+    type = 'text', 
+    required = false,
+    placeholder,
+    maxLength,
+    disabled = false 
+  }: { 
+    label: string; 
+    field: string; 
+    type?: string; 
+    required?: boolean;
+    placeholder?: string;
+    maxLength?: number;
+    disabled?: boolean;
+  }) => (
+    <div className="space-y-2">
+      <Label htmlFor={field} className="text-sm font-medium text-foreground">
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      <Input
+        id={field}
+        type={type}
+        value={(data as any)[field] || ''}
+        onChange={(e) => {
+          let value = e.target.value;
+          if (field === 'phone') {
+            value = value.replace(/\D/g, '').slice(0, 10);
+          }
+          handleChange(field, value);
+        }}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        disabled={disabled}
+        className={cn(
+          "h-11",
+          errors[field] && "border-destructive focus-visible:ring-destructive"
+        )}
+        max={field === 'dateOfBirth' ? new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE)).toISOString().split('T')[0] : undefined}
+      />
+      {errors[field] && (
+        <p className="text-xs text-destructive">{errors[field]}</p>
       )}
+    </div>
+  );
 
-      <div className="space-y-5">
-        {/* Row 1: Name & Phone */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <FloatingLabelInput
-              label="Full Name"
-              value={data.name || ''}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder=" "
-              error={errors.name}
-              isValid={!errors.name && !!data.name}
-              helperText="As per passport/ID"
-              required
-            />
-            {isNamePrefilled && (
-              <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Pre-filled
-              </Badge>
-            )}
-          </div>
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Name & Phone */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <InputField label="Full Name" field="name" required placeholder="Enter your full name" />
+        <InputField label="Phone Number" field="phone" type="tel" required placeholder="10-digit mobile" maxLength={10} />
+      </div>
 
-          <div className="space-y-1">
-            <FloatingLabelInput
-              label="Phone Number"
-              type="tel"
-              value={data.phone || ''}
-              onChange={(e) => {
-                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-                handleChange('phone', cleaned);
-              }}
-              placeholder=" "
-              maxLength={10}
-              error={errors.phone}
-              isValid={!errors.phone && !!data.phone && data.phone.length === 10}
-              helperText="10-digit mobile number"
-              required
-              disabled={isPhoneVerified}
-            />
-            {isPhoneVerified && (
-              <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Verified
-              </Badge>
-            )}
-          </div>
-        </div>
+      {/* Email & DOB */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <InputField label="Email Address" field="email" type="email" placeholder="your@email.com" />
+        <InputField label="Date of Birth" field="dateOfBirth" type="date" required />
+      </div>
 
-        {/* Row 2: Email & DOB */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FloatingLabelInput
-            label="Email Address"
-            type="email"
-            value={data.email || ''}
-            onChange={(e) => handleChange('email', e.target.value)}
-            placeholder=" "
-            error={errors.email}
-            isValid={!errors.email && !!data.email && VALIDATION_PATTERNS.email.test(data.email)}
-            helperText="For loan updates"
-          />
-
-          <FloatingLabelInput
-            label="Date of Birth"
-            type="date"
-            value={data.dateOfBirth || ''}
-            onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-            max={new Date(new Date().setFullYear(new Date().getFullYear() - MIN_AGE)).toISOString().split('T')[0]}
-            error={errors.dateOfBirth}
-            isValid={!errors.dateOfBirth && !!data.dateOfBirth}
-            helperText={`Must be ${MIN_AGE}+ years`}
-            required
-          />
-        </div>
-
-        {/* Row 3: Gender */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="gender">Gender *</Label>
-            <CoachingTooltip content={COACHING_MESSAGES.gender} />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {GENDERS.map(({ value, label }) => (
-              <Button
-                key={value}
-                type="button"
-                variant={data.gender === value ? 'default' : 'outline'}
-                className="h-11 flex items-center justify-center gap-2"
-                onClick={() => onUpdate({ gender: value })}
-              >
-                {value === 'male' && <User className="h-4 w-4" />}
-                {value === 'female' && <UserCircle2 className="h-4 w-4" />}
-                {value === 'other' && <UserCircle2 className="h-4 w-4" />}
-                {label}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Row 4: City, State, Postal Code */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FloatingLabelInput
-            label="City"
-            value={data.city || ''}
-            onChange={(e) => onUpdate({ city: e.target.value })}
-            placeholder=" "
-            isValid={!!data.city}
-            required
-          />
-
-          <FloatingLabelInput
-            label="State"
-            value={data.state || ''}
-            onChange={(e) => onUpdate({ state: e.target.value })}
-            placeholder=" "
-            isValid={!!data.state}
-            required
-          />
-
-          <FloatingLabelInput
-            label="Postal Code"
-            value={data.postalCode || ''}
-            onChange={(e) => handleChange('postalCode', e.target.value)}
-            placeholder=" "
-            maxLength={6}
-            error={errors.postalCode}
-            isValid={!errors.postalCode && !!data.postalCode && data.postalCode.length === 6}
-            required
-          />
-        </div>
-
-        {/* Row 5: Credit Score (Optional) */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1">
-            <Label htmlFor="creditScore">Credit Score (Optional)</Label>
-            <CoachingTooltip content="Your CIBIL credit score between 300-900. Optional but can improve eligibility." />
-          </div>
-          <FloatingLabelInput
-            label="Credit Score"
-            type="number"
-            value={data.creditScore?.toString() || ''}
-            onChange={(e) => {
-              const value = e.target.value ? parseInt(e.target.value) : undefined;
-              onUpdate({ creditScore: value });
-            }}
-            placeholder=" "
-            helperText="CIBIL score (300-900)"
-            isValid={!!data.creditScore && data.creditScore >= 300 && data.creditScore <= 900}
-          />
+      {/* Gender */}
+      <div className="space-y-3">
+        <Label className="text-sm font-medium text-foreground">
+          Gender <span className="text-destructive">*</span>
+        </Label>
+        <div className="flex flex-wrap gap-3">
+          {GENDERS.map(({ value, label }) => (
+            <Button
+              key={value}
+              type="button"
+              variant={data.gender === value ? 'default' : 'outline'}
+              size="lg"
+              className={cn(
+                "flex-1 min-w-[100px]",
+                data.gender === value && "ring-2 ring-primary ring-offset-2"
+              )}
+              onClick={() => onUpdate({ gender: value })}
+            >
+              {data.gender === value && <Check className="h-4 w-4 mr-2" />}
+              {label}
+            </Button>
+          ))}
         </div>
       </div>
 
-      <div className="flex justify-end pt-6 border-t">
-        <Button 
-          type="submit" 
-          size="lg" 
-          className="min-w-[220px] h-12 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
-        >
-          Continue to Academic →
+      {/* Location */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <InputField label="City" field="city" required placeholder="Your city" />
+        <InputField label="State" field="state" required placeholder="Your state" />
+        <InputField label="Postal Code" field="postalCode" required placeholder="6-digit PIN" maxLength={6} />
+      </div>
+
+      {/* Credit Score */}
+      <div className="space-y-2">
+        <Label htmlFor="creditScore" className="text-sm font-medium text-foreground">
+          Credit Score <span className="text-muted-foreground font-normal">(Optional)</span>
+        </Label>
+        <Input
+          id="creditScore"
+          type="number"
+          value={data.creditScore?.toString() || ''}
+          onChange={(e) => {
+            const value = e.target.value ? parseInt(e.target.value) : undefined;
+            onUpdate({ creditScore: value });
+          }}
+          placeholder="CIBIL score (300-900)"
+          className="h-11 max-w-xs"
+          min={300}
+          max={900}
+        />
+      </div>
+
+      {/* Submit */}
+      <div className="pt-4">
+        <Button type="submit" size="lg" className="w-full md:w-auto md:min-w-[200px]">
+          Continue
+          <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
     </form>
