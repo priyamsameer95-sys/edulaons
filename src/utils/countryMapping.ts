@@ -10,8 +10,18 @@ export const COUNTRY_CODE_TO_NAME: Record<string, string> = {
   'Canada': 'Canada',
   'Australia': 'Australia',
   'Germany': 'Germany',
-  'Ireland': 'Ireland',
+  'NZ': 'New Zealand',
   'New Zealand': 'New Zealand',
+  'SG': 'Singapore',
+  'Singapore': 'Singapore',
+  'HK': 'Hong Kong SAR',
+  'Hong Kong': 'Hong Kong SAR',
+  'JP': 'Japan',
+  'Japan': 'Japan',
+  'CH': 'Switzerland',
+  'Switzerland': 'Switzerland',
+  'CN': 'China',
+  'China': 'China',
   'Other': 'Other'
 };
 
@@ -22,8 +32,12 @@ export const COUNTRY_NAME_TO_CODE: Record<string, string> = {
   'Canada': 'Canada',
   'Australia': 'Australia',
   'Germany': 'Germany',
-  'Ireland': 'Ireland',
-  'New Zealand': 'New Zealand',
+  'New Zealand': 'NZ',
+  'Singapore': 'SG',
+  'Hong Kong SAR': 'HK',
+  'Japan': 'JP',
+  'Switzerland': 'CH',
+  'China': 'CN',
   'Other': 'Other'
 };
 
