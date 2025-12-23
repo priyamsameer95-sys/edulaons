@@ -7,6 +7,7 @@ import PartnerDashboardWrapper from "./pages/PartnerDashboardWrapper";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentLanding from "./pages/student/StudentLanding";
 import StudentAuth from "./pages/student/StudentAuth";
+import StudentApplicationFlow from "./components/student/StudentApplicationFlow";
 import Login from "./pages/Login";
 import PartnerLogin from "./pages/PartnerLogin";
 import NotFound from "./pages/NotFound";
@@ -93,10 +94,14 @@ const App = () => (
           {/* Redirect old v2 route to main admin */}
           <Route path="/admin/v2" element={<Navigate to="/admin" replace />} />
           
-          {/* Student Dashboard - Temporarily redirect to landing while rebuilding */}
+          {/* Student Dashboard - Complete Application Flow */}
           <Route 
             path="/student" 
-            element={<Navigate to="/student/landing" replace />} 
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentApplicationFlow />
+              </ProtectedRoute>
+            } 
           />
           
           {/* Unauthorized page */}

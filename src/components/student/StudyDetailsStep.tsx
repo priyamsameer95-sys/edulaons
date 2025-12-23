@@ -5,13 +5,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
 import { LoanTypeSelector } from './LoanTypeSelector';
 import { UniversitySelector } from '@/components/ui/university-selector';
 import { CourseCombobox } from '@/components/ui/course-combobox';
 import { STUDY_DESTINATIONS, COACHING_MESSAGES, LOAN_AMOUNT_RANGES, MIN_LOAN_AMOUNT } from '@/constants/studentApplication';
-import { Info, AlertCircle } from 'lucide-react';
+import { Info, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface StudyDetailsStepProps {
   data: Partial<StudentApplicationData>;
@@ -23,6 +24,13 @@ interface StudyDetailsStepProps {
 const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepProps) => {
   const currentYear = new Date().getFullYear();
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Check for pre-filled data from eligibility check
+  const hasPrefilledData = Boolean(
+    data.studyDestination || 
+    (data.universities && data.universities.length > 0) || 
+    (data.loanAmount && data.loanAmount > 0)
+  );
 
   const loanRangeInfo = data.studyDestination 
     ? LOAN_AMOUNT_RANGES[data.studyDestination as keyof typeof LOAN_AMOUNT_RANGES]
@@ -85,6 +93,15 @@ const StudyDetailsStep = ({ data, onUpdate, onNext, onPrev }: StudyDetailsStepPr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Pre-filled data notice */}
+      {hasPrefilledData && (
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <span className="text-sm text-green-700 dark:text-green-300">
+            Some fields are pre-filled from your eligibility check. You can edit them if needed.
+          </span>
+        </div>
+      )}
       <div className="space-y-6">
         {/* Study Destination - MUST BE FIRST */}
         <div className="space-y-2">

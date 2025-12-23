@@ -18,6 +18,7 @@ export interface TestScore {
 export interface PersonalDetails {
   name: string;
   phone: string;
+  email?: string; // Email for communication
   dateOfBirth: string;
   gender?: string;
   city?: string;
@@ -25,6 +26,7 @@ export interface PersonalDetails {
   postalCode: string;
   nationality: string;
   creditScore?: number; // Optional CIBIL score (300-900)
+  phoneVerified?: boolean; // Flag to indicate phone was verified via OTP
 }
 
 export interface AcademicBackground {

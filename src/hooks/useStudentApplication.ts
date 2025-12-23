@@ -22,17 +22,47 @@ export const useStudentApplication = () => {
     loanType: 'secured',
   });
 
-  // Load saved form data from localStorage on mount
+  // Load saved form data from localStorage or pre-fill from eligibility check
   useEffect(() => {
     try {
+      // First, check for existing draft in localStorage
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         setApplicationData(prev => ({ ...prev, ...parsed.data }));
         setCurrentStep(parsed.step || 0);
+        console.log('📝 Loaded existing draft from localStorage');
+        return;
+      }
+      
+      // Otherwise, check for pre-fill data from eligibility check (sessionStorage)
+      const eligibility = sessionStorage.getItem('eligibility_form');
+      if (eligibility) {
+        const data = JSON.parse(eligibility);
+        console.log('📥 Loading pre-fill data from eligibility check:', data);
+        
+        // Map eligibility fields to application fields
+        const prefillData: Partial<StudentApplicationData> = {
+          name: data.student_name || '',
+          phone: data.student_phone || '',
+          studyDestination: data.country_value || data.country || '',
+          universities: data.university_id ? [data.university_id] : [],
+          loanAmount: data.loan_amount || 3000000,
+          coApplicantMonthlySalary: data.co_applicant_monthly_salary || 0,
+          coApplicantRelationship: 'parent', // Default from eligibility
+          loanType: 'secured', // Default
+          nationality: 'Indian', // Default
+        };
+        
+        setApplicationData(prev => ({ ...prev, ...prefillData }));
+        
+        // Clear eligibility data to prevent re-loading
+        sessionStorage.removeItem('eligibility_form');
+        
+        console.log('✅ Pre-filled application with eligibility data:', prefillData);
       }
     } catch (error) {
-      console.error('Failed to load saved application data:', error);
+      console.error('Failed to load application data:', error);
     }
   }, []);
 
