@@ -1,35 +1,22 @@
 /**
- * Lead Creation Edge Function
- * Creates a complete lead with all required fields
+ * Quick Lead Creation Edge Function
+ * Creates a lead with minimal required fields (for partner quick capture)
+ * 
+ * Uses unified validation layer for consistent data integrity
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  validateQuickLeadRequest,
+  formatValidationErrors,
+  cleanPhoneNumber,
+  normalizeCountry,
+} from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Required fields for lead creation
-const REQUIRED_FIELDS = [
-  'student_name',
-  'student_phone', 
-  'student_pin_code',
-  'country',
-  'loan_amount',
-  'intake_month',
-  'intake_year',
-  'co_applicant_relationship',
-  'co_applicant_name',
-  'co_applicant_monthly_salary',
-  'co_applicant_phone',
-  'co_applicant_pin_code'
-];
-
-// Clean phone number - remove +91 and non-digits
-function cleanPhoneNumber(phone: string): string {
-  return String(phone).trim().replace(/^\+91/, '').replace(/\D/g, '');
-}
 
 // Map country names to study_destination_enum values
 function mapCountryToEnum(country: string): string {
@@ -55,7 +42,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('⚡ [create-lead] Starting lead creation');
+    console.log('⚡ [create-lead-quick] Starting quick lead creation');
 
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
@@ -101,150 +88,116 @@ serve(async (req) => {
     const isPartner = appUser.role === 'partner';
 
     if (!isAdmin && !isPartner) {
-      throw new Error('Lead creation is only available for partners and admins');
+      throw new Error('Quick lead creation is only available for partners and admins');
     }
 
-    // For partners, use their partner_id. For admins, use the one from request body
+    // For partners, use their partner_id. For admins, require partner_id in body
     let partnerId = appUser.partner_id;
+    const body = await req.json();
+    
     if (isAdmin) {
-      // Parse request early for admins to get partner_id
-      const bodyText = await req.text();
-      const body = JSON.parse(bodyText);
       partnerId = body.partner_id;
       if (!partnerId) {
         throw new Error('Admins must specify a partner_id');
       }
-      // Store parsed body for later use
-      (req as any)._parsedBody = body;
     }
     console.log('✅ User verified:', appUser.role, 'Partner:', partnerId);
 
-    // Parse request (may already be parsed for admins)
-    const body = (req as any)._parsedBody || await req.json();
-
-    // Validate required fields
-    const missingFields: string[] = [];
-    for (const field of REQUIRED_FIELDS) {
-      if (body[field] === undefined || body[field] === null || body[field] === '') {
-        missingFields.push(field);
-      }
+    // Validate request with unified validation
+    console.log('📝 Validating quick lead data...');
+    const validationResult = validateQuickLeadRequest(body);
+    
+    if (!validationResult.isValid) {
+      console.error('❌ Validation failed:', validationResult.errors);
+      throw new Error(formatValidationErrors(validationResult.errors));
     }
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-    }
+    console.log('✅ Validation passed');
 
+    // Clean and prepare data
     const cleanStudentPhone = cleanPhoneNumber(body.student_phone);
-    if (cleanStudentPhone.length !== 10) {
-      throw new Error('Student phone number must be 10 digits');
-    }
-
-    const cleanCoApplicantPhone = cleanPhoneNumber(body.co_applicant_phone);
-    if (cleanCoApplicantPhone.length !== 10) {
-      throw new Error('Co-applicant phone number must be 10 digits');
-    }
-
-    // Get intake from body (now required)
-    const intakeMonth = parseInt(body.intake_month);
-    const intakeYear = parseInt(body.intake_year);
-
-    // Check for existing student by phone OR email
-    const studentEmail = body.student_email?.trim() || null;
+    const studyDestination = mapCountryToEnum(normalizeCountry(body.country));
+    const loanAmount = parseInt(body.loan_amount) || 3000000;
     
-    let existingStudent = null;
-    
-    // Check by phone first
-    const { data: studentByPhone } = await supabaseAdmin
+    // Default intake to 3 months from now
+    const now = new Date();
+    const defaultIntakeDate = new Date(now.getFullYear(), now.getMonth() + 3, 1);
+    const intakeMonth = body.intake_month || (defaultIntakeDate.getMonth() + 1);
+    const intakeYear = body.intake_year || defaultIntakeDate.getFullYear();
+
+    // Check for existing student by phone
+    console.log('🔍 Checking for existing student...');
+    const { data: existingStudent } = await supabaseAdmin
       .from('students')
-      .select('id, email')
+      .select('id')
       .eq('phone', cleanStudentPhone)
       .maybeSingle();
-    
-    existingStudent = studentByPhone;
-    
-    // If no match by phone and email provided, check by email
-    if (!existingStudent && studentEmail) {
-      const { data: studentByEmail } = await supabaseAdmin
-        .from('students')
-        .select('id, email')
-        .eq('email', studentEmail.toLowerCase())
-        .maybeSingle();
-      
-      existingStudent = studentByEmail;
-    }
 
     let studentId: string;
 
     if (existingStudent) {
-      // Use existing student
-      console.log('✅ Using existing student:', existingStudent.id);
       studentId = existingStudent.id;
-      
-      // Check for duplicate application
-      const { data: isDuplicate } = await supabaseAdmin
-        .rpc('check_duplicate_application', {
-          _student_id: existingStudent.id,
-          _intake_month: intakeMonth,
-          _intake_year: intakeYear,
-          _study_destination: mapCountryToEnum(body.country)
-        });
+      console.log('✅ Found existing student:', studentId);
 
-      if (isDuplicate) {
-        throw new Error('A lead already exists for this student for the selected intake');
+      // Check for duplicate quick lead
+      const { data: existingLead } = await supabaseAdmin
+        .from('leads_new')
+        .select('id, case_id')
+        .eq('student_id', studentId)
+        .eq('study_destination', studyDestination)
+        .eq('intake_month', intakeMonth)
+        .eq('intake_year', intakeYear)
+        .maybeSingle();
+
+      if (existingLead) {
+        console.log('⚠️ Duplicate lead found:', existingLead.case_id);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'A lead already exists for this student for the selected intake',
+            error_code: 'DUPLICATE_LEAD',
+            existing_case_id: existingLead.case_id,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200, // Return 200 so frontend can handle gracefully
+          }
+        );
       }
     } else {
-      // Create new student
-      const newStudentEmail = studentEmail || `${cleanStudentPhone}@lead.placeholder`;
-      const studentData: Record<string, any> = {
-        name: body.student_name.trim(),
-        email: newStudentEmail.toLowerCase(),
-        phone: cleanStudentPhone,
-        postal_code: body.student_pin_code.trim(),
-        country: 'India',
-        nationality: 'Indian'
-      };
-
-      // Add optional student fields
-      if (body.student_gender) {
-        studentData.gender = body.student_gender;
-      }
-      if (body.student_dob) {
-        studentData.date_of_birth = body.student_dob;
-      }
-
-      const { data: student, error: studentError } = await supabaseAdmin
+      // Create new student with minimal data
+      console.log('📝 Creating new student...');
+      const { data: newStudent, error: studentError } = await supabaseAdmin
         .from('students')
-        .insert(studentData)
+        .insert({
+          name: body.student_name.trim(),
+          email: `${cleanStudentPhone}@quick.placeholder`,
+          phone: cleanStudentPhone,
+          postal_code: body.student_pin_code?.trim() || '000000',
+          country: 'India',
+          nationality: 'Indian',
+        })
         .select()
         .single();
 
       if (studentError) {
         throw new Error(`Failed to create student: ${studentError.message}`);
       }
-      console.log('✅ Student created:', student.id);
-      studentId = student.id;
+      studentId = newStudent.id;
+      console.log('✅ Student created:', studentId);
     }
 
-    // Create co-applicant with all provided details
-    const coApplicantData: Record<string, any> = {
-      name: body.co_applicant_name.trim(),
-      phone: cleanCoApplicantPhone,
-      relationship: body.co_applicant_relationship,
-      salary: parseFloat(body.co_applicant_monthly_salary) * 12,
-      monthly_salary: parseFloat(body.co_applicant_monthly_salary),
-      pin_code: body.co_applicant_pin_code.trim()
-    };
-
-    // Add optional co-applicant fields
-    if (body.co_applicant_occupation) {
-      coApplicantData.occupation = body.co_applicant_occupation.trim();
-    }
-    if (body.co_applicant_employer) {
-      coApplicantData.employer = body.co_applicant_employer.trim();
-    }
-
+    // Create minimal co-applicant (required by schema)
+    console.log('📝 Creating placeholder co-applicant...');
     const { data: coApplicant, error: coApplicantError } = await supabaseAdmin
       .from('co_applicants')
-      .insert(coApplicantData)
+      .insert({
+        name: body.co_applicant_name?.trim() || 'To be updated',
+        phone: body.co_applicant_phone ? cleanPhoneNumber(body.co_applicant_phone) : cleanStudentPhone,
+        relationship: body.co_applicant_relationship || 'parent',
+        salary: (parseFloat(body.co_applicant_monthly_salary || '50000') * 12),
+        monthly_salary: parseFloat(body.co_applicant_monthly_salary || '50000'),
+        pin_code: body.co_applicant_pin_code?.trim() || '000000',
+      })
       .select()
       .single();
 
@@ -267,40 +220,35 @@ serve(async (req) => {
     }
     console.log('✅ Lender assigned:', lender.name);
 
-    // Map country to valid enum value
-    const studyDestination = mapCountryToEnum(body.country);
-
-    // Create lead with all provided details
+    // Create quick lead
     const caseId = `EDU-${Date.now()}`;
-    const loanAmount = parseInt(body.loan_amount) || 3000000;
-    const loanType = body.loan_type || 'unsecured';
-    
-    const leadData = {
-      case_id: caseId,
-      student_id: studentId,
-      co_applicant_id: coApplicant.id,
-      partner_id: partnerId,
-      lender_id: lender.id,
-      loan_amount: loanAmount,
-      loan_type: loanType,
-      study_destination: studyDestination,
-      intake_month: intakeMonth,
-      intake_year: intakeYear,
-      status: 'new',
-      documents_status: 'pending',
-      is_quick_lead: false // Now a complete lead
-    };
+    console.log('📝 Creating quick lead:', caseId);
 
     const { data: lead, error: leadError } = await supabaseAdmin
       .from('leads_new')
-      .insert(leadData)
+      .insert({
+        case_id: caseId,
+        student_id: studentId,
+        co_applicant_id: coApplicant.id,
+        partner_id: partnerId,
+        lender_id: lender.id,
+        loan_amount: loanAmount,
+        loan_type: body.loan_type || 'unsecured',
+        study_destination: studyDestination,
+        intake_month: intakeMonth,
+        intake_year: intakeYear,
+        status: 'new',
+        documents_status: 'pending',
+        is_quick_lead: true,
+        source: 'partner_quick',
+      })
       .select()
       .single();
 
     if (leadError) {
       throw new Error(`Failed to create lead: ${leadError.message}`);
     }
-    console.log('✅ Lead created:', lead.case_id);
+    console.log('✅ Quick lead created:', lead.case_id);
 
     // Create university association if provided
     if (body.university_id) {
@@ -308,28 +256,12 @@ serve(async (req) => {
         .from('lead_universities')
         .insert({
           lead_id: lead.id,
-          university_id: body.university_id
+          university_id: body.university_id,
         });
       console.log('✅ University association created');
     }
 
-    // Create course association if provided
-    if (body.course_id) {
-      await supabaseAdmin
-        .from('lead_courses')
-        .insert({
-          lead_id: lead.id,
-          course_id: body.course_id,
-          is_custom_course: false
-        });
-      console.log('✅ Course association created');
-    } else if (body.course_name) {
-      // Custom course name - we need to store it differently
-      // For now, create a placeholder entry or store in lead metadata
-      console.log('📝 Custom course name provided:', body.course_name);
-    }
-
-    console.log('🎉 Lead creation completed');
+    console.log('🎉 Quick lead creation completed');
 
     return new Response(
       JSON.stringify({
@@ -337,9 +269,10 @@ serve(async (req) => {
         lead: {
           id: lead.id,
           case_id: lead.case_id,
-          student_name: body.student_name
+          student_name: body.student_name,
+          is_quick_lead: true,
         },
-        message: 'Lead created successfully with all details.'
+        message: 'Quick lead created successfully. Complete the full application to proceed.',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -349,21 +282,17 @@ serve(async (req) => {
 
   } catch (error: any) {
     const message = error?.message || 'An unexpected error occurred';
-    console.error('💥 [create-lead] Error:', message);
-
-    // Treat duplicate lead as a business-rule response (not an HTTP error)
-    // so the client doesn't get a non-2xx "Edge function returned 400" exception.
-    const isDuplicateLead = message === 'A lead already exists for this student for the selected intake';
+    console.error('💥 [create-lead-quick] Error:', message);
 
     return new Response(
       JSON.stringify({
         success: false,
         error: message,
-        error_code: isDuplicateLead ? 'DUPLICATE_LEAD' : 'BAD_REQUEST'
+        error_code: 'BAD_REQUEST',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: isDuplicateLead ? 200 : 400,
+        status: 400,
       }
     );
   }
