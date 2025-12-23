@@ -69,16 +69,16 @@ export const LiveEligibilityScore = ({ data, className }: LiveEligibilityScorePr
 
     // Calculate approval likelihood
     let approvalLikelihood = 'Low';
-    let approvalColor = 'text-orange-500';
+    let approvalColor = 'text-warning';
     if (score >= 80) {
       approvalLikelihood = 'Very High';
-      approvalColor = 'text-emerald-500';
+      approvalColor = 'text-success';
     } else if (score >= 60) {
       approvalLikelihood = 'High';
-      approvalColor = 'text-green-500';
+      approvalColor = 'text-success';
     } else if (score >= 40) {
       approvalLikelihood = 'Medium';
-      approvalColor = 'text-yellow-500';
+      approvalColor = 'text-warning';
     }
 
     // Calculate matched lenders
@@ -87,9 +87,8 @@ export const LiveEligibilityScore = ({ data, className }: LiveEligibilityScorePr
     return { score, maxScore, breakdown, approvalLikelihood, approvalColor, matchedLenders };
   }, [data]);
 
-  const scoreColor = eligibilityData.score >= 80 ? 'text-emerald-500' : 
-                     eligibilityData.score >= 60 ? 'text-green-500' : 
-                     eligibilityData.score >= 40 ? 'text-yellow-500' : 'text-orange-500';
+  const scoreColor = eligibilityData.score >= 60 ? 'text-success' : 
+                     eligibilityData.score >= 40 ? 'text-warning' : 'text-warning';
 
   return (
     <Card className={cn(
@@ -168,7 +167,7 @@ export const LiveEligibilityScore = ({ data, className }: LiveEligibilityScorePr
           {eligibilityData.breakdown.map((item) => (
             <div key={item.label} className="flex items-center gap-2">
               {item.filled ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
               ) : (
                 <div className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
               )}

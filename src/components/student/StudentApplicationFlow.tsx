@@ -59,7 +59,7 @@ const StudentApplicationFlow = () => {
   // Success step - full width, no sidebar
   if (currentStep === 5 && submissionResult) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+      <div className="min-h-screen bg-background py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <SuccessStep 
             caseId={submissionResult.lead?.case_id || submissionResult.case_id} 
@@ -73,9 +73,9 @@ const StudentApplicationFlow = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-border/50 shadow-sm">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button 
@@ -100,21 +100,21 @@ const StudentApplicationFlow = () => {
       </header>
 
       {/* Trust Bar */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-b border-green-100 dark:border-green-900/50">
+      <div className="bg-trust-light border-b border-trust-border">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-6 text-xs sm:text-sm flex-wrap">
-          <div className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
+          <div className="flex items-center gap-1.5 text-trust">
             <Shield className="h-3.5 w-3.5" />
             <span className="font-medium">SSL Secured</span>
           </div>
-          <div className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
+          <div className="flex items-center gap-1.5 text-trust">
             <Lock className="h-3.5 w-3.5" />
             <span className="font-medium">Data Encrypted</span>
           </div>
-          <div className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
+          <div className="flex items-center gap-1.5 text-trust">
             <TrendingUp className="h-3.5 w-3.5" />
             <span className="font-medium">₹500Cr+ Funded</span>
           </div>
-          <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 animate-pulse">
+          <div className="flex items-center gap-1.5 text-highlight animate-pulse">
             <span>🔥</span>
             <span className="font-semibold">147 applied today</span>
           </div>
@@ -134,8 +134,8 @@ const StudentApplicationFlow = () => {
             <Card className="border-2 border-border/50">
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="w-10 h-10 rounded-lg bg-info-light flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-info" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">12+ Partner Lenders</p>
@@ -143,8 +143,8 @@ const StudentApplicationFlow = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">24hr Response</p>
@@ -155,10 +155,10 @@ const StudentApplicationFlow = () => {
             </Card>
 
             {/* Need Help Card */}
-            <Card className="border-2 border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
+            <Card className="border-2 border-trust-border bg-trust-light">
               <CardContent className="p-4">
                 <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-green-600" />
+                  <Users className="h-4 w-4 text-trust" />
                   Need Help?
                 </h3>
                 <p className="text-xs text-muted-foreground mb-3">
@@ -181,7 +181,7 @@ const StudentApplicationFlow = () => {
 
             {/* Auto-save Indicator */}
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <Save className="h-3 w-3" />
               <span>Progress saved automatically</span>
             </div>
@@ -254,7 +254,7 @@ const StudentApplicationFlow = () => {
 
             {/* Mobile Help Section */}
             <div className="lg:hidden">
-              <Card className="border-2 border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
+              <Card className="border-2 border-trust-border bg-trust-light">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-foreground text-sm">Need Help?</h3>

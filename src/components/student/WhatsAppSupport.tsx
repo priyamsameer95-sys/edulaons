@@ -26,8 +26,7 @@ export const WhatsAppSupport = ({ step, className }: WhatsAppSupportProps) => {
       variant="outline"
       size="sm"
       className={cn(
-        "gap-2 border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700",
-        "dark:border-emerald-500/30 dark:text-emerald-400 dark:hover:bg-emerald-950/30",
+        "gap-2 border-trust text-trust hover:bg-trust-light",
         className
       )}
       onClick={() => window.open(whatsappUrl, '_blank')}
