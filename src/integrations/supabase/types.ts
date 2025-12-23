@@ -333,6 +333,51 @@ export type Database = {
         }
         Relationships: []
       }
+      clarification_templates: {
+        Row: {
+          auto_trigger_condition: Json | null
+          category: string
+          created_at: string
+          display_order: number | null
+          expected_document_type: string | null
+          id: string
+          is_active: boolean
+          question_context: string | null
+          question_text: string
+          requires_document: boolean
+          response_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_trigger_condition?: Json | null
+          category: string
+          created_at?: string
+          display_order?: number | null
+          expected_document_type?: string | null
+          id?: string
+          is_active?: boolean
+          question_context?: string | null
+          question_text: string
+          requires_document?: boolean
+          response_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_trigger_condition?: Json | null
+          category?: string
+          created_at?: string
+          display_order?: number | null
+          expected_document_type?: string | null
+          id?: string
+          is_active?: boolean
+          question_context?: string | null
+          question_text?: string
+          requires_document?: boolean
+          response_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       co_applicants: {
         Row: {
           created_at: string
@@ -700,6 +745,59 @@ export type Database = {
             columns: ["lender_id"]
             isOneToOne: false
             referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_audit_log: {
+        Row: {
+          change_reason: string | null
+          change_source: string
+          changed_by_id: string | null
+          changed_by_name: string | null
+          changed_by_type: string
+          created_at: string
+          field_name: string
+          id: string
+          lead_id: string
+          new_value: string | null
+          old_value: string | null
+          table_name: string
+        }
+        Insert: {
+          change_reason?: string | null
+          change_source: string
+          changed_by_id?: string | null
+          changed_by_name?: string | null
+          changed_by_type: string
+          created_at?: string
+          field_name: string
+          id?: string
+          lead_id: string
+          new_value?: string | null
+          old_value?: string | null
+          table_name: string
+        }
+        Update: {
+          change_reason?: string | null
+          change_source?: string
+          changed_by_id?: string | null
+          changed_by_name?: string | null
+          changed_by_type?: string
+          created_at?: string
+          field_name?: string
+          id?: string
+          lead_id?: string
+          new_value?: string | null
+          old_value?: string | null
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_audit_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
             referencedColumns: ["id"]
           },
         ]
@@ -1585,6 +1683,103 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      student_clarifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_role: string | null
+          document_id: string | null
+          due_date: string | null
+          field_name: string | null
+          id: string
+          is_blocking: boolean
+          lead_id: string
+          priority: string
+          question_context: string | null
+          question_text: string
+          question_type: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          responded_at: string | null
+          response_document_id: string | null
+          response_text: string | null
+          response_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_role?: string | null
+          document_id?: string | null
+          due_date?: string | null
+          field_name?: string | null
+          id?: string
+          is_blocking?: boolean
+          lead_id: string
+          priority?: string
+          question_context?: string | null
+          question_text: string
+          question_type: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          responded_at?: string | null
+          response_document_id?: string | null
+          response_text?: string | null
+          response_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_role?: string | null
+          document_id?: string | null
+          due_date?: string | null
+          field_name?: string | null
+          id?: string
+          is_blocking?: boolean
+          lead_id?: string
+          priority?: string
+          question_context?: string | null
+          question_text?: string
+          question_type?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          responded_at?: string | null
+          response_document_id?: string | null
+          response_text?: string | null
+          response_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_clarifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "lead_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_clarifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_clarifications_response_document_id_fkey"
+            columns: ["response_document_id"]
+            isOneToOne: false
+            referencedRelation: "lead_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
