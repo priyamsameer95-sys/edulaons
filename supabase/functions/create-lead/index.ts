@@ -1,10 +1,12 @@
 /**
  * Create Lead Edge Function - Refactored for better maintainability
  * Handles student loan application submissions
+ * 
+ * Uses unified validation layer for consistent data integrity
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { validateRequiredFields, separateUniversities } from './validation.ts';
+import { validateOrThrow, separateUniversities } from './validation.ts';
 import {
   validateUniversities,
   checkDuplicateApplication,
@@ -70,10 +72,11 @@ serve(async (req) => {
     }
     console.log('✅ User permissions verified:', appUser.role);
 
-    // Parse and validate request
+    // Parse and validate request with comprehensive validation
     const body = await req.json();
-    validateRequiredFields(body);
-    console.log('✅ Request validated');
+    console.log('📝 Validating request data...');
+    validateOrThrow(body);
+    console.log('✅ Request validated (all fields pass format checks)');
 
     // Validate universities
     if (body.universities && body.universities.length > 0) {

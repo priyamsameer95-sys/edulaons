@@ -1,27 +1,21 @@
 /**
  * Student Lead Creation Edge Function
  * 
- * This function handles lead creation specifically for students:
- * - Organic leads: Students coming directly to the landing page (no partner)
- * - Partner-linked leads: Students completing applications for leads already created by partners
- * 
- * Key behaviors:
- * 1. For eligibility check (source: 'student_landing'): Creates quick lead with partner_id = null
- * 2. For full application (authenticated): Links to existing partner lead OR creates organic lead
- * 3. Properly tracks lead source and partner attribution
+ * Uses unified validation layer for consistent data integrity
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  validateStudentLeadRequest,
+  formatValidationErrors,
+  cleanPhoneNumber,
+  normalizeCountry,
+} from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Clean phone number - remove +91 and non-digits
-function cleanPhoneNumber(phone: string): string {
-  return String(phone).trim().replace(/^\+91/, '').replace(/\D/g, '');
-}
 
 // Map country names to study_destination_enum values
 function mapCountryToEnum(country: string): string {
@@ -56,7 +50,7 @@ serve(async (req) => {
 
     // Parse request
     const body = await req.json();
-    console.log('📝 Request body:', JSON.stringify(body, null, 2));
+    console.log('📝 Request received for:', body.student_name);
 
     // Determine if this is an authenticated request
     const authHeader = req.headers.get('Authorization');
@@ -78,21 +72,20 @@ serve(async (req) => {
       }
     }
 
-    // Required fields for basic lead
-    const requiredFields = ['student_name', 'student_phone', 'country', 'loan_amount'];
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        throw new Error(`Missing required field: ${field}`);
-      }
+    // Validate with unified validation
+    console.log('📝 Validating student lead data...');
+    const validationResult = validateStudentLeadRequest(body);
+    
+    if (!validationResult.isValid) {
+      console.error('❌ Validation failed:', validationResult.errors);
+      throw new Error(formatValidationErrors(validationResult.errors));
     }
+    console.log('✅ Validation passed');
 
+    // Clean and prepare data
     const cleanStudentPhone = cleanPhoneNumber(body.student_phone);
-    if (cleanStudentPhone.length !== 10) {
-      throw new Error('Student phone number must be 10 digits');
-    }
-
     const source = body.source || 'student_direct';
-    const studyDestination = mapCountryToEnum(body.country);
+    const studyDestination = mapCountryToEnum(normalizeCountry(body.country));
     const loanAmount = parseInt(body.loan_amount) || 3000000;
     const intakeMonth = body.intake_month || (new Date().getMonth() + 4) % 12 + 1;
     const intakeYear = body.intake_year || (intakeMonth <= new Date().getMonth() + 1 ? new Date().getFullYear() + 1 : new Date().getFullYear());

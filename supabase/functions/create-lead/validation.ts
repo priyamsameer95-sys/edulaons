@@ -1,24 +1,62 @@
 /**
  * Validation utilities for create-lead edge function
+ * Uses shared validation module for consistency
  */
 
-export const REQUIRED_FIELDS = [
-  'student_name', 'student_phone', 'student_pin_code',
-  'co_applicant_name', 'co_applicant_phone', 'co_applicant_monthly_salary',
-  'co_applicant_relationship', 'co_applicant_pin_code',
-  'country', 'intake_month', 'loan_type', 'amount_requested'
-] as const;
+import {
+  validateCreateLeadRequest,
+  formatValidationErrors,
+  isUUID,
+  separateUniversities,
+  cleanPhoneNumber,
+  normalizeCountry,
+  type ValidationResult,
+  type ValidationError,
+} from '../_shared/validation.ts';
+
+// Re-export shared utilities
+export { isUUID, separateUniversities, cleanPhoneNumber, normalizeCountry };
 
 /**
- * Validate required fields in request body
+ * Required fields for full lead creation (partner/admin)
+ */
+export const REQUIRED_FIELDS = [
+  'student_name',
+  'student_phone',
+  'student_pin_code',
+  'co_applicant_name',
+  'co_applicant_phone',
+  'co_applicant_monthly_salary',
+  'co_applicant_relationship',
+  'co_applicant_pin_code',
+  'country',
+  'intake_month',
+  'intake_year',
+  'loan_type',
+] as const;
+
+// Field that holds amount - check both for compatibility
+const AMOUNT_FIELDS = ['amount_requested', 'loan_amount'] as const;
+
+/**
+ * Validate required fields exist (basic presence check)
+ * @deprecated Use validateLeadData for comprehensive validation
  */
 export function validateRequiredFields(body: any): void {
   const missingFields: string[] = [];
   
   for (const field of REQUIRED_FIELDS) {
-    if (!body[field]) {
+    if (body[field] === undefined || body[field] === null || body[field] === '') {
       missingFields.push(field);
     }
+  }
+  
+  // Check for amount in either field
+  const hasAmount = AMOUNT_FIELDS.some(field => 
+    body[field] !== undefined && body[field] !== null && body[field] !== ''
+  );
+  if (!hasAmount) {
+    missingFields.push('amount_requested');
   }
   
   if (missingFields.length > 0) {
@@ -27,31 +65,26 @@ export function validateRequiredFields(body: any): void {
 }
 
 /**
- * Check if a string is a valid UUID
+ * Comprehensive lead data validation
+ * Validates all fields with proper format checks
  */
-export function isUUID(str: string): boolean {
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidPattern.test(str);
+export function validateLeadData(body: any): ValidationResult {
+  return validateCreateLeadRequest(body);
 }
 
 /**
- * Separate university UUIDs from custom names
+ * Validate and throw if errors exist
  */
-export function separateUniversities(universities: string[]) {
-  const uuids: string[] = [];
-  const custom: string[] = [];
+export function validateOrThrow(body: any): void {
+  // First check required fields exist
+  validateRequiredFields(body);
   
-  universities.forEach(uni => {
-    if (uni && uni.trim()) {
-      if (isUUID(uni)) {
-        uuids.push(uni);
-      } else {
-        custom.push(uni.trim());
-      }
-    }
-  });
+  // Then run comprehensive validation
+  const result = validateLeadData(body);
   
-  return { uuids, custom };
+  if (!result.isValid) {
+    throw new Error(formatValidationErrors(result.errors));
+  }
 }
 
 /**
@@ -64,19 +97,34 @@ const COUNTRY_MAPPING: Record<string, string> = {
   'Australia': 'Australia',
   'Germany': 'Germany',
   'Ireland': 'Ireland',
-  'New Zealand': 'New Zealand'
+  'New Zealand': 'New Zealand',
+  'United States': 'United States',
+  'United Kingdom': 'United Kingdom',
 };
 
 /**
  * Normalize country code to full name
+ * @deprecated Use normalizeCountry from shared validation
  */
-export function normalizeCountry(country: string): string {
+export function normalizeCountryLegacy(country: string): string {
   return COUNTRY_MAPPING[country] || country;
 }
 
 /**
- * Clean phone number - remove +91 and non-digits
+ * Map country to database enum value
  */
-export function cleanPhoneNumber(phone: string): string {
-  return phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
+export function mapCountryToEnum(country: string): string {
+  const mapping: Record<string, string> = {
+    'United Kingdom': 'UK',
+    'United States': 'USA',
+    'United States of America': 'USA',
+    'New Zealand': 'New Zealand',
+    'Australia': 'Australia',
+    'Canada': 'Canada',
+    'Germany': 'Germany',
+    'Ireland': 'Ireland',
+    'UK': 'UK',
+    'USA': 'USA',
+  };
+  return mapping[country] || 'Other';
 }
