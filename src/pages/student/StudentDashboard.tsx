@@ -132,37 +132,6 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Why Trust Us */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Why Trust Us</p>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground text-sm">RBI Regulated</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground text-sm">50,000+ Students</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                    <Lock className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground text-sm">Bank-grade Security</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Testimonials */}
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">What Students Say</p>
@@ -222,20 +191,6 @@ const StudentDashboard = () => {
               </a>
             </div>
 
-            {/* Partner Banks */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-slate-200/60 dark:border-zinc-800 shadow-sm">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Partner Banks</p>
-              <div className="flex flex-wrap gap-2">
-                {['SBI', 'HDFC', 'ICICI', 'Axis', 'PNB'].map((bank) => (
-                  <div 
-                    key={bank}
-                    className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-foreground"
-                  >
-                    {bank}
-                  </div>
-                ))}
-              </div>
-            </div>
           </aside>
 
           {/* Right Content - Main Form Area */}
