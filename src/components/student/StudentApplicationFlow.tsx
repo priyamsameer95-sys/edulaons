@@ -8,11 +8,10 @@ import CoApplicantDetailsStep from './CoApplicantDetailsStep';
 import ReviewStep from './ReviewStep';
 import SuccessStep from './SuccessStep';
 import { useState } from 'react';
-import { LogOut, Home, Clock, CheckCircle } from 'lucide-react';
+import { LogOut, ChevronLeft, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { TrustIndicators } from './TrustIndicators';
-import { ProgressSaver } from './ProgressSaver';
 
 const steps = [
   { id: 1, title: 'Personal', description: 'Tell us about yourself' },
@@ -35,7 +34,6 @@ const StudentApplicationFlow = () => {
   } = useStudentApplication();
 
   const [submissionResult, setSubmissionResult] = useState<any>(null);
-  const [lastSaved] = useState(new Date());
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
@@ -48,119 +46,94 @@ const StudentApplicationFlow = () => {
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-  const minutesRemaining = Math.max(12 - currentStep * 2, 2);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout? Your progress will be saved.')) {
       await signOut();
-      navigate('/student/landing');
+      navigate('/');
     }
   };
 
+  const handleBackToDashboard = () => {
+    navigate('/student');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        {currentStep < 5 && (
-          <div className="mb-6 flex items-center justify-between animate-fade-in">
-            <div className="flex items-center gap-4">
-              <ProgressSaver lastSaved={lastSaved} />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Welcome Hero */}
-        {currentStep < 5 && (
-          <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 mb-6 animate-scale-in shadow-xl">
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold mb-2">
-                Hi {applicationData.name || 'there'}! Let's secure your education funding 🎓
-              </h2>
-              <div className="flex flex-wrap items-center gap-4 text-sm opacity-90">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>~{minutesRemaining} min remaining</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  <span>{currentStep} of {steps.length - 1} steps completed</span>
-                </div>
+    <div className="min-h-screen bg-muted/30">
+      {/* Clean Header */}
+      {currentStep < 5 && (
+        <header className="sticky top-0 z-50 bg-background border-b">
+          <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleBackToDashboard}
+              className="gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">E</span>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <span className="font-semibold hidden sm:inline">EduLoanPro</span>
+            </div>
+            
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
+          </div>
+        </header>
+      )}
 
-        {/* Enhanced Progress Bar */}
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        {/* Progress Bar - Simple */}
         {currentStep < 5 && (
-          <div className="mb-8 animate-fade-in">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4 overflow-hidden shadow-inner">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-foreground">
+                Step {currentStep + 1} of {steps.length - 1}: {steps[currentStep].title}
+              </span>
+              <span className="text-muted-foreground">
+                {Math.round(progress)}% complete
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 h-3 rounded-full transition-all duration-500 ease-out"
+                className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="flex justify-between items-center text-xs text-muted-foreground">
-              <span className="font-medium">{Math.round(progress)}% Complete</span>
-              {progress >= 16 && progress < 20 && <span className="text-primary font-semibold animate-gentle-pulse">🎉 Great start!</span>}
-              {progress >= 50 && progress < 55 && <span className="text-primary font-semibold animate-gentle-pulse">🚀 Halfway done!</span>}
-              {progress >= 83 && progress < 87 && <span className="text-primary font-semibold animate-gentle-pulse">⭐ Almost there!</span>}
-            </div>
           </div>
         )}
 
-        {/* Enhanced Milestone Step Indicators */}
+        {/* Step Labels - Minimal */}
         {currentStep < 5 && (
-          <div className="flex justify-between mb-12 relative px-2">
-            <div className="milestone-line">
-              <div className="milestone-line-progress" style={{ width: `${(currentStep / (steps.length - 2)) * 100}%` }} />
-            </div>
+          <div className="flex justify-between text-xs text-muted-foreground">
             {steps.slice(0, -1).map((step, index) => (
-              <div 
-                key={step.id} 
-                className={`flex flex-col items-center flex-1 relative z-10 transition-all duration-300 ${
-                  index === 0 ? '' : 
-                  index === 1 ? 'stagger-fade-1' : 
-                  index === 2 ? 'stagger-fade-2' : 
-                  index === 3 ? 'stagger-fade-3' : 
-                  'stagger-fade-4'
+              <span 
+                key={step.id}
+                className={`${
+                  index === currentStep 
+                    ? 'text-primary font-medium' 
+                    : index < currentStep 
+                      ? 'text-muted-foreground' 
+                      : ''
                 }`}
               >
-                <div className={`
-                  w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm mb-3 transition-all duration-300 shadow-lg
-                  ${index < currentStep ? 'bg-gradient-to-br from-green-500 to-green-600 text-white hover-lift scale-110' : ''}
-                  ${index === currentStep ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white ring-4 ring-blue-200 dark:ring-blue-900 animate-gentle-pulse scale-110' : ''}
-                  ${index > currentStep ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-2 border-gray-300 dark:border-gray-600' : ''}
-                `}>
-                  {index < currentStep ? (
-                    <CheckCircle className="h-6 w-6 animate-scale-in" />
-                  ) : (
-                    step.id
-                  )}
-                </div>
-                <span className={`
-                  text-xs text-center font-semibold max-w-[80px] transition-colors duration-300
-                  ${index === currentStep ? 'text-blue-600 dark:text-blue-400' : index < currentStep ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}
-                `}>
-                  {step.title}
-                </span>
-                {index < currentStep && (
-                  <span className="text-[10px] text-green-600 dark:text-green-400 mt-0.5 font-medium">✓ Done</span>
-                )}
-              </div>
+                {index < currentStep ? '✓ ' : ''}{step.title}
+              </span>
             ))}
           </div>
         )}
 
         {/* Step Content */}
-        <Card className="premium-card">
-          <CardHeader>
-            <CardTitle>{steps[currentStep].title}</CardTitle>
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">{steps[currentStep].title}</CardTitle>
             <CardDescription>{steps[currentStep].description}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -221,8 +194,16 @@ const StudentApplicationFlow = () => {
 
         {/* Trust Indicators - shown on first step only */}
         {currentStep === 0 && (
-          <div className="mt-12">
+          <div className="mt-8">
             <TrustIndicators />
+          </div>
+        )}
+
+        {/* Auto-save indicator */}
+        {currentStep < 5 && (
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Save className="h-3 w-3" />
+            <span>Progress saved automatically</span>
           </div>
         )}
       </div>
