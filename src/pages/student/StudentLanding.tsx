@@ -372,14 +372,14 @@ const StudentLanding = () => {
       const eligibility = await calculateEligibility(loanAmount, salary, formData.university_id);
       setResult(eligibility);
 
-      // Try to save lead (optional - doesn't block eligibility check)
+      // Save organic lead using student-specific edge function
       const now = new Date();
       const futureDate = new Date(now.setMonth(now.getMonth() + 3));
       try {
         const {
           data,
           error
-        } = await supabase.functions.invoke('create-lead-quick', {
+        } = await supabase.functions.invoke('create-lead-student', {
           body: {
             student_name: formData.student_name.trim(),
             student_phone: studentPhone,
@@ -400,17 +400,19 @@ const StudentLanding = () => {
           }
         });
 
-        // Handle response - lead already exists is OK, we just won't show the saved badge
+        // Handle response
         if (error) {
           console.log('Lead save failed (network error):', error.message);
         } else if (data?.success && data?.lead?.id) {
           setLeadId(data.lead.id);
+          // Show partner info if this is a partner-created lead
+          if (data.is_existing && data.lead.is_partner_lead && data.lead.partner_name) {
+            toast.success(`Great news! ${data.lead.partner_name} has already started your application.`);
+          }
         } else if (data?.success === false) {
-          // Lead already exists or other business logic error - this is fine
           console.log('Lead not created:', data?.error || 'Unknown reason');
         }
       } catch (e) {
-        // Catch any unexpected errors
         console.log('Lead save error:', e);
       }
       toast.success('Great news! We found matching lenders for you.');

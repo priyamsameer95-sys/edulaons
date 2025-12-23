@@ -122,14 +122,42 @@ export const useStudentApplication = () => {
         userData.user.email
       );
 
-      // Submit to edge function
-      const { data: result, error } = await supabase.functions.invoke('create-lead', {
-        body: payload,
+      // Add source to indicate this is from student application flow
+      const studentPayload = {
+        ...payload,
+        source: 'student_application',
+        student_name: payload.student_name,
+        student_phone: payload.student_phone,
+        student_pin_code: payload.student_pin_code,
+        country: payload.country,
+        loan_amount: payload.amount_requested,
+      };
+
+      // Submit to student-specific edge function that handles partner linking
+      const { data: result, error } = await supabase.functions.invoke('create-lead-student', {
+        body: studentPayload,
       });
 
       if (error) {
         console.error('Edge function error:', error);
         throw new Error(error.message || 'Failed to submit application');
+      }
+
+      // Check if this was linked to an existing partner lead
+      if (result?.is_existing && result?.lead?.is_partner_lead) {
+        toast({
+          title: "Application Found!",
+          description: result?.lead?.partner_name 
+            ? `${result.lead.partner_name} has already started your application. We've linked your account.`
+            : "Your application was already started by a partner.",
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "Application Submitted Successfully!",
+          description: `Your case ID is ${result?.lead?.case_id || 'N/A'}`,
+          duration: 5000,
+        });
       }
 
       // Clear saved form data on successful submission
@@ -138,12 +166,6 @@ export const useStudentApplication = () => {
       } catch (error) {
         console.error('Failed to clear saved data:', error);
       }
-
-      toast({
-        title: "Application Submitted Successfully!",
-        description: `Your case ID is ${result?.lead?.case_id || 'N/A'}`,
-        duration: 5000,
-      });
 
       return result;
     } catch (error: any) {
