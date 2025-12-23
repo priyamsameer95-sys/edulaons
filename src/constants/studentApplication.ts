@@ -1,13 +1,34 @@
+// Study destinations - synced with StudentLanding.tsx COUNTRIES
 export const STUDY_DESTINATIONS = [
   'USA',
   'UK',
   'Canada',
   'Australia',
   'Germany',
-  'Ireland',
   'New Zealand',
+  'Singapore',
+  'Hong Kong SAR',
+  'Japan',
+  'Switzerland',
+  'China',
   'Other'
 ] as const;
+
+// Country code to full name mapping (for edge function)
+export const COUNTRY_VALUE_MAP: Record<string, string> = {
+  'USA': 'United States',
+  'UK': 'United Kingdom',
+  'Canada': 'Canada',
+  'Australia': 'Australia',
+  'Germany': 'Germany',
+  'New Zealand': 'New Zealand',
+  'Singapore': 'Singapore',
+  'Hong Kong SAR': 'Hong Kong SAR',
+  'Japan': 'Japan',
+  'Switzerland': 'Switzerland',
+  'China': 'China',
+  'Other': 'Other',
+};
 
 export const LOAN_TYPES = {
   SECURED: 'secured',

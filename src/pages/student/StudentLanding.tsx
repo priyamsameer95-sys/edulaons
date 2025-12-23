@@ -272,11 +272,23 @@ const StudentLanding = () => {
 
         // Wait for success animation, then navigate
         setTimeout(() => {
+          // Find country data for proper value mapping
+          const countryData = COUNTRIES.find(c => c.code === formData.country);
+          
+          // Save complete eligibility data for pre-filling application form
           sessionStorage.setItem('eligibility_form', JSON.stringify({
-            ...formData,
+            student_name: formData.student_name,
+            student_phone: formData.student_phone.replace(/\D/g, ''),
+            country: formData.country,
+            country_value: countryData?.value || formData.country,
+            university_id: formData.university_id,
             loan_amount: formData.loan_amount[0] * 100000,
-            verified: true
+            co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')) || 0,
+            verified: true,
+            timestamp: new Date().toISOString(),
+            source: 'student_landing'
           }));
+          console.log('📤 Saved eligibility data to sessionStorage for pre-fill');
           navigate('/student');
         }, 1500);
       } else {

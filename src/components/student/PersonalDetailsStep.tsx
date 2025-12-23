@@ -6,7 +6,7 @@ import { StudentApplicationData } from '@/hooks/useStudentApplication';
 import { CoachingTooltip } from './CoachingTooltip';
 import { FloatingLabelInput } from './FloatingLabelInput';
 import { GENDERS, COACHING_MESSAGES, VALIDATION_PATTERNS, MIN_AGE } from '@/constants/studentApplication';
-import { User, UserCircle2 } from 'lucide-react';
+import { User, UserCircle2, CheckCircle2, Mail } from 'lucide-react';
 
 interface PersonalDetailsStepProps {
   data: Partial<StudentApplicationData>;
@@ -16,6 +16,10 @@ interface PersonalDetailsStepProps {
 
 const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Check if phone was pre-filled from eligibility (verified via OTP)
+  const isPhoneVerified = Boolean(data.phone && data.phone.length === 10 && data.phoneVerified !== false);
+  const isNamePrefilled = Boolean(data.name && data.name.trim().length >= 2);
 
   const validateField = (field: string, value: any): string | null => {
     switch (field) {
@@ -27,6 +31,11 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
         const cleanPhone = value.replace(/\D/g, '').replace(/^91/, '');
         if (!VALIDATION_PATTERNS.phone.test(cleanPhone)) {
           return 'Enter valid 10-digit phone number starting with 6-9';
+        }
+        return null;
+      case 'email':
+        if (value && !VALIDATION_PATTERNS.email.test(value)) {
+          return 'Enter a valid email address';
         }
         return null;
       case 'dateOfBirth':
@@ -53,12 +62,18 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate all fields
+    // Validate all required fields
     const newErrors: Record<string, string> = {};
     ['name', 'phone', 'dateOfBirth', 'postalCode'].forEach(field => {
       const error = validateField(field, (data as any)[field]);
       if (error) newErrors[field] = error;
     });
+    
+    // Validate email if provided
+    if (data.email) {
+      const emailError = validateField('email', data.email);
+      if (emailError) newErrors.email = emailError;
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -68,9 +83,9 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
     onNext();
   };
 
-  const completedFields = ['name', 'phone', 'dateOfBirth', 'gender', 'city', 'state', 'postalCode']
+  const completedFields = ['name', 'phone', 'email', 'dateOfBirth', 'gender', 'city', 'state', 'postalCode']
     .filter(field => data[field as keyof typeof data]).length;
-  const totalFields = 7;
+  const totalFields = 8;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
@@ -88,33 +103,73 @@ const PersonalDetailsStep = ({ data, onUpdate, onNext }: PersonalDetailsStepProp
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-fade-2">
-        <FloatingLabelInput
-          label="Full Name"
-          value={data.name || ''}
-          onChange={(e) => handleChange('name', e.target.value)}
-          placeholder=" "
-          error={errors.name}
-          isValid={!errors.name && !!data.name}
-          helperText="As per passport/ID"
-          required
-        />
+      {/* Pre-filled data notice */}
+      {(isNamePrefilled || isPhoneVerified) && (
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <span className="text-sm text-green-700 dark:text-green-300">
+            Some fields are pre-filled from your eligibility check
+          </span>
+        </div>
+      )}
 
-        <FloatingLabelInput
-          label="Phone Number"
-          type="tel"
-          value={data.phone || ''}
-          onChange={(e) => {
-            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
-            handleChange('phone', cleaned);
-          }}
-          placeholder=" "
-          maxLength={10}
-          error={errors.phone}
-          isValid={!errors.phone && !!data.phone && data.phone.length === 10}
-          helperText="10-digit mobile number"
-          required
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-fade-2">
+        <div className="space-y-1">
+          <FloatingLabelInput
+            label="Full Name"
+            value={data.name || ''}
+            onChange={(e) => handleChange('name', e.target.value)}
+            placeholder=" "
+            error={errors.name}
+            isValid={!errors.name && !!data.name}
+            helperText="As per passport/ID"
+            required
+          />
+          {isNamePrefilled && (
+            <Badge variant="outline" className="text-xs text-green-600 border-green-200 dark:border-green-800">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Pre-filled
+            </Badge>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <FloatingLabelInput
+            label="Phone Number"
+            type="tel"
+            value={data.phone || ''}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+              handleChange('phone', cleaned);
+            }}
+            placeholder=" "
+            maxLength={10}
+            error={errors.phone}
+            isValid={!errors.phone && !!data.phone && data.phone.length === 10}
+            helperText="10-digit mobile number"
+            required
+            disabled={isPhoneVerified}
+          />
+          {isPhoneVerified && (
+            <Badge variant="outline" className="text-xs text-green-600 border-green-200 dark:border-green-800">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Phone Verified
+            </Badge>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <FloatingLabelInput
+            label="Email Address"
+            type="email"
+            value={data.email || ''}
+            onChange={(e) => handleChange('email', e.target.value)}
+            placeholder=" "
+            error={errors.email}
+            isValid={!errors.email && !!data.email && VALIDATION_PATTERNS.email.test(data.email)}
+            helperText="For loan updates & communication"
+          />
+        </div>
 
         <FloatingLabelInput
           label="Date of Birth"

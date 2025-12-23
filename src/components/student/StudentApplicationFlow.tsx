@@ -51,49 +51,10 @@ const StudentApplicationFlow = () => {
   const minutesRemaining = Math.max(12 - currentStep * 2, 2);
 
   const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+    if (window.confirm('Are you sure you want to logout? Your progress will be saved.')) {
       await signOut();
-      navigate('/login');
+      navigate('/student/landing');
     }
-  };
-
-  const handleFillTestData = async () => {
-    // First set study destination so universities can be loaded
-    updateApplicationData({
-      studyDestination: 'USA',
-    });
-
-    // Wait a moment for university data to be available
-    setTimeout(() => {
-      updateApplicationData({
-        name: 'John Doe',
-        phone: '9876543210',
-        dateOfBirth: '2000-01-01',
-        gender: 'male',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        postalCode: '400001',
-        nationality: 'Indian',
-        highestQualification: 'bachelors',
-        tenthPercentage: 85,
-        twelfthPercentage: 88,
-        bachelorsPercentage: 75,
-        universities: [], // Will be filled manually from dropdown
-        
-        studyDestination: 'USA',
-        intakeMonth: 9,
-        intakeYear: 2025,
-        loanAmount: 5000000,
-        loanType: 'secured',
-        coApplicantName: 'Jane Doe',
-        coApplicantRelationship: 'parent',
-        coApplicantPhone: '9876543211',
-        coApplicantEmail: 'jane.doe@example.com',
-        coApplicantMonthlySalary: 100000,
-        coApplicantEmploymentType: 'salaried' as const,
-        coApplicantPinCode: '400001',
-      });
-    }, 100);
   };
 
   return (
@@ -103,31 +64,9 @@ const StudentApplicationFlow = () => {
         {currentStep < 5 && (
           <div className="mb-6 flex items-center justify-between animate-fade-in">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigate('/student');
-                }}
-                type="button"
-                className="gap-2 hover-lift"
-              >
-                <Home className="h-4 w-4" />
-                Dashboard
-              </Button>
               <ProgressSaver lastSaved={lastSaved} />
             </div>
             <div className="flex gap-2">
-              <Button 
-                onClick={handleFillTestData} 
-                variant="ghost" 
-                size="sm"
-                type="button"
-              >
-                Fill Test Data
-              </Button>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout

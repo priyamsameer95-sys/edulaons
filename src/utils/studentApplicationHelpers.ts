@@ -70,9 +70,9 @@ export const transformToEdgeFunctionPayload = (
   userEmail: string
 ): EdgeFunctionPayload => {
   return {
-    // Student fields
+    // Student fields - prefer form email over auth email
     student_name: data.name.trim(),
-    student_email: userEmail,
+    student_email: data.email?.trim() || userEmail,
     student_phone: cleanPhoneNumber(data.phone),
     student_pin_code: data.postalCode.trim(),
     date_of_birth: data.dateOfBirth,

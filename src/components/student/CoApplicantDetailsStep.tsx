@@ -1,13 +1,14 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { CoachingTooltip } from './CoachingTooltip';
 import { COACHING_MESSAGES, RELATIONSHIPS, VALIDATION_PATTERNS, EMPLOYMENT_TYPES } from '@/constants/studentApplication';
 import { StudentApplicationData } from '@/hooks/useStudentApplication';
-import { Info, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { Info, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatIndianNumber, amountToWords, parseFormattedNumber } from '@/utils/currencyFormatter';
 
@@ -20,9 +21,17 @@ interface CoApplicantDetailsStepProps {
 
 const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantDetailsStepProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [salaryDisplay, setSalaryDisplay] = useState<string>(
-    data.coApplicantMonthlySalary ? formatIndianNumber(data.coApplicantMonthlySalary) : ''
-  );
+  const [salaryDisplay, setSalaryDisplay] = useState<string>('');
+
+  // Check if salary was pre-filled from eligibility check
+  const isSalaryPrefilled = Boolean(data.coApplicantMonthlySalary && data.coApplicantMonthlySalary > 0);
+
+  // Initialize salary display from pre-filled data
+  useEffect(() => {
+    if (data.coApplicantMonthlySalary && !salaryDisplay) {
+      setSalaryDisplay(formatIndianNumber(data.coApplicantMonthlySalary));
+    }
+  }, [data.coApplicantMonthlySalary]);
 
   // Calculate salary in words
   const salaryInWords = useMemo(() => {
@@ -132,6 +141,16 @@ const CoApplicantDetailsStep = ({ data, onUpdate, onNext, onPrev }: CoApplicantD
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Pre-filled data notice */}
+      {isSalaryPrefilled && (
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <span className="text-sm text-green-700 dark:text-green-300">
+            Monthly salary is pre-filled from your eligibility check. Please complete the remaining details.
+          </span>
+        </div>
+      )}
+
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
