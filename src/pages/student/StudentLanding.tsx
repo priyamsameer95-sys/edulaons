@@ -12,7 +12,7 @@ import { OTPInput } from "@/components/student/OTPInput";
 import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, BadgeCheck, ChevronLeft, Sparkles, Clock, FileCheck, TrendingUp, Building2, Users, CheckCircle2, Smartphone, RefreshCw } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 
-// Country data
+// Country data - synced with universities master
 const COUNTRIES = [{
   code: "USA",
   name: "USA",
@@ -39,10 +39,40 @@ const COUNTRIES = [{
   flag: "🇩🇪",
   value: "Germany"
 }, {
-  code: "Ireland",
-  name: "Ireland",
-  flag: "🇮🇪",
-  value: "Ireland"
+  code: "NZ",
+  name: "New Zealand",
+  flag: "🇳🇿",
+  value: "New Zealand"
+}, {
+  code: "SG",
+  name: "Singapore",
+  flag: "🇸🇬",
+  value: "Singapore"
+}, {
+  code: "HK",
+  name: "Hong Kong",
+  flag: "🇭🇰",
+  value: "Hong Kong SAR"
+}, {
+  code: "JP",
+  name: "Japan",
+  flag: "🇯🇵",
+  value: "Japan"
+}, {
+  code: "CH",
+  name: "Switzerland",
+  flag: "🇨🇭",
+  value: "Switzerland"
+}, {
+  code: "CN",
+  name: "China",
+  flag: "🇨🇳",
+  value: "China"
+}, {
+  code: "Other",
+  name: "Other",
+  flag: "🌍",
+  value: "Other"
 }];
 
 // Lender data for carousel (brand colors come from design tokens in index.css)
@@ -302,7 +332,12 @@ const StudentLanding = () => {
     const cleanPhone = formData.student_phone.replace(/\D/g, '');
     if (!cleanPhone || cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) newErrors.student_phone = "Enter valid 10-digit number";
     if (!formData.country) newErrors.country = "Select destination";
-    if (!formData.university_id) newErrors.university_id = "Select university";
+    // For "Other" country, accept any university name; for others, require selection
+    if (formData.country === 'Other') {
+      if (!formData.university_id.trim() || formData.university_id.trim().length < 2) newErrors.university_id = "Enter university name";
+    } else {
+      if (!formData.university_id) newErrors.university_id = "Select university";
+    }
     const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
     if (!formData.co_applicant_monthly_salary || isNaN(salary) || salary < 10000) newErrors.co_applicant_monthly_salary = "Min ₹10,000";
     setErrors(newErrors);
@@ -562,7 +597,7 @@ const StudentLanding = () => {
                     {/* Country */}
                     <div className="space-y-1">
                       <Label className="text-xs text-foreground">Study destination</Label>
-                      <div className="grid grid-cols-6 gap-1.5">
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
                         {COUNTRIES.map(country => <button key={country.code} type="button" onClick={() => {
                       handleChange('country', country.code);
                       handleChange('university_id', '');
@@ -574,12 +609,21 @@ const StudentLanding = () => {
                       {errors.country && <p className="text-[10px] text-destructive">{errors.country}</p>}
                     </div>
 
-                    {/* University */}
+                    {/* University - Show manual input for "Other" country */}
                     <div className="space-y-1">
                       <Label className="text-xs text-foreground">University</Label>
-                      <div className={cn(errors.university_id && '[&_button]:border-destructive')}>
-                        <UniversityCombobox country={COUNTRIES.find(c => c.code === formData.country)?.value || ""} value={formData.university_id} onChange={value => handleChange('university_id', value)} placeholder={formData.country ? "Search university..." : "Select country first"} disabled={!formData.country} />
-                      </div>
+                      {formData.country === 'Other' ? (
+                        <Input 
+                          value={formData.university_id} 
+                          onChange={e => handleChange('university_id', e.target.value)} 
+                          placeholder="Enter university name" 
+                          className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.university_id && 'border-destructive')} 
+                        />
+                      ) : (
+                        <div className={cn(errors.university_id && '[&_button]:border-destructive')}>
+                          <UniversityCombobox country={COUNTRIES.find(c => c.code === formData.country)?.value || ""} value={formData.university_id} onChange={value => handleChange('university_id', value)} placeholder={formData.country ? "Search university..." : "Select country first"} disabled={!formData.country} />
+                        </div>
+                      )}
                       {errors.university_id && <p className="text-[10px] text-destructive">{errors.university_id}</p>}
                     </div>
 
