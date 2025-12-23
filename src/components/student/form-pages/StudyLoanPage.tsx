@@ -55,8 +55,21 @@ const amountRanges = [
   { value: '1Cr+', label: '₹1 Crore+', min: 10000000, max: 15000000 },
 ];
 
+// Generate next 9 months dynamically with real month names
+const getNext9MonthsLabel = () => {
+  const months: string[] = [];
+  const now = new Date();
+  for (let i = 0; i < 9; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const monthName = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    months.push(`${monthName} ${year}`);
+  }
+  return months.join(', ');
+};
+
 const intakeOptions = [
-  { value: 'next_9_months', label: 'Next 9 months', icon: '🚀', description: 'Starting soon' },
+  { value: 'next_9_months', label: 'Next 9 months', icon: '🚀', description: getNext9MonthsLabel() },
   { value: 'plan_later', label: 'I plan for later', icon: '📅', description: 'Future intake' },
 ];
 
