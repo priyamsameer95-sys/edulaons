@@ -220,6 +220,23 @@ serve(async (req) => {
     if (existingStudent) {
       studentId = existingStudent.id;
       console.log('✅ Using existing student:', studentId);
+      
+      // IMPORTANT: If authenticated, sync student email to auth user email
+      if (isAuthenticated && authenticatedUser?.email) {
+        const authEmail = authenticatedUser.email.toLowerCase();
+        console.log('🔄 Syncing student email to auth user email:', authEmail);
+        
+        const { error: syncError } = await supabaseAdmin
+          .from('students')
+          .update({ email: authEmail })
+          .eq('id', studentId);
+          
+        if (syncError) {
+          console.warn('⚠️ Failed to sync student email:', syncError.message);
+        } else {
+          console.log('✅ Student email synced to:', authEmail);
+        }
+      }
     } else {
       // Create new student
       const studentEmail = isAuthenticated 

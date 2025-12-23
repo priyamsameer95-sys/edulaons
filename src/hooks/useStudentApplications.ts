@@ -67,16 +67,40 @@ export const useStudentApplications = () => {
 
       logger.info('[useStudentApplications] Fetching applications for user:', user?.email);
 
-      // First, get the student record by email
-      const { data: studentData, error: studentError } = await supabase
+      // First, try to get the student record by email
+      let { data: studentData, error: studentError } = await supabase
         .from('students')
-        .select('id')
+        .select('id, phone')
         .eq('email', user?.email)
         .maybeSingle();
 
       if (studentError) {
-        logger.error('[useStudentApplications] Error fetching student:', studentError);
+        logger.error('[useStudentApplications] Error fetching student by email:', studentError);
         throw studentError;
+      }
+
+      // FALLBACK: If no student found by email, try by phone from user metadata
+      if (!studentData && user?.user_metadata?.phone) {
+        const phone = String(user.user_metadata.phone).replace(/^\+91/, '').replace(/\D/g, '');
+        logger.info('[useStudentApplications] Trying phone lookup:', phone);
+        
+        const { data: phoneStudent, error: phoneError } = await supabase
+          .from('students')
+          .select('id, phone')
+          .eq('phone', phone)
+          .maybeSingle();
+          
+        if (!phoneError && phoneStudent) {
+          studentData = phoneStudent;
+          logger.info('[useStudentApplications] Found student by phone:', phoneStudent.id);
+          
+          // Sync email to match auth user
+          await supabase
+            .from('students')
+            .update({ email: user.email })
+            .eq('id', phoneStudent.id);
+          logger.info('[useStudentApplications] Synced student email to:', user.email);
+        }
       }
 
       if (!studentData) {
