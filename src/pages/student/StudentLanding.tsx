@@ -26,7 +26,8 @@ import {
   FileCheck,
   TrendingUp,
   Building2,
-  Users
+  Users,
+  CheckCircle2
 } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 
@@ -40,19 +41,20 @@ const COUNTRIES = [
   { code: "Ireland", name: "Ireland", flag: "🇮🇪", value: "Ireland" },
 ];
 
-// Lender data
+// Lender data with opacity for hierarchy
 const LENDERS = [
-  { code: "SBI", name: "SBI", color: "bg-blue-600", rate: "8.65%" },
-  { code: "PNB", name: "PNB", color: "bg-rose-600", rate: "7.50%" },
-  { code: "ICICI", name: "ICICI", color: "bg-orange-500", rate: "10.25%" },
-  { code: "CREDILA", name: "Credila", color: "bg-emerald-600", rate: "10.00%" },
+  { code: "SBI", name: "SBI", color: "bg-blue-600", rate: "8.65%", primary: true },
+  { code: "PNB", name: "PNB", color: "bg-rose-600", rate: "7.50%", primary: true },
+  { code: "ICICI", name: "ICICI", color: "bg-orange-500", rate: "10.25%", primary: false },
+  { code: "CREDILA", name: "Credila", color: "bg-emerald-600", rate: "10.00%", primary: false },
 ];
 
+// Steps with time anchors
 const STEPS = [
-  { icon: FileCheck, title: "Check Eligibility", desc: "60 seconds" },
-  { icon: Shield, title: "Login via OTP", desc: "Mobile verify" },
-  { icon: Zap, title: "Complete Form", desc: "Upload docs" },
-  { icon: Trophy, title: "Get Approved", desc: "24-48 hours" },
+  { icon: FileCheck, title: "Check Eligibility", time: "60 sec", desc: "Quick assessment" },
+  { icon: Shield, title: "Verify OTP", time: "Instant", desc: "Mobile verify" },
+  { icon: Zap, title: "Upload Docs", time: "Upload once", desc: "Simple forms" },
+  { icon: Trophy, title: "Get Approved", time: "24-48 hrs", desc: "Fast approval" },
 ];
 
 interface FormData {
@@ -82,11 +84,11 @@ interface EligibilityResult {
 }
 
 const getTierConfig = (lenderCount: number) => {
-  if (lenderCount >= 4) return { headline: "Excellent Match", subtext: "Multiple top lenders available", icon: Trophy };
-  if (lenderCount >= 3) return { headline: "Strong Profile", subtext: "Great options for you", icon: Star };
-  if (lenderCount >= 2) return { headline: "Good Options", subtext: "Lenders available", icon: Rocket };
-  if (lenderCount >= 1) return { headline: "Option Found", subtext: "A lender is ready", icon: Sparkles };
-  return { headline: "Let's Explore", subtext: "Complete for options", icon: Sparkles };
+  if (lenderCount >= 4) return { headline: "Excellent Match!", subtext: "Multiple top lenders ready for you", icon: Trophy, color: "text-emerald-600" };
+  if (lenderCount >= 3) return { headline: "Strong Profile!", subtext: "Great options available", icon: Star, color: "text-primary" };
+  if (lenderCount >= 2) return { headline: "Good Options!", subtext: "Lenders ready to help", icon: Rocket, color: "text-primary" };
+  if (lenderCount >= 1) return { headline: "Match Found!", subtext: "A lender is interested", icon: Sparkles, color: "text-primary" };
+  return { headline: "Let's Explore", subtext: "Complete for more options", icon: Sparkles, color: "text-muted-foreground" };
 };
 
 const calculateEMI = (principal: number, rate: number, years: number = 10): number => {
@@ -112,6 +114,7 @@ const StudentLanding = () => {
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
+  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
   const formatAmount = (value: number): string => value >= 100 ? "₹1Cr+" : `₹${value}L`;
 
@@ -221,7 +224,7 @@ const StudentLanding = () => {
         // Catch any unexpected errors
         console.log('Lead save error:', e);
       }
-      toast.success('Eligibility check complete!');
+      toast.success('Great news! We found matching lenders for you.');
     } catch (error: any) {
       toast.error(error.message || 'Something went wrong');
     } finally {
@@ -247,13 +250,13 @@ const StudentLanding = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-              <GraduationCap className="h-4 w-4 text-background" />
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <GraduationCap className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-semibold text-foreground">EduLoanPro</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground">
+            <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground hover:text-foreground">
               <Link to="/partner/login">Partner</Link>
             </Button>
             <Button size="sm" asChild className="text-xs">
@@ -270,77 +273,114 @@ const StudentLanding = () => {
           {/* Left - Hero Content */}
           <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-12 py-8 lg:py-0">
             <div className="max-w-lg">
-              {/* Trust Badge */}
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-muted/50 border border-border text-xs text-muted-foreground mb-4">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                ₹500Cr+ disbursed · 15,000+ students
+              {/* Trust Badge - Enhanced */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium mb-5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                ₹500Cr+ loans funded with India's top RBI-registered lenders
               </div>
 
-              {/* Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-[1.1] tracking-tight mb-4">
-                Education Loans in{" "}
-                <span className="text-primary">4 Simple Steps</span>
+              {/* Headline - Emotional & Outcome-Driven */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-[1.1] tracking-tight mb-3">
+                <span className="text-primary">4 Simple Steps</span> to Fund{" "}
+                <span className="relative">
+                  Your Dream University
+                  <svg className="absolute -bottom-1 left-0 w-full h-2 text-primary/30" viewBox="0 0 200 8" preserveAspectRatio="none">
+                    <path d="M0 7 Q 50 0, 100 4 T 200 3" fill="none" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </span>
               </h1>
 
-              {/* Subheadline */}
-              <p className="text-base text-muted-foreground leading-relaxed mb-6 max-w-md">
-                Compare rates from India's top banks. Check eligibility in 60 seconds — no credit score impact.
+              {/* Subheadline - Reassurance */}
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2 max-w-md">
+                Compare and secure loans from India's top lenders in 60 seconds — with zero credit impact.
+              </p>
+              
+              {/* Emotional micro-copy */}
+              <p className="text-sm text-primary/80 font-medium mb-6">
+                Don't let finances stop your dreams — get matched with verified lenders in minutes.
               </p>
 
-              {/* How It Works - Compact */}
-              <div className="grid grid-cols-4 gap-2 mb-6">
-                {STEPS.map((step, i) => (
-                  <div key={i} className="text-center">
-                    <div className="w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center mb-1.5">
-                      <step.icon className="h-5 w-5 text-primary" />
+              {/* How It Works - With Time Anchors & Animations */}
+              <div className="mb-6">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">How it works</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {STEPS.map((step, i) => (
+                    <div 
+                      key={i} 
+                      className="text-center group cursor-default"
+                      onMouseEnter={() => setHoveredStep(i)}
+                      onMouseLeave={() => setHoveredStep(null)}
+                    >
+                      <div className={cn(
+                        "w-11 h-11 mx-auto rounded-xl bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent",
+                        hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10"
+                      )}>
+                        <step.icon className={cn(
+                          "h-5 w-5 transition-colors duration-300",
+                          hoveredStep === i ? "text-primary" : "text-muted-foreground"
+                        )} />
+                      </div>
+                      <p className="text-xs font-medium text-foreground leading-tight">{step.title}</p>
+                      <p className={cn(
+                        "text-[10px] font-semibold transition-colors mt-0.5",
+                        hoveredStep === i ? "text-primary" : "text-emerald-600"
+                      )}>{step.time}</p>
                     </div>
-                    <p className="text-xs font-medium text-foreground">{step.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{step.desc}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* Lenders */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {LENDERS.map((lender) => (
-                  <div key={lender.code} className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-border">
-                    <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold", lender.color)}>
-                      {lender.code.slice(0, 2)}
+              {/* Lenders - With Hierarchy */}
+              <div className="mb-6">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Our Top Lenders</p>
+                <div className="flex flex-wrap gap-2">
+                  {LENDERS.map((lender) => (
+                    <div 
+                      key={lender.code} 
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border transition-all hover:border-primary/30 hover:bg-muted",
+                        lender.primary ? "opacity-100" : "opacity-80"
+                      )}
+                    >
+                      <div className={cn("w-6 h-6 rounded flex items-center justify-center text-white text-[10px] font-bold shadow-sm", lender.color)}>
+                        {lender.code.slice(0, 2)}
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{lender.name}</span>
+                      <span className="text-xs text-emerald-600 font-semibold">{lender.rate}</span>
                     </div>
-                    <span className="text-xs text-foreground">{lender.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{lender.rate}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">All lenders are RBI-approved and offer education-focused loans only.</p>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-                  <span>RBI Registered</span>
+              {/* Trust Indicators - Enhanced */}
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+                  <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                  <span className="text-foreground font-medium">RBI Registered</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Star className="h-3.5 w-3.5 text-primary" />
-                  <span>4.8/5 Rating</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+                  <Star className="h-4 w-4 text-amber-500" />
+                  <span className="text-foreground font-medium">4.8/5 Rating</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-primary" />
-                  <span>24-48h Approval</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span className="text-foreground font-medium">24-48h Approval</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right - Form */}
-          <div ref={formRef} className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 lg:py-0 bg-muted/20">
+          {/* Right - Form with Enhanced Styling */}
+          <div ref={formRef} className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 lg:py-0 bg-gradient-to-b from-muted/30 to-muted/10">
             <div className="w-full max-w-md">
-              <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-lg">
+              <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-xl shadow-primary/5">
                 {!result ? (
                   /* Form State */
                   <div className="space-y-4 animate-fade-in">
                     <div className="mb-1">
                       <h2 className="text-xl font-semibold text-foreground">Quick Eligibility Check</h2>
-                      <p className="text-xs text-muted-foreground">See matching lenders instantly</p>
+                      <p className="text-sm text-muted-foreground">See matching lenders instantly — takes 60 seconds</p>
                     </div>
 
                     {/* Name & Phone Row */}
@@ -351,7 +391,7 @@ const StudentLanding = () => {
                           value={formData.student_name}
                           onChange={(e) => handleChange('student_name', e.target.value)}
                           placeholder="Rahul Sharma"
-                          className={cn("h-10 text-sm bg-background", errors.student_name && 'border-destructive')}
+                          className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_name && 'border-destructive')}
                         />
                         {errors.student_name && <p className="text-[10px] text-destructive">{errors.student_name}</p>}
                       </div>
@@ -361,7 +401,7 @@ const StudentLanding = () => {
                           value={formData.student_phone}
                           onChange={(e) => handleChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                           placeholder="9876543210"
-                          className={cn("h-10 text-sm bg-background", errors.student_phone && 'border-destructive')}
+                          className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_phone && 'border-destructive')}
                         />
                         {errors.student_phone && <p className="text-[10px] text-destructive">{errors.student_phone}</p>}
                       </div>
@@ -377,10 +417,10 @@ const StudentLanding = () => {
                             type="button"
                             onClick={() => { handleChange('country', country.code); handleChange('university_id', ''); }}
                             className={cn(
-                              "flex flex-col items-center justify-center py-2 rounded-lg border transition-all",
+                              "flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-200",
                               formData.country === country.code 
-                                ? 'border-primary bg-primary/5 ring-1 ring-primary' 
-                                : 'border-border bg-background hover:border-primary/50'
+                                ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-sm' 
+                                : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50'
                             )}
                           >
                             <span className="text-lg">{country.flag}</span>
@@ -411,7 +451,7 @@ const StudentLanding = () => {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs text-foreground">Loan amount</Label>
-                          <span className="text-sm font-semibold text-foreground">{formatAmount(formData.loan_amount[0])}</span>
+                          <span className="text-sm font-semibold text-primary">{formatAmount(formData.loan_amount[0])}</span>
                         </div>
                         <Slider
                           value={formData.loan_amount}
@@ -434,7 +474,7 @@ const StudentLanding = () => {
                             value={formData.co_applicant_monthly_salary}
                             onChange={(e) => handleChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
                             placeholder="75,000"
-                            className={cn("h-10 pl-6 text-sm bg-background", errors.co_applicant_monthly_salary && 'border-destructive')}
+                            className={cn("h-10 pl-6 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.co_applicant_monthly_salary && 'border-destructive')}
                           />
                         </div>
                         {salaryInWords && <p className="text-[10px] text-muted-foreground">{salaryInWords}</p>}
@@ -442,82 +482,129 @@ const StudentLanding = () => {
                       </div>
                     </div>
 
-                    {/* CTA */}
+                    {/* CTA - Enhanced */}
                     <Button 
                       size="lg" 
-                      className="w-full h-11 font-medium"
+                      className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20"
                       onClick={handleCheckEligibility}
                       disabled={isChecking}
                     >
                       {isChecking ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-2" />Checking...</>
+                        <><Loader2 className="h-4 w-4 animate-spin mr-2" />Finding Best Lenders...</>
                       ) : (
                         <>Check Eligibility<ArrowRight className="h-4 w-4 ml-2" /></>
                       )}
                     </Button>
 
-                    <p className="text-center text-[10px] text-muted-foreground">
-                      No credit score impact · 100% secure
-                    </p>
+                    <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        <span>No credit score impact</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>100% secure</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  /* Result State */
+                  /* Result State - Enhanced */
                   <div className="space-y-4 animate-fade-in">
-                    <div className="text-center space-y-1">
-                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mb-1">
-                        <TierIcon className="h-6 w-6" />
+                    {/* Progress Indicator */}
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-bold">✓</div>
+                        <span>Eligibility</span>
                       </div>
-                      <h3 className="text-xl font-bold text-foreground">{tierConfig?.headline}</h3>
-                      <p className="text-xs text-muted-foreground">{tierConfig?.subtext}</p>
+                      <div className="w-8 h-px bg-border" />
+                      <div className="flex items-center gap-1">
+                        <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">2</div>
+                        <span className="font-medium text-foreground">Complete Application</span>
+                      </div>
+                      <div className="w-8 h-px bg-border" />
+                      <div className="flex items-center gap-1">
+                        <div className="w-5 h-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold">3</div>
+                        <span>Get Offers</span>
+                      </div>
                     </div>
 
-                    <div className="text-center py-4 border-y border-border">
+                    <div className="text-center space-y-1">
+                      <div className={cn("inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-1", tierConfig?.color)}>
+                        <TierIcon className="h-7 w-7" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-foreground">{tierConfig?.headline}</h3>
+                      <p className="text-sm text-muted-foreground">{tierConfig?.subtext}</p>
+                    </div>
+
+                    <div className="text-center py-4 border-y border-border bg-gradient-to-b from-primary/5 to-transparent rounded-lg">
                       <div className="text-5xl font-bold text-primary">{result.lenderCount}</div>
-                      <div className="text-xs text-muted-foreground">{result.lenderCount === 1 ? 'Lender' : 'Lenders'} matched</div>
+                      <div className="text-sm text-muted-foreground font-medium">{result.lenderCount === 1 ? 'Lender' : 'Lenders'} Ready to Help</div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <div className="p-3 rounded-lg bg-muted/50 border border-border text-center">
-                        <p className="text-[10px] text-muted-foreground">Amount</p>
-                        <p className="text-sm font-semibold text-foreground">{formatAmount(loanAmountLakhs)}</p>
+                        <p className="text-[10px] text-muted-foreground">Loan Amount</p>
+                        <p className="text-sm font-bold text-foreground">{formatAmount(loanAmountLakhs)}</p>
                       </div>
                       <div className="p-3 rounded-lg bg-muted/50 border border-border text-center">
-                        <p className="text-[10px] text-muted-foreground">Rate</p>
-                        <p className="text-sm font-semibold text-foreground">{result.estimatedRateMin}%</p>
+                        <p className="text-[10px] text-muted-foreground">Best Rate</p>
+                        <p className="text-sm font-bold text-emerald-600">{result.estimatedRateMin}%</p>
                       </div>
                       <div className="p-3 rounded-lg bg-muted/50 border border-border text-center">
-                        <p className="text-[10px] text-muted-foreground">EMI</p>
-                        <p className="text-sm font-semibold text-foreground">₹{formatIndianNumber(estimatedEMI)}</p>
+                        <p className="text-[10px] text-muted-foreground">Est. EMI</p>
+                        <p className="text-sm font-bold text-foreground">₹{formatIndianNumber(estimatedEMI)}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50 border border-border">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                         <User className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{formData.student_name}</p>
-                        <p className="text-[10px] text-muted-foreground">+91 {formData.student_phone}</p>
+                        <p className="text-xs text-muted-foreground">+91 {formData.student_phone}</p>
                       </div>
                       {leadId && (
-                        <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-medium">
+                        <div className="flex items-center gap-1 text-emerald-600 text-xs font-medium bg-emerald-50 px-2 py-1 rounded-full">
                           <Check className="h-3 w-3" />Saved
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Button size="lg" className="w-full h-11 font-medium" onClick={handleContinue}>
-                        Complete Application<ArrowRight className="h-4 w-4 ml-2" />
+                      {/* CTA - Persuasive */}
+                      <Button 
+                        size="lg" 
+                        className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 bg-gradient-to-r from-primary to-primary/90" 
+                        onClick={handleContinue}
+                      >
+                        Get My Loan Offers<ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground" onClick={handleStartOver}>
-                        <ChevronLeft className="h-3 w-3 mr-1" />Start over
-                      </Button>
+                      
+                      {/* Reassurance text */}
+                      <p className="text-center text-xs text-muted-foreground px-4">
+                        You're almost done! Completing your application ensures faster lender response.
+                      </p>
+                      
+                      <button 
+                        onClick={handleStartOver}
+                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                      >
+                        ← Start over
+                      </button>
                     </div>
 
-                    <p className="text-center text-[10px] text-muted-foreground">
-                      No credit impact · Takes 2 min
-                    </p>
+                    {/* Trust badges near CTA */}
+                    <div className="flex items-center justify-center gap-3 pt-2 border-t border-border">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Shield className="h-3 w-3 text-emerald-600" />
+                        <span>No credit impact</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock className="h-3 w-3 text-primary" />
+                        <span>Takes 2 min</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -525,21 +612,22 @@ const StudentLanding = () => {
           </div>
         </section>
 
-        {/* Why Choose Us - Compact Strip */}
-        <section className="py-6 px-4 sm:px-6 bg-muted/30 border-t border-border/50">
+        {/* Why Choose Us - Enhanced Strip */}
+        <section className="py-8 px-4 sm:px-6 bg-muted/30 border-t border-border/50">
           <div className="max-w-5xl mx-auto">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-center mb-4">Trusted by 15,000+ Students</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
-                { icon: TrendingUp, text: "Compare 4+ Lenders" },
-                { icon: Shield, text: "No Credit Impact" },
-                { icon: Clock, text: "24-48h Approval" },
-                { icon: Building2, text: "100% Online" },
-                { icon: Users, text: "15,000+ Students" },
-                { icon: BadgeCheck, text: "RBI Registered" },
+                { icon: TrendingUp, text: "Compare 4+ Lenders", color: "text-primary" },
+                { icon: Shield, text: "No Credit Impact", color: "text-emerald-600" },
+                { icon: Clock, text: "24-48h Approval", color: "text-amber-600" },
+                { icon: Building2, text: "100% Online", color: "text-blue-600" },
+                { icon: Users, text: "15,000+ Students", color: "text-purple-600" },
+                { icon: BadgeCheck, text: "RBI Registered", color: "text-emerald-600" },
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <item.icon className="h-4 w-4 text-primary shrink-0" />
-                  <span className="text-xs text-foreground">{item.text}</span>
+                <div key={i} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                  <item.icon className={cn("h-4 w-4 shrink-0", item.color)} />
+                  <span className="text-xs font-medium text-foreground">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -550,8 +638,8 @@ const StudentLanding = () => {
         <footer className="py-4 px-4 sm:px-6 border-t border-border bg-background">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-foreground flex items-center justify-center">
-                <GraduationCap className="h-3 w-3 text-background" />
+              <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
+                <GraduationCap className="h-3 w-3 text-primary-foreground" />
               </div>
               <span className="font-medium text-foreground">EduLoanPro</span>
             </div>
