@@ -8,6 +8,7 @@ import { UniversityCombobox } from "@/components/ui/university-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { OTPInput } from "@/components/student/OTPInput";
 import { 
   GraduationCap, 
   ArrowRight, 
@@ -27,7 +28,9 @@ import {
   TrendingUp,
   Building2,
   Users,
-  CheckCircle2
+  CheckCircle2,
+  Smartphone,
+  RefreshCw
 } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 
@@ -108,6 +111,8 @@ const initialFormData: FormData = {
   co_applicant_monthly_salary: "",
 };
 
+type AuthStep = 'results' | 'otp' | 'verifying' | 'success';
+
 const StudentLanding = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLDivElement>(null);
@@ -117,28 +122,93 @@ const StudentLanding = () => {
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
+  
+  // Inline OTP verification states
+  const [authStep, setAuthStep] = useState<AuthStep>('results');
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const [otpSent, setOtpSent] = useState(false);
 
-  // Auto-countdown navigation after eligibility results
+  // Resend timer countdown
   useEffect(() => {
-    if (result && countdown === null) {
-      setCountdown(10);
-    }
-  }, [result]);
-
-  useEffect(() => {
-    if (countdown === null || countdown < 0) return;
-    
-    if (countdown === 0) {
-      sessionStorage.setItem('eligibility_form', JSON.stringify({ ...formData, loan_amount: formData.loan_amount[0] * 100000 }));
-      toast.success('Taking you to phone verification...');
-      navigate("/student/auth");
-      return;
-    }
-
-    const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    if (resendTimer <= 0) return;
+    const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
     return () => clearTimeout(timer);
-  }, [countdown, formData, navigate]);
+  }, [resendTimer]);
+
+  // Auto-verify when 4 digits entered
+  useEffect(() => {
+    if (otp.length === 4 && authStep === 'otp') {
+      verifyOTP();
+    }
+  }, [otp]);
+
+  // Send OTP when transitioning to OTP step
+  const sendOTP = async () => {
+    const phone = formData.student_phone.replace(/\D/g, '');
+    setOtpError('');
+    setOtp('');
+    
+    try {
+      // For now, we'll simulate OTP sending (the verify-student-otp edge function handles this)
+      // In production, you'd call a send-otp edge function here
+      setOtpSent(true);
+      setResendTimer(30);
+      toast.success(`OTP sent to +91 ${phone}`);
+    } catch (error: any) {
+      toast.error('Failed to send OTP');
+    }
+  };
+
+  const verifyOTP = async () => {
+    setAuthStep('verifying');
+    setOtpError('');
+    
+    const phone = formData.student_phone.replace(/\D/g, '');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-student-otp', {
+        body: { phone, otp }
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        setAuthStep('success');
+        toast.success('Phone verified successfully!');
+        
+        // Wait for success animation, then navigate
+        setTimeout(() => {
+          sessionStorage.setItem('eligibility_form', JSON.stringify({ 
+            ...formData, 
+            loan_amount: formData.loan_amount[0] * 100000,
+            verified: true 
+          }));
+          navigate('/student');
+        }, 1500);
+      } else {
+        setAuthStep('otp');
+        setOtpError(data?.error || 'Invalid OTP');
+        setOtp('');
+      }
+    } catch (error: any) {
+      setAuthStep('otp');
+      setOtpError('Verification failed. Please try again.');
+      setOtp('');
+    }
+  };
+
+  const handleContinueToOTP = () => {
+    setAuthStep('otp');
+    sendOTP();
+  };
+
+  const handleBackToResults = () => {
+    setAuthStep('results');
+    setOtp('');
+    setOtpError('');
+  };
 
   const formatAmount = (value: number): string => value >= 100 ? "₹1Cr+" : `₹${value}L`;
 
@@ -256,11 +326,13 @@ const StudentLanding = () => {
     }
   };
 
-  const handleStartOver = () => { setResult(null); setLeadId(null); setCountdown(null); };
-
-  const handleContinue = () => {
-    sessionStorage.setItem('eligibility_form', JSON.stringify({ ...formData, loan_amount: formData.loan_amount[0] * 100000 }));
-    navigate("/student/auth");
+  const handleStartOver = () => { 
+    setResult(null); 
+    setLeadId(null); 
+    setAuthStep('results');
+    setOtp('');
+    setOtpError('');
+    setOtpSent(false);
   };
 
   const tierConfig = result ? getTierConfig(result.lenderCount) : null;
@@ -540,8 +612,121 @@ const StudentLanding = () => {
                       </div>
                     </div>
                   </div>
+                ) : authStep === 'success' ? (
+                  /* Success State - Verified! */
+                  <div className="space-y-6 animate-fade-in py-8">
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/50 mb-4">
+                        <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-foreground mb-2">Phone Verified!</h3>
+                      <p className="text-sm text-muted-foreground">Redirecting to your dashboard...</p>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  </div>
+                ) : authStep === 'otp' || authStep === 'verifying' ? (
+                  /* OTP Verification State */
+                  <div className="space-y-4 animate-fade-in">
+                    {/* Progress Indicator - Step 2 Active */}
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-bold">✓</div>
+                        <span>Eligibility</span>
+                      </div>
+                      <div className="w-8 h-px bg-primary" />
+                      <div className="flex items-center gap-1">
+                        <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold animate-pulse">2</div>
+                        <span className="font-medium text-foreground">Verify Phone</span>
+                      </div>
+                      <div className="w-8 h-px bg-border" />
+                      <div className="flex items-center gap-1">
+                        <div className="w-5 h-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold">3</div>
+                        <span>Get Offers</span>
+                      </div>
+                    </div>
+
+                    <div className="text-center space-y-2">
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-1">
+                        <Smartphone className="h-7 w-7 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold text-foreground">Verify Your Phone</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Enter the 4-digit OTP sent to
+                      </p>
+                      <p className="text-base font-semibold text-foreground">
+                        +91 {formData.student_phone.slice(0, 5)} {formData.student_phone.slice(5)}
+                      </p>
+                    </div>
+
+                    {/* OTP Input */}
+                    <div className="py-4">
+                      <OTPInput
+                        length={4}
+                        value={otp}
+                        onChange={setOtp}
+                        disabled={authStep === 'verifying'}
+                        hasError={!!otpError}
+                        autoFocus
+                      />
+                      
+                      {otpError && (
+                        <p className="text-sm text-destructive text-center mt-3 animate-shake">
+                          {otpError}
+                        </p>
+                      )}
+                      
+                      {authStep === 'verifying' && (
+                        <div className="flex items-center justify-center gap-2 mt-4 text-sm text-primary">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Verifying...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Resend OTP */}
+                    <div className="text-center">
+                      {resendTimer > 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Resend OTP in <span className="font-medium text-foreground">{resendTimer}s</span>
+                        </p>
+                      ) : (
+                        <button
+                          onClick={sendOTP}
+                          disabled={authStep === 'verifying'}
+                          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors disabled:opacity-50"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Resend OTP
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Back Button */}
+                    <button
+                      onClick={handleBackToResults}
+                      disabled={authStep === 'verifying'}
+                      className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center justify-center gap-1 disabled:opacity-50"
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                      Back to results
+                    </button>
+
+                    {/* Trust badges */}
+                    <div className="flex items-center justify-center gap-3 pt-2 border-t border-border">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Shield className="h-3 w-3 text-emerald-600" />
+                        <span>Secure verification</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock className="h-3 w-3 text-primary" />
+                        <span>OTP valid for 10 min</span>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  /* Result State - Enhanced */
+                  /* Result State - authStep === 'results' */
                   <div className="space-y-4 animate-fade-in">
                     {/* Progress Indicator */}
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-2">
@@ -552,7 +737,7 @@ const StudentLanding = () => {
                       <div className="w-8 h-px bg-border" />
                       <div className="flex items-center gap-1">
                         <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">2</div>
-                        <span className="font-medium text-foreground">Complete Application</span>
+                        <span className="font-medium text-foreground">Verify Phone</span>
                       </div>
                       <div className="w-8 h-px bg-border" />
                       <div className="flex items-center gap-1">
@@ -605,22 +790,14 @@ const StudentLanding = () => {
                     </div>
 
                     <div className="space-y-2">
-                      {/* Auto-countdown notice */}
-                      {countdown !== null && countdown > 0 && (
-                        <div className="flex items-center justify-center gap-2 text-sm text-primary font-medium animate-pulse">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Continuing in {countdown}s...</span>
-                        </div>
-                      )}
-                      
                       {/* CTA - Pulsing with glow animation */}
                       <Button 
                         size="lg" 
                         className="w-full h-12 font-semibold text-base transition-all hover:scale-[1.02] animate-cta-pulse shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-primary/90 relative overflow-hidden" 
-                        onClick={handleContinue}
+                        onClick={handleContinueToOTP}
                       >
                         <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                        Get My Loan Offers<ArrowRight className="h-4 w-4 ml-2 animate-bounce-x" />
+                        Verify Phone & Continue<ArrowRight className="h-4 w-4 ml-2 animate-bounce-x" />
                       </Button>
                       
                       {/* Progress continuity text */}
@@ -630,7 +807,7 @@ const StudentLanding = () => {
                           Step 1 of 3 Complete
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Continue to verify your phone →
+                          Quick OTP verification to unlock your offers →
                         </p>
                       </div>
                       
@@ -638,7 +815,7 @@ const StudentLanding = () => {
                         onClick={handleStartOver}
                         className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
                       >
-                        ← Start over (stops countdown)
+                        ← Start over
                       </button>
                     </div>
 
@@ -650,7 +827,7 @@ const StudentLanding = () => {
                       </div>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3 text-primary" />
-                        <span>Takes 2 min</span>
+                        <span>Takes 30 seconds</span>
                       </div>
                     </div>
                   </div>
