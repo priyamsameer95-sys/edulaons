@@ -86,11 +86,11 @@ export function StatusTimeline({
 
   if (loading) {
     return (
-      <div className={cn("animate-pulse space-y-3", className)}>
+      <div className={cn("space-y-4", className)}>
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted" />
-            <div className="h-4 bg-muted rounded w-32" />
+          <div key={i} className="flex items-center gap-4">
+            <div className="w-6 h-6 rounded-full bg-muted animate-pulse shrink-0" />
+            <div className="h-4 bg-muted rounded w-28 animate-pulse" />
           </div>
         ))}
       </div>
@@ -98,7 +98,7 @@ export function StatusTimeline({
   }
 
   return (
-    <div className={cn("space-y-1", className)}>
+    <div className={cn("relative", className)}>
       {PIPELINE_STAGES.map((stage, index) => {
         const isCompleted = completedStages.has(stage.key) || index < currentStageIndex;
         const isCurrent = stage.key === currentStatus;
@@ -107,36 +107,40 @@ export function StatusTimeline({
         // Find the history entry for this stage
         const historyEntry = history.find(h => h.new_status === stage.key);
         const timestamp = historyEntry?.created_at;
+        const isLast = index === PIPELINE_STAGES.length - 1;
 
         return (
-          <div 
-            key={stage.key} 
-            className={cn(
-              "flex items-start gap-3 py-2 relative",
-              index < PIPELINE_STAGES.length - 1 && "border-l-2 ml-4 pl-6 -translate-x-4",
-              isCompleted ? "border-emerald-500" : isCurrent ? "border-primary" : "border-muted"
-            )}
-          >
-            {/* Status Icon */}
-            <div className={cn(
-              "absolute -left-[13px] w-6 h-6 rounded-full flex items-center justify-center border-2 bg-background",
-              isCompleted ? "border-emerald-500 bg-emerald-500 text-white" :
-              isCurrent ? "border-primary bg-primary text-primary-foreground" :
-              "border-muted text-muted-foreground"
-            )}>
-              {isCompleted ? (
-                <Check className="w-3.5 h-3.5" />
-              ) : isCurrent ? (
-                <Clock className="w-3.5 h-3.5 animate-pulse" />
-              ) : (
-                <Circle className="w-3 h-3" />
+          <div key={stage.key} className="flex gap-4">
+            {/* Timeline connector */}
+            <div className="flex flex-col items-center">
+              {/* Status Icon */}
+              <div className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center border-2 shrink-0 z-10",
+                isCompleted ? "border-emerald-500 bg-emerald-500 text-white" :
+                isCurrent ? "border-primary bg-primary text-primary-foreground" :
+                "border-muted bg-background text-muted-foreground"
+              )}>
+                {isCompleted ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : isCurrent ? (
+                  <Clock className="w-3.5 h-3.5" />
+                ) : (
+                  <Circle className="w-2.5 h-2.5 fill-current" />
+                )}
+              </div>
+              {/* Connector line */}
+              {!isLast && (
+                <div className={cn(
+                  "w-0.5 h-8 -mt-px",
+                  isCompleted ? "bg-emerald-500" : "bg-muted"
+                )} />
               )}
             </div>
 
             {/* Stage Info */}
-            <div className="flex-1 min-w-0">
+            <div className={cn("pb-4", isLast && "pb-0")}>
               <p className={cn(
-                "text-sm font-medium",
+                "text-sm font-medium leading-6",
                 isCompleted || isCurrent ? "text-foreground" : "text-muted-foreground"
               )}>
                 {isStudentView ? stage.studentLabel : stage.label}
@@ -158,12 +162,14 @@ export function StatusTimeline({
 
       {/* Show terminal status if applicable */}
       {isTerminal && (
-        <div className="flex items-start gap-3 py-2 relative border-l-2 ml-4 pl-6 -translate-x-4 border-destructive">
-          <div className="absolute -left-[13px] w-6 h-6 rounded-full flex items-center justify-center border-2 bg-destructive border-destructive text-white">
-            <AlertCircle className="w-3.5 h-3.5" />
+        <div className="flex gap-4">
+          <div className="flex flex-col items-center">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-destructive border-destructive text-white shrink-0">
+              <AlertCircle className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-destructive">
+          <div>
+            <p className="text-sm font-medium text-destructive leading-6">
               {isStudentView 
                 ? STUDENT_STATUS_LABELS[currentStatus] || currentStatus 
                 : currentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
