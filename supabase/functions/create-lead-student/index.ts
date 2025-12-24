@@ -371,6 +371,161 @@ serve(async (req) => {
       console.log('✅ University association created');
     }
 
+    // ===== AI LENDER EVALUATION =====
+    console.log('🤖 Triggering AI lender evaluation for student...');
+    
+    let recommendedLenders: any[] = [];
+    let aiLenderError: string | null = null;
+    
+    try {
+      // Call suggest-lender edge function
+      const suggestLenderUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/suggest-lender`;
+      
+      const lenderResponse = await fetch(suggestLenderUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          leadId: lead.id,
+          studyDestination: studyDestination,
+          loanAmount: loanAmount,
+        }),
+      });
+
+      if (lenderResponse.ok) {
+        const lenderSuggestion = await lenderResponse.json();
+        console.log('✅ AI lender evaluation complete');
+        
+        if (lenderSuggestion.success && lenderSuggestion.grouped_evaluations) {
+          // Combine best_fit and also_consider groups, take top 5
+          const allEvaluations = [
+            ...(lenderSuggestion.grouped_evaluations.best_fit || []),
+            ...(lenderSuggestion.grouped_evaluations.also_consider || []),
+          ].slice(0, 5);
+          
+          console.log(`📊 Found ${allEvaluations.length} recommended lenders`);
+          
+          // Get full lender details for each evaluation
+          if (allEvaluations.length > 0) {
+            const lenderIds = allEvaluations.map((e: any) => e.lender_id);
+            
+            const { data: lenderDetails } = await supabaseAdmin
+              .from('lenders')
+              .select(`
+                id, name, code, description, logo_url, website,
+                contact_email, contact_phone,
+                interest_rate_min, interest_rate_max,
+                loan_amount_min, loan_amount_max,
+                processing_fee, foreclosure_charges,
+                moratorium_period, processing_time_days,
+                disbursement_time_days, approval_rate,
+                key_features, eligible_expenses, required_documents
+              `)
+              .in('id', lenderIds);
+            
+            // Merge AI scores with full lender details
+            recommendedLenders = allEvaluations.map((evalResult: any) => {
+              const details: any = lenderDetails?.find((l: any) => l.id === evalResult.lender_id) || {};
+              return {
+                lender_id: evalResult.lender_id,
+                lender_name: evalResult.lender_name,
+                lender_code: details.code || '',
+                lender_description: details.description,
+                logo_url: details.logo_url,
+                website: details.website,
+                contact_email: details.contact_email,
+                contact_phone: details.contact_phone,
+                interest_rate_min: details.interest_rate_min,
+                interest_rate_max: details.interest_rate_max,
+                loan_amount_min: details.loan_amount_min,
+                loan_amount_max: details.loan_amount_max,
+                processing_fee: details.processing_fee,
+                foreclosure_charges: details.foreclosure_charges,
+                moratorium_period: details.moratorium_period,
+                processing_time_days: details.processing_time_days,
+                disbursement_time_days: details.disbursement_time_days,
+                approval_rate: details.approval_rate,
+                key_features: details.key_features,
+                eligible_expenses: details.eligible_expenses,
+                required_documents: details.required_documents,
+                // AI evaluation data
+                compatibility_score: evalResult.fit_score,
+                is_preferred: evalResult.group === 'best_fit',
+                student_facing_reason: evalResult.student_facing_reason || evalResult.justification,
+                processing_time_estimate: evalResult.processing_time_estimate,
+                probability_band: evalResult.probability_band,
+                risk_flags: evalResult.risk_flags || [],
+              };
+            });
+            
+            // Update lead with best-fit lender
+            if (recommendedLenders.length > 0) {
+              const bestLender = recommendedLenders[0];
+              await supabaseAdmin
+                .from('leads_new')
+                .update({ 
+                  lender_id: bestLender.lender_id,
+                })
+                .eq('id', lead.id);
+              console.log('✅ Assigned best-fit lender:', bestLender.lender_name);
+            }
+          }
+        }
+      } else {
+        const errorText = await lenderResponse.text();
+        console.warn('⚠️ AI lender evaluation returned error:', errorText);
+        aiLenderError = 'AI evaluation failed';
+      }
+    } catch (aiError: any) {
+      console.error('❌ AI lender call error:', aiError.message);
+      aiLenderError = aiError.message;
+    }
+    
+    // Fallback: Return top 3 lenders by preferred_rank if AI failed
+    if (recommendedLenders.length === 0) {
+      console.log('📋 Using fallback lender list');
+      
+      const { data: fallbackLenders } = await supabaseAdmin
+        .from('lenders')
+        .select(`
+          id, name, code, description, logo_url, website,
+          interest_rate_min, interest_rate_max,
+          loan_amount_min, loan_amount_max,
+          processing_fee, moratorium_period,
+          processing_time_days, approval_rate,
+          key_features
+        `)
+        .eq('is_active', true)
+        .order('preferred_rank', { ascending: true })
+        .limit(3);
+      
+      recommendedLenders = (fallbackLenders || []).map((l: any) => ({
+        lender_id: l.id,
+        lender_name: l.name,
+        lender_code: l.code,
+        lender_description: l.description,
+        logo_url: l.logo_url,
+        website: l.website,
+        interest_rate_min: l.interest_rate_min,
+        interest_rate_max: l.interest_rate_max,
+        loan_amount_min: l.loan_amount_min,
+        loan_amount_max: l.loan_amount_max,
+        processing_fee: l.processing_fee,
+        moratorium_period: l.moratorium_period,
+        processing_time_days: l.processing_time_days,
+        approval_rate: l.approval_rate,
+        key_features: l.key_features,
+        compatibility_score: 70, // Default score for fallback
+        is_preferred: false,
+        student_facing_reason: 'Popular choice for education loans',
+        is_fallback: true,
+      }));
+      
+      console.log(`📋 Returning ${recommendedLenders.length} fallback lenders`);
+    }
+
     console.log('🎉 Student lead creation completed');
 
     return new Response(
@@ -379,9 +534,11 @@ serve(async (req) => {
         lead: {
           id: lead.id,
           case_id: lead.case_id,
+          requested_amount: loanAmount,
           is_partner_lead: false,
           partner_name: null,
         },
+        recommended_lenders: recommendedLenders,
         message: isQuickLead 
           ? 'Your eligibility check has been saved. Complete verification to continue.'
           : 'Your application has been created successfully.',
