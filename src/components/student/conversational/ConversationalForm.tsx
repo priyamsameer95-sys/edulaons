@@ -1,11 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Shield, Clock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Shield, Clock, CheckCircle2, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StudentApplicationData } from '@/types/student-application';
 import PersonalDetailsPage from '../form-pages/PersonalDetailsPage';
 import StudyLoanPage from '../form-pages/StudyLoanPage';
 import CoApplicantReviewPage from '../form-pages/CoApplicantReviewPage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ConversationalFormProps {
   data: Partial<StudentApplicationData>;
@@ -21,8 +32,10 @@ const STEPS = [
 ];
 
 const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: ConversationalFormProps) => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(1);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const totalSteps = STEPS.length;
   const progress = (currentStep / totalSteps) * 100;
@@ -41,6 +54,19 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
       setCurrentStep(prev => prev - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleBackClick = () => {
+    if (currentStep === 1) {
+      setShowExitDialog(true);
+    } else {
+      goPrev();
+    }
+  };
+
+  const handleExitConfirm = () => {
+    setShowExitDialog(false);
+    navigate('/student');
   };
 
   const goToStep = (step: number) => {
@@ -82,17 +108,20 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
           <div className="flex items-center justify-between mb-3">
             <button
               type="button"
-              onClick={goPrev}
-              disabled={currentStep === 1}
-              className={cn(
-                "flex items-center gap-2 text-sm font-medium transition-all px-2 py-1 rounded-lg",
-                currentStep === 1
-                  ? "text-muted-foreground/40 cursor-not-allowed"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              )}
+              onClick={handleBackClick}
+              className="flex items-center gap-2 text-sm font-medium transition-all px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back</span>
+              {currentStep === 1 ? (
+                <>
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Exit</span>
+                </>
+              ) : (
+                <>
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </>
+              )}
             </button>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -182,6 +211,24 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
           </div>
         </div>
       </footer>
+
+      {/* Exit Confirmation Dialog */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit Application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress is auto-saved. You can continue from where you left off anytime.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay</AlertDialogCancel>
+            <AlertDialogAction onClick={handleExitConfirm}>
+              Exit to Dashboard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
