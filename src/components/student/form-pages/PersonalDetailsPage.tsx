@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Mail, Calendar, MapPin, Shield, Check, Loader2, Sparkles } from 'lucide-react';
+import { User, Phone, Mail, Calendar, MapPin, Shield, Check, Loader2, Sparkles, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StudentApplicationData } from '@/types/student-application';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { INDIAN_STATES, UNION_TERRITORIES } from '@/constants/indianStates';
 
 interface PersonalDetailsPageProps {
   data: Partial<StudentApplicationData>;
@@ -45,7 +47,7 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
         const age = Math.floor((Date.now() - new Date(value).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         return age < 16 || age > 50 ? 'Age must be 16-50' : '';
       }
-      case 'city': return !value || value.trim().length < 2 ? 'Please enter your city' : '';
+      case 'state': return !value ? 'Please select your state' : '';
       default: return '';
     }
   };
@@ -62,10 +64,10 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
       email: validateField('email', data.email || ''),
       dateOfBirth: validateField('dateOfBirth', data.dateOfBirth || ''),
       gender: !data.gender ? 'Select gender' : '',
-      city: validateField('city', data.city || ''),
+      state: validateField('state', data.state || ''),
     };
     setErrors(newErrors);
-    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, city: true });
+    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, state: true });
     return !Object.values(newErrors).some(e => e);
   };
 
@@ -261,36 +263,58 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
           </div>
         </div>
 
-        {/* City */}
+        {/* State */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground" /> City <span className="text-destructive">*</span>
+            <MapPin className="w-4 h-4 text-muted-foreground" /> State / Union Territory <span className="text-destructive">*</span>
           </label>
-          <div
-            className={cn(
-              "flex items-center h-12 px-4 rounded-lg border bg-background transition-colors",
-              errors.city && touched.city 
-                ? "border-destructive" 
-                : isValid('city') 
-                ? "border-emerald-500" 
-                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
-            )}
+          <Select
+            value={data.state || ''}
+            onValueChange={(value) => {
+              onUpdate({ state: value });
+              setTouched(prev => ({ ...prev, state: true }));
+              setErrors(prev => ({ ...prev, state: '' }));
+            }}
           >
-            <input
-              type="text"
-              placeholder="Enter your city (e.g., Mumbai, Delhi)"
-              value={data.city || ''}
-              onChange={e => onUpdate({ city: e.target.value })}
-              onBlur={e => handleBlur('city', e.target.value)}
-              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-            />
-            {isValid('city') && (
-              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-white" />
+            <SelectTrigger
+              className={cn(
+                "h-12 bg-background",
+                errors.state && touched.state 
+                  ? "border-destructive" 
+                  : isValid('state') 
+                  ? "border-emerald-500" 
+                  : "border-input"
+              )}
+            >
+              <div className="flex items-center justify-between w-full">
+                <SelectValue placeholder="Select your state" />
+                {isValid('state') && (
+                  <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 mr-2">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          {errors.city && touched.city && <p className="text-xs text-destructive">{errors.city}</p>}
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px] bg-popover">
+              <SelectGroup>
+                <SelectLabel className="text-xs text-muted-foreground font-semibold">States</SelectLabel>
+                {INDIAN_STATES.map((state) => (
+                  <SelectItem key={state} value={state}>
+                    {state}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="text-xs text-muted-foreground font-semibold">Union Territories</SelectLabel>
+                {UNION_TERRITORIES.map((ut) => (
+                  <SelectItem key={ut} value={ut}>
+                    {ut}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {errors.state && touched.state && <p className="text-xs text-destructive">{errors.state}</p>}
         </div>
 
         {/* Continue Button */}
