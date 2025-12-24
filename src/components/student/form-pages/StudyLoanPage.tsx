@@ -567,50 +567,50 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           </div>
         )}
 
-        {/* Intake - Simplified */}
+        {/* Intake - Individual Month Tabs */}
         <div className="space-y-3">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" /> When do you plan to start? *
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            {intakeOptions.map(opt => {
-              // For "next_9_months", we set a month/year; for "plan_later", we use a special indicator
-              const isSelected = opt.value === 'next_9_months' 
-                ? (data.intakeMonth && data.intakeYear && data.intakeYear <= new Date().getFullYear() + 1)
-                : (data.intakeYear && data.intakeYear > new Date().getFullYear() + 1);
-              
-              return (
-                <motion.button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => { 
-                    if (opt.value === 'next_9_months') {
-                      // Set to next available month
-                      const now = new Date();
-                      const futureDate = new Date(now.setMonth(now.getMonth() + 3));
-                      onUpdate({ intakeMonth: futureDate.getMonth() + 1, intakeYear: futureDate.getFullYear() }); 
-                    } else {
-                      // Set to 2 years from now to indicate "later"
-                      onUpdate({ intakeMonth: 9, intakeYear: new Date().getFullYear() + 2 }); 
-                    }
-                    setErrors(p => ({ ...p, intake: '' })); 
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    "relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all",
-                    isSelected
-                      ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
-                      : "border-border hover:border-primary/40"
-                  )}
-                >
-                  <span className="text-2xl">{opt.icon}</span>
-                  <span className="font-semibold text-foreground text-sm">{opt.label}</span>
-                  <span className="text-xs text-muted-foreground">{opt.description}</span>
-                </motion.button>
-              );
-            })}
-          </div>
+          {(() => {
+            // Generate next 12 months
+            const months = [];
+            const now = new Date();
+            for (let i = 1; i <= 12; i++) {
+              const futureDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+              months.push({
+                month: futureDate.getMonth() + 1,
+                year: futureDate.getFullYear(),
+                label: futureDate.toLocaleString('en-US', { month: 'short' }),
+              });
+            }
+            return (
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {months.map(m => {
+                  const isSelected = data.intakeMonth === m.month && data.intakeYear === m.year;
+                  return (
+                    <button
+                      key={`${m.month}-${m.year}`}
+                      type="button"
+                      onClick={() => {
+                        onUpdate({ intakeMonth: m.month, intakeYear: m.year });
+                        setErrors(p => ({ ...p, intake: '' }));
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-0.5 p-2.5 rounded-lg border-2 transition-all text-center",
+                        isSelected
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border hover:border-primary/40 bg-card"
+                      )}
+                    >
+                      <span className="font-semibold text-foreground text-sm">{m.label}</span>
+                      <span className="text-xs text-muted-foreground">{m.year}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
           {errors.intake && <p className="text-xs text-destructive">{errors.intake}</p>}
         </div>
 
