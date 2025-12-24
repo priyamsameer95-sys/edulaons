@@ -220,9 +220,13 @@ const StudentAuth = () => {
       </div>;
   }
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-emerald-50/50 dark:from-blue-950/20 dark:via-background dark:to-emerald-950/20 flex flex-col relative overflow-hidden">
+      {/* Decorative blobs */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-y-1/2" />
+      <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl translate-y-1/2" />
+      
       {/* Header */}
-      <header className="p-4">
+      <header className="relative z-10 p-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
             <ArrowLeft className="h-4 w-4" />
@@ -235,149 +239,156 @@ const StudentAuth = () => {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-4 pb-12">
+      <div className="relative z-10 flex-1 flex items-center justify-center p-4 pb-12">
         <div className="w-full max-w-sm">
           {/* Logo & Title */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary mb-4">
-              <GraduationCap className="h-7 w-7 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 mb-4">
+              <GraduationCap className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-semibold text-foreground">
-              {step === 'phone' ? 'Sign in to Student Portal' : 'Enter verification code'}
+            <h1 className="text-2xl font-bold text-foreground">
+              {step === 'phone' ? 'Student Portal' : 'Verify Your Phone'}
             </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {step === 'phone' ? 'Track your education loan application' : 'Enter the code we sent you'}
+            </p>
           </div>
 
-          {/* Form */}
-          <div className="space-y-6">
-            {step === 'phone' ? (
-              <form onSubmit={handleSendOTP} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium">
-                    Phone Number
-                  </Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-sm text-muted-foreground">
-                      <span>🇮🇳</span>
-                      <span>+91</span>
+          {/* Form Card */}
+          <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              {step === 'phone' ? (
+                <form onSubmit={handleSendOTP} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" />
+                      Phone Number
+                    </Label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-sm text-muted-foreground">
+                        <span>🇮🇳</span>
+                        <span>+91</span>
+                      </div>
+                      <Input 
+                        id="phone" 
+                        type="tel" 
+                        placeholder="98765 43210" 
+                        value={formatPhoneDisplay(phone)} 
+                        onChange={handlePhoneChange} 
+                        className="h-12 pl-16 text-sm bg-background" 
+                        autoFocus 
+                        required 
+                      />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                      Name <span className="text-muted-foreground font-normal">(optional)</span>
+                    </Label>
                     <Input 
-                      id="phone" 
-                      type="tel" 
-                      placeholder="98765 43210" 
-                      value={formatPhoneDisplay(phone)} 
-                      onChange={handlePhoneChange} 
-                      className="h-12 pl-16 text-sm" 
-                      autoFocus 
-                      required 
+                      id="name" 
+                      type="text" 
+                      placeholder="Enter your name" 
+                      value={name} 
+                      onChange={e => setName(e.target.value)} 
+                      className="h-12 text-sm bg-background" 
                     />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium">
-                    Name <span className="text-muted-foreground font-normal">(optional)</span>
-                  </Label>
-                  <Input 
-                    id="name" 
-                    type="text" 
-                    placeholder="Enter your name" 
-                    value={name} 
-                    onChange={e => setName(e.target.value)} 
-                    className="h-12 text-sm" 
+                  <LoadingButton 
+                    type="submit" 
+                    className="w-full h-12 font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md" 
+                    loading={isLoading} 
+                    loadingText="Sending..."
+                  >
+                    Continue
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </LoadingButton>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    We'll send you a verification code via SMS
+                  </p>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOTP} className="space-y-5">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Code sent to <span className="font-medium text-foreground">+91 {formatPhoneDisplay(phone)}</span>
+                    </p>
+                  </div>
+
+                  <OTPInput 
+                    value={otp} 
+                    onChange={val => {
+                      setOtp(val);
+                      setOtpError(false);
+                    }} 
+                    disabled={isLoading} 
+                    autoFocus 
+                    hasError={otpError} 
                   />
-                </div>
 
-                <LoadingButton 
-                  type="submit" 
-                  className="w-full h-12 font-medium" 
-                  loading={isLoading} 
-                  loadingText="Sending..."
-                >
-                  Continue
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </LoadingButton>
+                  <div className="text-center text-sm">
+                    {canResend ? (
+                      <button 
+                        type="button" 
+                        onClick={handleResendOTP} 
+                        className="text-primary font-medium hover:underline"
+                      >
+                        Resend code
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        Resend in {resendTimer}s
+                      </span>
+                    )}
+                  </div>
 
-                <p className="text-xs text-center text-muted-foreground">
-                  We'll send you a verification code via SMS
-                </p>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOTP} className="space-y-5">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Code sent to <span className="font-medium text-foreground">+91 {formatPhoneDisplay(phone)}</span>
-                  </p>
-                </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                      Test code: <span className="font-mono font-semibold">9955</span>
+                    </p>
+                  </div>
 
-                <OTPInput 
-                  value={otp} 
-                  onChange={val => {
-                    setOtp(val);
-                    setOtpError(false);
-                  }} 
-                  disabled={isLoading} 
-                  autoFocus 
-                  hasError={otpError} 
-                />
+                  <LoadingButton 
+                    type="submit" 
+                    className="w-full h-12 font-semibold bg-gradient-to-r from-primary to-primary/90 shadow-md" 
+                    loading={isLoading} 
+                    loadingText="Verifying..." 
+                    disabled={otp.length !== 4}
+                  >
+                    Verify & Sign In
+                  </LoadingButton>
 
-                <div className="text-center text-sm">
-                  {canResend ? (
-                    <button 
-                      type="button" 
-                      onClick={handleResendOTP} 
-                      className="text-primary font-medium hover:underline"
-                    >
-                      Resend code
-                    </button>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      Resend in {resendTimer}s
-                    </span>
-                  )}
-                </div>
+                  <button 
+                    type="button" 
+                    onClick={handleBack} 
+                    disabled={isLoading} 
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Change number
+                  </button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
 
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
-                  <p className="text-sm text-amber-700 dark:text-amber-400">
-                    Test code: <span className="font-mono font-semibold">9955</span>
-                  </p>
-                </div>
-
-                <LoadingButton 
-                  type="submit" 
-                  className="w-full h-12 font-medium" 
-                  loading={isLoading} 
-                  loadingText="Verifying..." 
-                  disabled={otp.length !== 4}
-                >
-                  Verify
-                </LoadingButton>
-
-                <button 
-                  type="button" 
-                  onClick={handleBack} 
-                  disabled={isLoading} 
-                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  Change number
-                </button>
-              </form>
-            )}
-          </div>
-
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 mt-8 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Shield className="h-3 w-3" />
-              Secure
+          {/* Features below card */}
+          <div className="mt-8 grid grid-cols-3 gap-3">
+            <div className="text-center p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30">
+              <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mx-auto mb-1" />
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Secure</p>
             </div>
-            <div className="flex items-center gap-1">
-              <Zap className="h-3 w-3" />
-              Fast
+            <div className="text-center p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30">
+              <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Fast</p>
             </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" />
-              Trusted
+            <div className="text-center p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30">
+              <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Trusted</p>
             </div>
           </div>
         </div>
