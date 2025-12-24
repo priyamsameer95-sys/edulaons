@@ -20,36 +20,11 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isValidating, setIsValidating] = useState(false);
-  const [pinLoading, setPinLoading] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTimeout(() => nameRef.current?.focus(), 100);
   }, []);
-
-  // Auto-lookup city/state from PIN
-  useEffect(() => {
-    const pin = data.postalCode;
-    if (pin && pin.length === 6 && !data.city) {
-      setPinLoading(true);
-      const timer = setTimeout(() => {
-        const cityMap: Record<string, { city: string; state: string }> = {
-          '110': { city: 'New Delhi', state: 'Delhi' },
-          '400': { city: 'Mumbai', state: 'Maharashtra' },
-          '560': { city: 'Bangalore', state: 'Karnataka' },
-          '600': { city: 'Chennai', state: 'Tamil Nadu' },
-          '700': { city: 'Kolkata', state: 'West Bengal' },
-          '500': { city: 'Hyderabad', state: 'Telangana' },
-          '380': { city: 'Ahmedabad', state: 'Gujarat' },
-          '411': { city: 'Pune', state: 'Maharashtra' },
-        };
-        const match = cityMap[pin.substring(0, 3)];
-        if (match) onUpdate({ city: match.city, state: match.state });
-        setPinLoading(false);
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [data.postalCode]);
 
   const formatPhone = (val: string) => {
     const nums = val.replace(/\D/g, '');
@@ -70,7 +45,7 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
         const age = Math.floor((Date.now() - new Date(value).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         return age < 16 || age > 50 ? 'Age must be 16-50' : '';
       }
-      case 'postalCode': return !/^\d{6}$/.test(value) ? 'Enter 6-digit PIN' : '';
+      case 'city': return !value || value.trim().length < 2 ? 'Please enter your city' : '';
       default: return '';
     }
   };
@@ -86,12 +61,11 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
       phone: validateField('phone', data.phone || ''),
       email: validateField('email', data.email || ''),
       dateOfBirth: validateField('dateOfBirth', data.dateOfBirth || ''),
-      postalCode: validateField('postalCode', data.postalCode || ''),
       gender: !data.gender ? 'Select gender' : '',
-      city: !data.city?.trim() ? 'City is required' : '',
+      city: validateField('city', data.city || ''),
     };
     setErrors(newErrors);
-    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, postalCode: true, gender: true, city: true });
+    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, city: true });
     return !Object.values(newErrors).some(e => e);
   };
 
@@ -287,51 +261,36 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
           </div>
         </div>
 
-        {/* Location */}
+        {/* City */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground" /> Location <span className="text-destructive">*</span>
+            <MapPin className="w-4 h-4 text-muted-foreground" /> City <span className="text-destructive">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-3">
-            <div className={cn(
-              "h-12 px-4 rounded-lg border bg-background flex items-center",
-              errors.postalCode && touched.postalCode 
+          <div
+            className={cn(
+              "flex items-center h-12 px-4 rounded-lg border bg-background transition-colors",
+              errors.city && touched.city 
                 ? "border-destructive" 
-                : isValid('postalCode') 
+                : isValid('city') 
                 ? "border-emerald-500" 
                 : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
-            )}>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="PIN"
-                maxLength={6}
-                value={data.postalCode || ''}
-                onChange={e => onUpdate({ postalCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                onBlur={e => handleBlur('postalCode', e.target.value)}
-                className="w-full bg-transparent outline-none text-center text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="col-span-2 h-12 flex items-center gap-2 px-4 rounded-lg border border-input bg-muted/50">
-              {pinLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              ) : data.city ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span className="text-sm text-foreground truncate">{data.city}, {data.state}</span>
-                </>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={data.city || ''}
-                  onChange={e => onUpdate({ city: e.target.value })}
-                  className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm"
-                />
-              )}
-            </div>
+            )}
+          >
+            <input
+              type="text"
+              placeholder="Enter your city (e.g., Mumbai, Delhi)"
+              value={data.city || ''}
+              onChange={e => onUpdate({ city: e.target.value })}
+              onBlur={e => handleBlur('city', e.target.value)}
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+            />
+            {isValid('city') && (
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            )}
           </div>
-          {errors.postalCode && touched.postalCode && <p className="text-xs text-destructive">{errors.postalCode}</p>}
+          {errors.city && touched.city && <p className="text-xs text-destructive">{errors.city}</p>}
         </div>
 
         {/* Continue Button */}
