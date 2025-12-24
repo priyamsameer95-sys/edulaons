@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Wallet, User, Phone, Mail, Briefcase, MapPin, Loader2, Shield, Sparkles, Check, ChevronRight } from 'lucide-react';
+import { Users, Wallet, User, Phone, Mail, Briefcase, MapPin, Loader2, Shield, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { formatCompactCurrency } from '@/utils/formatters';
 import type { StudentApplicationData, Relationship, EmploymentType } from '@/types/student-application';
 
 interface CoApplicantReviewPageProps {
@@ -30,7 +31,6 @@ const employmentTypes: { value: EmploymentType; label: string }[] = [
 const incomeQuick = [25000, 50000, 75000, 100000, 150000, 200000];
 
 const formatIncome = (v: number) => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`;
-const formatCurrency = (v: number) => v >= 10000000 ? `₹${(v / 10000000).toFixed(1)} Cr` : v >= 100000 ? `₹${(v / 100000).toFixed(0)} L` : `₹${v.toLocaleString('en-IN')}`;
 
 const destinations = [
   { value: 'USA', emoji: '🇺🇸' }, { value: 'UK', emoji: '🇬🇧' }, { value: 'Canada', emoji: '🇨🇦' },
@@ -204,7 +204,7 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
                     <p className="text-xs text-muted-foreground mb-0.5">Loan Amount</p>
-                    <p className="font-semibold text-foreground">{formatCurrency(data.loanAmount || 0)}</p>
+                    <p className="font-semibold text-foreground">{formatCompactCurrency(data.loanAmount || 0)}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
                     <p className="text-xs text-muted-foreground mb-0.5">Loan Type</p>

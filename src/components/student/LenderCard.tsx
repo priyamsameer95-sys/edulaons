@@ -5,8 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Building2, 
   Percent, 
-  Clock, 
-  TrendingUp, 
   CheckCircle2, 
   ExternalLink, 
   Mail, 
@@ -18,12 +16,10 @@ import {
   Plane, 
   Home, 
   Shield, 
-  DollarSign, 
   Star, 
   Check,
   Zap,
-  FileText,
-  Calendar
+  FileText
 } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 

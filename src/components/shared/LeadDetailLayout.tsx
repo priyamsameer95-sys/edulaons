@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCompactCurrency } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -88,19 +89,6 @@ const InfoItem = ({
   </div>
 );
 
-const formatCurrency = (amount: number): string => {
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(2)} Cr`;
-  }
-  if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)} L`;
-  }
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 const getIntakeLabel = (month?: number, year?: number): string => {
   if (!month || !year) return 'Not specified';
@@ -170,7 +158,7 @@ export const LeadDetailLayout: React.FC<LeadDetailLayoutProps> = ({
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Loan Amount</p>
-                    <p className="text-sm font-bold">{formatCurrency(lead.loanAmount)}</p>
+                    <p className="text-sm font-bold">{formatCompactCurrency(lead.loanAmount)}</p>
                   </div>
                 </div>
               </CardContent>
