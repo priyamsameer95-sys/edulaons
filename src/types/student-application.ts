@@ -4,7 +4,7 @@
 
 export type TestType = 'IELTS' | 'TOEFL' | 'GRE' | 'GMAT' | 'PTE' | 'SAT';
 export type LoanType = 'secured' | 'unsecured';
-export type CourseType = 'masters_stem' | 'bachelors_stem' | 'others';
+export type CourseType = 'masters_stem' | 'bachelors_stem' | 'mba_management' | 'others';
 export type Relationship = 'parent' | 'spouse' | 'sibling' | 'guardian' | 'other';
 export type EmploymentType = 'salaried' | 'self_employed' | 'business_owner';
 export type HighestQualification = 'phd' | 'masters' | 'bachelors' | 'diploma' | '12th';

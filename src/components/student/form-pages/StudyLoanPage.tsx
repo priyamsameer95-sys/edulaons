@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Search, X, Loader2, Check, Wallet, Building2, Calendar, Sparkles, ShieldCheck, Home, BookOpen, FlaskConical, Briefcase } from 'lucide-react';
+import { GraduationCap, Search, X, Loader2, Check, Wallet, Building2, Calendar, Sparkles, ShieldCheck, Home, BookOpen, FlaskConical, Briefcase, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,9 +37,15 @@ const courseTypes: { value: CourseType; label: string; description: string; icon
     icon: <GraduationCap className="w-5 h-5" />
   },
   { 
+    value: 'mba_management', 
+    label: 'MBA/Management', 
+    description: 'Business Administration & Management',
+    icon: <TrendingUp className="w-5 h-5" />
+  },
+  { 
     value: 'others', 
     label: 'Others', 
-    description: 'Non-STEM Programs (Arts, Business, etc.)',
+    description: 'Non-STEM Programs (Arts, etc.)',
     icon: <Briefcase className="w-5 h-5" />
   },
 ];
