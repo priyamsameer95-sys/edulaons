@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Search, X, Loader2, Check, Wallet, Building2, Calendar, Sparkles } from 'lucide-react';
+import { GraduationCap, Search, X, Loader2, Check, Wallet, Building2, Calendar, Sparkles, ShieldCheck, Home, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/use-debounce';
-import type { StudentApplicationData, HighestQualification } from '@/types/student-application';
+import type { StudentApplicationData, HighestQualification, LoanType } from '@/types/student-application';
 
 interface StudyLoanPageProps {
   data: Partial<StudentApplicationData>;
@@ -22,6 +21,31 @@ interface University {
   country: string;
   global_rank?: number;
 }
+
+interface Course {
+  id: string;
+  program_name: string;
+  degree: string;
+  stream_name: string;
+  tuition_fees: string | null;
+  study_level: string;
+}
+
+// UI country values → DB country names mapping
+const COUNTRY_TO_DB: Record<string, string> = {
+  'USA': 'United States',
+  'UK': 'United Kingdom',
+  'Canada': 'Canada',
+  'Australia': 'Australia',
+  'Germany': 'Germany',
+  'New Zealand': 'New Zealand',
+  'Singapore': 'Singapore',
+  'Hong Kong': 'Hong Kong SAR',
+  'Japan': 'Japan',
+  'Switzerland': 'Switzerland',
+  'China': 'China',
+  'Other': '', // No filter for "Other"
+};
 
 const qualifications: { value: HighestQualification; label: string }[] = [
   { value: '12th', label: '12th' },
@@ -55,6 +79,21 @@ const amountRanges = [
   { value: '1Cr+', label: '₹1 Crore+', min: 10000000, max: 15000000 },
 ];
 
+const loanTypes: { value: LoanType; label: string; icon: React.ReactNode; description: string }[] = [
+  { 
+    value: 'unsecured', 
+    label: 'Unsecured Loan', 
+    icon: <ShieldCheck className="w-5 h-5" />,
+    description: 'No collateral needed. Higher interest rates.'
+  },
+  { 
+    value: 'secured', 
+    label: 'Secured Loan', 
+    icon: <Home className="w-5 h-5" />,
+    description: 'Lower rates with property as collateral.'
+  },
+];
+
 // Generate next 9 months dynamically with real month names
 const getNext9MonthsLabel = () => {
   const months: string[] = [];
@@ -79,10 +118,13 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
   const [results, setResults] = useState<University[]>([]);
   const [selectedUnis, setSelectedUnis] = useState<University[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
   const debouncedSearch = useDebounce(search, 300);
 
   const showBachelors = ['bachelors', 'masters', 'phd'].includes(data.highestQualification || '');
 
+  // Load previously selected universities
   useEffect(() => {
     if (data.universities?.length) {
       supabase.from('universities').select('id, name, city, country, global_rank').in('id', data.universities)
@@ -90,12 +132,56 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     }
   }, []);
 
+  // Fetch courses when universities are selected
   useEffect(() => {
-    if (!debouncedSearch || debouncedSearch.length < 2) { setResults([]); return; }
+    if (selectedUnis.length === 0) {
+      setCourses([]);
+      return;
+    }
+
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      const uniIds = selectedUnis.map(u => u.id);
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('id, program_name, degree, stream_name, tuition_fees, study_level')
+        .in('university_id', uniIds)
+        .limit(20);
+      
+      setCourses(courseData || []);
+      setCoursesLoading(false);
+    };
+
+    fetchCourses();
+  }, [selectedUnis]);
+
+  // University search with proper country mapping
+  useEffect(() => {
+    if (!debouncedSearch || debouncedSearch.length < 2) { 
+      setResults([]); 
+      return; 
+    }
+    
     setIsLoading(true);
-    let query = supabase.from('universities').select('id, name, city, country, global_rank').ilike('name', `%${debouncedSearch}%`).limit(8);
-    if (data.studyDestination && data.studyDestination !== 'Other') query = query.ilike('country', `%${data.studyDestination}%`);
-    query.then(({ data: unis }) => { setResults(unis || []); setIsLoading(false); });
+    
+    let query = supabase
+      .from('universities')
+      .select('id, name, city, country, global_rank')
+      .ilike('name', `%${debouncedSearch}%`)
+      .limit(8);
+    
+    // Use proper DB country mapping
+    if (data.studyDestination && data.studyDestination !== 'Other') {
+      const dbCountry = COUNTRY_TO_DB[data.studyDestination];
+      if (dbCountry) {
+        query = query.eq('country', dbCountry);
+      }
+    }
+    
+    query.then(({ data: unis }) => { 
+      setResults(unis || []); 
+      setIsLoading(false); 
+    });
   }, [debouncedSearch, data.studyDestination]);
 
   const selectUni = (uni: University) => {
@@ -105,7 +191,8 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
       setSelectedUnis(p => [...p, uni]);
       setErrors(p => ({ ...p, universities: '' }));
     }
-    setSearch(''); setResults([]);
+    setSearch(''); 
+    setResults([]);
   };
 
   const removeUni = (id: string) => {
@@ -115,10 +202,14 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
 
   const validate = () => {
     const e: Record<string, string> = {};
+    
+    if (!data.highestQualification) e.qualification = 'Select your highest qualification';
     if (!data.studyDestination) e.destination = 'Select destination';
     if (!data.loanAmount || data.loanAmount < 750000) e.amount = 'Select loan amount range';
+    if (!data.loanType) e.loanType = 'Select loan type';
     if (!data.universities?.length) e.universities = 'Please select at least one university';
     if (!data.intakeMonth || !data.intakeYear) e.intake = 'Select when you plan to start';
+    
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -139,17 +230,28 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
         
         {/* Qualification */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Highest Qualification</label>
+          <label className="text-sm font-medium text-foreground">Highest Qualification *</label>
           <div className="flex flex-wrap gap-2">
             {qualifications.map(q => (
-              <button key={q.value} type="button" onClick={() => onUpdate({ highestQualification: q.value })}
-                className={cn("px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
-                  data.highestQualification === q.value ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50 text-muted-foreground"
+              <button 
+                key={q.value} 
+                type="button" 
+                onClick={() => { 
+                  onUpdate({ highestQualification: q.value }); 
+                  setErrors(p => ({ ...p, qualification: '' })); 
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                  data.highestQualification === q.value 
+                    ? "border-primary bg-primary/10 text-primary" 
+                    : "border-border hover:border-primary/50 text-muted-foreground",
+                  errors.qualification && !data.highestQualification && "border-destructive"
                 )}>
                 {q.label}
               </button>
             ))}
           </div>
+          {errors.qualification && <p className="text-xs text-destructive">{errors.qualification}</p>}
         </div>
 
         {/* Academic Scores */}
@@ -203,6 +305,47 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
             ))}
           </div>
           {errors.destination && <p className="text-xs text-destructive">{errors.destination}</p>}
+        </div>
+
+        {/* Loan Type Selector */}
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-foreground">💰 What type of loan? *</label>
+          <div className="grid grid-cols-2 gap-3">
+            {loanTypes.map(lt => (
+              <motion.button
+                key={lt.value}
+                type="button"
+                onClick={() => { 
+                  onUpdate({ loanType: lt.value }); 
+                  setErrors(p => ({ ...p, loanType: '' })); 
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={cn(
+                  "relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all",
+                  data.loanType === lt.value
+                    ? "border-primary bg-primary/10 shadow-md shadow-primary/20"
+                    : "border-border hover:border-primary/40",
+                  errors.loanType && !data.loanType && "border-destructive"
+                )}
+              >
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center",
+                  data.loanType === lt.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                )}>
+                  {lt.icon}
+                </div>
+                <span className="font-semibold text-foreground text-sm">{lt.label}</span>
+                <span className="text-xs text-muted-foreground text-center">{lt.description}</span>
+                {data.loanType === lt.value && (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </motion.div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+          {errors.loanType && <p className="text-xs text-destructive">{errors.loanType}</p>}
         </div>
 
         {/* Loan Amount Range */}
@@ -288,6 +431,53 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           </div>
         </div>
 
+        {/* Course Selection (shows after university selection) */}
+        {selectedUnis.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-muted-foreground" /> Course (Optional)
+            </label>
+            {coursesLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-3">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading courses...
+              </div>
+            ) : courses.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                {courses.slice(0, 8).map(course => (
+                  <button
+                    key={course.id}
+                    type="button"
+                    onClick={() => onUpdate({ courseName: course.program_name })}
+                    className={cn(
+                      "text-left p-3 rounded-lg border-2 transition-all",
+                      data.courseName === course.program_name
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/40"
+                    )}
+                  >
+                    <div className="font-medium text-foreground text-sm truncate">{course.program_name}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                      <span>{course.degree}</span>
+                      {course.tuition_fees && <span>• {course.tuition_fees}</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground py-2">
+                No courses found for selected universities. You can enter it manually:
+                <input
+                  type="text"
+                  placeholder="Enter course name"
+                  value={data.courseName || ''}
+                  onChange={e => onUpdate({ courseName: e.target.value })}
+                  className="w-full mt-2 bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Intake - Simplified */}
         <div className="space-y-3">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -335,13 +525,12 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           {errors.intake && <p className="text-xs text-destructive">{errors.intake}</p>}
         </div>
 
-        {/* Buttons */}
-        <div className="pt-2 flex gap-3">
-          <Button type="button" variant="outline" onClick={onPrev} className="px-5">Back</Button>
-          <Button onClick={handleContinue} className="flex-1 h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25">
-            Continue <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }} className="ml-1">→</motion.span>
-          </Button>
-        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-6">
+        <Button variant="outline" onClick={onPrev} className="rounded-full">← Back</Button>
+        <Button onClick={handleContinue} className="rounded-full px-8">Continue →</Button>
       </div>
     </motion.div>
   );

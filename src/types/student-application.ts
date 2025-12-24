@@ -42,6 +42,7 @@ export interface StudyDetails {
   universities: string[];
   studyDestination: string;
   courseName?: string;
+  selectedCourseId?: string; // Link to courses table
   loanType: LoanType;
   intakeMonth: number;
   intakeYear: number;

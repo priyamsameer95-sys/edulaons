@@ -395,18 +395,44 @@ export function validateRelationship(relationship: any, fieldName: string = 'rel
 
 /**
  * Validate country/study destination
+ * UI sends: 'USA', 'UK', 'Canada', etc.
+ * DB universities use: 'United States', 'United Kingdom', etc.
  */
-const VALID_COUNTRIES = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'Ireland', 'New Zealand', 'Other'];
+const VALID_COUNTRIES = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'Ireland', 'New Zealand', 'Singapore', 'Hong Kong', 'Japan', 'Switzerland', 'China', 'Other'];
+
+// UI value → normalized value for validation/storage
 const COUNTRY_MAPPING: Record<string, string> = {
   'United States': 'USA',
   'United States of America': 'USA',
   'United Kingdom': 'UK',
   'England': 'UK',
+  'Hong Kong SAR': 'Hong Kong',
+};
+
+// UI value → DB university country name (for queries)
+export const UI_TO_DB_COUNTRY: Record<string, string> = {
+  'USA': 'United States',
+  'UK': 'United Kingdom',
+  'Canada': 'Canada',
+  'Australia': 'Australia',
+  'Germany': 'Germany',
+  'New Zealand': 'New Zealand',
+  'Singapore': 'Singapore',
+  'Hong Kong': 'Hong Kong SAR',
+  'Japan': 'Japan',
+  'Switzerland': 'Switzerland',
+  'China': 'China',
+  'Ireland': 'Ireland',
+  'Other': '',
 };
 
 export function normalizeCountry(country: string): string {
   const trimmed = String(country).trim();
   return COUNTRY_MAPPING[trimmed] || trimmed;
+}
+
+export function getDbCountryName(uiCountry: string): string {
+  return UI_TO_DB_COUNTRY[uiCountry] || uiCountry;
 }
 
 export function validateCountry(country: any, fieldName: string = 'country'): ValidationError | null {

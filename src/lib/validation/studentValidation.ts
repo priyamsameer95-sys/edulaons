@@ -42,7 +42,10 @@ export const personalDetailsSchema = z.object({
 
 // Academic Background Schema
 export const academicBackgroundSchema = z.object({
-  highestQualification: z.enum(['phd', 'masters', 'bachelors', 'diploma', '12th']),
+  highestQualification: z.enum(['phd', 'masters', 'bachelors', 'diploma', '12th'], {
+    required_error: 'Please select your highest qualification',
+    invalid_type_error: 'Please select your highest qualification',
+  }),
   tenthPercentage: z.number()
     .min(VALIDATION_RULES.PERCENTAGE.MIN)
     .max(VALIDATION_RULES.PERCENTAGE.MAX)

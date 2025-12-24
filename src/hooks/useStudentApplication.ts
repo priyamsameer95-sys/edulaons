@@ -17,9 +17,21 @@ export const useStudentApplication = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Smart defaults for better UX
+  const getDefaultIntake = () => {
+    const now = new Date();
+    const futureMonth = (now.getMonth() + 4) % 12 || 12;
+    const futureYear = now.getMonth() + 4 > 11 ? now.getFullYear() + 1 : now.getFullYear();
+    return { month: futureMonth, year: futureYear };
+  };
+  
+  const defaultIntake = getDefaultIntake();
+  
   const [applicationData, setApplicationData] = useState<Partial<StudentApplicationData>>({
     nationality: 'Indian',
-    loanType: 'secured',
+    loanType: 'unsecured', // Most students start with unsecured
+    intakeMonth: defaultIntake.month,
+    intakeYear: defaultIntake.year,
   });
 
   // Load saved form data from localStorage or pre-fill from eligibility check
