@@ -1,3 +1,11 @@
+/**
+ * Student OTP Verification Edge Function
+ * 
+ * Per Knowledge Base:
+ * - Student can sign up independently via OTP
+ * - Student sees "No application yet" state if no lead exists
+ * - Student account activation tracked via is_activated, activated_at
+ */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -17,7 +25,7 @@ Deno.serve(async (req) => {
   try {
     const { phone, otp, name } = await req.json()
     
-    console.log('OTP verification request:', { phone, otp: otp ? '****' : 'missing', name })
+    console.log('🔐 OTP verification request:', { phone, otp: otp ? '****' : 'missing', name })
 
     // Validate inputs
     if (!phone || !otp) {
@@ -32,7 +40,7 @@ Deno.serve(async (req) => {
     
     // Validate OTP (hardcoded for now)
     if (otp !== VALID_OTP) {
-      console.log('Invalid OTP provided')
+      console.log('❌ Invalid OTP provided')
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid OTP. Use 9955 for testing.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -47,7 +55,7 @@ Deno.serve(async (req) => {
     // Check if student exists by phone
     const { data: existingStudent, error: findError } = await supabase
       .from('students')
-      .select('id, email, name, phone')
+      .select('id, email, name, phone, is_activated, activated_at, otp_enabled')
       .eq('phone', cleanPhone)
       .maybeSingle()
 
@@ -63,36 +71,65 @@ Deno.serve(async (req) => {
     let studentEmail: string
     let studentName: string
     let isNewUser = false
+    let hasLead = false
 
     if (existingStudent) {
       // Existing student - use their details
-      console.log('Found existing student:', existingStudent.id)
+      console.log('📋 Found existing student:', existingStudent.id)
       studentId = existingStudent.id
       studentName = existingStudent.name
       
-      // IMPORTANT: Check if email needs to be updated (placeholder emails)
+      // Check if email needs to be updated (placeholder emails)
       if (existingStudent.email.includes('placeholder') || existingStudent.email.includes('@lead.')) {
-        // Generate proper auth email
         studentEmail = `${cleanPhone}@student.loan.app`
-        console.log('Updating placeholder email to:', studentEmail)
+        console.log('🔄 Updating placeholder email to:', studentEmail)
         
-        // Update student email in database
         await supabase
           .from('students')
           .update({ email: studentEmail })
           .eq('id', studentId)
-        
-        console.log('Updated student email from placeholder')
       } else {
         studentEmail = existingStudent.email
       }
+
+      // KB Requirement: Check if a lead exists for this student
+      const { data: leadData, error: leadError } = await supabase
+        .from('leads_new')
+        .select('id, case_id, status, partner_id')
+        .eq('student_id', studentId)
+        .limit(1)
+        .maybeSingle()
+
+      if (!leadError && leadData) {
+        hasLead = true
+        console.log('✅ Lead found for student:', leadData.case_id)
+
+        // Activate student on first login with a lead
+        if (!existingStudent.is_activated) {
+          const { error: activateError } = await supabase
+            .from('students')
+            .update({ 
+              is_activated: true, 
+              activated_at: new Date().toISOString() 
+            })
+            .eq('id', studentId)
+
+          if (activateError) {
+            console.warn('⚠️ Failed to activate student:', activateError.message)
+          } else {
+            console.log('🎉 Student activated on first login with lead')
+          }
+        }
+      } else {
+        console.log('ℹ️ No lead found for student - they can still proceed to create one')
+      }
     } else {
-      // New student - create one
+      // New student - create one (KB: Student can sign up independently)
       isNewUser = true
       const generatedEmail = `${cleanPhone}@student.loan.app`
       studentName = name || `Student ${cleanPhone.slice(-4)}`
       
-      console.log('Creating new student with email:', generatedEmail)
+      console.log('🆕 Creating new student with email:', generatedEmail)
       
       const { data: newStudent, error: createStudentError } = await supabase
         .from('students')
@@ -100,6 +137,8 @@ Deno.serve(async (req) => {
           phone: cleanPhone,
           email: generatedEmail,
           name: studentName,
+          otp_enabled: true,
+          is_activated: false, // Not activated until they have a lead
         })
         .select('id, email, name')
         .single()
@@ -114,6 +153,7 @@ Deno.serve(async (req) => {
 
       studentId = newStudent.id
       studentEmail = newStudent.email
+      hasLead = false // New user has no lead
     }
 
     // Check if auth user exists for this email
@@ -124,7 +164,7 @@ Deno.serve(async (req) => {
 
     if (existingAuthUser) {
       userId = existingAuthUser.id
-      console.log('Found existing auth user:', userId)
+      console.log('👤 Found existing auth user:', userId)
     } else {
       // Create auth user with a random password (phone-based login, no password needed)
       const randomPassword = crypto.randomUUID()
@@ -132,7 +172,7 @@ Deno.serve(async (req) => {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: studentEmail,
         password: randomPassword,
-        email_confirm: true, // Auto-confirm since we verified via OTP
+        email_confirm: true,
         user_metadata: {
           name: studentName,
           phone: cleanPhone,
@@ -149,7 +189,7 @@ Deno.serve(async (req) => {
       }
 
       userId = authData.user.id
-      console.log('Created new auth user:', userId)
+      console.log('✅ Created new auth user:', userId)
 
       // Create app_users entry
       const { error: appUserError } = await supabase
@@ -163,7 +203,6 @@ Deno.serve(async (req) => {
 
       if (appUserError) {
         console.error('Error creating app_user:', appUserError)
-        // Non-fatal, continue
       }
     }
 
@@ -184,17 +223,18 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Extract the token from the magic link to create a direct session
+    // Extract the token from the magic link
     const linkUrl = new URL(sessionData.properties.action_link)
     const token = linkUrl.searchParams.get('token')
     const tokenType = linkUrl.searchParams.get('type')
 
-    console.log('OTP verification successful for:', cleanPhone, 'isNewUser:', isNewUser)
+    console.log('🎉 OTP verification successful:', { phone: cleanPhone, isNewUser, hasLead })
 
     return new Response(
       JSON.stringify({
         success: true,
         isNewUser,
+        hasLead, // KB: Return whether student has an existing lead
         student: {
           id: studentId,
           name: studentName,
@@ -204,17 +244,20 @@ Deno.serve(async (req) => {
         auth: {
           userId,
           email: studentEmail,
-          // Return the verification token for the frontend to complete sign-in
           token,
           tokenType,
           actionLink: sessionData.properties.action_link
-        }
+        },
+        // KB: Clear message for "no lead" state
+        message: hasLead 
+          ? 'Welcome back! Your application is ready.'
+          : 'Welcome! Start your loan application now.',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('💥 Unexpected error:', error)
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

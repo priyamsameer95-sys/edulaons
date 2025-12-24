@@ -325,6 +325,7 @@ serve(async (req) => {
     console.log('✅ Assigned lender:', lender.name);
 
     // Create lead - ORGANIC (no partner_id)
+    // KB: Enforce student_id from auth, set created_by fields
     const caseId = `EDU-${Date.now()}`;
     const isQuickLead = source === 'student_landing' && !isAuthenticated;
 
@@ -332,10 +333,10 @@ serve(async (req) => {
       .from('leads_new')
       .insert({
         case_id: caseId,
-        student_id: studentId,
+        student_id: studentId, // KB: Tied to their OTP identity
         co_applicant_id: coApplicant.id,
-        partner_id: null, // ORGANIC - no partner
-        lender_id: lender.id,
+        partner_id: null, // ORGANIC - no partner (KB: Student cannot set partner_id)
+        lender_id: lender.id, // KB: Student cannot override lender assignment
         loan_amount: loanAmount,
         loan_type: body.loan_type || 'unsecured',
         study_destination: studyDestination,
@@ -347,6 +348,9 @@ serve(async (req) => {
         source: source,
         eligibility_score: body.eligibility_score || null,
         eligibility_result: body.eligibility_result || null,
+        // KB: Origin tracking for auditability
+        created_by_user_id: authenticatedUser?.id || null,
+        created_by_role: isAuthenticated ? 'student' : 'anonymous',
       })
       .select()
       .single();
