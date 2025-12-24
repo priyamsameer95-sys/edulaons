@@ -67,13 +67,15 @@ async function evaluateLendersForLead(
       console.log('✅ AI lender evaluation complete');
       
       if (lenderSuggestion.success && lenderSuggestion.grouped_evaluations) {
-        // Combine best_fit and also_consider groups, take top 5
+        // Return ALL lenders grouped by fit category (not just top 5)
         const allEvaluations = [
-          ...(lenderSuggestion.grouped_evaluations.best_fit || []),
-          ...(lenderSuggestion.grouped_evaluations.also_consider || []),
-        ].slice(0, 5);
+          ...(lenderSuggestion.grouped_evaluations.best_fit || []).map((e: any) => ({ ...e, fit_group: 'best_fit' })),
+          ...(lenderSuggestion.grouped_evaluations.also_consider || []).map((e: any) => ({ ...e, fit_group: 'also_consider' })),
+          ...(lenderSuggestion.grouped_evaluations.possible_but_risky || []).map((e: any) => ({ ...e, fit_group: 'possible_but_risky' })),
+          ...(lenderSuggestion.grouped_evaluations.not_suitable || []).map((e: any) => ({ ...e, fit_group: 'not_suitable' })),
+        ];
         
-        console.log(`📊 Found ${allEvaluations.length} recommended lenders`);
+        console.log(`📊 Found ${allEvaluations.length} total lenders (all categories)`);
         
         // Get full lender details for each evaluation
         if (allEvaluations.length > 0) {
@@ -120,11 +122,15 @@ async function evaluateLendersForLead(
               required_documents: details.required_documents,
               // AI evaluation data
               compatibility_score: evalResult.fit_score,
-              is_preferred: evalResult.group === 'best_fit',
+              is_preferred: evalResult.group === 'best_fit' || evalResult.fit_group === 'best_fit',
               student_facing_reason: evalResult.student_facing_reason || evalResult.justification,
               processing_time_estimate: evalResult.processing_time_estimate,
               probability_band: evalResult.probability_band,
               risk_flags: evalResult.risk_flags || [],
+              // NEW: Include fit group and justification for UI
+              fit_group: evalResult.fit_group || evalResult.group,
+              justification: evalResult.justification,
+              bre_rules_matched: evalResult.bre_rules_matched || [],
             };
           });
           
@@ -167,27 +173,59 @@ async function evaluateLendersForLead(
       .order('preferred_rank', { ascending: true })
       .limit(3);
     
-    recommendedLenders = (fallbackLenders || []).map((l: any) => ({
-      lender_id: l.id,
-      lender_name: l.name,
-      lender_code: l.code,
-      lender_description: l.description,
-      logo_url: l.logo_url,
-      website: l.website,
-      interest_rate_min: l.interest_rate_min,
-      interest_rate_max: l.interest_rate_max,
-      loan_amount_min: l.loan_amount_min,
-      loan_amount_max: l.loan_amount_max,
-      processing_fee: l.processing_fee,
-      moratorium_period: l.moratorium_period,
-      processing_time_days: l.processing_time_days,
-      approval_rate: l.approval_rate,
-      key_features: l.key_features,
-      compatibility_score: 70, // Default score for fallback
-      is_preferred: false,
-      student_facing_reason: 'Popular choice for education loans',
-      is_fallback: true,
-    }));
+    recommendedLenders = (fallbackLenders || []).map((l: any, index: number) => {
+      // Calculate a basic score based on available data
+      let score = 50;
+      const factors: string[] = [];
+      
+      // Loan amount fit
+      if (l.loan_amount_min && l.loan_amount_max) {
+        score += 10;
+        factors.push('Competitive loan range');
+      }
+      
+      // Interest rate available
+      if (l.interest_rate_min && l.interest_rate_max) {
+        score += 10;
+        factors.push('Transparent rates');
+      }
+      
+      // Approval rate
+      if (l.approval_rate && l.approval_rate > 80) {
+        score += 10;
+        factors.push('High approval rate');
+      }
+      
+      // Priority bonus
+      score += Math.max(0, 15 - (index * 5));
+      
+      return {
+        lender_id: l.id,
+        lender_name: l.name,
+        lender_code: l.code,
+        lender_description: l.description,
+        logo_url: l.logo_url,
+        website: l.website,
+        interest_rate_min: l.interest_rate_min,
+        interest_rate_max: l.interest_rate_max,
+        loan_amount_min: l.loan_amount_min,
+        loan_amount_max: l.loan_amount_max,
+        processing_fee: l.processing_fee,
+        moratorium_period: l.moratorium_period,
+        processing_time_days: l.processing_time_days,
+        approval_rate: l.approval_rate,
+        key_features: l.key_features,
+        compatibility_score: Math.min(100, score),
+        is_preferred: index === 0,
+        student_facing_reason: factors.length > 0 
+          ? factors.join(', ')
+          : 'Popular choice for education loans',
+        fit_group: score >= 70 ? 'also_consider' : 'possible_but_risky',
+        is_fallback: true,
+        risk_flags: ['AI evaluation unavailable - showing default rankings'],
+        bre_rules_matched: factors,
+      };
+    });
     
     console.log(`📋 Returning ${recommendedLenders.length} fallback lenders`);
   }
