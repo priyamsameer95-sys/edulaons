@@ -273,7 +273,7 @@ const StudentAuth = () => {
                         <span className="text-lg">🇮🇳</span>
                         <span>+91</span>
                       </div>
-                      <Input id="phone" type="tel" placeholder="98765 43210" value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} className="h-14 pl-24 text-lg font-medium tracking-wide" autoFocus required />
+                      <Input id="phone" type="tel" placeholder="98765 43210" value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} className="h-14 pl-20 text-lg font-medium tracking-wide" autoFocus required />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       We'll send you a verification code via SMS
