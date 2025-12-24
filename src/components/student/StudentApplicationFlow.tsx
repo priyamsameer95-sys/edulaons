@@ -1,8 +1,5 @@
 import { useStudentApplication } from '@/hooks/useStudentApplication';
 import { useState } from 'react';
-import { LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 import ConversationalForm from './conversational/ConversationalForm';
 import SuccessStep from './SuccessStep';
 
@@ -15,20 +12,11 @@ const StudentApplicationFlow = () => {
   } = useStudentApplication();
   
   const [submissionResult, setSubmissionResult] = useState<any>(null);
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
 
   const handleSubmit = async () => {
     const result = await submitApplication();
     if (result) {
       setSubmissionResult(result);
-    }
-  };
-
-  const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout? Your progress will be saved.')) {
-      await signOut();
-      navigate('/student/landing');
     }
   };
 
@@ -49,22 +37,12 @@ const StudentApplicationFlow = () => {
   }
 
   return (
-    <div className="relative">
-      {/* Logout button */}
-      <button 
-        onClick={handleLogout}
-        className="fixed top-4 right-4 z-50 p-2 rounded-lg bg-card border border-border hover:bg-muted transition-colors"
-      >
-        <LogOut className="h-5 w-5" />
-      </button>
-
-      <ConversationalForm
-        data={applicationData}
-        onUpdate={updateApplicationData}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
-    </div>
+    <ConversationalForm
+      data={applicationData}
+      onUpdate={updateApplicationData}
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+    />
   );
 };
 
