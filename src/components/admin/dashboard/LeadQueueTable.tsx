@@ -19,10 +19,11 @@ import {
   Edit,
   Clock,
   Zap,
-  ClipboardCheck
+  ClipboardCheck,
+  Pencil
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Import shared constants and utilities
 import {
@@ -40,6 +41,11 @@ import {
   isLeadUrgent,
   needsAdminAction,
 } from '@/utils/leadTableUtils';
+import { 
+  getLeadCompleteness, 
+  getCompletenessColor, 
+  needsFieldCompletion 
+} from '@/utils/leadCompleteness';
 
 interface LeadQueueTableProps {
   leads: PaginatedLead[];
@@ -47,6 +53,7 @@ interface LeadQueueTableProps {
   onViewLead: (lead: PaginatedLead) => void;
   onUpdateStatus: (lead: PaginatedLead) => void;
   onCompleteLead?: (lead: PaginatedLead) => void;
+  onEditLead?: (lead: PaginatedLead) => void;
   selectedLeads: string[];
   onSelectionChange: (selectedIds: string[]) => void;
   page: number;
@@ -66,6 +73,7 @@ export function LeadQueueTable({
   onViewLead, 
   onUpdateStatus,
   onCompleteLead,
+  onEditLead,
   selectedLeads,
   onSelectionChange,
   page,
@@ -251,11 +259,14 @@ export function LeadQueueTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedLeads.map((lead) => {
+            {sortedLeads.map((lead) => {
                 const isSelected = selectedLeads.includes(lead.id);
                 const urgent = isLeadUrgent(lead);
                 const ageDays = getAgeDays(lead.created_at);
                 const action = needsAdminAction(lead);
+                // Calculate lead completeness for universal incomplete detection
+                const completeness = getLeadCompleteness(lead as any);
+                const isIncomplete = !completeness.isComplete;
                 
                 return (
                   <TableRow 
@@ -305,6 +316,7 @@ export function LeadQueueTable({
                               <p className="text-xs">{lead.student?.name || 'Unknown'}</p>
                             </TooltipContent>
                           </Tooltip>
+                          {/* Show Quick Lead badge */}
                           {lead.is_quick_lead && !lead.quick_lead_completed_at && (
                             <Tooltip>
                               <TooltipTrigger>
@@ -318,6 +330,32 @@ export function LeadQueueTable({
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p className="text-xs">Incomplete quick lead - needs additional details</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {/* Show Incomplete badge for ANY lead with missing required fields */}
+                          {isIncomplete && !(lead.is_quick_lead && !lead.quick_lead_completed_at) && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-[10px] px-1.5 py-0 h-4 ${getCompletenessColor(completeness.completenessScore)} gap-0.5`}
+                                >
+                                  {completeness.completenessScore}%
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="text-xs space-y-1">
+                                  <p className="font-medium">Missing Required Fields:</p>
+                                  <ul className="list-disc pl-3">
+                                    {completeness.missingRequired.slice(0, 5).map((f, i) => (
+                                      <li key={i}>{f.displayName}</li>
+                                    ))}
+                                    {completeness.missingRequired.length > 5 && (
+                                      <li>+{completeness.missingRequired.length - 5} more</li>
+                                    )}
+                                  </ul>
+                                </div>
                               </TooltipContent>
                             </Tooltip>
                           )}
@@ -443,8 +481,17 @@ export function LeadQueueTable({
                               <Edit className="h-3.5 w-3.5 mr-2" />
                               Update Status
                             </DropdownMenuItem>
-                            {lead.is_quick_lead && !lead.quick_lead_completed_at && onCompleteLead && (
-                              <DropdownMenuItem onClick={() => onCompleteLead(lead)}>
+                            {/* Edit Lead - available for ANY lead */}
+                            {onEditLead && (
+                              <DropdownMenuItem onClick={() => onEditLead(lead)}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" />
+                                Edit Details
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {/* Complete Lead - for quick leads or incomplete leads */}
+                            {(isIncomplete || (lead.is_quick_lead && !lead.quick_lead_completed_at)) && onEditLead && (
+                              <DropdownMenuItem onClick={() => onEditLead(lead)}>
                                 <ClipboardCheck className="h-3.5 w-3.5 mr-2" />
                                 Complete Lead
                               </DropdownMenuItem>
