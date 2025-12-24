@@ -2,65 +2,143 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, XCircle, Share2, Download } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Share2, Download, ChevronDown, ChevronUp, Star, AlertTriangle, ThumbsUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LenderCard from './LenderCard';
 import { ConfettiAnimation } from './ConfettiAnimation';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+interface LenderData {
+  lender_id: string;
+  lender_name: string;
+  lender_code: string;
+  lender_description: string | null;
+  logo_url: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  interest_rate_min: number | null;
+  interest_rate_max: number | null;
+  loan_amount_min: number | null;
+  loan_amount_max: number | null;
+  processing_fee: number | null;
+  foreclosure_charges: number | null;
+  moratorium_period: string | null;
+  processing_time_days: number | null;
+  disbursement_time_days: number | null;
+  approval_rate: number | null;
+  key_features: string[] | null;
+  eligible_expenses: any[] | null;
+  required_documents: string[] | null;
+  compatibility_score: number;
+  is_preferred: boolean;
+  eligibility_score?: number;
+  university_score?: number;
+  student_score?: number;
+  co_applicant_score?: number;
+  approval_status?: 'approved' | 'rejected' | 'pending';
+  rejection_reason?: string | null;
+  eligible_loan_min?: number | null;
+  eligible_loan_max?: number | null;
+  rate_tier?: string | null;
+  loan_band_percentage?: string | null;
+  university_breakdown?: any;
+  student_breakdown?: any;
+  co_applicant_breakdown?: any;
+  fit_group?: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
+  student_facing_reason?: string;
+  justification?: string;
+  risk_flags?: string[];
+  bre_rules_matched?: string[];
+  probability_band?: 'high' | 'medium' | 'low';
+  processing_time_estimate?: string;
+}
 
 interface SuccessStepProps {
   caseId: string;
   leadId?: string;
   requestedAmount?: number;
-  recommendedLenders: Array<{
-    lender_id: string;
-    lender_name: string;
-    lender_code: string;
-    lender_description: string | null;
-    logo_url: string | null;
-    website: string | null;
-    contact_email: string | null;
-    contact_phone: string | null;
-    interest_rate_min: number | null;
-    interest_rate_max: number | null;
-    loan_amount_min: number | null;
-    loan_amount_max: number | null;
-    processing_fee: number | null;
-    foreclosure_charges: number | null;
-    moratorium_period: string | null;
-    processing_time_days: number | null;
-    disbursement_time_days: number | null;
-    approval_rate: number | null;
-    key_features: string[] | null;
-    eligible_expenses: any[] | null;
-    required_documents: string[] | null;
-    compatibility_score: number;
-    is_preferred: boolean;
-    eligibility_score?: number;
-    university_score?: number;
-    student_score?: number;
-    co_applicant_score?: number;
-    approval_status?: 'approved' | 'rejected' | 'pending';
-    rejection_reason?: string | null;
-    eligible_loan_min?: number | null;
-    eligible_loan_max?: number | null;
-    rate_tier?: string | null;
-    loan_band_percentage?: string | null;
-    university_breakdown?: any;
-    student_breakdown?: any;
-    co_applicant_breakdown?: any;
-  }>;
+  recommendedLenders: LenderData[];
 }
+
+const FIT_GROUP_CONFIG = {
+  best_fit: {
+    label: 'Best Fit',
+    description: 'These lenders are excellent matches based on your profile',
+    icon: Star,
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+    borderColor: 'border-success/30',
+  },
+  also_consider: {
+    label: 'Also Consider',
+    description: 'Good options that may have minor trade-offs',
+    icon: ThumbsUp,
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+    borderColor: 'border-primary/30',
+  },
+  possible_but_risky: {
+    label: 'Other Options',
+    description: 'May require additional documentation or have stricter criteria',
+    icon: AlertCircle,
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+    borderColor: 'border-warning/30',
+  },
+  not_suitable: {
+    label: 'Not Recommended',
+    description: 'These lenders may not be the best fit for your profile',
+    icon: AlertTriangle,
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
+    borderColor: 'border-destructive/30',
+  },
+};
 
 const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    best_fit: true,
+    also_consider: true,
+    possible_but_risky: false,
+    not_suitable: false,
+  });
+  
+  // Group lenders by fit category
+  const groupedLenders = useMemo(() => {
+    const groups: Record<string, LenderData[]> = {
+      best_fit: [],
+      also_consider: [],
+      possible_but_risky: [],
+      not_suitable: [],
+    };
+    
+    recommendedLenders.forEach(lender => {
+      const group = lender.fit_group || (lender.is_preferred ? 'best_fit' : 'also_consider');
+      if (groups[group]) {
+        groups[group].push(lender);
+      } else {
+        groups.also_consider.push(lender);
+      }
+    });
+    
+    // Sort each group by compatibility score
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => b.compatibility_score - a.compatibility_score);
+    });
+    
+    return groups;
+  }, [recommendedLenders]);
   
   const assignedLender = recommendedLenders[0]; // First lender is the assigned one
+  const totalLenders = recommendedLenders.length;
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -81,7 +159,6 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     setIsUpdating(true);
 
     try {
-      // Update the selected lender in database
       const { error } = await supabase
         .from('leads_new')
         .update({ lender_id: lenderId })
@@ -90,9 +167,6 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       if (error) throw error;
 
       toast.success('Lender preference updated successfully!');
-      
-      // Note: Eligibility data for this lender should already be pre-calculated
-      // and is available in the recommendedLenders array
     } catch (error) {
       console.error('Error updating lender:', error);
       toast.error('Failed to update lender preference');
@@ -102,12 +176,73 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     }
   };
 
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   const [showConfetti, setShowConfetti] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 5000);
     return () => clearTimeout(timer);
   }, []);
+
+  const renderLenderSection = (groupKey: string, lenders: LenderData[]) => {
+    if (lenders.length === 0) return null;
+    
+    const config = FIT_GROUP_CONFIG[groupKey as keyof typeof FIT_GROUP_CONFIG];
+    const IconComponent = config.icon;
+    const isExpanded = expandedSections[groupKey];
+    
+    return (
+      <div key={groupKey} className="space-y-3">
+        <Collapsible open={isExpanded} onOpenChange={() => toggleSection(groupKey)}>
+          <CollapsibleTrigger asChild>
+            <button className={`w-full flex items-center justify-between p-4 rounded-lg border ${config.borderColor} ${config.bgColor} hover:opacity-90 transition-opacity`}>
+              <div className="flex items-center gap-3">
+                <IconComponent className={`h-5 w-5 ${config.color}`} />
+                <div className="text-left">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    {config.label}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({lenders.length} lender{lenders.length !== 1 ? 's' : ''})
+                    </span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{config.description}</p>
+                </div>
+              </div>
+              {isExpanded ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {lenders.map((lender, index) => (
+                <div 
+                  key={lender.lender_id} 
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <LenderCard
+                    lender={lender}
+                    isSelected={selectedLenderId === lender.lender_id}
+                    onSelect={() => handleLenderSelection(lender.lender_id)}
+                    isUpdating={isUpdating}
+                  />
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 pb-8">
@@ -241,35 +376,42 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       {/* Recommended Lenders Section */}
       <div className="space-y-4 animate-fade-in" style={{ animationDelay: '500ms' }}>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold">Compare Lenders</h2>
+          <h2 className="text-2xl font-bold">Compare All Lenders</h2>
           <p className="text-muted-foreground">
-            We've pre-calculated your eligibility with multiple lenders. Compare their terms and select your preferred lender.
-            {recommendedLenders.some(l => l.eligibility_score) && (
-              <span className="block mt-1 text-sm text-primary">
-                ✨ Your eligibility scores are shown on each card for easy comparison
-              </span>
-            )}
+            We've evaluated {totalLenders} lenders based on your profile. 
+            Compare their terms and select your preferred lender.
           </p>
+          {totalLenders > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {groupedLenders.best_fit.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+                  <Star className="h-3 w-3" />
+                  {groupedLenders.best_fit.length} Best Fit
+                </span>
+              )}
+              {groupedLenders.also_consider.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  <ThumbsUp className="h-3 w-3" />
+                  {groupedLenders.also_consider.length} Also Consider
+                </span>
+              )}
+              {groupedLenders.possible_but_risky.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium">
+                  <AlertCircle className="h-3 w-3" />
+                  {groupedLenders.possible_but_risky.length} Other Options
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {recommendedLenders && recommendedLenders.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {recommendedLenders.map((lender, index) => (
-                <div 
-                  key={lender.lender_id} 
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${500 + index * 100}ms` }}
-                >
-                  <LenderCard
-                    lender={lender}
-                    isSelected={selectedLenderId === lender.lender_id}
-                    onSelect={() => handleLenderSelection(lender.lender_id)}
-                    isUpdating={isUpdating}
-                  />
-                </div>
-              ))}
-            </div>
+          <div className="space-y-4">
+            {renderLenderSection('best_fit', groupedLenders.best_fit)}
+            {renderLenderSection('also_consider', groupedLenders.also_consider)}
+            {renderLenderSection('possible_but_risky', groupedLenders.possible_but_risky)}
+            {renderLenderSection('not_suitable', groupedLenders.not_suitable)}
+            
             {selectedLenderId && (
               <div className="p-4 bg-success/10 border border-success/20 rounded-lg animate-fade-in text-center">
                 <p className="text-sm text-success font-medium">
@@ -277,7 +419,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
                 </p>
               </div>
             )}
-          </>
+          </div>
         ) : (
           <Card>
             <CardContent className="text-center py-12">
