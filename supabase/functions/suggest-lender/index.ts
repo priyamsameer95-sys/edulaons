@@ -203,7 +203,7 @@ For EACH lender, you must:
 5. Flag any risk factors
 6. List which BRE rules were matched
 7. Assign to a group: best_fit (>=80), also_consider (60-79), possible_but_risky (40-59), not_suitable (<40)
-8. Generate a student-friendly reason (no internal details)
+8. Generate a SHORT student-friendly reason (MAX 15 words, e.g. "Great fit for your income level and loan amount")
 
 IMPORTANT:
 - NEVER eliminate any lender - evaluate ALL of them
@@ -257,7 +257,7 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
                             risk_flags: { type: 'array', items: { type: 'string' } },
                             bre_rules_matched: { type: 'array', items: { type: 'string' } },
                             group: { type: 'string', enum: ['best_fit', 'also_consider', 'possible_but_risky', 'not_suitable'] },
-                            student_facing_reason: { type: 'string' },
+                            student_facing_reason: { type: 'string', description: 'Max 15 words, simple and friendly' },
                           },
                           required: ['lender_id', 'lender_name', 'fit_score', 'probability_band', 'justification', 'group'],
                         },
@@ -428,8 +428,8 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
           bre_rules_matched: factors,
           group,
           student_facing_reason: score >= 60 
-            ? `Good match for ${destination || 'your'} education loan needs`
-            : 'Other options may be more suitable',
+            ? `Strong fit for your ${destination || ''} loan profile`.trim()
+            : 'May need additional review',
         }
       })
 
