@@ -47,6 +47,21 @@ const COUNTRY_TO_DB: Record<string, string> = {
   'Other': '', // No filter for "Other"
 };
 
+const getCountryCandidates = (uiCountry?: string) => {
+  if (!uiCountry || uiCountry === 'Other') return [] as string[];
+
+  const candidates = new Set<string>();
+  const dbCountry = COUNTRY_TO_DB[uiCountry];
+
+  if (dbCountry) candidates.add(dbCountry);
+  candidates.add(uiCountry);
+
+  // Some datasets store abbreviated countries in the same column
+  if (uiCountry === 'USA') candidates.add('United States of America');
+
+  return Array.from(candidates).filter(Boolean);
+};
+
 const qualifications: { value: HighestQualification; label: string }[] = [
   { value: '12th', label: '12th' },
   { value: 'diploma', label: 'Diploma' },
@@ -118,6 +133,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
   const [results, setResults] = useState<University[]>([]);
   const [selectedUnis, setSelectedUnis] = useState<University[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [universityHint, setUniversityHint] = useState<string>('');
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const debouncedSearch = useDebounce(search, 300);
@@ -127,9 +143,15 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
   // Load previously selected universities
   useEffect(() => {
     if (data.universities?.length) {
-      supabase.from('universities').select('id, name, city, country, global_rank').in('id', data.universities)
-        .then(({ data: unis }) => { if (unis) setSelectedUnis(unis); });
+      supabase
+        .from('universities')
+        .select('id, name, city, country, global_rank')
+        .in('id', data.universities)
+        .then(({ data: unis }) => {
+          if (unis) setSelectedUnis(unis);
+        });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch courses when universities are selected
@@ -147,7 +169,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
         .select('id, program_name, degree, stream_name, tuition_fees, study_level')
         .in('university_id', uniIds)
         .limit(20);
-      
+
       setCourses(courseData || []);
       setCoursesLoading(false);
     };
@@ -155,33 +177,97 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     fetchCourses();
   }, [selectedUnis]);
 
-  // University search with proper country mapping
+  // Country selection should show a list even before the user types
   useEffect(() => {
-    if (!debouncedSearch || debouncedSearch.length < 2) { 
-      setResults([]); 
-      return; 
-    }
-    
-    setIsLoading(true);
-    
-    let query = supabase
-      .from('universities')
-      .select('id, name, city, country, global_rank')
-      .ilike('name', `%${debouncedSearch}%`)
-      .limit(8);
-    
-    // Use proper DB country mapping
-    if (data.studyDestination && data.studyDestination !== 'Other') {
-      const dbCountry = COUNTRY_TO_DB[data.studyDestination];
-      if (dbCountry) {
-        query = query.eq('country', dbCountry);
+    const destination = data.studyDestination;
+    if (!destination) return;
+
+    // If user is actively searching, don't override search results
+    if (search && search.length >= 2) return;
+
+    const load = async () => {
+      setIsLoading(true);
+      setUniversityHint('');
+
+      const candidates = getCountryCandidates(destination);
+
+      // Prefer country-scoped suggestions
+      let q = supabase
+        .from('universities')
+        .select('id, name, city, country, global_rank')
+        .order('global_rank', { ascending: true })
+        .order('name', { ascending: true })
+        .limit(8);
+
+      if (candidates.length) q = q.in('country', candidates);
+
+      const { data: scoped } = await q;
+
+      if (scoped && scoped.length > 0) {
+        setResults(scoped);
+        setIsLoading(false);
+        return;
       }
-    }
-    
-    query.then(({ data: unis }) => { 
-      setResults(unis || []); 
-      setIsLoading(false); 
-    });
+
+      // Fallback: show global suggestions if country tags are missing
+      const { data: fallback } = await supabase
+        .from('universities')
+        .select('id, name, city, country, global_rank')
+        .order('global_rank', { ascending: true })
+        .order('name', { ascending: true })
+        .limit(8);
+
+      setResults(fallback || []);
+      if (candidates.length) {
+        setUniversityHint("We don't have country tags for many universities yet — showing top universities instead.");
+      }
+      setIsLoading(false);
+    };
+
+    load();
+  }, [data.studyDestination, search]);
+
+  // University search with country candidates + fallback
+  useEffect(() => {
+    const run = async () => {
+      if (!debouncedSearch || debouncedSearch.length < 2) {
+        return;
+      }
+
+      setUniversityHint('');
+      setIsLoading(true);
+
+      const candidates = getCountryCandidates(data.studyDestination);
+
+      let q = supabase
+        .from('universities')
+        .select('id, name, city, country, global_rank')
+        .ilike('name', `%${debouncedSearch}%`)
+        .limit(8);
+
+      if (candidates.length) q = q.in('country', candidates);
+
+      const { data: scoped } = await q;
+
+      // Fallback if country filter yields nothing (common when country is missing)
+      if (candidates.length && (!scoped || scoped.length === 0)) {
+        const { data: fallback } = await supabase
+          .from('universities')
+          .select('id, name, city, country, global_rank')
+          .ilike('name', `%${debouncedSearch}%`)
+          .limit(8);
+
+        setResults(fallback || []);
+        setUniversityHint("Showing results without country filter (country tags missing for many entries)." );
+        setIsLoading(false);
+        return;
+      }
+
+      setResults(scoped || []);
+      setIsLoading(false);
+    };
+
+    run();
   }, [debouncedSearch, data.studyDestination]);
 
   const selectUni = (uni: University) => {
@@ -411,6 +497,9 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
               {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
             </div>
             {errors.universities && <p className="text-xs text-destructive mt-1">{errors.universities}</p>}
+            {universityHint && !errors.universities && (
+              <p className="text-xs text-muted-foreground mt-1">{universityHint}</p>
+            )}
             <AnimatePresence>
               {results.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
