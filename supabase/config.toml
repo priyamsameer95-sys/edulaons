@@ -54,6 +54,9 @@ verify_jwt = false
 [functions.setup-admin-user]
 verify_jwt = false
 
+[functions.setup-admin]
+verify_jwt = false
+
 [functions.create-lead-quick]
 verify_jwt = true
 
