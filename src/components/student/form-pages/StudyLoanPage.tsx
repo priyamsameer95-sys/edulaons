@@ -585,7 +585,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
               });
             }
             return (
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                 {months.map(m => {
                   const isSelected = data.intakeMonth === m.month && data.intakeYear === m.year;
                   return (
@@ -597,7 +597,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                         setErrors(p => ({ ...p, intake: '' }));
                       }}
                       className={cn(
-                        "flex flex-col items-center gap-0.5 p-2.5 rounded-lg border-2 transition-all text-center",
+                        "flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-2 rounded-lg border-2 transition-all text-center min-w-[70px]",
                         isSelected
                           ? "border-primary bg-primary/10 shadow-sm"
                           : "border-border hover:border-primary/40 bg-card"
