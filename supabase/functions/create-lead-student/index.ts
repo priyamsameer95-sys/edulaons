@@ -558,6 +558,7 @@ serve(async (req) => {
         lender_id: lender.id, // KB: Student cannot override lender assignment
         loan_amount: loanAmount,
         loan_type: body.loan_type || 'unsecured',
+        loan_classification: (body.loan_type === 'secured') ? 'secured_property' : 'unsecured',
         study_destination: studyDestination,
         intake_month: intakeMonth,
         intake_year: intakeYear,
