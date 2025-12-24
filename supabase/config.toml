@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.create-lead-student]
 verify_jwt = false
+
+[functions.suggest-lender]
+verify_jwt = true

@@ -130,6 +130,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_lender_recommendations: {
+        Row: {
+          accepted_lender_id: string | null
+          assignment_mode: string | null
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          inputs_snapshot: Json | null
+          lead_id: string
+          model_version: string | null
+          rationale: string | null
+          recommended_lender_ids: string[]
+          recommended_lenders_data: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+        }
+        Insert: {
+          accepted_lender_id?: string | null
+          assignment_mode?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          inputs_snapshot?: Json | null
+          lead_id: string
+          model_version?: string | null
+          rationale?: string | null
+          recommended_lender_ids: string[]
+          recommended_lenders_data?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Update: {
+          accepted_lender_id?: string | null
+          assignment_mode?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          inputs_snapshot?: Json | null
+          lead_id?: string
+          model_version?: string | null
+          rationale?: string | null
+          recommended_lender_ids?: string[]
+          recommended_lenders_data?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_lender_recommendations_accepted_lender_id_fkey"
+            columns: ["accepted_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_lender_recommendations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_users: {
         Row: {
           created_at: string
@@ -1091,6 +1154,8 @@ export type Database = {
           case_id: string
           co_applicant_id: string
           created_at: string
+          created_by_role: string | null
+          created_by_user_id: string | null
           current_stage_started_at: string | null
           documents_status: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at: string | null
@@ -1135,6 +1200,8 @@ export type Database = {
           case_id: string
           co_applicant_id: string
           created_at?: string
+          created_by_role?: string | null
+          created_by_user_id?: string | null
           current_stage_started_at?: string | null
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at?: string | null
@@ -1179,6 +1246,8 @@ export type Database = {
           case_id?: string
           co_applicant_id?: string
           created_at?: string
+          created_by_role?: string | null
+          created_by_user_id?: string | null
           current_stage_started_at?: string | null
           documents_status?: Database["public"]["Enums"]["document_status_enum"]
           documents_status_updated_at?: string | null
@@ -1781,8 +1850,74 @@ export type Database = {
           },
         ]
       }
+      student_partner_mappings: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          mapped_at: string | null
+          mapped_by: string | null
+          mapping_reason: string | null
+          partner_id: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          mapped_at?: string | null
+          mapped_by?: string | null
+          mapping_reason?: string | null
+          partner_id: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          mapped_at?: string | null
+          mapped_by?: string | null
+          mapping_reason?: string | null
+          partner_id?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_partner_mappings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_partner_mappings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_statistics"
+            referencedColumns: ["partner_id"]
+          },
+          {
+            foreignKeyName: "student_partner_mappings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_partner_mappings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
+          activated_at: string | null
           bachelors_cgpa: number | null
           bachelors_percentage: number | null
           city: string | null
@@ -1797,8 +1932,10 @@ export type Database = {
           id: string
           invite_sent_at: string | null
           invite_token: string | null
+          is_activated: boolean | null
           name: string
           nationality: string | null
+          otp_enabled: boolean | null
           phone: string
           pin_code_tier: string | null
           postal_code: string | null
@@ -1809,6 +1946,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activated_at?: string | null
           bachelors_cgpa?: number | null
           bachelors_percentage?: number | null
           city?: string | null
@@ -1823,8 +1961,10 @@ export type Database = {
           id?: string
           invite_sent_at?: string | null
           invite_token?: string | null
+          is_activated?: boolean | null
           name: string
           nationality?: string | null
+          otp_enabled?: boolean | null
           phone: string
           pin_code_tier?: string | null
           postal_code?: string | null
@@ -1835,6 +1975,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activated_at?: string | null
           bachelors_cgpa?: number | null
           bachelors_percentage?: number | null
           city?: string | null
@@ -1849,8 +1990,10 @@ export type Database = {
           id?: string
           invite_sent_at?: string | null
           invite_token?: string | null
+          is_activated?: boolean | null
           name?: string
           nationality?: string | null
+          otp_enabled?: boolean | null
           phone?: string
           pin_code_tier?: string | null
           postal_code?: string | null
