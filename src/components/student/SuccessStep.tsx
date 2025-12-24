@@ -221,13 +221,13 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
               )}
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CollapsibleContent className="pt-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               {lenders.map((lender, index) => (
                 <div 
                   key={lender.lender_id} 
                   className="animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  style={{ animationDelay: `${index * 75}ms` }}
                 >
                   <LenderCard
                     lender={lender}
@@ -406,7 +406,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
         </div>
 
         {recommendedLenders && recommendedLenders.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {renderLenderSection('best_fit', groupedLenders.best_fit)}
             {renderLenderSection('also_consider', groupedLenders.also_consider)}
             {renderLenderSection('possible_but_risky', groupedLenders.possible_but_risky)}
