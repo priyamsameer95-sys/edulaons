@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LenderScoringConfig } from './lender-config/LenderScoringConfig';
+
 import { BREConfigTab, type SimplifiedBREData } from './lender-config/BREConfigTab';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -203,12 +203,11 @@ export function EditLenderModal({
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="bre">BRE Config</TabsTrigger>
-            <TabsTrigger value="student-profile">Scoring</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -404,9 +403,6 @@ export function EditLenderModal({
             <BREConfigTab data={breData} onChange={setBreData} />
           </TabsContent>
 
-          <TabsContent value="student-profile" className="space-y-4">
-            <LenderScoringConfig lenderId={lender.id} />
-          </TabsContent>
         </Tabs>
 
         <DialogFooter>
