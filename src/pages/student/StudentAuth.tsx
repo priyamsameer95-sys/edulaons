@@ -263,7 +263,7 @@ const StudentAuth = () => {
 
             <CardContent className="p-6">
               {step === 'phone' ? <form onSubmit={handleSendOTP} className="space-y-5">
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
                       <Smartphone className="h-4 w-4 text-muted-foreground" />
                       Phone Number
@@ -275,7 +275,7 @@ const StudentAuth = () => {
                       </div>
                       <Input id="phone" type="tel" placeholder="98765 43210" value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} className="h-14 pl-24 text-lg font-medium tracking-wide" autoFocus required />
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-1">
                       We'll send you a verification code via SMS
                     </p>
                   </div>
