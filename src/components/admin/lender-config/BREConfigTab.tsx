@@ -1,8 +1,9 @@
 /**
- * Simplified BRE Configuration Tab for Lenders
+ * Lender Criteria & Rules Configuration Tab
  * 
- * Manages Business Rules Engine free text configuration:
- * - BRE Text (long-form rules description used by AI)
+ * Manages all lender criteria in plain English free text:
+ * - Preferences, restrictions, scoring hints, blacklists
+ * - Used by AI for matching and recommendations
  * - Last updated info
  */
 
@@ -24,18 +25,21 @@ interface BREConfigTabProps {
   onChange: (data: SimplifiedBREData) => void;
 }
 
-const BRE_TEXT_PLACEHOLDER = `Describe approval philosophy, risk appetite, common rejects, processing speed, preferred profiles, and any internal experience notes.
+const BRE_TEXT_PLACEHOLDER = `Describe all lender criteria in plain English. The AI will interpret these for matching and recommendations.
 
-Example:
-- Prefer applicants with co-applicant salary >= 75,000/month
-- Priority for salaried/government employees
-- Minimum credit score: 700+
-- Preferred destinations: USA, UK, Canada, Australia
-- Avoid applicants from Tier 3 cities for unsecured loans
-- Maximum loan amount: 1.5 Cr for secured, 50L for unsecured
-- Strong preference for QS Top 200 universities
-- Fast-track approval for repeat customers
-- Usually rejects: Self-employed with ITR < 3 years, Credit score < 650`;
+Examples:
+- Credila prefers colleges in Australia with collateral
+- CIBIL score above 700 is good for this lender
+- Punjab state is not accepted
+- Blacklist countries: Georgia, Pakistan, Ukraine
+- MBBS courses are accepted
+- STEM courses are preferred
+- Minimum co-applicant income: 50K/month
+- Government employees get preference
+- Priority for QS Top 200 universities
+- Avoid Tier 3 cities for unsecured loans
+- Maximum loan: 1.5 Cr secured, 50L unsecured
+- Usually rejects: Self-employed with ITR < 3 years`;
 
 export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
   const [updatedByEmail, setUpdatedByEmail] = useState<string | null>(null);
@@ -81,25 +85,25 @@ export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
       {/* Section Header */}
       <div className="flex items-center gap-2 pb-2 border-b">
         <FileText className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold text-lg">Lender BRE (Internal Notes)</h3>
+        <h3 className="font-semibold text-lg">Lender Criteria & Rules</h3>
       </div>
 
-      {/* BRE Text Input */}
+      {/* Criteria Text Input */}
       <div className="space-y-2">
         <Label htmlFor="bre_text" className="text-sm font-medium">
-          Lender BRE (Free Text – used by AI for lender recommendation)
+          Lender Criteria (Free Text – used by AI for matching & recommendations)
         </Label>
         <Textarea
           id="bre_text"
           value={data.bre_text || ''}
           onChange={(e) => handleTextChange(e.target.value)}
           placeholder={BRE_TEXT_PLACEHOLDER}
-          rows={12}
-          className="font-mono text-sm resize-y min-h-[240px]"
+          rows={14}
+          className="font-mono text-sm resize-y min-h-[280px]"
         />
         <p className="text-xs text-muted-foreground">
-          Describe approval philosophy, risk appetite, common rejects, processing speed, 
-          preferred profiles, and any internal experience notes.
+          Include preferences, restrictions, scoring hints, blacklists, 
+          accepted/rejected profiles, and any special rules.
         </p>
       </div>
 
