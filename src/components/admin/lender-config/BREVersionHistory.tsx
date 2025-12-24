@@ -17,7 +17,6 @@ import { History, RotateCcw, User, Calendar, ChevronDown, ChevronUp } from 'luci
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import type { BREConfigData } from './BREConfigTab';
 
 interface BREHistoryEntry {
   id: string;
@@ -42,7 +41,7 @@ interface BREHistoryEntry {
 
 interface BREVersionHistoryProps {
   lenderId: string;
-  onRollback?: (data: BREConfigData) => void;
+  onRollback?: (breText: string) => void;
   className?: string;
 }
 
@@ -95,23 +94,8 @@ export function BREVersionHistory({ lenderId, onRollback, className }: BREVersio
   };
 
   const handleRollback = (entry: BREHistoryEntry) => {
-    const uniRestrictions = entry.university_restrictions as { allowed: string[]; blocked: string[] } | null;
-    const rollbackData: BREConfigData = {
-      bre_text: entry.bre_text || '',
-      bre_json: (entry.bre_json as Record<string, unknown>) || null,
-      processing_time_range_min: entry.processing_time_range_min,
-      processing_time_range_max: entry.processing_time_range_max,
-      collateral_preference: entry.collateral_preference || [],
-      country_restrictions: entry.country_restrictions || [],
-      university_restrictions: uniRestrictions,
-      income_expectations_min: entry.income_expectations_min,
-      income_expectations_max: entry.income_expectations_max,
-      credit_expectations: entry.credit_expectations || '',
-      experience_score: entry.experience_score,
-      admin_remarks: entry.admin_remarks || '',
-    };
-
-    onRollback?.(rollbackData);
+    // Only rollback the bre_text for the simplified version
+    onRollback?.(entry.bre_text || '');
     
     toast({
       title: 'Version Loaded',

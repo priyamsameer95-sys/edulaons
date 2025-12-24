@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LenderScoringConfig } from './lender-config/LenderScoringConfig';
+import { BREConfigTab, type SimplifiedBREData } from './lender-config/BREConfigTab';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Lender {
   id: string;
@@ -36,6 +38,9 @@ interface Lender {
   contact_phone: string | null;
   website: string | null;
   logo_url: string | null;
+  bre_text?: string | null;
+  bre_updated_at?: string | null;
+  bre_updated_by?: string | null;
 }
 
 interface EditLenderModalProps {
@@ -53,6 +58,7 @@ export function EditLenderModal({
 }: EditLenderModalProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -73,6 +79,14 @@ export function EditLenderModal({
     website: '',
     logo_url: '',
   });
+
+  const [breData, setBreData] = useState<SimplifiedBREData>({
+    bre_text: '',
+    bre_updated_at: null,
+    bre_updated_by: null,
+  });
+
+  const [originalBreText, setOriginalBreText] = useState<string>('');
 
   useEffect(() => {
     if (lender) {
@@ -95,6 +109,14 @@ export function EditLenderModal({
         website: lender.website || '',
         logo_url: lender.logo_url || '',
       });
+
+      // Set BRE data from lender
+      setBreData({
+        bre_text: lender.bre_text || '',
+        bre_updated_at: lender.bre_updated_at || null,
+        bre_updated_by: lender.bre_updated_by || null,
+      });
+      setOriginalBreText(lender.bre_text || '');
     }
   }, [lender]);
 
@@ -114,27 +136,40 @@ export function EditLenderModal({
 
     setLoading(true);
     try {
+      // Check if BRE text was modified
+      const breTextChanged = breData.bre_text !== originalBreText;
+
+      const updateData: Record<string, unknown> = {
+        name: formData.name,
+        code: formData.code.toUpperCase(),
+        description: formData.description || null,
+        interest_rate_min: formData.interest_rate_min ? parseFloat(formData.interest_rate_min) : null,
+        interest_rate_max: formData.interest_rate_max ? parseFloat(formData.interest_rate_max) : null,
+        loan_amount_min: formData.loan_amount_min ? parseFloat(formData.loan_amount_min) : null,
+        loan_amount_max: formData.loan_amount_max ? parseFloat(formData.loan_amount_max) : null,
+        processing_fee: formData.processing_fee ? parseFloat(formData.processing_fee) : null,
+        foreclosure_charges: formData.foreclosure_charges ? parseFloat(formData.foreclosure_charges) : null,
+        processing_time_days: formData.processing_time_days ? parseInt(formData.processing_time_days) : null,
+        disbursement_time_days: formData.disbursement_time_days ? parseInt(formData.disbursement_time_days) : null,
+        approval_rate: formData.approval_rate ? parseFloat(formData.approval_rate) : null,
+        moratorium_period: formData.moratorium_period || null,
+        contact_email: formData.contact_email || null,
+        contact_phone: formData.contact_phone || null,
+        website: formData.website || null,
+        logo_url: formData.logo_url || null,
+        // Always update bre_text
+        bre_text: breData.bre_text || null,
+      };
+
+      // Only update bre_updated_at and bre_updated_by if BRE text was changed
+      if (breTextChanged) {
+        updateData.bre_updated_at = new Date().toISOString();
+        updateData.bre_updated_by = user?.id || null;
+      }
+
       const { error } = await supabase
         .from('lenders')
-        .update({
-          name: formData.name,
-          code: formData.code.toUpperCase(),
-          description: formData.description || null,
-          interest_rate_min: formData.interest_rate_min ? parseFloat(formData.interest_rate_min) : null,
-          interest_rate_max: formData.interest_rate_max ? parseFloat(formData.interest_rate_max) : null,
-          loan_amount_min: formData.loan_amount_min ? parseFloat(formData.loan_amount_min) : null,
-          loan_amount_max: formData.loan_amount_max ? parseFloat(formData.loan_amount_max) : null,
-          processing_fee: formData.processing_fee ? parseFloat(formData.processing_fee) : null,
-          foreclosure_charges: formData.foreclosure_charges ? parseFloat(formData.foreclosure_charges) : null,
-          processing_time_days: formData.processing_time_days ? parseInt(formData.processing_time_days) : null,
-          disbursement_time_days: formData.disbursement_time_days ? parseInt(formData.disbursement_time_days) : null,
-          approval_rate: formData.approval_rate ? parseFloat(formData.approval_rate) : null,
-          moratorium_period: formData.moratorium_period || null,
-          contact_email: formData.contact_email || null,
-          contact_phone: formData.contact_phone || null,
-          website: formData.website || null,
-          logo_url: formData.logo_url || null,
-        })
+        .update(updateData)
         .eq('id', lender.id);
 
       if (error) throw error;
@@ -168,11 +203,12 @@ export function EditLenderModal({
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
-            <TabsTrigger value="student-profile">Student Profile</TabsTrigger>
+            <TabsTrigger value="bre">BRE Config</TabsTrigger>
+            <TabsTrigger value="student-profile">Scoring</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -362,6 +398,10 @@ export function EditLenderModal({
                 placeholder="https://www.lender.com"
               />
             </div>
+          </TabsContent>
+
+          <TabsContent value="bre" className="space-y-4 pt-4">
+            <BREConfigTab data={breData} onChange={setBreData} />
           </TabsContent>
 
           <TabsContent value="student-profile" className="space-y-4">
