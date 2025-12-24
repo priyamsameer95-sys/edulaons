@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
           occupation, credit_score, pin_code
         ),
         lead_universities!fk_lead_universities_lead(
-          university:universities(id, name, country, city, global_rank, score)
+          university:universities!fk_lead_universities_university(id, name, country, city, global_rank, score)
         )
       `)
       .eq('id', leadId)

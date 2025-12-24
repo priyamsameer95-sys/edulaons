@@ -170,8 +170,7 @@ async function evaluateLendersForLead(
         key_features
       `)
       .eq('is_active', true)
-      .order('preferred_rank', { ascending: true })
-      .limit(3);
+      .order('preferred_rank', { ascending: true });
     
     recommendedLenders = (fallbackLenders || []).map((l: any, index: number) => {
       // Calculate a basic score based on available data
