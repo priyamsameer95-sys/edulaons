@@ -331,7 +331,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
 
         {/* Buttons */}
         <div className="pt-2 flex gap-3">
-          <Button variant="outline" onClick={onPrev} className="px-5">Back</Button>
+          <Button type="button" variant="outline" onClick={onPrev} className="px-5">Back</Button>
           <Button onClick={handleContinue} className="flex-1 h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25">
             Continue <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }} className="ml-1">→</motion.span>
           </Button>
