@@ -4,6 +4,7 @@
 
 export type TestType = 'IELTS' | 'TOEFL' | 'GRE' | 'GMAT' | 'PTE' | 'SAT';
 export type LoanType = 'secured' | 'unsecured';
+export type CourseType = 'masters_stem' | 'bachelors_stem' | 'others';
 export type Relationship = 'parent' | 'spouse' | 'sibling' | 'guardian' | 'other';
 export type EmploymentType = 'salaried' | 'self_employed' | 'business_owner';
 export type HighestQualification = 'phd' | 'masters' | 'bachelors' | 'diploma' | '12th';
@@ -42,6 +43,7 @@ export interface StudyDetails {
   universities: string[];
   studyDestination: string;
   courseName?: string;
+  courseType?: CourseType;
   selectedCourseId?: string; // Link to courses table
   loanType: LoanType;
   intakeMonth: number;
@@ -105,6 +107,7 @@ export interface EdgeFunctionPayload {
   universities: string[];
   country: string;
   course_name?: string;
+  course_type?: CourseType;
   loan_type: LoanType;
   intake_month: number;
   intake_year: number;
