@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Shield, Clock, CheckCircle2, LogOut } from 'lucide-react';
@@ -7,6 +7,8 @@ import type { StudentApplicationData } from '@/types/student-application';
 import PersonalDetailsPage from '../form-pages/PersonalDetailsPage';
 import StudyLoanPage from '../form-pages/StudyLoanPage';
 import CoApplicantReviewPage from '../form-pages/CoApplicantReviewPage';
+import { useAutosave } from '@/hooks/useAutosave';
+import { AutosaveIndicator } from '@/components/shared/AutosaveIndicator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +38,21 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [showExitDialog, setShowExitDialog] = useState(false);
+
+  // KB: Autosave for student forms
+  const { isSaving, lastSaved, error: saveError, loadSavedData } = useAutosave(data, {
+    storageKey: 'student-application-draft',
+    debounceMs: 1500,
+    enabled: true,
+  });
+
+  // Load saved data on mount
+  useEffect(() => {
+    const savedData = loadSavedData();
+    if (savedData && Object.keys(savedData).length > 0) {
+      onUpdate(savedData);
+    }
+  }, []);
 
   const totalSteps = STEPS.length;
   const progress = (currentStep / totalSteps) * 100;
@@ -124,14 +141,17 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
               )}
             </button>
 
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
-                <span>~{4 - currentStep} min</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-green-600">
+            <div className="flex items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
+              {/* KB: Autosave indicator */}
+              <AutosaveIndicator
+                isSaving={isSaving}
+                lastSaved={lastSaved}
+                error={saveError}
+                size="sm"
+              />
+              <div className="hidden sm:flex items-center gap-1.5 text-green-600">
                 <Shield className="w-4 h-4" />
-                <span className="hidden sm:inline">Secure</span>
+                <span>Secure</span>
               </div>
             </div>
           </div>
