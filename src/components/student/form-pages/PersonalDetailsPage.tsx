@@ -108,44 +108,42 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full"
+      className="w-full max-w-xl mx-auto"
     >
       {/* Header */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-8">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-3"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-medium mb-4"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-3.5 h-3.5" />
           Takes ~2 minutes
         </motion.div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
-          👋 Let's get started
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Let's get started
         </h1>
         <p className="text-muted-foreground text-sm">Your data is encrypted & secure</p>
       </div>
 
       {/* Form */}
-      <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-border/50 shadow-xl p-5 sm:p-7 space-y-5">
+      <div className="bg-card rounded-xl border shadow-sm p-6 space-y-6">
         
         {/* Name */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <User className="w-4 h-4 text-muted-foreground" /> Full Name *
+            <User className="w-4 h-4 text-muted-foreground" /> Full Name <span className="text-destructive">*</span>
           </label>
           <div
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-xl border-2 bg-background/50 transition-all",
-              errors.name && touched.name ? "border-destructive/50" : isValid('name') ? "border-green-500/50" : "border-border focus-within:border-primary"
+              "flex items-center gap-3 h-12 px-4 rounded-lg border bg-background transition-colors",
+              errors.name && touched.name 
+                ? "border-destructive" 
+                : isValid('name') 
+                ? "border-emerald-500" 
+                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
             )}
           >
-            <div className={cn(
-              "w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0",
-              data.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            )}>
-              {data.name ? getInitials(data.name) : '👤'}
-            </div>
             <input
               ref={nameRef}
               type="text"
@@ -153,60 +151,69 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
               value={data.name || ''}
               onChange={e => onUpdate({ name: e.target.value })}
               onBlur={e => handleBlur('name', e.target.value)}
-              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50"
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
             />
             <AnimatePresence>
               {isValid('name') && (
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3 text-white" />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          {errors.name && touched.name && <p className="text-xs text-destructive ml-1">{errors.name}</p>}
+          {errors.name && touched.name && <p className="text-xs text-destructive">{errors.name}</p>}
         </div>
 
         {/* Phone */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Phone className="w-4 h-4 text-muted-foreground" /> WhatsApp Number *
+            <Phone className="w-4 h-4 text-muted-foreground" /> WhatsApp Number <span className="text-destructive">*</span>
           </label>
           <div
             className={cn(
-              "flex items-center gap-2 px-4 py-3 rounded-xl border-2 bg-background/50 transition-all",
-              errors.phone && touched.phone ? "border-destructive/50" : isValid('phone') ? "border-green-500/50" : "border-border focus-within:border-primary"
+              "flex items-center gap-2 h-12 px-4 rounded-lg border bg-background transition-colors",
+              errors.phone && touched.phone 
+                ? "border-destructive" 
+                : isValid('phone') 
+                ? "border-emerald-500" 
+                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
             )}
           >
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg text-sm shrink-0">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
               <span>🇮🇳</span>
-              <span className="text-muted-foreground">+91</span>
+              <span>+91</span>
             </div>
+            <div className="w-px h-5 bg-border" />
             <input
               type="tel"
               placeholder="98765 43210"
               value={formatPhone(data.phone || '')}
               onChange={e => onUpdate({ phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
               onBlur={e => handleBlur('phone', e.target.value)}
-              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50"
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
             />
             {isValid('phone') && (
-              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                 <Check className="w-3 h-3 text-white" />
               </div>
             )}
           </div>
-          <p className="text-xs text-muted-foreground ml-1">You'll get OTP on this number</p>
+          <p className="text-xs text-muted-foreground">You'll receive OTP on this number</p>
         </div>
 
         {/* Email */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Mail className="w-4 h-4 text-muted-foreground" /> Email
+            <Mail className="w-4 h-4 text-muted-foreground" /> Email <span className="text-muted-foreground font-normal">(optional)</span>
           </label>
           <div
             className={cn(
-              "flex items-center px-4 py-3 rounded-xl border-2 bg-background/50 transition-all",
-              errors.email && touched.email ? "border-destructive/50" : isValid('email') ? "border-green-500/50" : "border-border focus-within:border-primary"
+              "flex items-center h-12 px-4 rounded-lg border bg-background transition-colors",
+              errors.email && touched.email 
+                ? "border-destructive" 
+                : isValid('email') 
+                ? "border-emerald-500" 
+                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
             )}
           >
             <input
@@ -215,25 +222,29 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
               value={data.email || ''}
               onChange={e => onUpdate({ email: e.target.value })}
               onBlur={e => handleBlur('email', e.target.value)}
-              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50"
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
             />
             {isValid('email') && (
-              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                 <Check className="w-3 h-3 text-white" />
               </div>
             )}
           </div>
         </div>
 
-        {/* DOB & Gender */}
+        {/* DOB & Gender Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" /> Date of Birth *
+              <Calendar className="w-4 h-4 text-muted-foreground" /> Date of Birth <span className="text-destructive">*</span>
             </label>
             <div className={cn(
-              "px-4 py-3 rounded-xl border-2 bg-background/50",
-              errors.dateOfBirth && touched.dateOfBirth ? "border-destructive/50" : isValid('dateOfBirth') ? "border-green-500/50" : "border-border"
+              "h-12 px-4 rounded-lg border bg-background flex items-center",
+              errors.dateOfBirth && touched.dateOfBirth 
+                ? "border-destructive" 
+                : isValid('dateOfBirth') 
+                ? "border-emerald-500" 
+                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
             )}>
               <input
                 type="date"
@@ -245,14 +256,15 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
               />
             </div>
             {data.dateOfBirth && !errors.dateOfBirth && (
-              <p className="text-xs text-muted-foreground ml-1">
-                Age: {Math.floor((Date.now() - new Date(data.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} yrs
+              <p className="text-xs text-muted-foreground">
+                Age: {Math.floor((Date.now() - new Date(data.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} years
               </p>
             )}
+            {errors.dateOfBirth && touched.dateOfBirth && <p className="text-xs text-destructive">{errors.dateOfBirth}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Gender *</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Gender <span className="text-destructive">*</span></label>
             <div className="flex gap-2">
               {genderOptions.map(g => (
                 <button
@@ -260,29 +272,34 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
                   type="button"
                   onClick={() => { onUpdate({ gender: g.value }); setErrors(p => ({ ...p, gender: '' })); }}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1 py-3 rounded-xl border-2 font-medium text-sm transition-all",
+                    "flex-1 flex items-center justify-center gap-1.5 h-12 rounded-lg border text-sm font-medium transition-all",
                     data.gender === g.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-primary/50 text-muted-foreground"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background hover:border-muted-foreground/50 text-foreground"
                   )}
                 >
                   <span>{g.icon}</span>
-                  <span className="hidden sm:inline">{g.label}</span>
+                  <span>{g.label}</span>
                 </button>
               ))}
             </div>
+            {errors.gender && touched.gender && <p className="text-xs text-destructive">{errors.gender}</p>}
           </div>
         </div>
 
         {/* Location */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground" /> Location *
+            <MapPin className="w-4 h-4 text-muted-foreground" /> Location <span className="text-destructive">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             <div className={cn(
-              "px-4 py-3 rounded-xl border-2 bg-background/50",
-              errors.postalCode && touched.postalCode ? "border-destructive/50" : isValid('postalCode') ? "border-green-500/50" : "border-border"
+              "h-12 px-4 rounded-lg border bg-background flex items-center",
+              errors.postalCode && touched.postalCode 
+                ? "border-destructive" 
+                : isValid('postalCode') 
+                ? "border-emerald-500" 
+                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
             )}>
               <input
                 type="text"
@@ -292,15 +309,15 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
                 value={data.postalCode || ''}
                 onChange={e => onUpdate({ postalCode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
                 onBlur={e => handleBlur('postalCode', e.target.value)}
-                className="w-full bg-transparent outline-none text-center text-foreground placeholder:text-muted-foreground/50"
+                className="w-full bg-transparent outline-none text-center text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <div className="col-span-2 flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-border bg-muted/20">
+            <div className="col-span-2 h-12 flex items-center gap-2 px-4 rounded-lg border border-input bg-muted/50">
               {pinLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               ) : data.city ? (
                 <>
-                  <Check className="w-4 h-4 text-green-500 shrink-0" />
+                  <Check className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span className="text-sm text-foreground truncate">{data.city}, {data.state}</span>
                 </>
               ) : (
@@ -309,36 +326,37 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
                   placeholder="City"
                   value={data.city || ''}
                   onChange={e => onUpdate({ city: e.target.value })}
-                  className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50 text-sm"
+                  className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-sm"
                 />
               )}
             </div>
           </div>
+          {errors.postalCode && touched.postalCode && <p className="text-xs text-destructive">{errors.postalCode}</p>}
         </div>
 
-        {/* Continue */}
+        {/* Continue Button */}
         <motion.button
           onClick={handleContinue}
           disabled={isValidating}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
-          className="w-full h-14 mt-4 rounded-xl font-semibold text-base bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-2"
+          className="w-full h-12 mt-2 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {isValidating ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <>
               Continue
-              <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>→</motion.span>
+              <motion.span animate={{ x: [0, 3, 0] }} transition={{ repeat: Infinity, duration: 1.2 }}>→</motion.span>
             </>
           )}
         </motion.button>
       </div>
 
-      {/* Trust */}
-      <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Shield className="w-4 h-4" />
-        <span>256-bit encrypted • Your data is never sold</span>
+      {/* Trust footer */}
+      <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Shield className="w-3.5 h-3.5" />
+        <span>256-bit encryption • Your data is never sold</span>
       </div>
     </motion.div>
   );
