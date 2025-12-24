@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BREConfigTab, type BREConfigData } from './lender-config/BREConfigTab';
 
 interface CreateLenderModalProps {
   open: boolean;
@@ -48,6 +49,21 @@ export function CreateLenderModal({
     contact_phone: '',
     website: '',
     logo_url: '',
+  });
+
+  const [breData, setBreData] = useState<BREConfigData>({
+    bre_text: '',
+    bre_json: null,
+    processing_time_range_min: null,
+    processing_time_range_max: null,
+    collateral_preference: [],
+    country_restrictions: [],
+    university_restrictions: null,
+    income_expectations_min: null,
+    income_expectations_max: null,
+    credit_expectations: '',
+    experience_score: 5,
+    admin_remarks: '',
   });
 
   const handleChange = (field: string, value: string) => {
@@ -86,6 +102,20 @@ export function CreateLenderModal({
           website: formData.website || null,
           logo_url: formData.logo_url || null,
           is_active: true,
+          // BRE fields
+          bre_text: breData.bre_text || null,
+          bre_json: breData.bre_json || null,
+          processing_time_range_min: breData.processing_time_range_min,
+          processing_time_range_max: breData.processing_time_range_max,
+          collateral_preference: breData.collateral_preference.length > 0 ? breData.collateral_preference : null,
+          country_restrictions: breData.country_restrictions.length > 0 ? breData.country_restrictions : null,
+          university_restrictions: breData.university_restrictions,
+          income_expectations_min: breData.income_expectations_min,
+          income_expectations_max: breData.income_expectations_max,
+          credit_expectations: breData.credit_expectations || null,
+          experience_score: breData.experience_score,
+          admin_remarks: breData.admin_remarks || null,
+          bre_updated_at: new Date().toISOString(),
         },
       ]);
 
@@ -143,10 +173,11 @@ export function CreateLenderModal({
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
+            <TabsTrigger value="bre">BRE Config</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
@@ -336,6 +367,10 @@ export function CreateLenderModal({
                 placeholder="https://www.lender.com"
               />
             </div>
+          </TabsContent>
+
+          <TabsContent value="bre" className="space-y-4">
+            <BREConfigTab data={breData} onChange={setBreData} />
           </TabsContent>
         </Tabs>
 
