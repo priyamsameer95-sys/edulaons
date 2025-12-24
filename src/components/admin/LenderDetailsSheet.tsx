@@ -10,7 +10,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/utils/formatters';
-import { Loader2, Mail, Phone, Globe, TrendingUp, Clock, DollarSign } from 'lucide-react';
+import { getExpenseIcon } from '@/utils/lenderIcons';
+import { Loader2, Mail, Phone, Globe, TrendingUp, Clock, DollarSign, CheckCircle2, FileText } from 'lucide-react';
 
 interface Lender {
   id: string;
@@ -32,6 +33,9 @@ interface Lender {
   contact_phone: string | null;
   website: string | null;
   logo_url: string | null;
+  key_features?: any[] | null;
+  eligible_expenses?: any[] | null;
+  required_documents?: string[] | null;
 }
 
 interface LenderDetailsSheetProps {
@@ -218,6 +222,71 @@ export function LenderDetailsSheet({
           </div>
 
           <Separator />
+
+          {/* Key Features */}
+          {lender.key_features && lender.key_features.length > 0 && (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Key Features</h3>
+                <div className="flex flex-wrap gap-2">
+                  {lender.key_features.map((feature: any, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs font-normal bg-muted/50">
+                      <CheckCircle2 className="h-3 w-3 mr-1 text-success" />
+                      {typeof feature === 'string' ? feature : feature.name || feature.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Eligible Expenses */}
+          {lender.eligible_expenses && lender.eligible_expenses.length > 0 && (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Eligible Expenses</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {lender.eligible_expenses.map((expense: any, index: number) => {
+                    const IconComponent = getExpenseIcon(expense.icon);
+                    return (
+                      <div key={index} className="flex items-start gap-2">
+                        <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+                          <IconComponent className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{expense.category}</p>
+                          <p className="text-xs text-muted-foreground">{expense.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Required Documents */}
+          {lender.required_documents && lender.required_documents.length > 0 && (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Required Documents
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {lender.required_documents.map((doc: string, index: number) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                      <span className="text-muted-foreground">{doc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
 
           {/* Contact Information */}
           <div>
