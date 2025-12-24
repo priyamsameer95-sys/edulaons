@@ -11,17 +11,13 @@ import {
   Phone, 
   ChevronDown, 
   ChevronUp, 
-  GraduationCap, 
-  BookOpen, 
-  Plane, 
-  Home, 
-  Shield, 
   Star, 
   Check,
   Zap,
   FileText
 } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
+import { getExpenseIcon } from '@/utils/lenderIcons';
 
 interface LenderCardProps {
   lender: {
@@ -55,14 +51,6 @@ interface LenderCardProps {
   onSelect: () => void;
   isUpdating: boolean;
 }
-
-const iconMap: Record<string, any> = {
-  GraduationCap,
-  BookOpen,
-  Plane,
-  Home,
-  Shield
-};
 
 const LenderCard = ({
   lender,
@@ -285,7 +273,7 @@ const LenderCard = ({
               <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Eligible Expenses</h4>
               <div className="grid grid-cols-2 gap-3">
                 {lender.eligible_expenses.map((expense: any, index: number) => {
-                  const IconComponent = iconMap[expense.icon] || GraduationCap;
+                  const IconComponent = getExpenseIcon(expense.icon);
                   return (
                     <div key={index} className="flex items-start gap-2">
                       <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
