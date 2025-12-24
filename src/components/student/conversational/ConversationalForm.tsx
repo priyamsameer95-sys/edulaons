@@ -120,7 +120,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
         animate={{ y: 0, opacity: 1 }}
         className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50"
       >
-        <div className="max-w-2xl mx-auto px-4 py-3">
+        <div className="max-w-4xl mx-auto px-4 py-3">
           {/* Top Row */}
           <div className="flex items-center justify-between mb-3">
             <button
@@ -205,7 +205,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
       </motion.header>
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 py-6 sm:py-10 pb-24">
+      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-10 pb-24">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStep}
@@ -223,7 +223,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
 
       {/* Footer Trust Signals */}
       <footer className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pointer-events-none pb-4 pt-8">
-        <div className="max-w-2xl mx-auto px-4">
+        <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">🔒 Bank-grade encryption</span>
             <span className="hidden sm:flex items-center gap-1.5">✨ 1000+ students funded</span>

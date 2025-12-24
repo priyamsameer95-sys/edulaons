@@ -1,8 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, XCircle, Share2, Download, ChevronDown, ChevronUp, Star, AlertTriangle, ThumbsUp } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Star, AlertTriangle, ThumbsUp, Share2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import LenderCard from './LenderCard';
 import { ConfettiAnimation } from './ConfettiAnimation';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { formatCurrency } from '@/utils/formatters';
 
 interface LenderData {
   lender_id: string;
@@ -140,14 +141,6 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
   const assignedLender = recommendedLenders[0]; // First lender is the assigned one
   const totalLenders = recommendedLenders.length;
   
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const handleLenderSelection = async (lenderId: string) => {
     if (!leadId) {
@@ -223,12 +216,8 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-4">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {lenders.map((lender, index) => (
-                <div 
-                  key={lender.lender_id} 
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 75}ms` }}
-                >
+              {lenders.map((lender) => (
+                <div key={lender.lender_id}>
                   <LenderCard
                     lender={lender}
                     isSelected={selectedLenderId === lender.lender_id}
@@ -250,28 +239,28 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       {showConfetti && <ConfettiAnimation />}
 
       {/* Success Icon and Message */}
-      <div className="text-center space-y-6 animate-fade-in">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10 animate-scale-in animate-glow">
-          <CheckCircle2 className="h-14 w-14 text-success animate-scale-in" style={{ animationDelay: '100ms' }} />
+      <div className="text-center space-y-6">
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10">
+          <CheckCircle2 className="h-14 w-14 text-success" />
         </div>
         <div className="space-y-3">
-          <div className="text-6xl mb-4 animate-scale-in" style={{ animationDelay: '150ms' }}>🎉</div>
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
             Congratulations! Application Submitted
           </h2>
-          <p className="text-lg text-muted-foreground animate-fade-in" style={{ animationDelay: '250ms' }}>
+          <p className="text-lg text-muted-foreground">
             Your loan application has been successfully submitted
           </p>
           <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 rounded-lg border border-border/50">
             <p className="text-sm text-muted-foreground">Your Case ID:</p>
-            <span className="font-mono font-bold text-xl text-primary animate-shimmer">{caseId}</span>
+            <span className="font-mono font-bold text-xl text-primary">{caseId}</span>
           </div>
         </div>
       </div>
 
       {/* Eligibility Card */}
       {assignedLender?.eligibility_score !== undefined && requestedAmount && (
-        <Card className="border-primary/20 bg-primary/5 animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               {assignedLender.approval_status === 'approved' ? '✅' : '⚠️'} 
@@ -374,7 +363,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       )}
 
       {/* Recommended Lenders Section */}
-      <div className="space-y-4 animate-fade-in" style={{ animationDelay: '500ms' }}>
+      <div className="space-y-4">
         <div className="space-y-2">
           <h2 className="text-2xl font-bold">Compare All Lenders</h2>
           <p className="text-muted-foreground">
@@ -413,7 +402,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
             {renderLenderSection('not_suitable', groupedLenders.not_suitable)}
             
             {selectedLenderId && (
-              <div className="p-4 bg-success/10 border border-success/20 rounded-lg animate-fade-in text-center">
+              <div className="p-4 bg-success/10 border border-success/20 rounded-lg text-center">
                 <p className="text-sm text-success font-medium">
                   ✓ Your lender preference has been saved successfully
                 </p>
@@ -485,7 +474,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
           <Button 
             variant="outline"
             size="lg"
-            className="gap-2 hover-lift"
+            className="gap-2"
             onClick={() => toast.info('PDF download feature coming soon!')}
           >
             <Download className="h-4 w-4" />
@@ -495,7 +484,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
         <Button 
           onClick={() => navigate('/student')} 
           size="lg"
-          className="px-12 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all hover-lift"
+          className="px-12 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
         >
           Go to Dashboard →
         </Button>
