@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BREConfigTab, type BREConfigData } from './lender-config/BREConfigTab';
+import { BREConfigTab, type SimplifiedBREData } from './lender-config/BREConfigTab';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CreateLenderModalProps {
   open: boolean;
@@ -31,6 +31,7 @@ export function CreateLenderModal({
 }: CreateLenderModalProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -52,19 +53,10 @@ export function CreateLenderModal({
     logo_url: '',
   });
 
-  const [breData, setBreData] = useState<BREConfigData>({
+  const [breData, setBreData] = useState<SimplifiedBREData>({
     bre_text: '',
-    bre_json: null,
-    processing_time_range_min: null,
-    processing_time_range_max: null,
-    collateral_preference: [],
-    country_restrictions: [],
-    university_restrictions: null,
-    income_expectations_min: null,
-    income_expectations_max: null,
-    credit_expectations: '',
-    experience_score: 5,
-    admin_remarks: '',
+    bre_updated_at: null,
+    bre_updated_by: null,
   });
 
   const handleChange = (field: string, value: string) => {
@@ -105,18 +97,8 @@ export function CreateLenderModal({
           is_active: true,
           // BRE fields
           bre_text: breData.bre_text || null,
-          bre_json: breData.bre_json as Json,
-          processing_time_range_min: breData.processing_time_range_min,
-          processing_time_range_max: breData.processing_time_range_max,
-          collateral_preference: breData.collateral_preference.length > 0 ? breData.collateral_preference : null,
-          country_restrictions: breData.country_restrictions.length > 0 ? breData.country_restrictions : null,
-          university_restrictions: breData.university_restrictions as Json,
-          income_expectations_min: breData.income_expectations_min,
-          income_expectations_max: breData.income_expectations_max,
-          credit_expectations: breData.credit_expectations || null,
-          experience_score: breData.experience_score,
-          admin_remarks: breData.admin_remarks || null,
-          bre_updated_at: new Date().toISOString(),
+          bre_updated_at: breData.bre_text ? new Date().toISOString() : null,
+          bre_updated_by: breData.bre_text ? user?.id : null,
         },
       ]);
 
@@ -160,6 +142,11 @@ export function CreateLenderModal({
       contact_phone: '',
       website: '',
       logo_url: '',
+    });
+    setBreData({
+      bre_text: '',
+      bre_updated_at: null,
+      bre_updated_by: null,
     });
   };
 
@@ -370,7 +357,7 @@ export function CreateLenderModal({
             </div>
           </TabsContent>
 
-          <TabsContent value="bre" className="space-y-4">
+          <TabsContent value="bre" className="space-y-4 pt-4">
             <BREConfigTab data={breData} onChange={setBreData} />
           </TabsContent>
         </Tabs>
