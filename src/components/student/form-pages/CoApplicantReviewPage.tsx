@@ -165,7 +165,7 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
 
               {/* Buttons */}
               <div className="pt-2 flex gap-3">
-                <Button variant="outline" onClick={onPrev} className="px-5">Back</Button>
+                <Button type="button" variant="outline" onClick={onPrev} className="px-5">Back</Button>
                 <Button onClick={handleReview} className="flex-1 h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25">
                   Review Application <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -240,7 +240,7 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
 
                 {/* Submit */}
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setShowReview(false)} className="px-5">Edit</Button>
+                  <Button type="button" variant="outline" onClick={() => setShowReview(false)} className="px-5">Edit</Button>
                   <Button onClick={handleSubmit} disabled={!agreed || isSubmitting}
                     className={cn("flex-1 h-12 text-base font-semibold rounded-xl transition-all",
                       agreed ? "bg-gradient-to-r from-green-500 to-green-600 shadow-lg shadow-green-500/25 hover:from-green-600 hover:to-green-700" : "bg-muted text-muted-foreground"
