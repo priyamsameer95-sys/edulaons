@@ -39,13 +39,39 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingAppUser) {
-      console.log('User already exists in app_users:', existingAppUser);
+      console.log('User exists in app_users, updating role to:', role);
+      
+      // Update role to admin
+      const { error: updateError } = await supabaseAdmin
+        .from('app_users')
+        .update({ role: role, updated_at: new Date().toISOString() })
+        .eq('id', existingAppUser.id);
+      
+      if (updateError) {
+        console.error('Failed to update role:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update role', details: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Reset password for existing auth user
+      const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingAppUser.id,
+        { password: password }
+      );
+      
+      if (passwordError) {
+        console.warn('Password update warning:', passwordError.message);
+      }
+
       return new Response(
         JSON.stringify({ 
-          error: 'User already exists', 
-          user: existingAppUser 
+          success: true,
+          message: 'User role updated to admin',
+          user: { ...existingAppUser, role: role }
         }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
