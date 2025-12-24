@@ -269,11 +269,11 @@ const StudentAuth = () => {
                       Phone Number
                     </Label>
                     <div className="relative">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 font-medium">
-                        <span className="text-lg">🇮🇳</span>
-                        <span className="text-lg">+91</span>
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 font-medium text-base">
+                        <span>🇮🇳</span>
+                        <span>+91</span>
                       </div>
-                      <Input id="phone" type="tel" placeholder="98765 43210" value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} className="h-14 pl-[4.5rem] text-lg font-medium" autoFocus required />
+                      <Input id="phone" type="tel" placeholder="98765 43210" value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} className="h-14 pl-[4.5rem] text-base font-medium" autoFocus required />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       We'll send you a verification code via SMS
