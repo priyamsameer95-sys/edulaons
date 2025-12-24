@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import {
   Dialog,
   DialogContent,
@@ -104,12 +105,12 @@ export function CreateLenderModal({
           is_active: true,
           // BRE fields
           bre_text: breData.bre_text || null,
-          bre_json: breData.bre_json || null,
+          bre_json: breData.bre_json as Json,
           processing_time_range_min: breData.processing_time_range_min,
           processing_time_range_max: breData.processing_time_range_max,
           collateral_preference: breData.collateral_preference.length > 0 ? breData.collateral_preference : null,
           country_restrictions: breData.country_restrictions.length > 0 ? breData.country_restrictions : null,
-          university_restrictions: breData.university_restrictions,
+          university_restrictions: breData.university_restrictions as Json,
           income_expectations_min: breData.income_expectations_min,
           income_expectations_max: breData.income_expectations_max,
           credit_expectations: breData.credit_expectations || null,
