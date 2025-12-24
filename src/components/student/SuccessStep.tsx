@@ -262,7 +262,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
           <p className="text-lg text-muted-foreground animate-fade-in" style={{ animationDelay: '250ms' }}>
             Your loan application has been successfully submitted
           </p>
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 rounded-lg border border-border/50 animate-fade-in hover-lift" style={{ animationDelay: '300ms' }}>
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 rounded-lg border border-border/50">
             <p className="text-sm text-muted-foreground">Your Case ID:</p>
             <span className="font-mono font-bold text-xl text-primary animate-shimmer">{caseId}</span>
           </div>
