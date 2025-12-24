@@ -125,7 +125,8 @@ const StudentDashboard = () => {
   };
 
   const loanAmountLakhs = lead ? Math.round(lead.loan_amount / 100000) : 0;
-  const studentName = profile?.name?.split(' ')[0] || 'there';
+  const rawName = profile?.name?.split(' ')[0] || 'there';
+  const studentName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
 
   if (loading) {
     return (
@@ -298,7 +299,7 @@ const StudentDashboard = () => {
                   Welcome back, <span className="text-primary">{studentName}!</span>
                 </h1>
                 <p className="text-base sm:text-lg text-muted-foreground">
-                  Your application ({lead.case_id}) is {getStudentStatusLabel(lead.status).toLowerCase()}.
+                  Your application ({lead.case_id}) status: {getStudentStatusLabel(lead.status)}.
                 </p>
               </div>
 
