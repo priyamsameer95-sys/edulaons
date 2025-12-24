@@ -81,6 +81,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
           {/* Top Row */}
           <div className="flex items-center justify-between mb-3">
             <button
+              type="button"
               onClick={goPrev}
               disabled={currentStep === 1}
               className={cn(
@@ -111,6 +112,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
             {STEPS.map((step, index) => (
               <div key={step.id} className="flex items-center flex-1">
                 <button
+                  type="button"
                   onClick={() => goToStep(step.id)}
                   disabled={step.id >= currentStep}
                   className={cn(
