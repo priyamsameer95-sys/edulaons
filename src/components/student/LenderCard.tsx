@@ -2,9 +2,31 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Building2, Percent, Clock, TrendingUp, CheckCircle2, ExternalLink, Mail, Phone, ChevronDown, ChevronUp, GraduationCap, BookOpen, Plane, Home, Shield, DollarSign, Star, Check } from 'lucide-react';
+import { 
+  Building2, 
+  Percent, 
+  Clock, 
+  TrendingUp, 
+  CheckCircle2, 
+  ExternalLink, 
+  Mail, 
+  Phone, 
+  ChevronDown, 
+  ChevronUp, 
+  GraduationCap, 
+  BookOpen, 
+  Plane, 
+  Home, 
+  Shield, 
+  DollarSign, 
+  Star, 
+  Check,
+  Zap,
+  FileText,
+  Calendar
+} from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
+
 interface LenderCardProps {
   lender: {
     lender_id: string;
@@ -30,11 +52,14 @@ interface LenderCardProps {
     required_documents: string[] | null;
     compatibility_score: number;
     is_preferred: boolean;
+    student_facing_reason?: string;
+    probability_band?: 'high' | 'medium' | 'low';
   };
   isSelected: boolean;
   onSelect: () => void;
   isUpdating: boolean;
 }
+
 const iconMap: Record<string, any> = {
   GraduationCap,
   BookOpen,
@@ -42,6 +67,7 @@ const iconMap: Record<string, any> = {
   Home,
   Shield
 };
+
 const LenderCard = ({
   lender,
   isSelected,
@@ -52,191 +78,226 @@ const LenderCard = ({
   
   // Standardized display values with fallbacks
   const maxEligible = lender.loan_amount_max ? formatCurrency(lender.loan_amount_max) : '—';
+  const minEligible = lender.loan_amount_min ? formatCurrency(lender.loan_amount_min) : '—';
   const interestRate = lender.interest_rate_min && lender.interest_rate_max 
     ? `${lender.interest_rate_min}% - ${lender.interest_rate_max}%` 
-    : '—';
+    : lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—';
   const processingTime = lender.processing_time_days 
     ? `${lender.processing_time_days} days` 
     : '—';
-  const loanRange = lender.loan_amount_min && lender.loan_amount_max 
-    ? `${formatCurrency(lender.loan_amount_min)} - ${formatCurrency(lender.loan_amount_max)}` 
+  const disbursementTime = lender.disbursement_time_days 
+    ? `${lender.disbursement_time_days} days` 
     : '—';
   const approvalRate = lender.approval_rate 
     ? `${lender.approval_rate}%` 
     : '—';
+  const processingFee = lender.processing_fee 
+    ? `${lender.processing_fee}%` 
+    : '—';
+  const moratorium = lender.moratorium_period || '—';
+
+  const probabilityConfig = {
+    high: { label: 'High Chance', color: 'bg-success/10 text-success border-success/30' },
+    medium: { label: 'Good Chance', color: 'bg-warning/10 text-warning border-warning/30' },
+    low: { label: 'Possible', color: 'bg-muted text-muted-foreground border-border' }
+  };
+
+  const probability = lender.probability_band ? probabilityConfig[lender.probability_band] : null;
 
   return (
-    <Card className={`flex flex-col h-full transition-all duration-300 hover-lift premium-card ${isSelected ? 'border-2 border-primary bg-primary/5 shadow-lg animate-glow' : 'border-2 border-border hover:border-primary/30'} ${isUpdating ? 'opacity-50' : ''}`}>
-      {/* Header - Fixed Height */}
-      <div className="p-5 pb-3 min-h-[88px]">
+    <Card className={`overflow-hidden transition-all duration-300 ${isSelected ? 'ring-2 ring-primary shadow-xl' : 'hover:shadow-lg border-border'} ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}>
+      {/* HEADER SECTION */}
+      <div className={`p-4 ${isSelected ? 'bg-primary/5' : 'bg-card'}`}>
         <div className="flex items-start gap-3">
           {/* Logo */}
-          <div className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-lg ${isSelected ? 'bg-primary/20' : 'bg-primary/10'}`}>
+          <div className={`flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-xl ${isSelected ? 'bg-primary/20' : 'bg-muted'}`}>
             {lender.logo_url ? (
               <img src={lender.logo_url} alt={lender.lender_name} className="w-10 h-10 object-contain" />
             ) : (
-              <Building2 className={`h-6 w-6 ${isSelected ? 'text-primary' : 'text-primary/70'}`} />
+              <Building2 className={`h-7 w-7 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
             )}
           </div>
 
-          {/* Name & Badge */}
+          {/* Name & Badges */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-base leading-tight truncate">{lender.lender_name}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-bold text-lg leading-tight">{lender.lender_name}</h3>
               {lender.is_preferred && (
-                <Badge variant="warning" className="flex-shrink-0 text-xs px-1.5 py-0.5">
-                  <Star className="h-3 w-3 mr-0.5" />
-                  Top
+                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">
+                  <Star className="h-3 w-3 mr-1 fill-current" />
+                  Top Pick
                 </Badge>
               )}
             </div>
-            <Badge variant="secondary" className="font-semibold text-xs">
-              {lender.compatibility_score}% Match
-            </Badge>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <Badge variant="secondary" className="font-bold text-sm px-2 py-0.5">
+                {lender.compatibility_score}% Match
+              </Badge>
+              {probability && (
+                <Badge variant="outline" className={`text-xs ${probability.color}`}>
+                  {probability.label}
+                </Badge>
+              )}
+            </div>
           </div>
 
-          {/* Selection */}
+          {/* Selection Button */}
           {isSelected ? (
-            <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-primary animate-scale-in">
-              <Check className="h-4 w-4 text-primary-foreground" />
+            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-primary">
+              <Check className="h-5 w-5 text-primary-foreground" />
             </div>
           ) : (
-            <Button size="sm" onClick={onSelect} disabled={isUpdating} className="flex-shrink-0 h-9 px-3 text-xs">
+            <Button size="sm" onClick={onSelect} disabled={isUpdating} className="flex-shrink-0 h-10 px-4">
               Select
             </Button>
           )}
         </div>
+
+        {/* Student Facing Reason */}
+        {lender.student_facing_reason && (
+          <p className="mt-3 text-sm text-muted-foreground italic bg-muted/50 rounded-lg p-2 border-l-2 border-primary/50">
+            "{lender.student_facing_reason}"
+          </p>
+        )}
       </div>
 
-      {/* Key Metrics Grid - Fixed Layout */}
-      <div className="px-5 pb-4 flex-1">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <div className="flex items-start gap-2">
-            <DollarSign className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Max Eligible</p>
-              <p className="text-sm font-semibold truncate">{maxEligible}</p>
-            </div>
+      {/* ELIGIBILITY SECTION - Green Accent */}
+      <div className="border-l-4 border-success bg-success/5 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle2 className="h-4 w-4 text-success" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-success">Eligibility</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Loan Range</p>
+            <p className="text-base font-bold">{minEligible} - {maxEligible}</p>
           </div>
-
-          <div className="flex items-start gap-2">
-            <Percent className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Interest Rate</p>
-              <p className="text-sm font-semibold truncate">{interestRate}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-2">
-            <Clock className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Processing</p>
-              <p className="text-sm font-semibold truncate">{processingTime}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-2">
-            <TrendingUp className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Approval Rate</p>
-              <p className="text-sm font-semibold truncate">{approvalRate}</p>
-            </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Approval Rate</p>
+            <p className="text-base font-bold">{approvalRate}</p>
           </div>
         </div>
       </div>
 
-      {/* Actions - Fixed at Bottom */}
-      <div className="px-5 pb-4 pt-2 border-t border-border mt-auto">
+      {/* TERMS SECTION - Blue Accent */}
+      <div className="border-l-4 border-primary bg-primary/5 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Percent className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-primary">Terms</span>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Interest Rate</p>
+            <p className="text-sm font-bold">{interestRate}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Processing Fee</p>
+            <p className="text-sm font-bold">{processingFee}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Moratorium</p>
+            <p className="text-sm font-bold">{moratorium}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* SPEED SECTION - Orange Accent */}
+      <div className="border-l-4 border-warning bg-warning/5 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-4 w-4 text-warning" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-warning">Speed</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Processing Time</p>
+            <p className="text-sm font-bold">{processingTime}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Disbursement</p>
+            <p className="text-sm font-bold">{disbursementTime}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* KEY FEATURES - Chips */}
+      {lender.key_features && lender.key_features.length > 0 && (
+        <div className="p-4 border-t border-border">
+          <div className="flex flex-wrap gap-2">
+            {lender.key_features.slice(0, 4).map((feature, index) => (
+              <Badge key={index} variant="outline" className="text-xs font-normal bg-muted/50">
+                <CheckCircle2 className="h-3 w-3 mr-1 text-success" />
+                {feature}
+              </Badge>
+            ))}
+            {lender.key_features.length > 4 && (
+              <Badge variant="outline" className="text-xs font-normal">
+                +{lender.key_features.length - 4} more
+              </Badge>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ACTIONS */}
+      <div className="p-4 bg-muted/30 border-t border-border">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="flex-1 h-8 text-xs">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsExpanded(!isExpanded)} 
+            className="flex-1"
+          >
             {isExpanded ? (
               <>
-                <ChevronUp className="h-3.5 w-3.5 mr-1" />
-                Less
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Hide Details
               </>
             ) : (
               <>
-                <ChevronDown className="h-3.5 w-3.5 mr-1" />
-                Details
+                <ChevronDown className="h-4 w-4 mr-1" />
+                View Details
               </>
             )}
           </Button>
           {lender.website && (
-            <Button variant="outline" size="sm" asChild className="flex-1 h-8 text-xs">
+            <Button variant="outline" size="sm" asChild className="flex-1">
               <a href={lender.website} target="_blank" rel="noopener noreferrer">
                 Website
-                <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                <ExternalLink className="h-4 w-4 ml-1" />
               </a>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Expanded Details */}
+      {/* EXPANDED DETAILS */}
       {isExpanded && (
         <div className="border-t border-border animate-accordion-down">
           {/* Description */}
           {lender.lender_description && (
-            <div className="px-5 py-4">
+            <div className="p-4">
+              <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">About</h4>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {lender.lender_description}
               </p>
             </div>
           )}
 
-          {/* Key Features */}
-          {lender.key_features && lender.key_features.length > 0 && (
-            <div className="px-5 py-4 bg-muted/30">
-              <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Key Features</h4>
-              <div className="space-y-2">
-                {lender.key_features.slice(0, 4).map((feature, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-muted-foreground">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Loan Details */}
-          <div className="px-5 py-4">
-            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Loan Details</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs">Loan Range</p>
-                <p className="font-medium">{loanRange}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Processing Fee</p>
-                <p className="font-medium">{lender.processing_fee ? `${lender.processing_fee}%` : '—'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Moratorium</p>
-                <p className="font-medium">{lender.moratorium_period || '—'}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Disbursement</p>
-                <p className="font-medium">{lender.disbursement_time_days ? `${lender.disbursement_time_days} days` : '—'}</p>
-              </div>
-            </div>
-          </div>
-
           {/* Eligible Expenses */}
           {lender.eligible_expenses && lender.eligible_expenses.length > 0 && (
-            <div className="px-5 py-4 bg-muted/30">
+            <div className="p-4 bg-muted/30 border-t border-border">
               <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Eligible Expenses</h4>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 {lender.eligible_expenses.map((expense: any, index: number) => {
                   const IconComponent = iconMap[expense.icon] || GraduationCap;
                   return (
-                    <div key={index} className="flex items-start gap-3">
+                    <div key={index} className="flex items-start gap-2">
                       <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
                         <IconComponent className="h-4 w-4 text-primary" />
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{expense.category}</p>
-                        <p className="text-xs text-muted-foreground">{expense.description}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{expense.category}</p>
+                        <p className="text-xs text-muted-foreground truncate">{expense.description}</p>
                       </div>
                     </div>
                   );
@@ -247,8 +308,11 @@ const LenderCard = ({
 
           {/* Required Documents */}
           {lender.required_documents && lender.required_documents.length > 0 && (
-            <div className="px-5 py-4">
-              <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Required Documents</h4>
+            <div className="p-4 border-t border-border">
+              <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Required Documents
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {lender.required_documents.map((doc: string, index: number) => (
                   <div key={index} className="flex items-center gap-2 text-sm">
@@ -262,9 +326,9 @@ const LenderCard = ({
 
           {/* Contact Info */}
           {(lender.contact_email || lender.contact_phone) && (
-            <div className="px-5 py-4 bg-muted/30">
+            <div className="p-4 bg-muted/30 border-t border-border">
               <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Contact</h4>
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-4">
                 {lender.contact_email && (
                   <a href={`mailto:${lender.contact_email}`} className="flex items-center gap-2 text-sm text-primary hover:underline">
                     <Mail className="h-4 w-4" />
