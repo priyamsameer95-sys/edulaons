@@ -263,7 +263,7 @@ const StudentAuth = () => {
 
             <CardContent className="p-6">
               {step === 'phone' ? <form onSubmit={handleSendOTP} className="space-y-5">
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
                       <Smartphone className="h-4 w-4 text-muted-foreground" />
                       Phone Number
