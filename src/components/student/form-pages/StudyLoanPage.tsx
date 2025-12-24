@@ -103,6 +103,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     if (!ids.includes(uni.id) && ids.length < 3) {
       onUpdate({ universities: [...ids, uni.id] });
       setSelectedUnis(p => [...p, uni]);
+      setErrors(p => ({ ...p, universities: '' }));
     }
     setSearch(''); setResults([]);
   };
@@ -116,6 +117,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     const e: Record<string, string> = {};
     if (!data.studyDestination) e.destination = 'Select destination';
     if (!data.loanAmount || data.loanAmount < 750000) e.amount = 'Select loan amount range';
+    if (!data.universities?.length) e.universities = 'Please select at least one university';
     if (!data.intakeMonth || !data.intakeYear) e.intake = 'Select when you plan to start';
     setErrors(e);
     return !Object.keys(e).length;
@@ -244,7 +246,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
 
         {/* Universities */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground flex items-center gap-2"><Building2 className="w-4 h-4 text-muted-foreground" /> Universities (optional)</label>
+          <label className="text-sm font-medium text-foreground flex items-center gap-2"><Building2 className="w-4 h-4 text-muted-foreground" /> Universities *</label>
           {selectedUnis.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               {selectedUnis.map(u => (
@@ -256,12 +258,16 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
             </div>
           )}
           <div className="relative">
-            <div className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-border bg-background/50 focus-within:border-primary">
+            <div className={cn(
+              "flex items-center gap-2 px-4 py-3 rounded-xl border-2 bg-background/50 focus-within:border-primary",
+              errors.universities ? "border-destructive" : "border-border"
+            )}>
               <Search className="w-4 h-4 text-muted-foreground" />
               <input type="text" placeholder="Search universities..." value={search} onChange={e => setSearch(e.target.value)} disabled={selectedUnis.length >= 3}
                 className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50" />
               {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
             </div>
+            {errors.universities && <p className="text-xs text-destructive mt-1">{errors.universities}</p>}
             <AnimatePresence>
               {results.length > 0 && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
