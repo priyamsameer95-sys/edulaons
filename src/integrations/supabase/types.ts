@@ -133,48 +133,69 @@ export type Database = {
       ai_lender_recommendations: {
         Row: {
           accepted_lender_id: string | null
+          ai_unavailable: boolean | null
+          all_lenders_output: Json | null
           assignment_mode: string | null
           confidence_score: number | null
           created_at: string | null
+          decision: string | null
           id: string
           inputs_snapshot: Json | null
           lead_id: string
+          lender_snapshots: Json | null
           model_version: string | null
+          override_reason: string | null
           rationale: string | null
           recommended_lender_ids: string[]
           recommended_lenders_data: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
+          reviewed_by_role: string | null
+          student_facing_reason: string | null
         }
         Insert: {
           accepted_lender_id?: string | null
+          ai_unavailable?: boolean | null
+          all_lenders_output?: Json | null
           assignment_mode?: string | null
           confidence_score?: number | null
           created_at?: string | null
+          decision?: string | null
           id?: string
           inputs_snapshot?: Json | null
           lead_id: string
+          lender_snapshots?: Json | null
           model_version?: string | null
+          override_reason?: string | null
           rationale?: string | null
           recommended_lender_ids: string[]
           recommended_lenders_data?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          reviewed_by_role?: string | null
+          student_facing_reason?: string | null
         }
         Update: {
           accepted_lender_id?: string | null
+          ai_unavailable?: boolean | null
+          all_lenders_output?: Json | null
           assignment_mode?: string | null
           confidence_score?: number | null
           created_at?: string | null
+          decision?: string | null
           id?: string
           inputs_snapshot?: Json | null
           lead_id?: string
+          lender_snapshots?: Json | null
           model_version?: string | null
+          override_reason?: string | null
           rationale?: string | null
           recommended_lender_ids?: string[]
           recommended_lenders_data?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          reviewed_by_role?: string | null
+          student_facing_reason?: string | null
         }
         Relationships: [
           {
@@ -1406,6 +1427,77 @@ export type Database = {
           },
         ]
       }
+      lender_bre_history: {
+        Row: {
+          admin_remarks: string | null
+          bre_json: Json | null
+          bre_text: string | null
+          change_reason: string
+          changed_at: string | null
+          changed_by: string | null
+          collateral_preference: string[] | null
+          country_restrictions: string[] | null
+          credit_expectations: string | null
+          experience_score: number | null
+          id: string
+          income_expectations_max: number | null
+          income_expectations_min: number | null
+          lender_id: string
+          processing_time_range_max: number | null
+          processing_time_range_min: number | null
+          university_restrictions: Json | null
+          version_number: number
+        }
+        Insert: {
+          admin_remarks?: string | null
+          bre_json?: Json | null
+          bre_text?: string | null
+          change_reason: string
+          changed_at?: string | null
+          changed_by?: string | null
+          collateral_preference?: string[] | null
+          country_restrictions?: string[] | null
+          credit_expectations?: string | null
+          experience_score?: number | null
+          id?: string
+          income_expectations_max?: number | null
+          income_expectations_min?: number | null
+          lender_id: string
+          processing_time_range_max?: number | null
+          processing_time_range_min?: number | null
+          university_restrictions?: Json | null
+          version_number: number
+        }
+        Update: {
+          admin_remarks?: string | null
+          bre_json?: Json | null
+          bre_text?: string | null
+          change_reason?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          collateral_preference?: string[] | null
+          country_restrictions?: string[] | null
+          credit_expectations?: string | null
+          experience_score?: number | null
+          id?: string
+          income_expectations_max?: number | null
+          income_expectations_min?: number | null
+          lender_id?: string
+          processing_time_range_max?: number | null
+          processing_time_range_min?: number | null
+          university_restrictions?: Json | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lender_bre_history_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lender_config: {
         Row: {
           created_at: string | null
@@ -1455,17 +1547,28 @@ export type Database = {
       }
       lenders: {
         Row: {
+          admin_remarks: string | null
           approval_rate: number | null
+          bre_json: Json | null
+          bre_text: string | null
+          bre_updated_at: string | null
+          bre_updated_by: string | null
           code: string
+          collateral_preference: string[] | null
           contact_email: string | null
           contact_phone: string | null
+          country_restrictions: string[] | null
           created_at: string
+          credit_expectations: string | null
           description: string | null
           disbursement_time_days: number | null
           display_order: number | null
           eligible_expenses: Json | null
+          experience_score: number | null
           foreclosure_charges: number | null
           id: string
+          income_expectations_max: number | null
+          income_expectations_min: number | null
           interest_rate_max: number | null
           interest_rate_min: number | null
           is_active: boolean
@@ -1478,22 +1581,36 @@ export type Database = {
           preferred_rank: number | null
           processing_fee: number | null
           processing_time_days: number | null
+          processing_time_range_max: number | null
+          processing_time_range_min: number | null
           required_documents: Json | null
+          university_restrictions: Json | null
           updated_at: string
           website: string | null
         }
         Insert: {
+          admin_remarks?: string | null
           approval_rate?: number | null
+          bre_json?: Json | null
+          bre_text?: string | null
+          bre_updated_at?: string | null
+          bre_updated_by?: string | null
           code: string
+          collateral_preference?: string[] | null
           contact_email?: string | null
           contact_phone?: string | null
+          country_restrictions?: string[] | null
           created_at?: string
+          credit_expectations?: string | null
           description?: string | null
           disbursement_time_days?: number | null
           display_order?: number | null
           eligible_expenses?: Json | null
+          experience_score?: number | null
           foreclosure_charges?: number | null
           id?: string
+          income_expectations_max?: number | null
+          income_expectations_min?: number | null
           interest_rate_max?: number | null
           interest_rate_min?: number | null
           is_active?: boolean
@@ -1506,22 +1623,36 @@ export type Database = {
           preferred_rank?: number | null
           processing_fee?: number | null
           processing_time_days?: number | null
+          processing_time_range_max?: number | null
+          processing_time_range_min?: number | null
           required_documents?: Json | null
+          university_restrictions?: Json | null
           updated_at?: string
           website?: string | null
         }
         Update: {
+          admin_remarks?: string | null
           approval_rate?: number | null
+          bre_json?: Json | null
+          bre_text?: string | null
+          bre_updated_at?: string | null
+          bre_updated_by?: string | null
           code?: string
+          collateral_preference?: string[] | null
           contact_email?: string | null
           contact_phone?: string | null
+          country_restrictions?: string[] | null
           created_at?: string
+          credit_expectations?: string | null
           description?: string | null
           disbursement_time_days?: number | null
           display_order?: number | null
           eligible_expenses?: Json | null
+          experience_score?: number | null
           foreclosure_charges?: number | null
           id?: string
+          income_expectations_max?: number | null
+          income_expectations_min?: number | null
           interest_rate_max?: number | null
           interest_rate_min?: number | null
           is_active?: boolean
@@ -1534,7 +1665,10 @@ export type Database = {
           preferred_rank?: number | null
           processing_fee?: number | null
           processing_time_days?: number | null
+          processing_time_range_max?: number | null
+          processing_time_range_min?: number | null
           required_documents?: Json | null
+          university_restrictions?: Json | null
           updated_at?: string
           website?: string | null
         }
