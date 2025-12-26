@@ -89,7 +89,8 @@ export function MonthYearPicker({
           className={cn(
             "w-full justify-start text-left font-normal",
             !value && "text-muted-foreground",
-            error && "border-destructive"
+            error && "border-destructive",
+            value && !error && "border-emerald-500 ring-1 ring-emerald-500/20"
           )}
           disabled={disabled}
         >

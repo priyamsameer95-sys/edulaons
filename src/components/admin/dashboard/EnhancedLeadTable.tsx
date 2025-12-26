@@ -17,6 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Search, MoreVertical, Eye, Edit, Trash, CheckCircle } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -218,7 +224,16 @@ export const EnhancedLeadTable = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{lead.studentName}</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="font-medium truncate max-w-[150px] cursor-default">{lead.studentName}</p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{lead.studentName}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <p className="text-sm text-muted-foreground truncate">
                       {lead.email}
                     </p>

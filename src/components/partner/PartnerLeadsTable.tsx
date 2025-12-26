@@ -162,7 +162,16 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
       </TableCell>
       <TableCell>
         <div>
-          <div className="font-medium text-sm">{lead.student?.name || 'N/A'}</div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="font-medium text-sm truncate max-w-[120px]">{lead.student?.name || 'N/A'}</div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-popover text-popover-foreground border">
+                <p className="text-xs">{lead.student?.name || 'N/A'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <div className="text-xs text-muted-foreground">{lead.student?.phone || ''}</div>
         </div>
       </TableCell>
