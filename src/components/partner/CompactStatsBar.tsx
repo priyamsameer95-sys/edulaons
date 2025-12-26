@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { PartnerKPIs } from "@/types/partner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +22,7 @@ interface StatItemProps {
   icon: React.ReactNode;
 }
 
-const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon }: StatItemProps) => {
+const StatItem = memo(({ label, value, isActive, onClick, loading, suffix, icon }: StatItemProps) => {
   if (loading) {
     return (
       <div className="flex items-center gap-2 px-4 py-2">
@@ -81,19 +82,25 @@ const StatItem = ({ label, value, isActive, onClick, loading, suffix, icon }: St
       )}
     </button>
   );
-};
+});
 
-export const CompactStatsBar = ({
+StatItem.displayName = 'StatItem';
+
+export const CompactStatsBar = memo(({
   kpis,
   loading,
   activeFilter,
   onFilterClick,
 }: CompactStatsBarProps) => {
-  const conversionRate = kpis.totalLeads > 0 
-    ? Math.round((kpis.sanctioned / kpis.totalLeads) * 100) 
-    : 0;
+  // Memoize conversion rate calculation
+  const conversionRate = useMemo(() => {
+    return kpis.totalLeads > 0 
+      ? Math.round((kpis.sanctioned / kpis.totalLeads) * 100) 
+      : 0;
+  }, [kpis.totalLeads, kpis.sanctioned]);
 
-  const stats = [
+  // Memoize stats array
+  const stats = useMemo(() => [
     { 
       label: "Total Leads", 
       value: kpis.totalLeads, 
@@ -122,7 +129,12 @@ export const CompactStatsBar = ({
       suffix: "",
       icon: <Banknote className="h-4 w-4" />
     },
-  ];
+  ], [kpis, conversionRate]);
+
+  // Memoize click handlers
+  const handleFilterClick = useCallback((filterKey: string | null) => {
+    onFilterClick(filterKey === activeFilter ? null : filterKey);
+  }, [activeFilter, onFilterClick]);
 
   return (
     <div className="inline-flex items-center gap-1 bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-1.5 shadow-sm">
@@ -133,7 +145,7 @@ export const CompactStatsBar = ({
           value={stat.value}
           filterKey={stat.filterKey}
           isActive={activeFilter === stat.filterKey}
-          onClick={() => onFilterClick(stat.filterKey === activeFilter ? null : stat.filterKey)}
+          onClick={() => handleFilterClick(stat.filterKey)}
           loading={loading}
           suffix={stat.suffix}
           icon={stat.icon}
@@ -141,4 +153,6 @@ export const CompactStatsBar = ({
       ))}
     </div>
   );
-};
+});
+
+CompactStatsBar.displayName = 'CompactStatsBar';

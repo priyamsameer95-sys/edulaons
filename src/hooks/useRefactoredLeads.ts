@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RefactoredLead, mapDbRefactoredLeadToLead } from '@/types/refactored-lead';
 import { logger } from '@/utils/logger';
 
 /**
  * Hook to fetch leads with optional partner filtering
+ * Includes debounced real-time updates for performance
  * @param partnerId - Optional partner ID to filter leads (for partner dashboard)
  *                    If not provided, fetches all leads (for admin dashboard)
  */
@@ -12,10 +13,16 @@ export function useRefactoredLeads(partnerId?: string) {
   const [leads, setLeads] = useState<RefactoredLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Debounce timer ref for real-time updates
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialFetchRef = useRef(true);
 
-  const fetchLeads = useCallback(async () => {
+  const fetchLeads = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading && isInitialFetchRef.current) {
+        setLoading(true);
+      }
       setError(null);
 
       logger.info('[useRefactoredLeads] Starting fetch...', { partnerId });
@@ -95,6 +102,7 @@ export function useRefactoredLeads(partnerId?: string) {
       const mappedLeads = (data as any)?.map(mapDbRefactoredLeadToLead) || [];
       logger.info('[useRefactoredLeads] Mapped leads:', mappedLeads.length);
       setLeads(mappedLeads);
+      isInitialFetchRef.current = false;
     } catch (err) {
       logger.error('[useRefactoredLeads] Exception:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -103,35 +111,52 @@ export function useRefactoredLeads(partnerId?: string) {
     }
   }, [partnerId]);
 
+  // Debounced refetch for real-time updates (300ms debounce)
+  const debouncedRefetch = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      fetchLeads(false); // Don't show loading for real-time updates
+    }, 300);
+  }, [fetchLeads]);
+
   const refetch = useCallback(() => {
-    fetchLeads();
+    isInitialFetchRef.current = true;
+    fetchLeads(true);
   }, [fetchLeads]);
 
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription with debouncing
   useEffect(() => {
+    const channelName = partnerId ? `leads_partner_${partnerId}` : 'leads_all';
+    
     const channel = supabase
-      .channel('leads_new_changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'leads_new'
+          table: 'leads_new',
+          ...(partnerId ? { filter: `partner_id=eq.${partnerId}` } : {})
         },
         () => {
-          fetchLeads();
+          debouncedRefetch();
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [fetchLeads]);
+  }, [partnerId, debouncedRefetch]);
 
   return {
     leads,

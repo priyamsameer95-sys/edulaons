@@ -1,14 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PartnerKPIs } from '@/types/partner';
 
 // Status mappings for 18-step process
-const PRE_LOGIN_STATUSES = [
-  'new', 'lead_intake', 'first_contact', 'lenders_mapped', 
-  'checklist_shared', 'docs_uploading', 'docs_submitted', 'docs_verified'
-];
-
 const IN_PIPELINE_STATUSES = [
   'contacted', 'in_progress', 'document_review',
   'logged_with_lender', 'counselling_done', 'pd_scheduled', 'pd_completed',
@@ -17,10 +12,6 @@ const IN_PIPELINE_STATUSES = [
 
 const SANCTIONED_STATUSES = [
   'approved', 'sanctioned', 'pf_pending', 'pf_paid', 'sanction_letter_issued'
-];
-
-const DISBURSEMENT_STATUSES = [
-  'docs_dispatched', 'security_creation', 'ops_verification', 'disbursed'
 ];
 
 export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
@@ -33,10 +24,16 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const { toast } = useToast();
+  
+  // Debounce timer ref for real-time updates
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialFetchRef = useRef(true);
 
-  const fetchKPIs = useCallback(async () => {
+  const fetchKPIs = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading && isInitialFetchRef.current) {
+        setLoading(true);
+      }
       
       let totalQuery = supabase.from('leads_new').select('*', { count: 'exact', head: true });
       let statusQuery = supabase.from('leads_new').select('status, loan_amount');
@@ -66,8 +63,6 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
         } else if (status === 'disbursed') {
           disbursed++;
         }
-        // PRE_LOGIN_STATUSES are not counted in any bucket (pre-pipeline)
-        // Terminal statuses (rejected, withdrawn) are also not counted
       });
 
       setKpis({
@@ -77,6 +72,7 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
         disbursed,
       });
       setLastUpdated(new Date());
+      isInitialFetchRef.current = false;
 
     } catch (error) {
       console.error('Error fetching KPIs:', error);
@@ -90,29 +86,52 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
     }
   }, [partnerId, isAdmin, toast]);
 
+  // Debounced refetch for real-time updates (500ms debounce for KPIs)
+  const debouncedRefetch = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      fetchKPIs(false); // Don't show loading for real-time updates
+    }, 500);
+  }, [fetchKPIs]);
+
+  const refetch = useCallback(() => {
+    isInitialFetchRef.current = true;
+    fetchKPIs(true);
+  }, [fetchKPIs]);
+
   useEffect(() => {
     fetchKPIs();
+  }, [fetchKPIs]);
 
-    // Set up real-time subscription
+  // Set up real-time subscription with debouncing
+  useEffect(() => {
+    const channelName = partnerId ? `kpi_partner_${partnerId}` : 'kpi_all';
+    
     const channel = supabase
-      .channel('kpi-updates')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'leads_new'
+          table: 'leads_new',
+          ...(partnerId && !isAdmin ? { filter: `partner_id=eq.${partnerId}` } : {})
         },
         () => {
-          fetchKPIs();
+          debouncedRefetch();
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [fetchKPIs]);
+  }, [partnerId, isAdmin, debouncedRefetch]);
 
-  return { kpis, loading, lastUpdated, refetch: fetchKPIs };
+  return { kpis, loading, lastUpdated, refetch };
 };
