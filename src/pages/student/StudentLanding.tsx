@@ -527,8 +527,8 @@ const StudentLanding = () => {
         {/* Hero + Form Section */}
         <section className="min-h-[calc(100vh-56px)] flex flex-col lg:flex-row">
           {/* Left - Hero Content */}
-          <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-12 py-8 lg:py-0">
-            <div className="max-w-lg">
+          <div className="flex-1 flex flex-col justify-center items-center lg:items-start px-4 sm:px-6 lg:px-12 py-8 lg:py-0">
+            <div className="max-w-lg mx-auto lg:mx-0 text-center lg:text-left">
               {/* Trust Badge - Enhanced */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium mb-5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
