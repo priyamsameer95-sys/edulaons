@@ -401,7 +401,7 @@ export function AdminDocumentGrid({
                     const isHighlighted = highlightedDocType === doc.id;
                     const isRequired = doc.required || false;
                     const isUploaded = status !== 'not_uploaded';
-                    const isPendingReview = status === 'pending' || status === 'uploaded';
+                    const isPendingReview = status === 'pending';
                     const statusStyles = getStatusStyles(status, isRequired);
                     const isVerifying = uploadedDoc && verifyingId === uploadedDoc.id;
                     
@@ -460,7 +460,7 @@ export function AdminDocumentGrid({
                                   'text-sm font-medium leading-tight block',
                                   status === 'verified' && 'text-emerald-700 dark:text-emerald-300',
                                   status === 'rejected' && 'text-red-700 dark:text-red-300',
-                                  (status === 'pending' || status === 'uploaded') && 'text-amber-700 dark:text-amber-300'
+                                  status === 'pending' && 'text-amber-700 dark:text-amber-300'
                                 )}>
                                   {doc.name}
                                 </span>
