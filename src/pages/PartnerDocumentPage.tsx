@@ -111,9 +111,7 @@ export default function PartnerDocumentPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Progress Card */}
-        <Card>
-          
-        </Card>
+        
 
         {/* AI Smart Upload Section - Single upload channel */}
         <div ref={smartUploadRef}>
