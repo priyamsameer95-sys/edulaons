@@ -93,6 +93,7 @@ export const transformToEdgeFunctionPayload = (
     universities: cleanUniversities(data.universities),
     country: data.studyDestination, // Send country code directly (UK, USA, etc.)
     course_name: data.courseName,
+    course_type: data.courseType, // Added missing courseType field
     loan_type: data.loanType,
     intake_month: data.intakeMonth,
     intake_year: data.intakeYear,

@@ -27,6 +27,7 @@ export const personalDetailsSchema = z.object({
     .min(VALIDATION_RULES.NAME.MIN_LENGTH, ERROR_MESSAGES.NAME_TOO_SHORT)
     .max(VALIDATION_RULES.NAME.MAX_LENGTH, ERROR_MESSAGES.NAME_TOO_LONG)
     .regex(VALIDATION_RULES.NAME.PATTERN, ERROR_MESSAGES.NAME_INVALID),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string()
     .length(VALIDATION_RULES.PHONE.LENGTH, ERROR_MESSAGES.PHONE_INVALID)
     .regex(VALIDATION_RULES.PHONE.PATTERN, ERROR_MESSAGES.PHONE_INVALID),
@@ -35,8 +36,8 @@ export const personalDetailsSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   postalCode: z.string()
-    .length(VALIDATION_RULES.POSTAL_CODE.LENGTH, ERROR_MESSAGES.POSTAL_CODE_INVALID)
-    .regex(VALIDATION_RULES.POSTAL_CODE.PATTERN, ERROR_MESSAGES.POSTAL_CODE_INVALID),
+    .length(VALIDATION_RULES.POSTAL_CODE.LENGTH, 'Please enter your 6-digit PIN code')
+    .regex(VALIDATION_RULES.POSTAL_CODE.PATTERN, 'Please enter your 6-digit PIN code'),
   nationality: z.string().min(1, ERROR_MESSAGES.REQUIRED),
 });
 
