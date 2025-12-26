@@ -100,6 +100,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
           (lead.student?.name || '').toLowerCase().includes(query) ||
+          (lead.student?.email || '').toLowerCase().includes(query) ||
           (lead.student?.phone || '').toLowerCase().includes(query) ||
           lead.case_id.toLowerCase().includes(query);
         if (!matchesSearch) return false;
