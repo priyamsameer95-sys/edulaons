@@ -43,24 +43,8 @@ export function useDocumentClassification() {
   }, []);
 
   const classifyDocument = useCallback(async (file: File): Promise<ClassificationResult | null> => {
-    // Skip PDFs for now - AI vision works better with images
-    if (file.type === 'application/pdf') {
-      return {
-        detected_type: 'unknown',
-        detected_type_label: 'PDF Document',
-        detected_category: 'student',
-        detected_category_label: 'Student KYC',
-        detected_owner: 'unknown',
-        confidence: 0,
-        quality: 'acceptable',
-        is_document: true,
-        red_flags: [],
-        notes: 'PDF files require manual classification',
-      };
-    }
-
-    // Only process image files
-    if (!file.type.startsWith('image/')) {
+    // Process images and PDFs - Gemini Flash supports both natively
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
       return {
         detected_type: 'unknown',
         detected_type_label: 'Unknown File',
@@ -71,7 +55,7 @@ export function useDocumentClassification() {
         quality: 'acceptable',
         is_document: false,
         red_flags: ['unsupported_format'],
-        notes: 'Unsupported file format',
+        notes: 'Unsupported file format - only images and PDFs are supported',
       };
     }
 
