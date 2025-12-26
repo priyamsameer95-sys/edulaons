@@ -1,10 +1,11 @@
 /**
- * AI Lender Recommendation Component
+ * AI Lender Recommendation Component - Smart Design
  * 
  * Per Knowledge Base:
  * - AI suggests lender(s) + rationale + confidence score
+ * - Shows BRE factors matched, risk flags, processing time
+ * - Grouped sections: Best Fit, Also Consider, Possible but Risky
  * - Admin can accept / override / defer
- * - Store AI output snapshot (inputs + recommendation + confidence + model version)
  * - Never auto-reject or auto-finalize solely by AI
  */
 
@@ -12,30 +13,52 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { Bot, Check, X, Clock, Sparkles, Building2, TrendingUp, AlertCircle } from 'lucide-react';
+import { 
+  Bot, Check, Clock, Sparkles, Building2, AlertCircle, 
+  ChevronDown, ChevronRight, AlertTriangle, XCircle,
+  Zap, CheckCircle2, RefreshCw, Eye
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface LenderRecommendation {
+interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
-  confidence_score: number;
-  rationale: string;
-  match_factors: string[];
+  fit_score: number;
+  probability_band: 'high' | 'medium' | 'low';
+  processing_time_estimate: string;
+  justification: string;
+  risk_flags: string[];
+  bre_rules_matched: string[];
+  group: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
+  student_facing_reason?: string;
+}
+
+interface InputsSnapshot {
+  loan_amount?: number;
+  study_destination?: string;
+  loan_type?: string;
+  loan_classification?: string;
+  co_applicant_salary?: number;
+  co_applicant_employment?: string;
 }
 
 interface AIRecommendationData {
   id: string;
   recommended_lender_ids: string[];
-  recommended_lenders_data: LenderRecommendation[];
+  all_lenders_output: LenderEvaluation[];
   rationale: string;
   confidence_score: number;
   model_version: string;
   created_at: string;
   assignment_mode: string | null;
   accepted_lender_id: string | null;
+  inputs_snapshot: InputsSnapshot | null;
+  ai_unavailable: boolean | null;
 }
 
 interface AILenderRecommendationProps {
@@ -46,6 +69,29 @@ interface AILenderRecommendationProps {
   onAccept?: (lenderId: string, mode: 'ai' | 'ai_override') => void;
   onDefer?: () => void;
   className?: string;
+}
+
+// Helper to compute verdict label
+function getVerdict(evaluation: LenderEvaluation): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger' } {
+  const { fit_score, risk_flags } = evaluation;
+  
+  if (fit_score >= 80 && risk_flags.length === 0) {
+    return { label: 'Doable', variant: 'success' };
+  } else if (fit_score >= 70) {
+    return { label: 'Doable with conditions', variant: 'warning' };
+  } else if (fit_score >= 50) {
+    return { label: 'Possible but risky', variant: 'caution' };
+  } else {
+    return { label: 'Not suitable', variant: 'danger' };
+  }
+}
+
+// Format currency
+function formatCurrency(amount: number | undefined): string {
+  if (!amount) return 'N/A';
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  return `₹${amount.toLocaleString()}`;
 }
 
 export function AILenderRecommendation({
@@ -61,6 +107,13 @@ export function AILenderRecommendation({
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    best_fit: true,
+    also_consider: false,
+    possible_but_risky: false,
+    not_suitable: false,
+  });
+  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
   
   const { toast } = useToast();
   const { logLenderAssignment } = useAuditLog();
@@ -82,7 +135,8 @@ export function AILenderRecommendation({
         if (data) {
           setRecommendation({
             ...data,
-            recommended_lenders_data: (data.recommended_lenders_data as unknown as LenderRecommendation[]) || [],
+            all_lenders_output: (data.all_lenders_output as unknown as LenderEvaluation[]) || [],
+            inputs_snapshot: data.inputs_snapshot as InputsSnapshot | null,
           });
         }
       } catch (err) {
@@ -102,20 +156,22 @@ export function AILenderRecommendation({
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke('suggest-lender', {
-        body: {
-          leadId,
-          studyDestination,
-          loanAmount,
-        },
+        body: { leadId, studyDestination, loanAmount },
       });
 
       if (error) throw error;
 
       if (data?.recommendation) {
-        setRecommendation(data.recommendation);
+        setRecommendation({
+          ...data.recommendation,
+          all_lenders_output: data.recommendation.all_lenders_output || [],
+          inputs_snapshot: data.recommendation.inputs_snapshot || null,
+        });
+        // Expand best_fit by default
+        setExpandedGroups(prev => ({ ...prev, best_fit: true }));
         toast({
-          title: 'AI Recommendation Generated',
-          description: `${data.recommendation.recommended_lenders_data?.length || 0} lenders suggested`,
+          title: 'AI Analysis Complete',
+          description: `Evaluated ${data.recommendation.all_lenders_output?.length || 0} lenders`,
         });
       }
     } catch (err) {
@@ -136,7 +192,6 @@ export function AILenderRecommendation({
     try {
       const mode = isTopPick ? 'ai' : 'ai_override';
       
-      // Log the assignment
       await logLenderAssignment({
         leadId,
         oldLenderId: currentLenderId,
@@ -146,7 +201,6 @@ export function AILenderRecommendation({
         reason: `Accepted AI ${isTopPick ? 'top recommendation' : 'alternative recommendation'}`,
       });
 
-      // Update recommendation record
       if (recommendation?.id) {
         await supabase
           .from('ai_lender_recommendations')
@@ -176,7 +230,6 @@ export function AILenderRecommendation({
     }
   };
 
-  // Defer decision
   const handleDefer = () => {
     onDefer?.();
     toast({
@@ -185,14 +238,23 @@ export function AILenderRecommendation({
     });
   };
 
-  const getConfidenceBadge = (score: number) => {
-    if (score >= 85) {
-      return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">High Confidence ({score}%)</Badge>;
-    } else if (score >= 70) {
-      return <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">Medium Confidence ({score}%)</Badge>;
-    } else {
-      return <Badge className="bg-red-500/10 text-red-700 border-red-200">Low Confidence ({score}%)</Badge>;
-    }
+  const toggleGroup = (group: string) => {
+    setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  const toggleCard = (lenderId: string) => {
+    setExpandedCards(prev => ({ ...prev, [lenderId]: !prev[lenderId] }));
+  };
+
+  // Group lenders
+  const getGroupedLenders = () => {
+    const all = recommendation?.all_lenders_output || [];
+    return {
+      best_fit: all.filter(e => e.group === 'best_fit'),
+      also_consider: all.filter(e => e.group === 'also_consider'),
+      possible_but_risky: all.filter(e => e.group === 'possible_but_risky'),
+      not_suitable: all.filter(e => e.group === 'not_suitable'),
+    };
   };
 
   if (loading) {
@@ -202,7 +264,7 @@ export function AILenderRecommendation({
           <div className="h-5 bg-muted rounded w-48" />
         </CardHeader>
         <CardContent>
-          <div className="h-24 bg-muted rounded" />
+          <div className="h-32 bg-muted rounded" />
         </CardContent>
       </Card>
     );
@@ -214,14 +276,14 @@ export function AILenderRecommendation({
       <Card className={cn("border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20", className)}>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-emerald-600" />
-            <CardTitle className="text-sm font-medium text-emerald-700">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
               AI Recommendation Applied
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-emerald-600">
+          <p className="text-xs text-emerald-600 dark:text-emerald-400">
             Lender assigned via {recommendation.assignment_mode === 'ai' ? 'AI recommendation' : 'AI alternative'}
           </p>
         </CardContent>
@@ -236,28 +298,28 @@ export function AILenderRecommendation({
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Bot className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm font-medium">AI Lender Suggestion</CardTitle>
+            <CardTitle className="text-sm font-medium">AI Lender Analysis</CardTitle>
           </div>
-          <CardDescription className="text-xs">
-            Let AI analyze the lead and suggest optimal lenders
-          </CardDescription>
         </CardHeader>
         <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">
+            AI will analyze all lenders against BRE rules and applicant profile
+          </p>
           <Button 
             onClick={generateRecommendation} 
             disabled={generating}
-            variant="outline"
+            variant="default"
             className="w-full"
           >
             {generating ? (
               <>
                 <Bot className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing...
+                Analyzing Lenders...
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate AI Recommendation
+                Generate AI Analysis
               </>
             )}
           </Button>
@@ -266,90 +328,292 @@ export function AILenderRecommendation({
     );
   }
 
-  // Show recommendations
+  const grouped = getGroupedLenders();
+  const topLender = grouped.best_fit[0] || grouped.also_consider[0];
+  const inputs = recommendation.inputs_snapshot;
+  const needsHumanReview = (recommendation.confidence_score || 0) < 70;
+
+  // Render a single lender card
+  const renderLenderCard = (evaluation: LenderEvaluation, isTopPick: boolean = false) => {
+    const verdict = getVerdict(evaluation);
+    const isExpanded = expandedCards[evaluation.lender_id];
+    
+    return (
+      <div 
+        key={evaluation.lender_id}
+        className={cn(
+          "rounded-lg border transition-all",
+          isTopPick 
+            ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" 
+            : "bg-card"
+        )}
+      >
+        {/* Main Row */}
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              {/* Lender Name + Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium text-sm">{evaluation.lender_name}</span>
+                </div>
+                {isTopPick && (
+                  <Badge className="bg-emerald-500 text-white text-[10px] h-4">
+                    Top Pick
+                  </Badge>
+                )}
+                {evaluation.processing_time_estimate && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                    <Zap className="h-3 w-3" />
+                    {evaluation.processing_time_estimate}
+                  </span>
+                )}
+              </div>
+
+              {/* Fit Score Progress */}
+              <div className="mt-2 flex items-center gap-2">
+                <Progress 
+                  value={evaluation.fit_score} 
+                  className={cn(
+                    "h-2 flex-1",
+                    evaluation.fit_score >= 80 ? "[&>div]:bg-emerald-500" :
+                    evaluation.fit_score >= 60 ? "[&>div]:bg-amber-500" :
+                    "[&>div]:bg-orange-500"
+                  )}
+                />
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "text-[10px] h-5 font-semibold shrink-0",
+                    evaluation.probability_band === 'high' && "border-emerald-500 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50",
+                    evaluation.probability_band === 'medium' && "border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/50",
+                    evaluation.probability_band === 'low' && "border-orange-500 text-orange-700 bg-orange-50 dark:bg-orange-950/50"
+                  )}
+                >
+                  {evaluation.fit_score}%
+                </Badge>
+              </div>
+
+              {/* One-Line Verdict */}
+              <div className="mt-2 flex items-center gap-1.5">
+                {verdict.variant === 'success' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                {verdict.variant === 'warning' && <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />}
+                {verdict.variant === 'caution' && <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />}
+                {verdict.variant === 'danger' && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
+                <span className={cn(
+                  "text-xs font-medium",
+                  verdict.variant === 'success' && "text-emerald-700 dark:text-emerald-400",
+                  verdict.variant === 'warning' && "text-amber-700 dark:text-amber-400",
+                  verdict.variant === 'caution' && "text-orange-700 dark:text-orange-400",
+                  verdict.variant === 'danger' && "text-red-700 dark:text-red-400"
+                )}>
+                  {verdict.label}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  — {evaluation.student_facing_reason || evaluation.justification.slice(0, 60)}
+                </span>
+              </div>
+            </div>
+
+            {/* Accept Button */}
+            <Button
+              size="sm"
+              variant={isTopPick ? "default" : "outline"}
+              onClick={() => acceptLender(evaluation.lender_id, isTopPick)}
+              disabled={accepting !== null}
+              className="shrink-0"
+            >
+              {accepting === evaluation.lender_id ? (
+                <Bot className="h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+              <span className="ml-1 text-xs">Accept</span>
+            </Button>
+          </div>
+
+          {/* Toggle BRE Details */}
+          <button 
+            onClick={() => toggleCard(evaluation.lender_id)}
+            className="mt-2 text-xs text-primary flex items-center gap-1 hover:underline"
+          >
+            <Eye className="h-3 w-3" />
+            {isExpanded ? 'Hide' : 'Show'} BRE Factors
+            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </button>
+        </div>
+
+        {/* Expanded BRE Details */}
+        {isExpanded && (
+          <div className="px-3 pb-3 pt-0 border-t bg-muted/30">
+            <div className="mt-2 space-y-1.5">
+              {/* Matched Rules */}
+              {evaluation.bre_rules_matched?.map((rule, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{rule}</span>
+                </div>
+              ))}
+              
+              {/* Risk Flags */}
+              {evaluation.risk_flags?.map((flag, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs">
+                  <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
+                  <span className="text-amber-700 dark:text-amber-400">{flag}</span>
+                </div>
+              ))}
+
+              {/* Full Justification */}
+              {evaluation.justification && (
+                <div className="mt-2 p-2 bg-background rounded text-xs text-muted-foreground italic">
+                  "{evaluation.justification}"
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render group section
+  const renderGroupSection = (
+    groupKey: string,
+    title: string,
+    icon: React.ReactNode,
+    lenders: LenderEvaluation[],
+    accentClass: string
+  ) => {
+    if (lenders.length === 0) return null;
+    
+    const isExpanded = expandedGroups[groupKey];
+    const isTopPickGroup = groupKey === 'best_fit';
+
+    return (
+      <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(groupKey)}>
+        <CollapsibleTrigger className={cn(
+          "w-full flex items-center justify-between p-2 rounded-lg transition-colors",
+          accentClass
+        )}>
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="text-sm font-medium">{title}</span>
+            <Badge variant="secondary" className="text-[10px] h-4">
+              {lenders.length}
+            </Badge>
+          </div>
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-2 mt-2">
+          {lenders.map((lender, idx) => 
+            renderLenderCard(lender, isTopPickGroup && idx === 0)
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
   return (
-    <Card className={cn("border-primary/20", className)}>
-      <CardHeader className="pb-3">
+    <Card className={cn("", className)}>
+      {/* Smart Summary Header */}
+      <CardHeader className="pb-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm font-medium">AI Recommendation</CardTitle>
+            <CardTitle className="text-sm font-medium">AI Lender Analysis</CardTitle>
           </div>
-          {getConfidenceBadge(recommendation.confidence_score || 0)}
+          <Badge 
+            variant="outline"
+            className={cn(
+              "text-xs",
+              (recommendation.confidence_score || 0) >= 80 
+                ? "border-emerald-500 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50"
+                : (recommendation.confidence_score || 0) >= 60 
+                  ? "border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/50"
+                  : "border-orange-500 text-orange-700 bg-orange-50 dark:bg-orange-950/50"
+            )}
+          >
+            {recommendation.confidence_score || 0}% Confidence
+          </Badge>
         </div>
-        <CardDescription className="text-xs">
-          Model: {recommendation.model_version} • {new Date(recommendation.created_at).toLocaleDateString()}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Overall Rationale */}
-        {recommendation.rationale && (
-          <div className="p-2 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-            <p className="italic">"{recommendation.rationale}"</p>
+
+        {/* Key Inputs Used */}
+        <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+          {inputs?.loan_amount && (
+            <Badge variant="secondary" className="text-[10px] h-5 font-normal">
+              {formatCurrency(inputs.loan_amount)} {inputs.loan_classification || 'Loan'}
+            </Badge>
+          )}
+          {inputs?.study_destination && (
+            <Badge variant="secondary" className="text-[10px] h-5 font-normal">
+              {inputs.study_destination}
+            </Badge>
+          )}
+          {inputs?.co_applicant_employment && (
+            <Badge variant="secondary" className="text-[10px] h-5 font-normal">
+              {inputs.co_applicant_employment} Co-applicant
+            </Badge>
+          )}
+          {inputs?.co_applicant_salary && (
+            <Badge variant="secondary" className="text-[10px] h-5 font-normal">
+              {formatCurrency(inputs.co_applicant_salary)}/mo
+            </Badge>
+          )}
+        </div>
+
+        {/* Human Review Flag */}
+        {needsHumanReview && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+            <AlertTriangle className="h-3 w-3" />
+            Needs Human Review — confidence below 70%
           </div>
         )}
 
-        {/* Recommended Lenders */}
-        <div className="space-y-2">
-          {recommendation.recommended_lenders_data?.map((lender, index) => (
-            <div 
-              key={lender.lender_id}
-              className={cn(
-                "p-3 rounded-lg border transition-all",
-                index === 0 ? "bg-primary/5 border-primary/30" : "bg-background"
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                    index === 0 ? "bg-primary/10" : "bg-muted"
-                  )}>
-                    <Building2 className={cn(
-                      "h-4 w-4",
-                      index === 0 ? "text-primary" : "text-muted-foreground"
-                    )} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm truncate">{lender.lender_name}</p>
-                      {index === 0 && (
-                        <Badge variant="default" className="text-[10px] h-4">
-                          Top Pick
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {lender.confidence_score}% match
-                      </span>
-                    </div>
-                    {lender.rationale && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {lender.rationale}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant={index === 0 ? "default" : "outline"}
-                  onClick={() => acceptLender(lender.lender_id, index === 0)}
-                  disabled={accepting !== null}
-                  className="shrink-0"
-                >
-                  {accepting === lender.lender_id ? (
-                    <Bot className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Check className="h-3 w-3" />
-                  )}
-                  <span className="ml-1 text-xs">Accept</span>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Model Info */}
+        <p className="text-[10px] text-muted-foreground">
+          Model: {recommendation.model_version} • {new Date(recommendation.created_at).toLocaleDateString()}
+          {recommendation.ai_unavailable && " • Rule-based fallback"}
+        </p>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        {/* Grouped Sections */}
+        {renderGroupSection(
+          'best_fit',
+          'Best Fit',
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
+          grouped.best_fit,
+          'bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50'
+        )}
+
+        {renderGroupSection(
+          'also_consider',
+          'Also Consider',
+          <AlertCircle className="h-4 w-4 text-blue-600" />,
+          grouped.also_consider,
+          'bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50'
+        )}
+
+        {renderGroupSection(
+          'possible_but_risky',
+          'Possible but Risky',
+          <AlertTriangle className="h-4 w-4 text-amber-600" />,
+          grouped.possible_but_risky,
+          'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50'
+        )}
+
+        {renderGroupSection(
+          'not_suitable',
+          'Not Suitable',
+          <XCircle className="h-4 w-4 text-red-500" />,
+          grouped.not_suitable,
+          'bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50'
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 pt-2 border-t">
@@ -369,15 +633,15 @@ export function AILenderRecommendation({
             disabled={generating}
             className="flex-1"
           >
-            <Sparkles className="mr-1 h-3 w-3" />
+            <RefreshCw className={cn("mr-1 h-3 w-3", generating && "animate-spin")} />
             Refresh
           </Button>
         </div>
 
         {/* Human-in-the-loop notice */}
-        <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-          <AlertCircle className="h-3 w-3 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-[10px] text-amber-700 dark:text-amber-400">
+        <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg border">
+          <AlertCircle className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-[10px] text-muted-foreground">
             AI suggestions require human approval. Final lender assignment is always your decision.
           </p>
         </div>
