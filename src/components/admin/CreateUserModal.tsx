@@ -177,17 +177,15 @@ const CreateUserModal = ({ open, onOpenChange, currentUserRole }: CreateUserModa
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="partner">Partner</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                   {currentUserRole === 'super_admin' && (
-                    <>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                    </>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
                   )}
                 </SelectContent>
               </Select>
-              {currentUserRole !== 'super_admin' && (
+              {role === 'admin' && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Only Super Admins can create Admin users
+                  Admins can view and manage all leads and partners
                 </p>
               )}
             </div>

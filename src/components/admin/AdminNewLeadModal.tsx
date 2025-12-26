@@ -368,29 +368,52 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
       'co_applicant_relationship', 'co_applicant_pin_code'
     ];
     
+    const fieldLabels: Record<string, string> = {
+      partner_id: 'Partner',
+      student_name: 'Student Name',
+      student_phone: 'Student Phone',
+      student_email: 'Student Email',
+      student_pin_code: 'Student PIN Code',
+      country: 'Country',
+      intake_month: 'Intake Month',
+      loan_type: 'Loan Type',
+      amount_requested: 'Loan Amount',
+      co_applicant_name: 'Co-Applicant Name',
+      co_applicant_phone: 'Co-Applicant Phone',
+      co_applicant_salary: 'Co-Applicant Salary',
+      co_applicant_relationship: 'Co-Applicant Relationship',
+      co_applicant_pin_code: 'Co-Applicant PIN Code',
+    };
+    
     const newErrors: FieldErrors = {};
     const newTouched: TouchedFields = {};
-    let hasErrors = false;
+    const errorMessages: string[] = [];
     
     allFields.forEach(field => {
       newTouched[field] = true;
       const error = validateField(field, formData[field] as string);
       newErrors[field] = error;
-      if (error) hasErrors = true;
+      if (error) {
+        errorMessages.push(`${fieldLabels[field] || field}: ${error}`);
+      }
     });
     
     setTouched(newTouched);
     setErrors(newErrors);
     
-    if (hasErrors) {
+    if (errorMessages.length > 0) {
+      // Show the first 2 specific errors
+      const displayErrors = errorMessages.slice(0, 2).join(' • ');
+      const moreErrors = errorMessages.length > 2 ? ` (+${errorMessages.length - 2} more)` : '';
+      
       toast({ 
         title: 'Please fix the errors', 
-        description: 'Some fields have invalid values', 
+        description: displayErrors + moreErrors, 
         variant: 'destructive' 
       });
     }
     
-    return !hasErrors;
+    return errorMessages.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
