@@ -444,7 +444,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                   currentComplexity={lead.case_complexity || null}
                   lenders={allLenders}
                   onConfigUpdated={() => {
-                    onLeadUpdated?.();
+                    // Only refresh document requirements - don't call onLeadUpdated to keep sheet open
                     refetchDynamicDocs();
                   }}
                 />
