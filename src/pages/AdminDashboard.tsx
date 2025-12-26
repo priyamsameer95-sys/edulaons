@@ -20,6 +20,7 @@ import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab'
 import { AdminNewLeadModal } from '@/components/admin/AdminNewLeadModal';
 import { CommandPalette } from '@/components/admin/CommandPalette';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { AdminNotificationBell } from '@/components/admin/AdminNotificationBell';
 
 // Existing modals
 import { LeadDetailSheet } from '@/components/dashboard/LeadDetailSheet';
@@ -191,7 +192,35 @@ const AdminDashboardV2 = () => {
               <p className="text-sm text-muted-foreground">Manage leads and partners</p>
             </div>
             <div className="flex items-center gap-2">
-              
+              <AdminNotificationBell 
+                onOpenLead={(leadId, tab) => {
+                  // Find the lead and open detail sheet
+                  const lead = leads.find(l => l.id === leadId);
+                  if (lead) {
+                    setSelectedLead(lead);
+                    setShowLeadDetailSheet(true);
+                  } else {
+                    // If lead not in current page, fetch it
+                    supabase
+                      .from('leads_new')
+                      .select(`
+                        *,
+                        student:students(*),
+                        co_applicant:co_applicants(*),
+                        partner:partners(*),
+                        lender:lenders(*)
+                      `)
+                      .eq('id', leadId)
+                      .single()
+                      .then(({ data }) => {
+                        if (data) {
+                          setSelectedLead(data as any);
+                          setShowLeadDetailSheet(true);
+                        }
+                      });
+                  }
+                }}
+              />
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
