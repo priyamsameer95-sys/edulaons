@@ -36,7 +36,7 @@ export function SmartFilterBar({
   const hasActiveFilters = statusFilter !== 'all' || partnerFilter !== 'all';
   
   return (
-    <div className="flex items-center gap-2 flex-1">
+    <div className="flex items-center gap-3 flex-1">
       {/* Search */}
       <div className="relative flex-1 max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -48,27 +48,27 @@ export function SmartFilterBar({
         />
       </div>
 
-      {/* Filter group */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-lg">
-        <Filter className="h-4 w-4 text-muted-foreground" />
+      {/* Filter group - consistent padding and alignment */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg h-9">
+        <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         
-        {/* Status dropdown */}
+        {/* Status dropdown - consistent height and padding */}
         <Select value={statusFilter} onValueChange={onStatusChange}>
           <SelectTrigger className="w-[120px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2 font-medium">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent className="bg-popover">
             {STATUS_OPTIONS.map((status) => (
-              <SelectItem key={status.value} value={status.value} className="text-xs">
+              <SelectItem key={status.value} value={status.value} className="text-xs py-2">
                 {status.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border flex-shrink-0" />
 
-        {/* Partner combobox */}
+        {/* Partner combobox - consistent height and padding */}
         <PartnerCombobox
           partners={partners}
           value={partnerFilter === 'all' ? null : partnerFilter}
@@ -79,7 +79,7 @@ export function SmartFilterBar({
         
         {hasActiveFilters && (
           <>
-            <div className="h-4 w-px bg-border" />
+            <div className="h-4 w-px bg-border flex-shrink-0" />
             <Button
               variant="ghost"
               size="sm"
@@ -87,7 +87,7 @@ export function SmartFilterBar({
                 onStatusChange('all');
                 onPartnerChange('all');
               }}
-              className="h-6 px-2 text-xs gap-1"
+              className="h-7 px-2 text-xs gap-1"
             >
               <X className="h-3 w-3" />
               Clear
