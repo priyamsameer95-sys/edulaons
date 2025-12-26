@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { UniversitySelector } from '@/components/ui/university-selector';
 import { MonthYearPicker } from '@/components/ui/month-year-picker';
+import { CourseCombobox } from '@/components/ui/course-combobox';
 import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -34,6 +35,8 @@ interface FormData {
   student_pin_code: string;
   country: string;
   universities: string[];
+  course_id: string;
+  is_custom_course: boolean;
   intake_month: string;
   loan_type: 'secured' | 'unsecured' | '';
   amount_requested: string;
@@ -126,6 +129,8 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
     student_pin_code: '',
     country: '',
     universities: [''],
+    course_id: '',
+    is_custom_course: false,
     intake_month: '',
     loan_type: '',
     amount_requested: '',
@@ -145,6 +150,8 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
       student_pin_code: '',
       country: '',
       universities: [''],
+      course_id: '',
+      is_custom_course: false,
       intake_month: '',
       loan_type: '',
       amount_requested: '',
@@ -755,6 +762,28 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                     universities={formData.universities} 
                     onChange={handleUniversitiesChange} 
                   />
+                </div>
+              )}
+
+              {/* Course Selection - show when university is selected */}
+              {formData.universities[0] && formData.universities[0].length > 10 && (
+                <div>
+                  <Label>Course / Program (Optional)</Label>
+                  <CourseCombobox
+                    universityId={formData.universities[0]}
+                    value={formData.course_id}
+                    onChange={(value, isCustom) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        course_id: value,
+                        is_custom_course: isCustom || false
+                      }));
+                    }}
+                    placeholder="Search or enter course name..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select from available courses or enter a custom course name
+                  </p>
                 </div>
               )}
 

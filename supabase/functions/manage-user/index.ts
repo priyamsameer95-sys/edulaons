@@ -172,24 +172,41 @@ serve(async (req) => {
     }
 
     if (action === 'update') {
+      console.log(`[manage-user] Update request for user_id: ${user_id}`);
+      console.log(`[manage-user] Updates requested:`, { role, partner_id, is_active });
+      
       // Get target user's current role
-      const { data: targetUserRole } = await supabaseClient
+      const { data: targetUserRole, error: roleQueryError } = await supabaseClient
         .rpc('get_user_role', { _user_id: user_id });
 
-      const { data: targetUser } = await supabaseClient
+      if (roleQueryError) {
+        console.error('[manage-user] Error fetching user role:', roleQueryError);
+      }
+      
+      console.log(`[manage-user] Target user current role: ${targetUserRole}`);
+
+      const { data: targetUser, error: userQueryError } = await supabaseClient
         .from('app_users')
-        .select('email, partner_id, is_active')
+        .select('email, partner_id, is_active, role')
         .eq('id', user_id)
         .single();
+
+      if (userQueryError) {
+        console.error('[manage-user] Error fetching user:', userQueryError);
+        throw new Error('User not found');
+      }
 
       if (!targetUser) {
         throw new Error('User not found');
       }
 
+      console.log(`[manage-user] Found user: ${targetUser.email}`);
+
       // Only super_admin can modify admin users
-      if (targetUserRole === 'admin' || targetUserRole === 'super_admin') {
+      const effectiveCurrentRole = targetUserRole || targetUser.role || 'partner';
+      if (effectiveCurrentRole === 'admin' || effectiveCurrentRole === 'super_admin') {
         if (requestUserRole !== 'super_admin') {
-          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, { role: targetUserRole }, { role }, reason, false, 'Only super admins can modify admin users', req);
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, { role: effectiveCurrentRole }, { role }, reason, false, 'Only super admins can modify admin users', req);
           throw new Error('Only super admins can modify admin users');
         }
         
@@ -201,21 +218,28 @@ serve(async (req) => {
           .maybeSingle();
         
         if (protectedAccount) {
-          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, { role: targetUserRole }, { role }, reason, false, 'Cannot modify protected account', req);
+          await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, { role: effectiveCurrentRole }, { role }, reason, false, 'Cannot modify protected account', req);
           throw new Error('Cannot modify protected account');
         }
       }
 
-      const oldValues = { role: targetUserRole, partner_id: targetUser.partner_id, is_active: targetUser.is_active };
+      const oldValues = { role: effectiveCurrentRole, partner_id: targetUser.partner_id, is_active: targetUser.is_active };
       
-      // Update role if provided
-      if (role !== undefined && role !== targetUserRole) {
-        // Revoke old role
-        await supabaseClient.rpc('revoke_user_role', {
-          _user_id: user_id,
-          _role: targetUserRole,
-          _revoked_by: requestUser.id
-        });
+      // Update role if provided and different
+      if (role !== undefined && role !== effectiveCurrentRole) {
+        console.log(`[manage-user] Updating role from ${effectiveCurrentRole} to ${role}`);
+        
+        // Revoke old role if it exists
+        if (effectiveCurrentRole) {
+          const { error: revokeError } = await supabaseClient.rpc('revoke_user_role', {
+            _user_id: user_id,
+            _role: effectiveCurrentRole,
+            _revoked_by: requestUser.id
+          });
+          if (revokeError) {
+            console.warn('[manage-user] Could not revoke old role:', revokeError);
+          }
+        }
 
         // Grant new role
         const { error: roleError } = await supabaseClient.rpc('grant_user_role', {
@@ -225,6 +249,7 @@ serve(async (req) => {
         });
 
         if (roleError) {
+          console.error('[manage-user] Error granting role:', roleError);
           await logAudit(supabaseClient, 'update', requestUser.id, user_id, targetUser.email, oldValues, { role }, reason, false, roleError.message, req);
           throw roleError;
         }
