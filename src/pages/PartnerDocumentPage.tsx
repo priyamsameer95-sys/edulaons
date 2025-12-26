@@ -11,18 +11,27 @@ import { useLeadInfo } from '@/hooks/useLeadInfo';
 import { PartnerDocumentGrid } from '@/components/partner/PartnerDocumentGrid';
 import { PartnerSmartUpload } from '@/components/partner/PartnerSmartUpload';
 import { formatIndianNumber } from '@/utils/currencyFormatter';
-
 export default function PartnerDocumentPage() {
-  const { partnerCode, leadId } = useParams();
+  const {
+    partnerCode,
+    leadId
+  } = useParams();
   const navigate = useNavigate();
   const [preferredDocTypeId, setPreferredDocTypeId] = useState<string | null>(null);
   const [highlightedDocType, setHighlightedDocType] = useState<string | null>(null);
   const smartUploadRef = useRef<HTMLDivElement>(null);
-
-  const { lead, loading } = useLeadInfo(leadId);
-  const { documentTypes, loading: docTypesLoading } = useDocumentTypes();
-  const { documents, refetch: refetchDocuments } = useLeadDocuments(leadId);
-
+  const {
+    lead,
+    loading
+  } = useLeadInfo(leadId);
+  const {
+    documentTypes,
+    loading: docTypesLoading
+  } = useDocumentTypes();
+  const {
+    documents,
+    refetch: refetchDocuments
+  } = useLeadDocuments(leadId);
   const handleBack = () => {
     navigate(`/partner/${partnerCode}?openLead=${leadId}`);
   };
@@ -31,9 +40,11 @@ export default function PartnerDocumentPage() {
   const handleDocSelect = (docTypeId: string) => {
     setPreferredDocTypeId(docTypeId);
     setHighlightedDocType(null);
-    smartUploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    smartUploadRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   };
-
   const handleUploadSuccess = useCallback(() => {
     refetchDocuments();
     setPreferredDocTypeId(null);
@@ -43,7 +54,10 @@ export default function PartnerDocumentPage() {
   // AI suggests a doc type - highlight it in the grocery list
   const handleSuggestDocType = useCallback((docTypeId: string) => {
     setHighlightedDocType(docTypeId);
-    document.getElementById('grocery-list')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('grocery-list')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
   }, []);
 
   // Clear preferred doc type (user wants to let AI decide)
@@ -53,34 +67,22 @@ export default function PartnerDocumentPage() {
 
   // Calculate progress
   const requiredDocs = documentTypes.filter(d => d.required);
-  const uploadedRequiredCount = requiredDocs.filter(d => 
-    documents.some(doc => doc.document_type_id === d.id)
-  ).length;
-  const progressPercent = requiredDocs.length > 0 
-    ? Math.round((uploadedRequiredCount / requiredDocs.length) * 100) 
-    : 0;
-
+  const uploadedRequiredCount = requiredDocs.filter(d => documents.some(doc => doc.document_type_id === d.id)).length;
+  const progressPercent = requiredDocs.length > 0 ? Math.round(uploadedRequiredCount / requiredDocs.length * 100) : 0;
   if (loading || docTypesLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+      </div>;
   }
-
   if (!lead) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-muted-foreground">Lead not found</p>
           <Button onClick={handleBack}>Go Back</Button>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
@@ -110,39 +112,12 @@ export default function PartnerDocumentPage() {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Progress Card */}
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Required Documents</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {uploadedRequiredCount} of {requiredDocs.length} uploaded
-              </span>
-            </div>
-            <Progress value={progressPercent} className="h-2" />
-            {progressPercent === 100 && (
-              <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" />
-                All required documents uploaded
-              </p>
-            )}
-          </CardContent>
+          
         </Card>
 
         {/* AI Smart Upload Section - Single upload channel */}
         <div ref={smartUploadRef}>
-          <PartnerSmartUpload
-            leadId={lead.id}
-            documentTypes={documentTypes}
-            onUploadSuccess={handleUploadSuccess}
-            onSuggestDocType={handleSuggestDocType}
-            studentName={lead.student.name}
-            coApplicantName={lead.co_applicant?.name}
-            preferredDocumentTypeId={preferredDocTypeId}
-            onClearPreferredDocType={handleClearPreferredDocType}
-            uploadedDocuments={documents}
-          />
+          <PartnerSmartUpload leadId={lead.id} documentTypes={documentTypes} onUploadSuccess={handleUploadSuccess} onSuggestDocType={handleSuggestDocType} studentName={lead.student.name} coApplicantName={lead.co_applicant?.name} preferredDocumentTypeId={preferredDocTypeId} onClearPreferredDocType={handleClearPreferredDocType} uploadedDocuments={documents} />
         </div>
 
         {/* Document Grocery List */}
@@ -154,16 +129,9 @@ export default function PartnerDocumentPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <PartnerDocumentGrid
-              documentTypes={documentTypes}
-              uploadedDocuments={documents}
-              selectedDocType={preferredDocTypeId}
-              highlightedDocType={highlightedDocType}
-              onSelect={handleDocSelect}
-            />
+            <PartnerDocumentGrid documentTypes={documentTypes} uploadedDocuments={documents} selectedDocType={preferredDocTypeId} highlightedDocType={highlightedDocType} onSelect={handleDocSelect} />
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 }
