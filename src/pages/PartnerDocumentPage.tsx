@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -10,14 +10,14 @@ import { useLeadDocuments } from '@/hooks/useLeadDocuments';
 import { useLeadInfo } from '@/hooks/useLeadInfo';
 import { PartnerDocumentGrid } from '@/components/partner/PartnerDocumentGrid';
 import { PartnerSmartUpload } from '@/components/partner/PartnerSmartUpload';
-import { EnhancedDocumentUpload } from '@/components/ui/enhanced-document-upload';
 import { formatIndianNumber } from '@/utils/currencyFormatter';
 
 export default function PartnerDocumentPage() {
   const { partnerCode, leadId } = useParams();
   const navigate = useNavigate();
-  const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
+  const [preferredDocTypeId, setPreferredDocTypeId] = useState<string | null>(null);
   const [highlightedDocType, setHighlightedDocType] = useState<string | null>(null);
+  const smartUploadRef = useRef<HTMLDivElement>(null);
 
   const { lead, loading } = useLeadInfo(leadId);
   const { documentTypes, loading: docTypesLoading } = useDocumentTypes();
@@ -27,26 +27,29 @@ export default function PartnerDocumentPage() {
     navigate(`/partner/${partnerCode}?openLead=${leadId}`);
   };
 
+  // When checklist item clicked, set preferred doc type and scroll to Smart Upload
   const handleDocSelect = (docTypeId: string) => {
-    setSelectedDocType(docTypeId);
+    setPreferredDocTypeId(docTypeId);
     setHighlightedDocType(null);
-    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' });
+    smartUploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleUploadSuccess = useCallback(() => {
     refetchDocuments();
-    setSelectedDocType(null);
+    setPreferredDocTypeId(null);
     setHighlightedDocType(null);
   }, [refetchDocuments]);
 
   // AI suggests a doc type - highlight it in the grocery list
   const handleSuggestDocType = useCallback((docTypeId: string) => {
     setHighlightedDocType(docTypeId);
-    // Scroll to grocery list to show the highlighted item
     document.getElementById('grocery-list')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
-  const selectedDocTypeObj = documentTypes.find(d => d.id === selectedDocType);
+  // Clear preferred doc type (user wants to let AI decide)
+  const handleClearPreferredDocType = useCallback(() => {
+    setPreferredDocTypeId(null);
+  }, []);
 
   // Calculate progress
   const requiredDocs = documentTypes.filter(d => d.required);
@@ -127,76 +130,38 @@ export default function PartnerDocumentPage() {
           </CardContent>
         </Card>
 
-        {/* AI Smart Upload Section */}
-        <PartnerSmartUpload
-          leadId={lead.id}
-          documentTypes={documentTypes}
-          onUploadSuccess={handleUploadSuccess}
-          onSuggestDocType={handleSuggestDocType}
-          studentName={lead.student.name}
-          coApplicantName={lead.co_applicant?.name}
-        />
+        {/* AI Smart Upload Section - Single upload channel */}
+        <div ref={smartUploadRef}>
+          <PartnerSmartUpload
+            leadId={lead.id}
+            documentTypes={documentTypes}
+            onUploadSuccess={handleUploadSuccess}
+            onSuggestDocType={handleSuggestDocType}
+            studentName={lead.student.name}
+            coApplicantName={lead.co_applicant?.name}
+            preferredDocumentTypeId={preferredDocTypeId}
+            onClearPreferredDocType={handleClearPreferredDocType}
+          />
+        </div>
 
         {/* Document Grocery List */}
         <Card id="grocery-list">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Document Checklist</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Click to upload manually. <span className="text-destructive">*</span> = required
+              Tap any document to upload it. <span className="text-destructive">*</span> = required
             </p>
           </CardHeader>
           <CardContent>
             <PartnerDocumentGrid
               documentTypes={documentTypes}
               uploadedDocuments={documents}
-              selectedDocType={selectedDocType}
+              selectedDocType={preferredDocTypeId}
               highlightedDocType={highlightedDocType}
               onSelect={handleDocSelect}
             />
           </CardContent>
         </Card>
-
-        {/* Manual Upload Section (when doc type selected from grocery list) */}
-        <div id="upload-section">
-          {selectedDocTypeObj && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  Upload: {selectedDocTypeObj.name}
-                  {selectedDocTypeObj.required && (
-                    <Badge variant="secondary" className="text-xs">Required</Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EnhancedDocumentUpload
-                  leadId={lead.id}
-                  documentType={{
-                    id: selectedDocTypeObj.id,
-                    name: selectedDocTypeObj.name,
-                    category: selectedDocTypeObj.category,
-                    required: selectedDocTypeObj.required || false,
-                    max_file_size_pdf: selectedDocTypeObj.max_file_size_pdf || 10 * 1024 * 1024,
-                    max_file_size_image: selectedDocTypeObj.max_file_size_image || 5 * 1024 * 1024,
-                    accepted_formats: selectedDocTypeObj.accepted_formats || ['pdf', 'jpg', 'jpeg', 'png'],
-                    description: selectedDocTypeObj.description || ''
-                  }}
-                  onUploadSuccess={handleUploadSuccess}
-                  onUploadError={(error) => console.error('Upload error:', error)}
-                  enableAIValidation={true}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => setSelectedDocType(null)}
-                >
-                  Cancel
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
       </div>
     </div>
   );
