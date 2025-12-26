@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
-import { Check, AlertTriangle, Clock, Upload, XCircle, CheckCircle2, FileText } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Check, AlertTriangle, Clock, Upload, XCircle, CheckCircle2, Eye } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { StatusIcon, StatusLabel } from '@/components/document-status';
 import { getDocumentStatus, documentStatusTooltips } from '@/utils/documentStatusUtils';
-import { Progress } from '@/components/ui/progress';
+import { DocumentPreviewDialog } from '@/components/admin/document-upload/DocumentPreviewDialog';
 import type { LeadDocument } from '@/hooks/useLeadDocuments';
 
 interface DocumentType {
@@ -98,6 +98,9 @@ export function PartnerDocumentGrid({
   highlightedDocType,
   onSelect
 }: PartnerDocumentGridProps) {
+  const [previewDoc, setPreviewDoc] = useState<LeadDocument | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
   // Group by category
   const groupedDocs = useMemo(() => {
     return documentTypes.reduce((acc, type) => {
@@ -152,6 +155,15 @@ export function PartnerDocumentGrid({
     return CATEGORY_COLORS[category] || DEFAULT_CATEGORY_COLORS;
   };
 
+  const handleViewDocument = (docTypeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const doc = uploadedDocuments.find(d => d.document_type_id === docTypeId);
+    if (doc) {
+      setPreviewDoc(doc);
+      setPreviewOpen(true);
+    }
+  };
+
   const getStatusStyles = (status: string, isRequired: boolean) => {
     switch (status) {
       case 'verified':
@@ -190,6 +202,13 @@ export function PartnerDocumentGrid({
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        {/* Document Preview Dialog */}
+        <DocumentPreviewDialog 
+          document={previewDoc} 
+          open={previewOpen} 
+          onOpenChange={setPreviewOpen} 
+        />
+
         {/* Alert for rejected documents */}
         {summary.needsAttention > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
@@ -266,6 +285,7 @@ export function PartnerDocumentGrid({
                     const isSelected = selectedDocType === doc.id;
                     const isHighlighted = highlightedDocType === doc.id;
                     const isRequired = doc.required || false;
+                    const isUploaded = status !== 'not_uploaded';
                     const statusStyles = getStatusStyles(status, isRequired);
                     
                     return (
@@ -308,19 +328,34 @@ export function PartnerDocumentGrid({
                               </div>
                             </div>
                             
-                            {/* Status badge */}
-                            <div className={cn(
-                              'text-xs font-medium px-2 py-1 rounded-md w-fit',
-                              statusStyles.badge
-                            )}>
-                              {status === 'not_uploaded' 
-                                ? (isRequired ? 'Required' : 'Optional')
-                                : status === 'verified' 
-                                  ? 'Verified ✓'
-                                  : status === 'rejected'
-                                    ? 'Re-upload needed'
-                                    : 'In Review'
-                              }
+                            {/* Status badge and View button row */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className={cn(
+                                'text-xs font-medium px-2 py-1 rounded-md w-fit',
+                                statusStyles.badge
+                              )}>
+                                {status === 'not_uploaded' 
+                                  ? (isRequired ? 'Required' : 'Optional')
+                                  : status === 'verified' 
+                                    ? 'Verified ✓'
+                                    : status === 'rejected'
+                                      ? 'Re-upload needed'
+                                      : 'In Review'
+                                }
+                              </div>
+                              
+                              {/* View button for uploaded docs */}
+                              {isUploaded && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-background/80"
+                                  onClick={(e) => handleViewDocument(doc.id, e)}
+                                >
+                                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Button>
+                              )}
                             </div>
                           </button>
                         </TooltipTrigger>
@@ -328,6 +363,9 @@ export function PartnerDocumentGrid({
                           <p className="text-xs">{documentStatusTooltips[status]}</p>
                           {isRequired && status === 'not_uploaded' && (
                             <p className="text-xs text-red-500 mt-1">This document is required for processing</p>
+                          )}
+                          {isUploaded && (
+                            <p className="text-xs text-muted-foreground mt-1">Click the eye icon to preview</p>
                           )}
                         </TooltipContent>
                       </Tooltip>

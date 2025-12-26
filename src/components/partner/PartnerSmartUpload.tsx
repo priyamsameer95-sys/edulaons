@@ -35,6 +35,8 @@ interface PartnerSmartUploadProps {
   onSuggestDocType?: (docTypeId: string) => void;
   studentName?: string;
   coApplicantName?: string;
+  preferredDocumentTypeId?: string | null;
+  onClearPreferredDocType?: () => void;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -51,9 +53,12 @@ export function PartnerSmartUpload({
   onUploadSuccess,
   onSuggestDocType,
   studentName,
-  coApplicantName
+  coApplicantName,
+  preferredDocumentTypeId,
+  onClearPreferredDocType
 }: PartnerSmartUploadProps) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
+  const [confirmUploadFile, setConfirmUploadFile] = useState<QueuedFile | null>(null);
   const { classifyDocument } = useDocumentClassification();
 
   // Group document types by category for the dropdown
@@ -101,6 +106,9 @@ export function PartnerSmartUpload({
     
     if (classification) {
       const matchingType = findMatchingDocType(classification);
+      
+      // If user selected a preferred doc type from checklist, use that; otherwise use AI suggestion
+      const selectedTypeId = preferredDocumentTypeId || matchingType?.id;
 
       setQueue(prev => prev.map(q => 
         q.id === fileId 
@@ -108,7 +116,7 @@ export function PartnerSmartUpload({
               ...q, 
               status: 'classified', 
               classification,
-              selectedDocumentTypeId: matchingType?.id,
+              selectedDocumentTypeId: selectedTypeId,
               selectedCategory: classification.detected_category,
             } 
           : q
@@ -119,13 +127,19 @@ export function PartnerSmartUpload({
         onSuggestDocType(matchingType.id);
       }
     } else {
+      // No AI classification - use preferred doc type if available
       setQueue(prev => prev.map(q => 
         q.id === fileId 
-          ? { ...q, status: 'classified', classification: undefined } 
+          ? { 
+              ...q, 
+              status: 'classified', 
+              classification: undefined,
+              selectedDocumentTypeId: preferredDocumentTypeId || undefined,
+            } 
           : q
       ));
     }
-  }, [classifyDocument, findMatchingDocType, onSuggestDocType]);
+  }, [classifyDocument, findMatchingDocType, onSuggestDocType, preferredDocumentTypeId]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     await Promise.all(acceptedFiles.map(processFile));
@@ -160,7 +174,38 @@ export function PartnerSmartUpload({
     }
   }, [documentTypes, onSuggestDocType]);
 
-  const handleApproveUpload = useCallback(async (queuedFile: QueuedFile) => {
+  // Check if there's a mismatch that needs confirmation
+  const checkForMismatches = useCallback((queuedFile: QueuedFile): { hasIssue: boolean; message: string } => {
+    const nameMatch = getNameMatchStatus(queuedFile.classification?.detected_name);
+    const selectedDocType = documentTypes.find(d => d.id === queuedFile.selectedDocumentTypeId);
+    const aiSuggestedType = queuedFile.classification?.detected_type_label;
+    
+    // Check name mismatch
+    if (nameMatch.status === 'mismatch') {
+      const expectedNames = [studentName, coApplicantName].filter(Boolean).join(' or ');
+      return {
+        hasIssue: true,
+        message: `This document appears to belong to "${queuedFile.classification?.detected_name}" but the application is for ${expectedNames}. Upload anyway?`
+      };
+    }
+    
+    // Check doc type mismatch (only if AI detected something different with high confidence)
+    if (aiSuggestedType && selectedDocType && queuedFile.classification?.confidence && queuedFile.classification.confidence >= 70) {
+      const normalizedAI = aiSuggestedType.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizedSelected = selectedDocType.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      if (!normalizedAI.includes(normalizedSelected) && !normalizedSelected.includes(normalizedAI)) {
+        return {
+          hasIssue: true,
+          message: `AI detected this as "${aiSuggestedType}" but you selected "${selectedDocType.name}". Continue with your selection?`
+        };
+      }
+    }
+    
+    return { hasIssue: false, message: '' };
+  }, [documentTypes, studentName, coApplicantName, getNameMatchStatus]);
+
+  const handleApproveUpload = useCallback(async (queuedFile: QueuedFile, skipConfirmation = false) => {
     if (!queuedFile.selectedDocumentTypeId) {
       toast({
         variant: 'destructive',
@@ -168,6 +213,15 @@ export function PartnerSmartUpload({
         description: 'Please tell us which document this is 📄',
       });
       return;
+    }
+
+    // Check for mismatches and show confirmation if needed
+    if (!skipConfirmation) {
+      const mismatch = checkForMismatches(queuedFile);
+      if (mismatch.hasIssue) {
+        setConfirmUploadFile(queuedFile);
+        return;
+      }
     }
 
     setQueue(prev => prev.map(q => 
@@ -235,7 +289,18 @@ export function PartnerSmartUpload({
         description: "We couldn't save that one. Let's try again! 💪",
       });
     }
-  }, [leadId, documentTypes, onUploadSuccess]);
+  }, [leadId, documentTypes, onUploadSuccess, checkForMismatches]);
+
+  const handleConfirmUpload = useCallback(() => {
+    if (confirmUploadFile) {
+      handleApproveUpload(confirmUploadFile, true);
+      setConfirmUploadFile(null);
+    }
+  }, [confirmUploadFile, handleApproveUpload]);
+
+  const handleCancelConfirm = useCallback(() => {
+    setConfirmUploadFile(null);
+  }, []);
 
   const removeFromQueue = useCallback((fileId: string) => {
     setQueue(prev => {
@@ -290,15 +355,64 @@ export function PartnerSmartUpload({
   const classifyingCount = queue.filter(q => q.status === 'classifying').length;
   const readyCount = queue.filter(q => q.status === 'classified').length;
 
+  // Get preferred doc type name for display
+  const preferredDocTypeName = preferredDocumentTypeId 
+    ? documentTypes.find(d => d.id === preferredDocumentTypeId)?.name 
+    : null;
+
   return (
     <div className="space-y-4">
+      {/* Confirmation Dialog for mismatches */}
+      {confirmUploadFile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="max-w-md mx-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-600">
+                <AlertTriangle className="h-5 w-5" />
+                Quick check before uploading
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {checkForMismatches(confirmUploadFile).message}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={handleCancelConfirm}>
+                  Go back
+                </Button>
+                <Button size="sm" onClick={handleConfirmUpload}>
+                  Yes, upload anyway
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Drop Zone */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden" id="smart-upload">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Smart Upload
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Smart Upload
+            </CardTitle>
+            {preferredDocTypeName && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  Uploading: {preferredDocTypeName}
+                </Badge>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs"
+                  onClick={onClearPreferredDocType}
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div
@@ -307,26 +421,36 @@ export function PartnerSmartUpload({
               "p-6 border-2 border-dashed rounded-lg transition-all cursor-pointer",
               isDragActive 
                 ? "border-primary bg-primary/5" 
-                : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+                : preferredDocTypeName
+                  ? "border-primary/50 bg-primary/5 hover:bg-primary/10"
+                  : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
             )}
           >
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-2 text-center">
               <div className={cn(
                 "p-3 rounded-full transition-colors",
-                isDragActive ? "bg-primary/10" : "bg-muted"
+                isDragActive || preferredDocTypeName ? "bg-primary/10" : "bg-muted"
               )}>
                 <Upload className={cn(
                   "h-6 w-6 transition-colors",
-                  isDragActive ? "text-primary" : "text-muted-foreground"
+                  isDragActive || preferredDocTypeName ? "text-primary" : "text-muted-foreground"
                 )} />
               </div>
               <div>
                 <p className="font-medium text-foreground text-sm">
-                  {isDragActive ? "Drop files here" : "Drag & drop documents"}
+                  {isDragActive 
+                    ? "Drop files here" 
+                    : preferredDocTypeName 
+                      ? `Drop your ${preferredDocTypeName} here`
+                      : "Drag & drop documents"
+                  }
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  AI will identify the document type automatically
+                  {preferredDocTypeName 
+                    ? "We'll verify it matches what you selected"
+                    : "AI will identify the document type automatically"
+                  }
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
