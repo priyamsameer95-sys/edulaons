@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -9,6 +9,7 @@ import { useDocumentTypes } from '@/hooks/useDocumentTypes';
 import { useLeadDocuments } from '@/hooks/useLeadDocuments';
 import { useLeadInfo } from '@/hooks/useLeadInfo';
 import { PartnerDocumentGrid } from '@/components/partner/PartnerDocumentGrid';
+import { PartnerSmartUpload } from '@/components/partner/PartnerSmartUpload';
 import { EnhancedDocumentUpload } from '@/components/ui/enhanced-document-upload';
 import { formatIndianNumber } from '@/utils/currencyFormatter';
 
@@ -16,25 +17,34 @@ export default function PartnerDocumentPage() {
   const { partnerCode, leadId } = useParams();
   const navigate = useNavigate();
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
+  const [highlightedDocType, setHighlightedDocType] = useState<string | null>(null);
 
   const { lead, loading } = useLeadInfo(leadId);
   const { documentTypes, loading: docTypesLoading } = useDocumentTypes();
   const { documents, refetch: refetchDocuments } = useLeadDocuments(leadId);
 
   const handleBack = () => {
-    // Navigate explicitly to partner dashboard with query param to reopen lead sheet
     navigate(`/partner/${partnerCode}?openLead=${leadId}`);
   };
 
   const handleDocSelect = (docTypeId: string) => {
     setSelectedDocType(docTypeId);
-    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'instant' });
+    setHighlightedDocType(null);
+    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleUploadSuccess = () => {
+  const handleUploadSuccess = useCallback(() => {
     refetchDocuments();
     setSelectedDocType(null);
-  };
+    setHighlightedDocType(null);
+  }, [refetchDocuments]);
+
+  // AI suggests a doc type - highlight it in the grocery list
+  const handleSuggestDocType = useCallback((docTypeId: string) => {
+    setHighlightedDocType(docTypeId);
+    // Scroll to grocery list to show the highlighted item
+    document.getElementById('grocery-list')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   const selectedDocTypeObj = documentTypes.find(d => d.id === selectedDocType);
 
@@ -117,12 +127,20 @@ export default function PartnerDocumentPage() {
           </CardContent>
         </Card>
 
-        {/* Document Grid */}
-        <Card>
+        {/* AI Smart Upload Section */}
+        <PartnerSmartUpload
+          leadId={lead.id}
+          documentTypes={documentTypes}
+          onUploadSuccess={handleUploadSuccess}
+          onSuggestDocType={handleSuggestDocType}
+        />
+
+        {/* Document Grocery List */}
+        <Card id="grocery-list">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Select Document to Upload</CardTitle>
+            <CardTitle className="text-base">Document Checklist</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Click on a document type to upload. Documents with <span className="text-destructive">*</span> are required.
+              Click to upload manually. <span className="text-destructive">*</span> = required
             </p>
           </CardHeader>
           <CardContent>
@@ -130,14 +148,15 @@ export default function PartnerDocumentPage() {
               documentTypes={documentTypes}
               uploadedDocuments={documents}
               selectedDocType={selectedDocType}
+              highlightedDocType={highlightedDocType}
               onSelect={handleDocSelect}
             />
           </CardContent>
         </Card>
 
-        {/* Upload Section */}
+        {/* Manual Upload Section (when doc type selected from grocery list) */}
         <div id="upload-section">
-          {selectedDocTypeObj ? (
+          {selectedDocTypeObj && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -172,15 +191,6 @@ export default function PartnerDocumentPage() {
                 >
                   Cancel
                 </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="py-8 text-center">
-                <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Select a document type above to start uploading
-                </p>
               </CardContent>
             </Card>
           )}
