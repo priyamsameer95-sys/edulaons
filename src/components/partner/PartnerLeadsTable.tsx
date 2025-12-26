@@ -129,7 +129,9 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
       <TableCell className="font-medium text-sm">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            {lead.case_id}
+            <span className="font-mono text-xs text-muted-foreground" title={lead.id}>
+              {lead.case_id}
+            </span>
             {isIncomplete && (
               <TooltipProvider>
                 <Tooltip>
@@ -275,7 +277,7 @@ const TableSkeleton = memo(() => (
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Case ID</TableHead>
+            <TableHead>User ID</TableHead>
             <TableHead>Student</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Docs</TableHead>
@@ -387,7 +389,7 @@ export const PartnerLeadsTable = memo(({
           <Table>
             <TableHeader>
               <TableRow className="border-b">
-                <TableHead className="font-semibold">Case ID</TableHead>
+                <TableHead className="font-semibold">User ID</TableHead>
                 <TableHead className="font-semibold">Student</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
                 <TableHead className="font-semibold">Docs</TableHead>

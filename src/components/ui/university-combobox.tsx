@@ -27,6 +27,7 @@ interface UniversityComboboxProps {
   error?: string;
   placeholder?: string;
   disabled?: boolean;
+  excludeUniversities?: string[]; // List of university IDs or names to exclude (for duplicate prevention)
 }
 
 export function UniversityCombobox({
@@ -36,6 +37,7 @@ export function UniversityCombobox({
   error,
   placeholder = "Search or type university name",
   disabled = false,
+  excludeUniversities = [],
 }: UniversityComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [localInput, setLocalInput] = React.useState("");
@@ -57,8 +59,19 @@ export function UniversityCombobox({
   const debouncedSearch = useDebounce(localInput || inputValue, 300);
   
   const filteredUniversities = React.useMemo(() => {
-    return searchUniversities(debouncedSearch);
-  }, [searchUniversities, debouncedSearch]);
+    const results = searchUniversities(debouncedSearch);
+    // Filter out already selected universities
+    if (excludeUniversities.length > 0) {
+      return results.filter(u => !excludeUniversities.includes(u.id) && !excludeUniversities.includes(u.name));
+    }
+    return results;
+  }, [searchUniversities, debouncedSearch, excludeUniversities]);
+
+  // Check if current input is a duplicate
+  const isDuplicate = React.useMemo(() => {
+    if (!value) return false;
+    return excludeUniversities.includes(value);
+  }, [value, excludeUniversities]);
 
   // Sync local input with selection state
   React.useEffect(() => {
@@ -79,30 +92,32 @@ export function UniversityCombobox({
   const displayValue = selectedUniversity?.name || localInput || "";
   const showNoResults = !loading && !fetchError && localInput && filteredUniversities.length === 0;
   const showSuggestions = !loading && !fetchError && (!localInput || filteredUniversities.length > 0);
+  const showDuplicateError = isDuplicate && !error;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "w-full justify-between font-normal max-w-full",
-            !displayValue && "text-muted-foreground",
-            error && "border-destructive"
-          )}
-          disabled={disabled || !country}
-        >
-          <div className="flex items-center min-w-0 max-w-[calc(100%-1rem)]">
-            <GraduationCap className="mr-2 h-4 w-4 flex-shrink-0" />
-            <span className="truncate">
-              {displayValue || placeholder}
-            </span>
-          </div>
-        </Button>
-      </PopoverTrigger>
+    <div className="space-y-1">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between font-normal max-w-full",
+              !displayValue && "text-muted-foreground",
+              (error || showDuplicateError) && "border-destructive"
+            )}
+            disabled={disabled || !country}
+          >
+            <div className="flex items-center min-w-0 max-w-[calc(100%-1rem)]">
+              <GraduationCap className="mr-2 h-4 w-4 flex-shrink-0" />
+              <span className="truncate">
+                {displayValue || placeholder}
+              </span>
+            </div>
+          </Button>
+        </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
@@ -232,5 +247,9 @@ export function UniversityCombobox({
         </Command>
       </PopoverContent>
     </Popover>
+    {showDuplicateError && (
+      <p className="text-xs text-destructive">This university is already selected</p>
+    )}
+    </div>
   );
 }

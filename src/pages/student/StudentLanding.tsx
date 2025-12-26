@@ -464,6 +464,7 @@ const StudentLanding = () => {
       
       console.log('📤 Sending lead creation request:', requestPayload);
       
+      let leadSaveSuccess = false;
       try {
         const { data, error } = await supabase.functions.invoke('create-lead-student', {
           body: requestPayload
@@ -477,6 +478,7 @@ const StudentLanding = () => {
         } else if (data?.success && data?.lead?.id) {
           console.log('✅ Lead created/updated successfully:', data.lead.id);
           setLeadId(data.lead.id);
+          leadSaveSuccess = true;
           // Show partner info if this is a partner-created lead
           if (data.is_existing && data.lead.is_partner_lead && data.lead.partner_name) {
             toast.success(`Great news! ${data.lead.partner_name} has already started your application.`);
@@ -492,7 +494,11 @@ const StudentLanding = () => {
         console.error('❌ Lead save exception:', e?.message || e);
         toast.error(`Network error: ${e?.message || 'Please check your connection'}`);
       }
-      toast.success('Great news! We found matching lenders for you.');
+      
+      // Only show success if lead was saved OR we at least have eligibility results
+      if (leadSaveSuccess || result) {
+        toast.success('Great news! We found matching lenders for you.');
+      }
     } catch (error: any) {
       console.error('❌ Eligibility check failed:', error);
       toast.error(error.message || 'Something went wrong. Please try again.');
