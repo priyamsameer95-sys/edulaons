@@ -20,8 +20,11 @@ import {
   Clock,
   Zap,
   ClipboardCheck,
-  Pencil
+  Pencil,
+  Copy,
+  Check
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -64,7 +67,7 @@ interface LeadQueueTableProps {
   onPageSizeChange: (size: number) => void;
 }
 
-type SortField = 'student' | 'amount' | 'status' | 'age' | null;
+type SortField = 'id' | 'student' | 'amount' | 'status' | 'age' | null;
 type SortDirection = 'asc' | 'desc';
 
 export function LeadQueueTable({ 
@@ -85,6 +88,15 @@ export function LeadQueueTable({
 }: LeadQueueTableProps) {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyLeadId = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success('Lead ID copied');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const allSelected = leads.length > 0 && selectedLeads.length === leads.length;
   const someSelected = selectedLeads.length > 0 && selectedLeads.length < leads.length;
@@ -122,6 +134,9 @@ export function LeadQueueTable({
       let comparison = 0;
       
       switch (sortField) {
+        case 'id':
+          comparison = a.id.localeCompare(b.id);
+          break;
         case 'student':
           comparison = (a.student?.name || '').localeCompare(b.student?.name || '');
           break;
@@ -182,7 +197,17 @@ export function LeadQueueTable({
                     className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
                   />
                 </TableHead>
-                <TableHead className="w-[220px]">
+                <TableHead className="w-[100px]">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    onClick={() => handleSort('id')}
+                  >
+                    Lead ID <SortIcon field="id" />
+                  </Button>
+                </TableHead>
+                <TableHead className="w-[200px]">
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -303,6 +328,32 @@ export function LeadQueueTable({
                         )}
                       </div>
                     </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-xs text-muted-foreground font-mono truncate max-w-[60px] cursor-help">
+                              {lead.id.slice(0, 8)}…
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs font-mono">{lead.id}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5 hover:bg-muted"
+                          onClick={(e) => copyLeadId(lead.id, e)}
+                        >
+                          {copiedId === lead.id ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5">
@@ -375,7 +426,7 @@ export function LeadQueueTable({
                     <TableCell>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Badge variant="outline" className="text-xs font-normal truncate max-w-[120px] block">
+                          <Badge variant="outline" className="text-xs font-normal truncate max-w-[120px] block hover:bg-transparent">
                             {lead.partner?.name || 'Direct'}
                           </Badge>
                         </TooltipTrigger>
