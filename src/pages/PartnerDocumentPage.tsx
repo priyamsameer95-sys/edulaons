@@ -141,6 +141,7 @@ export default function PartnerDocumentPage() {
             coApplicantName={lead.co_applicant?.name}
             preferredDocumentTypeId={preferredDocTypeId}
             onClearPreferredDocType={handleClearPreferredDocType}
+            uploadedDocuments={documents}
           />
         </div>
 

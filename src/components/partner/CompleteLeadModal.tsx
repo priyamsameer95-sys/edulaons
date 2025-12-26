@@ -124,6 +124,18 @@ export const CompleteLeadModal = ({
           .eq("lead_id", lead.id)
           .single();
 
+        // Fetch existing course if any
+        const { data: courseData } = await supabase
+          .from("lead_courses")
+          .select(`
+            course_id,
+            is_custom_course,
+            custom_course_name,
+            courses!inner(id, program_name)
+          `)
+          .eq("lead_id", lead.id)
+          .maybeSingle();
+
         // Fetch student data for PIN code
         const { data: studentData } = await supabase
           .from("students")
@@ -142,6 +154,17 @@ export const CompleteLeadModal = ({
         const studentPin = studentData?.postal_code;
         const isStudentPinPlaceholder = !studentPin || studentPin === "000000";
         setStudentPinCode(isStudentPinPlaceholder ? "" : studentPin);
+
+        // Pre-populate course if exists
+        if (courseData) {
+          if (courseData.is_custom_course && courseData.custom_course_name) {
+            setCourseId(courseData.custom_course_name);
+            setIsCustomCourse(true);
+          } else if (courseData.course_id) {
+            setCourseId(courseData.course_id);
+            setIsCustomCourse(false);
+          }
+        }
 
         const coName = coAppData?.name;
         const isCoNamePlaceholder = !coName || coName === "Co-Applicant";

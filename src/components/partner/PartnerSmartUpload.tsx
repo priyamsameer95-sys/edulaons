@@ -28,6 +28,12 @@ interface DocumentType {
   description?: string | null;
 }
 
+interface UploadedDocument {
+  id: string;
+  document_type_id: string;
+  verification_status?: string;
+}
+
 interface PartnerSmartUploadProps {
   leadId: string;
   documentTypes: DocumentType[];
@@ -37,6 +43,7 @@ interface PartnerSmartUploadProps {
   coApplicantName?: string;
   preferredDocumentTypeId?: string | null;
   onClearPreferredDocType?: () => void;
+  uploadedDocuments?: UploadedDocument[];
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -55,7 +62,8 @@ export function PartnerSmartUpload({
   studentName,
   coApplicantName,
   preferredDocumentTypeId,
-  onClearPreferredDocType
+  onClearPreferredDocType,
+  uploadedDocuments = []
 }: PartnerSmartUploadProps) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [confirmUploadFile, setConfirmUploadFile] = useState<QueuedFile | null>(null);
@@ -249,6 +257,19 @@ export function PartnerSmartUpload({
         description: 'Please tell us which document this is 📄',
       });
       return;
+    }
+
+    // Check if document type already has an uploaded document (prevent duplicates)
+    const existingDoc = uploadedDocuments.find(
+      doc => doc.document_type_id === queuedFile.selectedDocumentTypeId
+    );
+    if (existingDoc && !skipConfirmation) {
+      const docTypeName = documentTypes.find(d => d.id === queuedFile.selectedDocumentTypeId)?.name || 'This document';
+      toast({
+        variant: 'default',
+        title: 'Document already uploaded',
+        description: `${docTypeName} has already been uploaded. The existing document will be replaced.`,
+      });
     }
 
     // Check for mismatches and show confirmation if needed
