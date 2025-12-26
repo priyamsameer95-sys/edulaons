@@ -42,12 +42,17 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
+      // Calculate 24 hours ago
+      const last24Hours = new Date();
+      last24Hours.setHours(last24Hours.getHours() - 24);
+
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", user.user.id)
+        .gte("created_at", last24Hours.toISOString())
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(50);
 
       if (error) throw error;
       setNotifications((data || []) as Notification[]);
@@ -217,7 +222,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
         <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4 text-muted-foreground" />
-            <h4 className="font-medium text-sm">Notifications</h4>
+            <h4 className="font-medium text-sm">Last 24 Hours</h4>
             {unreadCount > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {unreadCount} new
@@ -244,9 +249,9 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           ) : notifications.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               <Bell className="h-10 w-10 mx-auto mb-3 opacity-20" />
-              <p className="font-medium">No notifications yet</p>
+              <p className="font-medium">No activity in the last 24 hours</p>
               <p className="text-xs mt-1">
-                You'll be notified about new leads, documents, and updates
+                All quiet! New leads, documents, and updates will appear here
               </p>
             </div>
           ) : (
