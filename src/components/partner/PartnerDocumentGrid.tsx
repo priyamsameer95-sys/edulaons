@@ -17,6 +17,7 @@ interface PartnerDocumentGridProps {
   documentTypes: DocumentType[];
   uploadedDocuments: LeadDocument[];
   selectedDocType: string | null;
+  highlightedDocType?: string | null;
   onSelect: (id: string) => void;
 }
 
@@ -24,6 +25,7 @@ export function PartnerDocumentGrid({
   documentTypes,
   uploadedDocuments,
   selectedDocType,
+  highlightedDocType,
   onSelect
 }: PartnerDocumentGridProps) {
   // Group by category
@@ -67,9 +69,10 @@ export function PartnerDocumentGrid({
               {category}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {docs.map((doc) => {
+            {docs.map((doc) => {
                 const status = getDocumentStatus(doc.id, uploadedDocuments);
                 const isSelected = selectedDocType === doc.id;
+                const isHighlighted = highlightedDocType === doc.id;
                 
                 return (
                   <Tooltip key={doc.id}>
@@ -78,13 +81,14 @@ export function PartnerDocumentGrid({
                         type="button"
                         onClick={() => onSelect(doc.id)}
                         className={cn(
-                          'flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-colors',
+                          'flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-all',
                           'hover:border-primary/50',
                           isSelected && 'border-primary bg-primary/5 ring-1 ring-primary',
-                          status === 'verified' && !isSelected && 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10',
-                          status === 'rejected' && !isSelected && 'border-destructive/50 bg-destructive/5',
-                          status === 'pending' && !isSelected && 'border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/10',
-                          status === 'not_uploaded' && !isSelected && 'border-border hover:bg-muted/50'
+                          isHighlighted && !isSelected && 'border-primary bg-primary/10 ring-2 ring-primary animate-pulse',
+                          status === 'verified' && !isSelected && !isHighlighted && 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10',
+                          status === 'rejected' && !isSelected && !isHighlighted && 'border-destructive/50 bg-destructive/5',
+                          status === 'pending' && !isSelected && !isHighlighted && 'border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/10',
+                          status === 'not_uploaded' && !isSelected && !isHighlighted && 'border-border hover:bg-muted/50'
                         )}
                       >
                         <div className="flex items-center gap-2 w-full">
