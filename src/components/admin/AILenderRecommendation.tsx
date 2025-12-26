@@ -73,9 +73,10 @@ interface AILenderRecommendationProps {
 
 // Helper to compute verdict label
 function getVerdict(evaluation: LenderEvaluation): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger' } {
-  const { fit_score, risk_flags } = evaluation;
+  const { fit_score, risk_flags = [] } = evaluation;
+  const hasRisks = risk_flags && risk_flags.length > 0;
   
-  if (fit_score >= 80 && risk_flags.length === 0) {
+  if (fit_score >= 80 && !hasRisks) {
     return { label: 'Doable', variant: 'success' };
   } else if (fit_score >= 70) {
     return { label: 'Doable with conditions', variant: 'warning' };
