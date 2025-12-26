@@ -7,6 +7,7 @@ export interface ClassificationResult {
   detected_category: string;
   detected_category_label: string;
   detected_owner: 'student' | 'co_applicant' | 'collateral' | 'unknown';
+  detected_name?: string;
   confidence: number;
   quality: 'good' | 'acceptable' | 'poor' | 'unreadable';
   is_document: boolean;
