@@ -609,17 +609,17 @@ export const EligibilityCheckModal = ({
               </div>
             </div>
 
-            {/* Cashback Incentive */}
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800">
-              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500 text-white">
-                <span className="text-xs font-bold">₹</span>
+            {/* Priority Processing */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
+              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground">
+                <Zap className="h-4 w-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-                  Complete today & get ₹500 Cashback!
+                <p className="text-sm font-medium text-foreground">
+                  Complete today for faster processing!
                 </p>
-                <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                  On successful loan disbursal
+                <p className="text-xs text-muted-foreground">
+                  Applications submitted today get priority review
                 </p>
               </div>
             </div>
@@ -898,10 +898,10 @@ export const EligibilityCheckModal = ({
             </div>
           </div>
 
-          {/* Incentive Hook */}
+          {/* Reassurance Hook */}
           <p className="text-center text-xs text-muted-foreground">
             <Sparkles className="inline h-3.5 w-3.5 text-amber-500 mr-1" />
-            Complete your application & get <span className="font-semibold text-foreground">₹500 cashback</span> on disbursal!
+            Complete now for <span className="font-semibold text-foreground">priority processing</span> and faster approval!
           </p>
         </div>
       </DialogContent>

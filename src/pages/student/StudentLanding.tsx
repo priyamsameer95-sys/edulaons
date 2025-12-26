@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { UniversityCombobox } from "@/components/ui/university-combobox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { OTPInput } from "@/components/student/OTPInput";
 import GlobalPublicHeader from "@/components/layouts/GlobalPublicHeader";
-import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, BadgeCheck, ChevronLeft, Sparkles, Clock, FileCheck, TrendingUp, Building2, Users, CheckCircle2, Smartphone, RefreshCw } from "lucide-react";
+import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, BadgeCheck, ChevronLeft, Sparkles, Clock, FileCheck, TrendingUp, Building2, Users, CheckCircle2, Smartphone, RefreshCw, FileText } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 
 // Country data - synced with universities master
@@ -865,6 +867,46 @@ const StudentLanding = () => {
             <div className="flex gap-4">
               <Link to="/student/auth" className="hover:text-foreground transition-colors">Student Login</Link>
               <Link to="/partner/login" className="hover:text-foreground transition-colors">Partner Login</Link>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="hover:text-foreground transition-colors">Terms & Conditions</button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Terms & Conditions
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[60vh] pr-4">
+                    <div className="prose prose-sm dark:prose-invert">
+                      <h3>1. Introduction</h3>
+                      <p>Welcome to EduLoans. These Terms and Conditions govern your use of our education loan comparison and application platform. By using our services, you agree to be bound by these terms.</p>
+                      
+                      <h3>2. Services</h3>
+                      <p>EduLoans provides a platform to compare education loan offers from various RBI-registered lenders. We do not directly provide loans but facilitate connections between students and lending partners.</p>
+                      
+                      <h3>3. Eligibility</h3>
+                      <p>To use our services, you must be an Indian citizen, at least 18 years old, and have a valid admission offer from a recognized educational institution abroad.</p>
+                      
+                      <h3>4. Data Privacy</h3>
+                      <p>We collect and process your personal information in accordance with applicable data protection laws. Your data is shared with lending partners only with your consent and for the purpose of loan processing.</p>
+                      
+                      <h3>5. User Responsibilities</h3>
+                      <p>You agree to provide accurate and complete information. Submission of false or misleading information may result in rejection of your application and/or legal action.</p>
+                      
+                      <h3>6. Loan Terms</h3>
+                      <p>Final loan terms including interest rates, amounts, and repayment schedules are determined by the respective lending partners. EduLoans does not guarantee loan approval.</p>
+                      
+                      <h3>7. Disclaimer</h3>
+                      <p>EduLoans is a loan marketplace and does not guarantee the accuracy of information provided by lending partners. All loan decisions are at the sole discretion of the lenders.</p>
+                      
+                      <h3>8. Contact</h3>
+                      <p>For queries, contact us at support@eduloans.cashkaro.com</p>
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
               <span>support@eduloans.cashkaro.com</span>
             </div>
             <span>© {new Date().getFullYear()} EduLoans by Cashkaro</span>

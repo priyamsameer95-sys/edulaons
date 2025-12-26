@@ -39,6 +39,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   nri_financial: 'NRI Documents',
 };
 
+// Format document type name - remove underscores and capitalize
+const formatDocTypeName = (name: string): string => 
+  name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
 const CATEGORY_ORDER = ['student', 'financial_co_applicant', 'non_financial_co_applicant', 'collateral', 'nri_financial'];
 
 export function SmartDocumentUpload({ leadId, onUploadComplete }: SmartDocumentUploadProps) {
@@ -396,7 +400,7 @@ export function SmartDocumentUpload({ leadId, onUploadComplete }: SmartDocumentU
                                     </div>
                                     {types.map(dt => (
                                       <SelectItem key={dt.id} value={dt.id} className="text-xs">
-                                        {dt.name}
+                                        {formatDocTypeName(dt.name)}
                                       </SelectItem>
                                     ))}
                                   </div>

@@ -379,6 +379,22 @@
   animation-play-state: paused;
 }
 
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Valid field styling */
+.field-valid-ring {
+  @apply ring-1 ring-emerald-500/20 border-emerald-500;
+}
+
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-shimmer,

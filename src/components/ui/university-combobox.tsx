@@ -89,13 +89,13 @@ export function UniversityCombobox({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between font-normal",
+            "w-full justify-between font-normal max-w-full",
             !displayValue && "text-muted-foreground",
             error && "border-destructive"
           )}
           disabled={disabled || !country}
         >
-          <div className="flex items-center min-w-0">
+          <div className="flex items-center min-w-0 max-w-[calc(100%-1rem)]">
             <GraduationCap className="mr-2 h-4 w-4 flex-shrink-0" />
             <span className="truncate">
               {displayValue || placeholder}

@@ -410,6 +410,7 @@ const NewLeadPage = () => {
                   value={formData.amount_requested}
                   onChange={(e) => handleInputChange('amount_requested', e.target.value)}
                   placeholder="Amount in ₹ (e.g., 2000000)"
+                  max={1000000000}
                   className={errors.amount_requested ? 'border-destructive' : ''}
                 />
                 {amountInWords && <p className="text-xs text-muted-foreground">₹ {amountInWords}</p>}
@@ -474,6 +475,7 @@ const NewLeadPage = () => {
                   value={formData.co_applicant_salary}
                   onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
                   placeholder="Annual income in ₹"
+                  max={100000000}
                   className={errors.co_applicant_salary ? 'border-destructive' : ''}
                 />
                 {salaryInWords && <p className="text-xs text-muted-foreground">₹ {salaryInWords}</p>}
