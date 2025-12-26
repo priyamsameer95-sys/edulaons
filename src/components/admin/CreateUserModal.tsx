@@ -185,6 +185,11 @@ const CreateUserModal = ({ open, onOpenChange, currentUserRole }: CreateUserModa
                   )}
                 </SelectContent>
               </Select>
+              {currentUserRole !== 'super_admin' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Only Super Admins can create Admin users
+                </p>
+              )}
             </div>
 
             {role === 'partner' && (

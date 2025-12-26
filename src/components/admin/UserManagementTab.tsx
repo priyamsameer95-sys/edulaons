@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Copy } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -371,6 +372,7 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[100px]">User ID</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Assignment</TableHead>
@@ -382,13 +384,13 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Loading users...
                       </TableCell>
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No users found
                       </TableCell>
                     </TableRow>
@@ -397,6 +399,25 @@ const UserManagementTab = ({ currentUserRole, currentUserId }: UserManagementTab
                       const isProtected = isProtectedEmail(user.email);
                       return (
                         <TableRow key={user.id}>
+                          <TableCell className="font-mono text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="truncate max-w-[80px]" title={user.id}>
+                                {user.id.slice(0, 8)}...
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(user.id);
+                                  toast({ title: 'Copied', description: 'User ID copied to clipboard' });
+                                }}
+                              >
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
                           <TableCell className="font-medium">
                             {user.email}
                             {isProtected && <Shield className="inline h-3 w-3 ml-1 text-destructive" />}

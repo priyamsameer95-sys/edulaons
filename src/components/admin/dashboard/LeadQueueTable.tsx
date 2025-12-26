@@ -490,8 +490,8 @@ export function LeadQueueTable({
                             )}
                             <DropdownMenuSeparator />
                             {/* Complete Lead - for quick leads or incomplete leads */}
-                            {(isIncomplete || (lead.is_quick_lead && !lead.quick_lead_completed_at)) && onEditLead && (
-                              <DropdownMenuItem onClick={() => onEditLead(lead)}>
+                            {(isIncomplete || (lead.is_quick_lead && !lead.quick_lead_completed_at)) && onCompleteLead && (
+                              <DropdownMenuItem onClick={() => onCompleteLead(lead)}>
                                 <ClipboardCheck className="h-3.5 w-3.5 mr-2" />
                                 Complete Lead
                               </DropdownMenuItem>

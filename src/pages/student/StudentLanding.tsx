@@ -352,7 +352,7 @@ const StudentLanding = () => {
       if (!formData.university_id) newErrors.university_id = "Select university";
     }
     const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
-    if (!formData.co_applicant_monthly_salary || isNaN(salary) || salary < 10000) newErrors.co_applicant_monthly_salary = "Min ₹10,000";
+    if (!formData.co_applicant_monthly_salary || isNaN(salary) || salary < 25000) newErrors.co_applicant_monthly_salary = "Min ₹25,000 (₹3 LPA)";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
