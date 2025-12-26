@@ -502,7 +502,11 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
 
             <TabsContent value="documents" className="space-y-6">
               {isAdmin() ? (
-                <AdminDocumentManager leadId={lead.id} />
+                <AdminDocumentManager 
+                  leadId={lead.id} 
+                  studentName={lead.student?.name}
+                  coApplicantName={lead.co_applicant?.name}
+                />
               ) : (
                 <div className="space-y-6">
                   {/* Progress Card */}
