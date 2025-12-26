@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, Loader2, GraduationCap, AlertCircle } from "lucide-react";
+import { Check, Loader2, GraduationCap, AlertCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,6 @@ export function UniversityCombobox({
               {displayValue || placeholder}
             </span>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
@@ -171,7 +170,7 @@ export function UniversityCombobox({
 
             {showSuggestions && universities.length > 0 && (
               <CommandGroup>
-                <div className="px-2 py-1.5 text-xs text-muted-foreground border-b">
+                <div className="px-2 py-1.5 text-xs text-muted-foreground border-b text-center">
                   {totalCount} universities in {country}
                 </div>
                 {filteredUniversities.map((university) => (
