@@ -56,7 +56,7 @@ serve(async (req) => {
       );
     }
 
-    const { leadId, newLenderId, oldLenderId, changeReason, assignmentNotes } = await req.json();
+    const { leadId, newLenderId, oldLenderId, changeReason, assignmentNotes, assignmentMode } = await req.json();
 
     if (!leadId || !newLenderId) {
       return new Response(
@@ -65,13 +65,14 @@ serve(async (req) => {
       );
     }
 
-    console.log('Updating lead lender:', { leadId, newLenderId, oldLenderId });
+    console.log('Updating lead lender:', { leadId, newLenderId, oldLenderId, assignmentMode });
 
-    // Update the lead's lender
+    // Update the lead's lender AND target_lender_id (AI bank → Targeted bank sync)
     const { error: updateError } = await supabaseAdmin
       .from('leads_new')
       .update({ 
         lender_id: newLenderId,
+        target_lender_id: newLenderId,
         updated_at: new Date().toISOString()
       })
       .eq('id', leadId);
@@ -81,17 +82,19 @@ serve(async (req) => {
       throw updateError;
     }
 
-    // Log the assignment change in history
+    // Log the assignment change in history with assignment_mode
+    const historyData: any = {
+      lead_id: leadId,
+      old_lender_id: oldLenderId,
+      new_lender_id: newLenderId,
+      changed_by: user.id,
+      change_reason: changeReason || (assignmentMode === 'ai' ? 'AI recommendation accepted' : 'Manual assignment'),
+      assignment_notes: assignmentNotes,
+    };
+
     const { error: historyError } = await supabaseAdmin
       .from('lender_assignment_history')
-      .insert({
-        lead_id: leadId,
-        old_lender_id: oldLenderId,
-        new_lender_id: newLenderId,
-        changed_by: user.id,
-        change_reason: changeReason,
-        assignment_notes: assignmentNotes,
-      });
+      .insert(historyData);
 
     if (historyError) {
       console.error('Error logging assignment history:', historyError);

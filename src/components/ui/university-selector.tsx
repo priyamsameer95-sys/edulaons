@@ -36,10 +36,20 @@ export function UniversitySelector({
   }, [universities, onChange]);
 
   const updateUniversity = React.useCallback((index: number, value: string, isCustom?: boolean) => {
+    // Prevent duplicate university selection
+    const isDuplicate = universities.some((u, i) => i !== index && u && u === value);
+    if (isDuplicate && value) {
+      return; // Block duplicate - combobox will show error
+    }
     const newUniversities = [...universities];
     newUniversities[index] = value;
     onChange(newUniversities);
   }, [universities, onChange]);
+
+  // Get list of already selected universities for duplicate check
+  const getSelectedUniversities = React.useCallback((excludeIndex: number) => {
+    return universities.filter((u, i) => i !== excludeIndex && u && u.trim());
+  }, [universities]);
 
   const canAddMore = universities.length < 5;
   const canRemove = universities.length > 1;
@@ -72,6 +82,7 @@ export function UniversitySelector({
               placeholder={index === 0 ? "Primary university (required)" : "Additional university"}
               disabled={disabled}
               error={error && index === 0 ? error : undefined}
+              excludeUniversities={getSelectedUniversities(index)}
             />
           </div>
           

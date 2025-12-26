@@ -92,18 +92,20 @@ const EditUserModal = ({ open, onOpenChange, user, currentUserRole }: EditUserMo
               <Select 
                 value={role} 
                 onValueChange={(v) => setRole(v as any)}
-                disabled={isProtected || currentUserRole !== 'super_admin'}
+                disabled={isProtected}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="partner">Partner</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="kam">KAM</SelectItem>
+                  {(currentUserRole === 'super_admin' || currentUserRole === 'admin') && (
+                    <SelectItem value="admin">Admin</SelectItem>
+                  )}
                   {currentUserRole === 'super_admin' && (
-                    <>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                    </>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
                   )}
                 </SelectContent>
               </Select>

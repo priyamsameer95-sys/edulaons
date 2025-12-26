@@ -289,6 +289,20 @@ export function PartnerSmartUpload({
       const ext = queuedFile.file.name.split('.').pop();
       const storedFilename = `${leadId}/${queuedFile.selectedDocumentTypeId}/${Date.now()}.${ext}`;
 
+      // Check if document type already exists - delete old one first (real duplicate prevention)
+      const existingDoc = uploadedDocuments.find(
+        doc => doc.document_type_id === queuedFile.selectedDocumentTypeId
+      );
+      
+      if (existingDoc) {
+        // Delete the old document record (storage file stays for audit)
+        await supabase
+          .from('lead_documents')
+          .delete()
+          .eq('id', existingDoc.id);
+        console.log('Replaced existing document:', existingDoc.id);
+      }
+
       // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('lead-documents')
@@ -296,7 +310,7 @@ export function PartnerSmartUpload({
 
       if (uploadError) throw uploadError;
 
-      // Create database record with AI classification data
+      // Create new database record with AI classification data
       const { error: dbError } = await supabase
         .from('lead_documents')
         .insert({
