@@ -33,6 +33,8 @@ interface PartnerSmartUploadProps {
   documentTypes: DocumentType[];
   onUploadSuccess: () => void;
   onSuggestDocType?: (docTypeId: string) => void;
+  studentName?: string;
+  coApplicantName?: string;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -47,7 +49,9 @@ export function PartnerSmartUpload({
   leadId, 
   documentTypes, 
   onUploadSuccess,
-  onSuggestDocType 
+  onSuggestDocType,
+  studentName,
+  coApplicantName
 }: PartnerSmartUploadProps) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const { classifyDocument } = useDocumentClassification();
@@ -160,8 +164,8 @@ export function PartnerSmartUpload({
     if (!queuedFile.selectedDocumentTypeId) {
       toast({
         variant: 'destructive',
-        title: 'Select document type',
-        description: 'Please select what type of document this is',
+        title: 'One more step!',
+        description: 'Please tell us which document this is 📄',
       });
       return;
     }
@@ -209,8 +213,8 @@ export function PartnerSmartUpload({
 
       const docTypeName = documentTypes.find(d => d.id === queuedFile.selectedDocumentTypeId)?.name;
       toast({
-        title: 'Document uploaded',
-        description: `${docTypeName || 'Document'} uploaded successfully`,
+        title: 'Awesome! ✓',
+        description: `${docTypeName || 'Document'} saved successfully`,
       });
 
       onUploadSuccess();
@@ -227,8 +231,8 @@ export function PartnerSmartUpload({
       ));
       toast({
         variant: 'destructive',
-        title: 'Upload failed',
-        description: 'Please try again',
+        title: 'Oops!',
+        description: "We couldn't save that one. Let's try again! 💪",
       });
     }
   }, [leadId, documentTypes, onUploadSuccess]);
@@ -245,6 +249,42 @@ export function PartnerSmartUpload({
     if (confidence >= 70) return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
     if (confidence >= 50) return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
     return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+  };
+
+  // Check if detected name matches student or co-applicant
+  const getNameMatchStatus = (detectedName?: string) => {
+    if (!detectedName) return { status: 'none', message: '' };
+    
+    const normalizedDetected = detectedName.toLowerCase().trim();
+    const normalizedStudent = studentName?.toLowerCase().trim() || '';
+    const normalizedCoApplicant = coApplicantName?.toLowerCase().trim() || '';
+    
+    // Check for partial match (first name or last name)
+    const detectedParts = normalizedDetected.split(/\s+/);
+    const studentParts = normalizedStudent.split(/\s+/);
+    const coApplicantParts = normalizedCoApplicant.split(/\s+/);
+    
+    const matchesStudent = detectedParts.some(part => 
+      studentParts.some(sp => sp.includes(part) || part.includes(sp))
+    );
+    const matchesCoApplicant = coApplicantParts.length > 0 && detectedParts.some(part => 
+      coApplicantParts.some(cp => cp.includes(part) || part.includes(cp))
+    );
+    
+    if (matchesStudent) {
+      return { status: 'match', message: `Matches: ${studentName} (Student)`, matchType: 'student' };
+    }
+    if (matchesCoApplicant) {
+      return { status: 'match', message: `Matches: ${coApplicantName} (Co-Applicant)`, matchType: 'co_applicant' };
+    }
+    
+    // Name detected but doesn't match anyone
+    const expectedNames = [studentName, coApplicantName].filter(Boolean).join(' or ');
+    return { 
+      status: 'mismatch', 
+      message: `Document shows "${detectedName}"`,
+      expected: expectedNames ? `Expected: ${expectedNames}` : undefined
+    };
   };
 
   const classifyingCount = queue.filter(q => q.status === 'classifying').length;
@@ -380,10 +420,37 @@ export function PartnerSmartUpload({
                           <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="h-3 w-3" />
                             {queuedFile.classification?.confidence 
-                              ? 'Low confidence - please verify type'
-                              : 'Please select document type manually'}
+                              ? "Hmm, not 100% sure – mind double-checking the type?"
+                              : 'Please select document type'}
                           </div>
                         )}
+
+                        {/* Name match indicator */}
+                        {queuedFile.classification?.detected_name && (() => {
+                          const nameMatch = getNameMatchStatus(queuedFile.classification.detected_name);
+                          if (nameMatch.status === 'match') {
+                            return (
+                              <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {nameMatch.message}
+                              </div>
+                            );
+                          }
+                          if (nameMatch.status === 'mismatch') {
+                            return (
+                              <div className="flex flex-col gap-0.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded border border-amber-200 dark:border-amber-800">
+                                <div className="flex items-center gap-1 font-medium">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Name mismatch detected
+                                </div>
+                                <span>{nameMatch.message}</span>
+                                {nameMatch.expected && <span className="text-muted-foreground">{nameMatch.expected}</span>}
+                                <span className="text-muted-foreground italic">Please verify this document belongs to this application</span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         {/* Red flags */}
                         {queuedFile.classification?.red_flags && queuedFile.classification.red_flags.length > 0 && (

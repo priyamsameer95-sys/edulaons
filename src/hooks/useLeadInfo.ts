@@ -31,7 +31,8 @@ export function useLeadInfo(leadId: string | undefined): UseLeadInfoReturn {
           case_id,
           loan_amount,
           study_destination,
-          student:students(name, email, phone)
+          student:students(name, email, phone),
+          co_applicant:co_applicants(name)
         `)
         .eq('id', leadId)
         .single();
