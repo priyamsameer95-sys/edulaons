@@ -152,10 +152,38 @@ export const useStudentApplication = () => {
       if (!validationResult.success) {
         const firstError = validationResult.error.errors[0];
         const fieldPath = firstError.path.join('.');
-        const errorMessage = fieldPath 
-          ? `${fieldPath}: ${firstError.message}` 
-          : firstError.message;
-        throw new Error(errorMessage || 'Please fill in all required fields correctly');
+        
+        // Map field paths to user-friendly messages and step guidance
+        const fieldToStep: Record<string, { step: number; label: string }> = {
+          name: { step: 1, label: 'Full Name' },
+          email: { step: 1, label: 'Email' },
+          phone: { step: 1, label: 'Phone Number' },
+          dateOfBirth: { step: 1, label: 'Date of Birth' },
+          gender: { step: 1, label: 'Gender' },
+          state: { step: 1, label: 'State' },
+          postalCode: { step: 1, label: 'PIN Code' },
+          nationality: { step: 1, label: 'Nationality' },
+          highestQualification: { step: 2, label: 'Highest Qualification' },
+          studyDestination: { step: 2, label: 'Study Destination' },
+          universities: { step: 2, label: 'University Selection' },
+          courseType: { step: 2, label: 'Course Type' },
+          loanType: { step: 2, label: 'Loan Type' },
+          loanAmount: { step: 2, label: 'Loan Amount' },
+          intakeMonth: { step: 2, label: 'Intake Date' },
+          intakeYear: { step: 2, label: 'Intake Year' },
+          coApplicantName: { step: 3, label: 'Co-applicant Name' },
+          coApplicantPhone: { step: 3, label: 'Co-applicant Phone' },
+          coApplicantEmail: { step: 3, label: 'Co-applicant Email' },
+          coApplicantRelationship: { step: 3, label: 'Relationship' },
+          coApplicantMonthlySalary: { step: 3, label: 'Monthly Salary' },
+          coApplicantEmploymentType: { step: 3, label: 'Employment Type' },
+          coApplicantPinCode: { step: 3, label: 'Co-applicant PIN Code' },
+        };
+        
+        const fieldInfo = fieldToStep[fieldPath] || { step: 0, label: fieldPath };
+        const userMessage = `Please check "${fieldInfo.label}" in Step ${fieldInfo.step}: ${firstError.message}`;
+        
+        throw new Error(userMessage);
       }
 
       // Transform data to edge function payload

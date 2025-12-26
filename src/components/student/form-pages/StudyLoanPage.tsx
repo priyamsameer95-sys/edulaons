@@ -290,7 +290,19 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     if (!data.loanType) e.loanType = 'Select loan type';
     if (!data.universities?.length) e.universities = 'Please select at least one university';
     if (!data.courseType) e.courseType = 'Select your course type';
-    if (!data.intakeMonth || !data.intakeYear) e.intake = 'Select when you plan to start';
+    if (!data.intakeMonth || !data.intakeYear) {
+      e.intake = 'Select when you plan to start';
+    } else {
+      // Validate intake is in the future
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      
+      if (data.intakeYear < currentYear || 
+          (data.intakeYear === currentYear && data.intakeMonth < currentMonth)) {
+        e.intake = 'Intake date must be in the future';
+      }
+    }
     
     setErrors(e);
     return !Object.keys(e).length;
