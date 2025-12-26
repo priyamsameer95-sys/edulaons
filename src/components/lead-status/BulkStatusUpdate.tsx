@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { StatusSelect } from './StatusSelect';
 import { useStatusManager } from '@/hooks/useStatusManager';
+import { getStatusLabel } from '@/utils/statusUtils';
 import type { LeadStatus } from '@/utils/statusUtils';
 
 interface BulkStatusUpdateProps {
@@ -78,7 +79,7 @@ export function BulkStatusUpdate({
           </div>
 
           <div className="text-sm text-muted-foreground">
-            This will update {leadIds.length} lead{leadIds.length !== 1 ? 's' : ''} to "{selectedStatus}" status.
+            This will update {leadIds.length} lead{leadIds.length !== 1 ? 's' : ''} to "{getStatusLabel(selectedStatus)}" status.
           </div>
         </div>
 

@@ -1,7 +1,8 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
-import { Search, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, Filter, X } from 'lucide-react';
 
 interface SmartFilterBarProps {
   searchTerm: string;
@@ -53,12 +54,12 @@ export function SmartFilterBar({
         
         {/* Status dropdown */}
         <Select value={statusFilter} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-[120px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2">
+          <SelectTrigger className="w-[120px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2 font-medium">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover">
             {STATUS_OPTIONS.map((status) => (
-              <SelectItem key={status.value} value={status.value}>
+              <SelectItem key={status.value} value={status.value} className="text-xs">
                 {status.label}
               </SelectItem>
             ))}
@@ -73,21 +74,24 @@ export function SmartFilterBar({
           value={partnerFilter === 'all' ? null : partnerFilter}
           onChange={(value) => onPartnerChange(value || 'all')}
           placeholder="All Partners"
-          className="w-[150px] h-7 text-xs border-0 bg-transparent shadow-none"
+          className="w-[150px] h-7 text-xs border-0 bg-transparent shadow-none font-medium"
         />
         
         {hasActiveFilters && (
           <>
             <div className="h-4 w-px bg-border" />
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 onStatusChange('all');
                 onPartnerChange('all');
               }}
-              className="text-xs text-muted-foreground hover:text-foreground px-1"
+              className="h-6 px-2 text-xs gap-1"
             >
+              <X className="h-3 w-3" />
               Clear
-            </button>
+            </Button>
           </>
         )}
       </div>

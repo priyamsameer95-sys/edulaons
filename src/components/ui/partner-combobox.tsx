@@ -127,15 +127,15 @@ export function PartnerCombobox({
             className
           )}
         >
-          {selectedPartner ? (
-            <span className="truncate">
+        {selectedPartner ? (
+            <span className="truncate max-w-[calc(100%-24px)]">
               {selectedPartner.name}
-              <span className="ml-2 text-xs text-muted-foreground">({selectedPartner.partner_code})</span>
+              <span className="ml-1.5 text-xs text-muted-foreground">({selectedPartner.partner_code})</span>
             </span>
           ) : (
             placeholder
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[350px] p-0 bg-popover border shadow-md" align="start">

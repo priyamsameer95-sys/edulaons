@@ -53,7 +53,7 @@ export function StatusBadge({
     const badgeContent = (
       <Badge 
         variant="secondary" 
-        className={`${config?.bgColor || 'bg-gray-100'} ${config?.color || 'text-gray-800'} ${className} gap-1.5 border-0`}
+        className={`${config?.bgColor || 'bg-gray-100'} ${config?.color || 'text-gray-800'} ${className} gap-1.5 border-0 flex items-center justify-center`}
       >
         {showIcon && IconComponent && <IconComponent className="h-3 w-3" />}
         {label || status}
@@ -103,7 +103,7 @@ export function StatusBadge({
   const badgeContent = (
     <Badge 
       variant="secondary" 
-      className={`${colorClass} ${className} gap-1.5`}
+      className={`${colorClass} ${className} gap-1.5 flex items-center justify-center`}
     >
       {showIcon && icon}
       {label}
