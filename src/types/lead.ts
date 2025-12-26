@@ -9,6 +9,9 @@ export interface LeadInfo {
     email?: string;
     phone?: string;
   };
+  co_applicant?: {
+    name: string;
+  } | null;
 }
 
 export interface Lead {

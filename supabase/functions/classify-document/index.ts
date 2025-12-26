@@ -44,6 +44,7 @@ interface ClassificationResult {
   detected_category: string;
   detected_category_label: string;
   detected_owner: 'student' | 'co_applicant' | 'collateral' | 'unknown';
+  detected_name?: string; // Name extracted from document (e.g., PAN card holder name)
   confidence: number;
   quality: 'good' | 'acceptable' | 'poor' | 'unreadable';
   is_document: boolean;
@@ -89,6 +90,7 @@ serve(async (req) => {
 1. What type of document it is
 2. Who it belongs to (student or co-applicant/guardian)
 3. The quality of the document
+4. IMPORTANT: Extract the person's name from the document if visible
 
 KNOWN DOCUMENT TYPES (use these exact keys):
 - pan_card: PAN Card (Indian tax ID)
@@ -117,9 +119,19 @@ OWNER DETECTION:
 - If document is property/FD related → owner: "collateral"
 - Look for names, ages, designations to determine owner
 
+NAME EXTRACTION:
+- Extract the full name of the person from the document
+- For PAN cards: Look for the name printed on the card
+- For Aadhaar: Look for the name printed
+- For Bank statements: Look for account holder name
+- For Salary slips: Look for employee name
+- For Passports: Look for full name
+- Return null if name cannot be read clearly
+
 Return ONLY valid JSON:
 {
   "detected_type": "one of the types above or 'unknown'",
+  "detected_name": "Full Name as shown on document or null if not readable",
   "is_document": true/false,
   "owner": "student|co_applicant|collateral|unknown",
   "confidence": 0-100,
@@ -128,7 +140,7 @@ Return ONLY valid JSON:
   "notes": "Brief description, max 15 words"
 }`;
 
-    const userPrompt = `Classify this document. What type is it? Who does it belong to (student or their parent/co-applicant)? What's the quality?`;
+    const userPrompt = `Classify this document. What type is it? Who does it belong to? What's the quality? Extract the person's name if visible.`;
 
     console.log("Classifying document...");
 
@@ -309,6 +321,7 @@ Return ONLY valid JSON:
       detected_category: category,
       detected_category_label: CATEGORY_LABELS[category] || category,
       detected_owner: owner as ClassificationResult['detected_owner'],
+      detected_name: aiResult.detected_name || null,
       confidence: aiResult.confidence || 0,
       quality: aiResult.quality || 'acceptable',
       is_document: aiResult.is_document !== false,

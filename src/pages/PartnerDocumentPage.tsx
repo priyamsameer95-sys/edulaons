@@ -133,6 +133,8 @@ export default function PartnerDocumentPage() {
           documentTypes={documentTypes}
           onUploadSuccess={handleUploadSuccess}
           onSuggestDocType={handleSuggestDocType}
+          studentName={lead.student.name}
+          coApplicantName={lead.co_applicant?.name}
         />
 
         {/* Document Grocery List */}
