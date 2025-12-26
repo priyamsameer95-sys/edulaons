@@ -412,62 +412,90 @@ const StudentLanding = () => {
     };
   };
   const handleCheckEligibility = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log('❌ Form validation failed:', errors);
+      return;
+    }
     setIsChecking(true);
+    
+    // Log form data for debugging
+    console.log('📋 Form data being submitted:', {
+      student_name: formData.student_name,
+      student_phone: formData.student_phone,
+      country: formData.country,
+      university_id: formData.university_id,
+      loan_amount: formData.loan_amount[0] * 100000,
+      co_applicant_monthly_salary: formData.co_applicant_monthly_salary
+    });
+    
     try {
       const loanAmount = formData.loan_amount[0] * 100000;
       const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
       const studentPhone = formData.student_phone.replace(/\D/g, '');
       const countryData = COUNTRIES.find(c => c.code === formData.country);
+      
+      console.log('🔍 Calculating eligibility...');
       const eligibility = await calculateEligibility(loanAmount, salary, formData.university_id);
+      console.log('✅ Eligibility calculated:', eligibility);
       setResult(eligibility);
 
       // Save organic lead using student-specific edge function
       const now = new Date();
       const futureDate = new Date(now.setMonth(now.getMonth() + 3));
+      
+      const requestPayload = {
+        student_name: formData.student_name.trim(),
+        student_phone: studentPhone,
+        student_pin_code: '000000',
+        country: countryData?.value || formData.country,
+        university_id: formData.university_id.length > 10 ? formData.university_id : undefined,
+        loan_amount: loanAmount,
+        intake_month: futureDate.getMonth() + 1,
+        intake_year: futureDate.getFullYear(),
+        co_applicant_relationship: 'parent',
+        co_applicant_name: 'Co-Applicant',
+        co_applicant_monthly_salary: salary,
+        co_applicant_phone: studentPhone,
+        co_applicant_pin_code: '000000',
+        source: 'student_landing',
+        eligibility_score: eligibility.score,
+        eligibility_result: eligibility.lenderCount >= 3 ? 'eligible' : eligibility.lenderCount >= 1 ? 'conditional' : 'unlikely'
+      };
+      
+      console.log('📤 Sending lead creation request:', requestPayload);
+      
       try {
-        const {
-          data,
-          error
-        } = await supabase.functions.invoke('create-lead-student', {
-          body: {
-            student_name: formData.student_name.trim(),
-            student_phone: studentPhone,
-            student_pin_code: '000000',
-            country: countryData?.value || formData.country,
-            university_id: formData.university_id.length > 10 ? formData.university_id : undefined,
-            loan_amount: loanAmount,
-            intake_month: futureDate.getMonth() + 1,
-            intake_year: futureDate.getFullYear(),
-            co_applicant_relationship: 'parent',
-            co_applicant_name: 'Co-Applicant',
-            co_applicant_monthly_salary: salary,
-            co_applicant_phone: studentPhone,
-            co_applicant_pin_code: '000000',
-            source: 'student_landing',
-            eligibility_score: eligibility.score,
-            eligibility_result: eligibility.lenderCount >= 3 ? 'eligible' : eligibility.lenderCount >= 1 ? 'conditional' : 'unlikely'
-          }
+        const { data, error } = await supabase.functions.invoke('create-lead-student', {
+          body: requestPayload
         });
 
-        // Handle response
+        // Handle response with detailed logging
         if (error) {
-          console.log('Lead save failed (network error):', error.message);
+          console.error('❌ Lead save failed (network error):', error.message, error);
+          // Show specific error to user
+          toast.error(`Unable to save: ${error.message}`);
         } else if (data?.success && data?.lead?.id) {
+          console.log('✅ Lead created/updated successfully:', data.lead.id);
           setLeadId(data.lead.id);
           // Show partner info if this is a partner-created lead
           if (data.is_existing && data.lead.is_partner_lead && data.lead.partner_name) {
             toast.success(`Great news! ${data.lead.partner_name} has already started your application.`);
           }
         } else if (data?.success === false) {
-          console.log('Lead not created:', data?.error || 'Unknown reason');
+          console.error('❌ Lead creation failed:', data?.error || 'Unknown reason', data);
+          // Show specific error from server
+          if (data?.error) {
+            toast.error(`Error: ${data.error}`);
+          }
         }
-      } catch (e) {
-        console.log('Lead save error:', e);
+      } catch (e: any) {
+        console.error('❌ Lead save exception:', e?.message || e);
+        toast.error(`Network error: ${e?.message || 'Please check your connection'}`);
       }
       toast.success('Great news! We found matching lenders for you.');
     } catch (error: any) {
-      toast.error(error.message || 'Something went wrong');
+      console.error('❌ Eligibility check failed:', error);
+      toast.error(error.message || 'Something went wrong. Please try again.');
     } finally {
       setIsChecking(false);
     }

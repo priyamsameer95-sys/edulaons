@@ -309,9 +309,9 @@ Return ONLY valid JSON:
       fd_certificate: 'FD Certificate',
       driving_license: 'Driving License',
       voter_id: 'Voter ID',
-      co_applicant_pan: 'Co-Applicant PAN',
-      co_applicant_aadhaar: 'Co-Applicant Aadhaar',
-      co_applicant_photo: 'Co-Applicant Photo',
+      co_applicant_pan: "Co-Applicant's PAN",
+      co_applicant_aadhaar: "Co-Applicant's Aadhaar",
+      co_applicant_photo: "Co-Applicant's Photo",
       unknown: 'Unknown Document',
     };
 

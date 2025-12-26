@@ -209,6 +209,24 @@ export function PartnerDocumentGrid({
           onOpenChange={setPreviewOpen} 
         />
 
+        {/* Summary Stats Header */}
+        <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-foreground">{summary.uploaded}</p>
+            <p className="text-xs text-muted-foreground">Uploaded</p>
+          </div>
+          <div className="text-center border-x border-border">
+            <p className="text-2xl font-bold text-foreground">{summary.total - summary.uploaded}</p>
+            <p className="text-xs text-muted-foreground">Pending</p>
+          </div>
+          <div className="text-center">
+            <p className={cn("text-2xl font-bold", summary.needsAttention > 0 ? "text-destructive" : "text-muted-foreground")}>
+              {summary.needsAttention}
+            </p>
+            <p className="text-xs text-muted-foreground">Need Attention</p>
+          </div>
+        </div>
+
         {/* Alert for rejected documents */}
         {summary.needsAttention > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
