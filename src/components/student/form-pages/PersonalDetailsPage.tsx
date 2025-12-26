@@ -48,6 +48,7 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
         return age < 16 || age > 50 ? 'Age must be 16-50' : '';
       }
       case 'state': return !value ? 'Please select your state' : '';
+      case 'postalCode': return !value || !/^\d{6}$/.test(value) ? 'Enter valid 6-digit PIN code' : '';
       default: return '';
     }
   };
@@ -65,9 +66,10 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
       dateOfBirth: validateField('dateOfBirth', data.dateOfBirth || ''),
       gender: !data.gender ? 'Select gender' : '',
       state: validateField('state', data.state || ''),
+      postalCode: validateField('postalCode', data.postalCode || ''),
     };
     setErrors(newErrors);
-    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, state: true });
+    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, state: true, postalCode: true });
     return !Object.values(newErrors).some(e => e);
   };
 
@@ -315,6 +317,43 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
             </SelectContent>
           </Select>
           {errors.state && touched.state && <p className="text-xs text-destructive">{errors.state}</p>}
+        </div>
+
+        {/* PIN Code */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground" /> PIN Code <span className="text-destructive">*</span>
+          </label>
+          <div
+            className={cn(
+              "flex items-center h-12 px-4 rounded-lg border bg-background transition-colors",
+              errors.postalCode && touched.postalCode 
+                ? "border-destructive" 
+                : isValid('postalCode') 
+                ? "border-emerald-500" 
+                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
+            )}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="6-digit PIN code"
+              maxLength={6}
+              value={data.postalCode || ''}
+              onChange={e => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                onUpdate({ postalCode: value });
+              }}
+              onBlur={e => handleBlur('postalCode', e.target.value)}
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+            />
+            {isValid('postalCode') && (
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            )}
+          </div>
+          {errors.postalCode && touched.postalCode && <p className="text-xs text-destructive">{errors.postalCode}</p>}
         </div>
 
         {/* Continue Button */}
