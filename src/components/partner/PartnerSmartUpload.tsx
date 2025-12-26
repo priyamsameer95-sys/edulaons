@@ -174,6 +174,42 @@ export function PartnerSmartUpload({
     }
   }, [documentTypes, onSuggestDocType]);
 
+  // Check if detected name matches student or co-applicant
+  const getNameMatchStatus = (detectedName?: string) => {
+    if (!detectedName) return { status: 'none', message: '' };
+    
+    const normalizedDetected = detectedName.toLowerCase().trim();
+    const normalizedStudent = studentName?.toLowerCase().trim() || '';
+    const normalizedCoApplicant = coApplicantName?.toLowerCase().trim() || '';
+    
+    // Check for partial match (first name or last name)
+    const detectedParts = normalizedDetected.split(/\s+/);
+    const studentParts = normalizedStudent.split(/\s+/);
+    const coApplicantParts = normalizedCoApplicant.split(/\s+/);
+    
+    const matchesStudent = detectedParts.some(part => 
+      studentParts.some(sp => sp.includes(part) || part.includes(sp))
+    );
+    const matchesCoApplicant = coApplicantParts.length > 0 && detectedParts.some(part => 
+      coApplicantParts.some(cp => cp.includes(part) || part.includes(cp))
+    );
+    
+    if (matchesStudent) {
+      return { status: 'match', message: `Matches: ${studentName} (Student)`, matchType: 'student' };
+    }
+    if (matchesCoApplicant) {
+      return { status: 'match', message: `Matches: ${coApplicantName} (Co-Applicant)`, matchType: 'co_applicant' };
+    }
+    
+    // Name detected but doesn't match anyone
+    const expectedNames = [studentName, coApplicantName].filter(Boolean).join(' or ');
+    return { 
+      status: 'mismatch', 
+      message: `Document shows "${detectedName}"`,
+      expected: expectedNames ? `Expected: ${expectedNames}` : undefined
+    };
+  };
+
   // Check if there's a mismatch that needs confirmation
   const checkForMismatches = useCallback((queuedFile: QueuedFile): { hasIssue: boolean; message: string } => {
     const nameMatch = getNameMatchStatus(queuedFile.classification?.detected_name);
@@ -203,7 +239,7 @@ export function PartnerSmartUpload({
     }
     
     return { hasIssue: false, message: '' };
-  }, [documentTypes, studentName, coApplicantName, getNameMatchStatus]);
+  }, [documentTypes, studentName, coApplicantName]);
 
   const handleApproveUpload = useCallback(async (queuedFile: QueuedFile, skipConfirmation = false) => {
     if (!queuedFile.selectedDocumentTypeId) {
@@ -314,42 +350,6 @@ export function PartnerSmartUpload({
     if (confidence >= 70) return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
     if (confidence >= 50) return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
     return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
-  };
-
-  // Check if detected name matches student or co-applicant
-  const getNameMatchStatus = (detectedName?: string) => {
-    if (!detectedName) return { status: 'none', message: '' };
-    
-    const normalizedDetected = detectedName.toLowerCase().trim();
-    const normalizedStudent = studentName?.toLowerCase().trim() || '';
-    const normalizedCoApplicant = coApplicantName?.toLowerCase().trim() || '';
-    
-    // Check for partial match (first name or last name)
-    const detectedParts = normalizedDetected.split(/\s+/);
-    const studentParts = normalizedStudent.split(/\s+/);
-    const coApplicantParts = normalizedCoApplicant.split(/\s+/);
-    
-    const matchesStudent = detectedParts.some(part => 
-      studentParts.some(sp => sp.includes(part) || part.includes(sp))
-    );
-    const matchesCoApplicant = coApplicantParts.length > 0 && detectedParts.some(part => 
-      coApplicantParts.some(cp => cp.includes(part) || part.includes(cp))
-    );
-    
-    if (matchesStudent) {
-      return { status: 'match', message: `Matches: ${studentName} (Student)`, matchType: 'student' };
-    }
-    if (matchesCoApplicant) {
-      return { status: 'match', message: `Matches: ${coApplicantName} (Co-Applicant)`, matchType: 'co_applicant' };
-    }
-    
-    // Name detected but doesn't match anyone
-    const expectedNames = [studentName, coApplicantName].filter(Boolean).join(' or ');
-    return { 
-      status: 'mismatch', 
-      message: `Document shows "${detectedName}"`,
-      expected: expectedNames ? `Expected: ${expectedNames}` : undefined
-    };
   };
 
   const classifyingCount = queue.filter(q => q.status === 'classifying').length;
