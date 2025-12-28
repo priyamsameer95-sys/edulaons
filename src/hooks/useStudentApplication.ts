@@ -1,22 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import type { StudentApplicationData } from '@/types/student-application';
 import { transformToEdgeFunctionPayload } from '@/utils/studentApplicationHelpers';
 import { studentApplicationSchema } from '@/lib/validation/studentValidation';
-import { useLocalStorage } from './useLocalStorage';
 
-const STORAGE_KEY = 'student_application_draft';
+// Phone-scoped storage key to prevent cross-user data leakage
+const getStorageKey = (phone: string) => `student_application_draft_${phone.replace(/\D/g, '').slice(-10)}`;
+const LEGACY_STORAGE_KEY = 'student_application_draft';
 
 // Re-export type for backward compatibility
 export type { StudentApplicationData };
+
+// Clear any drafts from other phone numbers
+const clearForeignDrafts = (currentPhone: string) => {
+  const currentKey = getStorageKey(currentPhone);
+  const keysToRemove: string[] = [];
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('student_application_draft_') && key !== currentKey) {
+      keysToRemove.push(key);
+    }
+  }
+  
+  // Also remove legacy key if different from current
+  if (localStorage.getItem(LEGACY_STORAGE_KEY)) {
+    keysToRemove.push(LEGACY_STORAGE_KEY);
+  }
+  
+  keysToRemove.forEach(key => {
+    console.log('🧹 Clearing foreign draft:', key);
+    localStorage.removeItem(key);
+  });
+};
 
 export const useStudentApplication = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userPhone, setUserPhone] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   // Smart defaults for better UX
   const getDefaultIntake = () => {
     const now = new Date();
@@ -29,105 +56,189 @@ export const useStudentApplication = () => {
   
   const [applicationData, setApplicationData] = useState<Partial<StudentApplicationData>>({
     nationality: 'Indian',
-    loanType: 'unsecured', // Most students start with unsecured
+    loanType: 'unsecured',
     intakeMonth: defaultIntake.month,
     intakeYear: defaultIntake.year,
   });
 
-  // Load saved form data from localStorage or pre-fill from eligibility check
+  // Get current user's phone from auth metadata
   useEffect(() => {
-    try {
-      // First, check for existing draft in localStorage
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setApplicationData(prev => ({ ...prev, ...parsed.data }));
-        setCurrentStep(parsed.step || 0);
-        console.log('📝 Loaded existing draft from localStorage');
-        return;
+    const getAuthPhone = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.phone) {
+        const phone = user.user_metadata.phone.replace(/\D/g, '').slice(-10);
+        setUserPhone(phone);
+        return phone;
       }
-      
-      // Otherwise, check for pre-fill data from eligibility check (sessionStorage)
-      const eligibility = sessionStorage.getItem('eligibility_form');
-      if (eligibility) {
-        const data = JSON.parse(eligibility);
-        console.log('📥 Loading pre-fill data from eligibility check:', data);
-        
-        // Map eligibility fields to application fields
-        const prefillData: Partial<StudentApplicationData> = {
-          name: data.student_name || '',
-          phone: data.student_phone || '',
-          studyDestination: data.country_value || data.country || '',
-          universities: data.university_id ? [data.university_id] : [],
-          loanAmount: data.loan_amount || 3000000,
-          coApplicantMonthlySalary: data.co_applicant_monthly_salary || 0,
-          coApplicantRelationship: 'parent', // Default from eligibility
-          loanType: 'secured', // Default
-          nationality: 'Indian', // Default
-        };
-        
-        setApplicationData(prev => ({ ...prev, ...prefillData }));
-        
-        // Clear eligibility data to prevent re-loading
-        sessionStorage.removeItem('eligibility_form');
-        
-        console.log('✅ Pre-filled application with eligibility data:', prefillData);
+      // Fallback: extract from email if it's phone-based
+      if (user?.email?.includes('@student.loan.app')) {
+        const phone = user.email.split('@')[0].replace(/\D/g, '').slice(-10);
+        if (phone.length === 10) {
+          setUserPhone(phone);
+          return phone;
+        }
       }
-    } catch (error) {
-      console.error('Failed to load application data:', error);
-    }
+      return null;
+    };
+    
+    getAuthPhone();
   }, []);
 
-  const updateApplicationData = (data: Partial<StudentApplicationData>) => {
+  // Load saved form data - only after we know the user's phone
+  useEffect(() => {
+    if (isInitialized) return; // Only run once
+    
+    const loadData = async () => {
+      try {
+        // Get user's phone
+        let phone = userPhone;
+        if (!phone) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.user_metadata?.phone) {
+            phone = user.user_metadata.phone.replace(/\D/g, '').slice(-10);
+          } else if (user?.email?.includes('@student.loan.app')) {
+            phone = user.email.split('@')[0].replace(/\D/g, '').slice(-10);
+          }
+        }
+        
+        if (phone && phone.length === 10) {
+          // Clear drafts from other users
+          clearForeignDrafts(phone);
+          
+          // Load phone-specific draft
+          const storageKey = getStorageKey(phone);
+          const saved = localStorage.getItem(storageKey);
+          
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            // Validate draft belongs to current user
+            if (parsed.phone === phone) {
+              setApplicationData(prev => ({ ...prev, ...parsed.data }));
+              setCurrentStep(parsed.step || 0);
+              console.log('📝 Loaded draft for phone:', phone);
+              setIsInitialized(true);
+              return;
+            } else {
+              // Draft is from different user, clear it
+              console.log('🧹 Clearing draft from different user');
+              localStorage.removeItem(storageKey);
+            }
+          }
+        }
+        
+        // No valid draft - check for pre-fill from eligibility check
+        const eligibility = sessionStorage.getItem('eligibility_form');
+        if (eligibility) {
+          const data = JSON.parse(eligibility);
+          console.log('📥 Loading pre-fill data from eligibility check');
+          
+          const prefillData: Partial<StudentApplicationData> = {
+            name: data.student_name || '',
+            phone: data.student_phone || '',
+            studyDestination: data.country_value || data.country || '',
+            universities: data.university_id ? [data.university_id] : [],
+            loanAmount: data.loan_amount || 3000000,
+            coApplicantMonthlySalary: data.co_applicant_monthly_salary || 0,
+            coApplicantRelationship: 'parent',
+            loanType: 'secured',
+            nationality: 'Indian',
+          };
+          
+          setApplicationData(prev => ({ ...prev, ...prefillData }));
+          
+          // Clear eligibility data after use
+          sessionStorage.removeItem('eligibility_form');
+          console.log('✅ Pre-filled application with eligibility data');
+        }
+        
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Failed to load application data:', error);
+        setIsInitialized(true);
+      }
+    };
+    
+    loadData();
+  }, [userPhone, isInitialized]);
+
+  const updateApplicationData = useCallback((data: Partial<StudentApplicationData>) => {
     setApplicationData(prev => {
       const updated = { ...prev, ...data };
-      // Save to localStorage whenever data changes
+      
+      // Save to phone-scoped localStorage
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          data: updated,
-          step: currentStep,
-          timestamp: new Date().toISOString()
-        }));
+        const phone = userPhone || updated.phone?.replace(/\D/g, '').slice(-10);
+        if (phone && phone.length === 10) {
+          const storageKey = getStorageKey(phone);
+          localStorage.setItem(storageKey, JSON.stringify({
+            data: updated,
+            step: currentStep,
+            phone: phone, // Include phone for validation
+            timestamp: new Date().toISOString()
+          }));
+        }
       } catch (error) {
         console.error('Failed to save application data:', error);
       }
       return updated;
     });
-  };
+  }, [userPhone, currentStep]);
 
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     setCurrentStep(prev => {
       const newStep = Math.min(prev + 1, 5);
-      // Save step to localStorage
+      // Update step in localStorage
       try {
-        const current = localStorage.getItem(STORAGE_KEY);
-        if (current) {
-          const parsed = JSON.parse(current);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, step: newStep }));
+        const phone = userPhone || applicationData.phone?.replace(/\D/g, '').slice(-10);
+        if (phone && phone.length === 10) {
+          const storageKey = getStorageKey(phone);
+          const current = localStorage.getItem(storageKey);
+          if (current) {
+            const parsed = JSON.parse(current);
+            localStorage.setItem(storageKey, JSON.stringify({ ...parsed, step: newStep }));
+          }
         }
       } catch (error) {
         console.error('Failed to save step:', error);
       }
       return newStep;
     });
-  };
+  }, [userPhone, applicationData.phone]);
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     setCurrentStep(prev => {
       const newStep = Math.max(prev - 1, 0);
-      // Save step to localStorage
+      // Update step in localStorage
       try {
-        const current = localStorage.getItem(STORAGE_KEY);
-        if (current) {
-          const parsed = JSON.parse(current);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, step: newStep }));
+        const phone = userPhone || applicationData.phone?.replace(/\D/g, '').slice(-10);
+        if (phone && phone.length === 10) {
+          const storageKey = getStorageKey(phone);
+          const current = localStorage.getItem(storageKey);
+          if (current) {
+            const parsed = JSON.parse(current);
+            localStorage.setItem(storageKey, JSON.stringify({ ...parsed, step: newStep }));
+          }
         }
       } catch (error) {
         console.error('Failed to save step:', error);
       }
       return newStep;
     });
-  };
+  }, [userPhone, applicationData.phone]);
+
+  const clearDraft = useCallback(() => {
+    try {
+      const phone = userPhone || applicationData.phone?.replace(/\D/g, '').slice(-10);
+      if (phone && phone.length === 10) {
+        const storageKey = getStorageKey(phone);
+        localStorage.removeItem(storageKey);
+      }
+      // Also clear legacy key
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to clear draft:', error);
+    }
+  }, [userPhone, applicationData.phone]);
 
   const submitApplication = async () => {
     try {
@@ -153,7 +264,6 @@ export const useStudentApplication = () => {
         const firstError = validationResult.error.errors[0];
         const fieldPath = firstError.path.join('.');
         
-        // Map field paths to user-friendly messages and step guidance
         const fieldToStep: Record<string, { step: number; label: string }> = {
           name: { step: 1, label: 'Full Name' },
           email: { step: 1, label: 'Email' },
@@ -192,7 +302,6 @@ export const useStudentApplication = () => {
         userData.user.email
       );
 
-      // Add source to indicate this is from student application flow
       const studentPayload = {
         ...payload,
         source: 'student_application',
@@ -203,7 +312,6 @@ export const useStudentApplication = () => {
         loan_amount: payload.amount_requested,
       };
 
-      // Submit to student-specific edge function that handles partner linking
       const { data: result, error } = await supabase.functions.invoke('create-lead-student', {
         body: studentPayload,
       });
@@ -213,7 +321,6 @@ export const useStudentApplication = () => {
         throw new Error(error.message || 'Failed to submit application');
       }
 
-      // Check if this was linked to an existing partner lead
       if (result?.is_existing && result?.lead?.is_partner_lead) {
         toast({
           title: "Application Found!",
@@ -231,11 +338,7 @@ export const useStudentApplication = () => {
       }
 
       // Clear saved form data on successful submission
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (error) {
-        console.error('Failed to clear saved data:', error);
-      }
+      clearDraft();
 
       return result;
     } catch (error: any) {
@@ -260,5 +363,6 @@ export const useStudentApplication = () => {
     prevStep,
     setCurrentStep,
     submitApplication,
+    clearDraft,
   };
 };

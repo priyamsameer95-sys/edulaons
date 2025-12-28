@@ -483,25 +483,46 @@ serve(async (req) => {
         }
       }
       
+      // Use upsert with phone as conflict key for race condition safety
       const { data: newStudent, error: studentError } = await supabaseAdmin
         .from('students')
-        .insert({
+        .upsert({
           name: body.student_name.trim(),
           email: studentEmail,
           phone: cleanStudentPhone,
           postal_code: body.student_pin_code?.trim() || '000000',
           country: 'India',
           nationality: 'Indian',
+        }, {
+          onConflict: 'phone',
+          ignoreDuplicates: true // Don't update existing, just return
         })
         .select()
         .single();
 
       if (studentError) {
-        throw new Error(`Failed to create student: ${studentError.message}`);
+        // Handle unique constraint violation gracefully
+        if (studentError.code === '23505') {
+          console.log('⚠️ Phone already exists (race condition), fetching existing student');
+          const { data: existingByPhone } = await supabaseAdmin
+            .from('students')
+            .select('id')
+            .eq('phone', cleanStudentPhone)
+            .single();
+          
+          if (existingByPhone) {
+            studentId = existingByPhone.id;
+            console.log('✅ Using existing student after race condition:', studentId);
+          } else {
+            throw new Error('Phone number already registered with another account');
+          }
+        } else {
+          throw new Error(`Failed to create student: ${studentError.message}`);
+        }
+      } else {
+        studentId = newStudent.id;
+        console.log('✅ Created new student:', studentId);
       }
-      
-      studentId = newStudent.id;
-      console.log('✅ Created new student:', studentId);
     }
 
     // Create co-applicant
