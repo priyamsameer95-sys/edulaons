@@ -40,8 +40,17 @@ export interface LenderAuditEntry {
   reason?: string;
 }
 
+// Map role to allowed audit log types (super_admin -> admin)
+const mapRoleToAuditType = (role: string | undefined): string => {
+  if (!role) return 'system';
+  if (role === 'super_admin') return 'admin';
+  if (['student', 'partner', 'admin', 'system'].includes(role)) return role;
+  return 'system';
+};
+
 export function useAuditLog() {
   const { user, appUser } = useAuth();
+  const changedByType = mapRoleToAuditType(appUser?.role);
 
   /**
    * Log a field change to field_audit_log
@@ -58,7 +67,7 @@ export function useAuditLog() {
           new_value: entry.newValue,
           changed_by_id: user?.id || null,
           changed_by_name: user?.email || 'System',
-          changed_by_type: appUser?.role || 'system',
+          changed_by_type: changedByType,
           change_source: entry.changeSource || 'user_edit',
           change_reason: entry.changeReason || null,
         });
@@ -69,7 +78,7 @@ export function useAuditLog() {
     } catch (err) {
       console.error('Error in logFieldChange:', err);
     }
-  }, [user, appUser]);
+  }, [user, appUser, changedByType]);
 
   /**
    * Log multiple field changes at once (batch)
@@ -86,7 +95,7 @@ export function useAuditLog() {
         new_value: entry.newValue,
         changed_by_id: user?.id || null,
         changed_by_name: user?.email || 'System',
-        changed_by_type: appUser?.role || 'system',
+        changed_by_type: changedByType,
         change_source: entry.changeSource || 'user_edit',
         change_reason: entry.changeReason || null,
       }));
@@ -101,7 +110,7 @@ export function useAuditLog() {
     } catch (err) {
       console.error('Error in logFieldChanges:', err);
     }
-  }, [user, appUser]);
+  }, [user, appUser, changedByType]);
 
   /**
    * Log document status change
