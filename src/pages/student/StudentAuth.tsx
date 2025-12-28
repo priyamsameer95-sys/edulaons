@@ -160,6 +160,24 @@ const StudentAuth = () => {
         return;
       }
 
+      // OTP verified successfully - clear foreign session data
+      console.log('🧹 Clearing foreign session data on successful login');
+      
+      // Clear any drafts from other phone numbers
+      const currentPhone = phone.replace(/\D/g, '').slice(-10);
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('student_application_draft_') && !key.endsWith(currentPhone)) {
+          console.log('🧹 Removing draft from different user:', key);
+          localStorage.removeItem(key);
+        }
+      }
+      // Remove legacy storage key
+      localStorage.removeItem('student_application_draft');
+      
+      // Clear eligibility form from previous session (will be processed on next load)
+      // Keep it if user just came from eligibility check (same session)
+      
       // OTP verified successfully - show success screen
       setStep('success');
       console.log('OTP verified, signing in...');

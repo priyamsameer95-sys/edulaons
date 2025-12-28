@@ -125,35 +125,63 @@ Deno.serve(async (req) => {
       }
     } else {
       // New student - create one (KB: Student can sign up independently)
+      // Use upsert with phone as conflict key for race condition safety
       isNewUser = true
       const generatedEmail = `${cleanPhone}@student.loan.app`
       studentName = name || `Student ${cleanPhone.slice(-4)}`
       
       console.log('🆕 Creating new student with email:', generatedEmail)
       
+      // Use upsert to handle race conditions - if phone exists, just return existing
       const { data: newStudent, error: createStudentError } = await supabase
         .from('students')
-        .insert({
+        .upsert({
           phone: cleanPhone,
           email: generatedEmail,
           name: studentName,
           otp_enabled: true,
           is_activated: false, // Not activated until they have a lead
+        }, { 
+          onConflict: 'phone',
+          ignoreDuplicates: true // Don't update existing, just return
         })
         .select('id, email, name')
         .single()
 
       if (createStudentError) {
-        console.error('Error creating student:', createStudentError)
-        return new Response(
-          JSON.stringify({ success: false, error: 'Could not create student profile' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        // Handle unique constraint violation gracefully
+        if (createStudentError.code === '23505') {
+          console.log('⚠️ Phone already exists (race condition), fetching existing student')
+          const { data: existingByPhone } = await supabase
+            .from('students')
+            .select('id, email, name')
+            .eq('phone', cleanPhone)
+            .single()
+          
+          if (existingByPhone) {
+            studentId = existingByPhone.id
+            studentEmail = existingByPhone.email
+            studentName = existingByPhone.name
+            isNewUser = false
+          } else {
+            console.error('Could not find student after constraint error:', createStudentError)
+            return new Response(
+              JSON.stringify({ success: false, error: 'Phone number already registered with another account' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        } else {
+          console.error('Error creating student:', createStudentError)
+          return new Response(
+            JSON.stringify({ success: false, error: 'Could not create student profile' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      } else {
+        studentId = newStudent.id
+        studentEmail = newStudent.email
+        hasLead = false // New user has no lead
       }
-
-      studentId = newStudent.id
-      studentEmail = newStudent.email
-      hasLead = false // New user has no lead
     }
 
     // Check if auth user exists for this email
