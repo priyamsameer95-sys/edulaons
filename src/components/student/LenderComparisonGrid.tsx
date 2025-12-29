@@ -56,7 +56,7 @@ const LenderComparisonGrid = ({
       </div>
 
       {/* Featured Lenders - Top 3 with equal height */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
         {featuredLenders.map((lender, index) => (
           <LenderFeaturedCard
             key={lender.lender_id}

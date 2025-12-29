@@ -82,20 +82,22 @@ const LenderFeaturedCard = ({
   return (
     <div
       className={cn(
-        "rounded-2xl border-2 bg-card overflow-hidden transition-all duration-300 flex flex-col",
+        "rounded-2xl border-2 bg-card overflow-hidden transition-all duration-300 flex flex-col h-full",
         isTopMatch && "border-warning shadow-xl shadow-warning/15 relative",
         isSelected && "ring-2 ring-success border-success shadow-lg shadow-success/10",
         !isTopMatch && !isSelected && "border-border/60 hover:border-primary/30 hover:shadow-lg",
         isUpdating && "opacity-60 pointer-events-none"
       )}
     >
-      {/* Top Match Ribbon */}
-      {isTopMatch && (
-        <div className="bg-gradient-to-r from-warning to-warning/80 text-warning-foreground py-2 px-4 flex items-center justify-center gap-2">
+      {/* Top Match Ribbon - or placeholder for consistent height */}
+      {isTopMatch ? (
+        <div className="bg-gradient-to-r from-warning to-warning/80 text-warning-foreground py-2 px-4 flex items-center justify-center gap-2 h-[40px]">
           <Sparkles className="h-4 w-4" />
           <span className="text-xs font-bold uppercase tracking-wider">Best Match for You</span>
           <Sparkles className="h-4 w-4" />
         </div>
+      ) : (
+        <div className="h-[40px]" /> 
       )}
 
       {/* Header Section */}
@@ -144,24 +146,22 @@ const LenderFeaturedCard = ({
         </div>
       </div>
 
-      {/* AI Insight - Solid, prominent styling */}
-      {lender.student_facing_reason && (
-        <div className="px-5">
-          <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-info/5 rounded-xl p-4 border border-primary/15">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Zap className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Why This Lender?</p>
-                <p className="text-sm text-foreground leading-relaxed">
-                  {lender.student_facing_reason}
-                </p>
-              </div>
+      {/* AI Insight - Fixed height for consistent alignment */}
+      <div className="px-5">
+        <div className="min-h-[88px] bg-gradient-to-br from-primary/5 via-primary/10 to-info/5 rounded-xl p-4 border border-primary/15">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Why This Lender?</p>
+              <p className="text-sm text-foreground leading-relaxed line-clamp-3">
+                {lender.student_facing_reason || 'Matched based on your loan requirements and financial profile.'}
+              </p>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Quick Stats - Compact inline */}
       <div className="px-5 py-3">
