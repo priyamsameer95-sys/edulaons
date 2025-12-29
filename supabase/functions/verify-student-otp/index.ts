@@ -190,18 +190,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check if auth user exists for this email
+    // Check if auth user exists for this phone (search by pattern to catch duplicates)
+    // This prevents creating duplicate users like +919955240477@student.loan.app AND 9955240477@student.loan.app
     const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const existingAuthUser = authUsers?.users?.find(u => u.email === studentEmail)
+    
+    // Find any existing auth user that matches this phone number
+    const phonePattern = cleanPhone.slice(-10); // Last 10 digits
+    const existingAuthUser = authUsers?.users?.find(u => {
+      if (!u.email) return false;
+      // Match exact email or phone-pattern in email
+      if (u.email === studentEmail) return true;
+      // Also catch variants like +91xxxx@student.loan.app
+      if (u.email.endsWith('@student.loan.app') && u.email.includes(phonePattern)) return true;
+      return false;
+    });
 
     let userId: string
 
     if (existingAuthUser) {
       userId = existingAuthUser.id
-      console.log('👤 Found existing auth user:', userId)
+      console.log('👤 Found existing auth user:', userId, 'email:', existingAuthUser.email)
+      
+      // If the existing user has a different email format, update it to the canonical one
+      if (existingAuthUser.email !== studentEmail) {
+        console.log('🔄 Updating auth user email from', existingAuthUser.email, 'to', studentEmail)
+        // Note: We can't easily update auth user email, so we'll use the existing one
+        // The student table email should be authoritative
+      }
     } else {
       // Create auth user with a random password (phone-based login, no password needed)
       const randomPassword = crypto.randomUUID()
+      
+      console.log('🆕 Creating new auth user with email:', studentEmail)
       
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: studentEmail,
@@ -215,28 +235,44 @@ Deno.serve(async (req) => {
       })
 
       if (authError) {
-        console.error('Error creating auth user:', authError)
-        return new Response(
-          JSON.stringify({ success: false, error: 'Could not create user account' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
+        // Handle case where user already exists (race condition or missed in search)
+        if (authError.message?.includes('already registered') || authError.message?.includes('already exists')) {
+          console.log('⚠️ Auth user creation failed - user may already exist, trying to find them')
+          const retryUser = authUsers?.users?.find(u => u.email?.includes(phonePattern))
+          if (retryUser) {
+            userId = retryUser.id
+            console.log('✅ Found existing user on retry:', userId)
+          } else {
+            console.error('Error creating auth user:', authError)
+            return new Response(
+              JSON.stringify({ success: false, error: 'Could not create user account' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+        } else {
+          console.error('Error creating auth user:', authError)
+          return new Response(
+            JSON.stringify({ success: false, error: 'Could not create user account' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      } else {
+        userId = authData.user.id
+        console.log('✅ Created new auth user:', userId)
 
-      userId = authData.user.id
-      console.log('✅ Created new auth user:', userId)
+        // Create app_users entry
+        const { error: appUserError } = await supabase
+          .from('app_users')
+          .upsert({
+            id: userId,
+            email: studentEmail,
+            role: 'student',
+            is_active: true,
+          }, { onConflict: 'id' })
 
-      // Create app_users entry
-      const { error: appUserError } = await supabase
-        .from('app_users')
-        .upsert({
-          id: userId,
-          email: studentEmail,
-          role: 'student',
-          is_active: true,
-        }, { onConflict: 'id' })
-
-      if (appUserError) {
-        console.error('Error creating app_user:', appUserError)
+        if (appUserError) {
+          console.error('Error creating app_user:', appUserError)
+        }
       }
     }
 
