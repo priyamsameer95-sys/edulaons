@@ -365,14 +365,27 @@ export const useStudentApplication = () => {
   }, [userPhone, applicationData.phone]);
 
   const submitApplication = async () => {
+    console.log('🚀 [submitApplication] Starting submission...');
+    console.log('📋 [submitApplication] isEditMode:', isEditMode, 'existingLeadId:', existingLeadId);
+    
     try {
       setIsSubmitting(true);
 
       // Get authenticated user
+      console.log('🔐 [submitApplication] Getting authenticated user...');
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user?.email) {
+      
+      if (userError) {
+        console.error('❌ [submitApplication] Auth error:', userError);
         throw new Error('You must be logged in to submit an application');
       }
+      
+      if (!userData.user?.email) {
+        console.error('❌ [submitApplication] No user email found');
+        throw new Error('You must be logged in to submit an application');
+      }
+      
+      console.log('✅ [submitApplication] Authenticated as:', userData.user.email);
 
       // Clean test scores before validation
       const cleanedData = {
@@ -381,11 +394,26 @@ export const useStudentApplication = () => {
           test.testType && test.testScore && test.testScore > 0
         )
       };
+      
+      console.log('📝 [submitApplication] Application data keys:', Object.keys(cleanedData));
+      console.log('📝 [submitApplication] Key fields:', {
+        name: cleanedData.name,
+        phone: cleanedData.phone,
+        email: cleanedData.email,
+        studyDestination: cleanedData.studyDestination,
+        loanAmount: cleanedData.loanAmount,
+        universities: cleanedData.universities?.length || 0,
+      });
 
       // Validate complete application data
+      console.log('🔍 [submitApplication] Running Zod validation...');
       const validationResult = studentApplicationSchema.safeParse(cleanedData);
+      
       if (!validationResult.success) {
-        const firstError = validationResult.error.errors[0];
+        const allErrors = validationResult.error.errors;
+        console.error('❌ [submitApplication] Validation failed:', allErrors);
+        
+        const firstError = allErrors[0];
         const fieldPath = firstError.path.join('.');
         
         const fieldToStep: Record<string, { step: number; label: string }> = {
@@ -417,8 +445,17 @@ export const useStudentApplication = () => {
         const fieldInfo = fieldToStep[fieldPath] || { step: 0, label: fieldPath };
         const userMessage = `Please check "${fieldInfo.label}" in Step ${fieldInfo.step}: ${firstError.message}`;
         
+        // Show toast for validation errors
+        toast({
+          title: "Validation Error",
+          description: userMessage,
+          variant: "destructive",
+        });
+        
         throw new Error(userMessage);
       }
+      
+      console.log('✅ [submitApplication] Validation passed');
 
       // Transform data to edge function payload
       const payload = transformToEdgeFunctionPayload(
@@ -438,15 +475,30 @@ export const useStudentApplication = () => {
         is_edit: isEditMode,
         existing_lead_id: existingLeadId,
       };
+      
+      console.log('📤 [submitApplication] Calling create-lead-student edge function...');
+      console.log('📤 [submitApplication] Payload:', {
+        ...studentPayload,
+        // Truncate long arrays for logging
+        universities: studentPayload.universities?.slice(0, 2),
+      });
 
       const { data: result, error } = await supabase.functions.invoke('create-lead-student', {
         body: studentPayload,
       });
+      
+      console.log('📥 [submitApplication] Edge function response:', { result, error });
 
       if (error) {
-        console.error('Edge function error:', error);
+        console.error('❌ [submitApplication] Edge function error:', error);
         throw new Error(error.message || 'Failed to submit application');
       }
+
+      console.log('✅ [submitApplication] Submission successful:', {
+        is_existing: result?.is_existing,
+        is_updated: result?.is_updated,
+        case_id: result?.lead?.case_id,
+      });
 
       if (result?.is_existing && result?.lead?.is_partner_lead) {
         toast({
@@ -456,7 +508,7 @@ export const useStudentApplication = () => {
             : "Your application was already started by a partner.",
           duration: 5000,
         });
-      } else if (isEditMode) {
+      } else if (isEditMode || result?.is_updated) {
         toast({
           title: "Application Updated!",
           description: `Your changes have been saved. Case ID: ${result?.lead?.case_id || 'N/A'}`,
@@ -472,10 +524,11 @@ export const useStudentApplication = () => {
 
       // Clear saved form data on successful submission
       clearDraft();
+      console.log('🧹 [submitApplication] Draft cleared');
 
       return result;
     } catch (error: any) {
-      console.error('Application submission error:', error);
+      console.error('❌ [submitApplication] Submission error:', error);
       toast({
         title: "Submission Failed",
         description: error.message || "Could not submit application. Please try again.",
@@ -484,6 +537,7 @@ export const useStudentApplication = () => {
       throw error;
     } finally {
       setIsSubmitting(false);
+      console.log('🏁 [submitApplication] Finished (isSubmitting: false)');
     }
   };
 
