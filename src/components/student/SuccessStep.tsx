@@ -4,7 +4,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle2, 
-  AlertCircle, 
   XCircle, 
   Share2, 
   Download,
@@ -14,10 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import LenderCard from './LenderCard';
-import LenderHeroCard from './LenderHeroCard';
-import LenderComparisonTable from './LenderComparisonTable';
-import LenderViewToggle from './LenderViewToggle';
+import LenderComparisonGrid from './LenderComparisonGrid';
 import { ConfettiAnimation } from './ConfettiAnimation';
 import { formatCurrency } from '@/utils/formatters';
 
@@ -79,17 +75,13 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [showAllLenders, setShowAllLenders] = useState(false);
   
-  // Sort lenders by compatibility score and identify top lender
+  // Sort lenders by compatibility score
   const sortedLenders = useMemo(() => {
     return [...recommendedLenders].sort((a, b) => b.compatibility_score - a.compatibility_score);
   }, [recommendedLenders]);
   
   const topLender = sortedLenders[0];
-  const otherLenders = sortedLenders.slice(1);
-  const totalLenders = recommendedLenders.length;
 
   const [showConfetti, setShowConfetti] = useState(true);
 
@@ -126,76 +118,70 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
   };
 
   return (
-    <div className="space-y-10 pb-8">
+    <div className="space-y-8 pb-8">
       {/* Confetti Animation */}
       {showConfetti && <ConfettiAnimation />}
 
       {/* Success Header */}
-      <div className="text-center space-y-5">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success/10">
-          <CheckCircle2 className="h-10 w-10 text-success" />
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10">
+          <CheckCircle2 className="h-8 w-8 text-success" />
         </div>
-        <div className="space-y-3">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-            Application Submitted! 🎉
+        <div className="space-y-2">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+            Application Submitted!
           </h2>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
+          <p className="text-muted-foreground">
             Your loan application has been successfully submitted
           </p>
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-muted/50 rounded-lg border">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-lg border">
             <span className="text-sm text-muted-foreground">Case ID:</span>
-            <span className="font-mono font-bold text-lg text-primary">{caseId}</span>
+            <span className="font-mono font-bold text-primary">{caseId}</span>
           </div>
         </div>
       </div>
 
-      {/* Eligibility Summary Card */}
+      {/* Eligibility Summary */}
       {topLender?.eligibility_score !== undefined && requestedAmount && (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <Card className="border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
               {topLender.approval_status === 'approved' ? '✅' : '⚠️'} 
-              Your Eligibility Summary
+              Eligibility Summary
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-background border">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Requested</p>
-                <p className="text-xl font-bold">{formatCurrency(requestedAmount)}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Requested</p>
+                <p className="text-lg font-bold">{formatCurrency(requestedAmount)}</p>
               </div>
-              <div className="p-4 rounded-xl bg-background border">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Eligible</p>
-                <p className="text-xl font-bold text-success">
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Eligible</p>
+                <p className="text-lg font-bold text-success">
                   {topLender.eligible_loan_max ? formatCurrency(topLender.eligible_loan_max) : '—'}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-background border col-span-2 sm:col-span-1">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Score</p>
-                <p className="text-xl font-bold text-primary">
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Score</p>
+                <p className="text-lg font-bold text-primary">
                   {Math.round(topLender.eligibility_score)}/100
                 </p>
               </div>
             </div>
             
             {topLender.approval_status === 'approved' ? (
-              <Alert className="bg-success/10 border-success/30">
+              <Alert className="bg-success/5 border-success/20">
                 <CheckCircle2 className="h-4 w-4 text-success" />
-                <AlertDescription className="text-success">
-                  <strong>Great news!</strong> You're pre-approved for a loan up to {formatCurrency(topLender.eligible_loan_max || 0)}.
-                  {topLender.loan_band_percentage && (
-                    <span className="text-sm opacity-80 block mt-1">
-                      This is {topLender.loan_band_percentage} of your requested amount.
-                    </span>
-                  )}
+                <AlertDescription className="text-success text-sm">
+                  Pre-approved for up to {formatCurrency(topLender.eligible_loan_max || 0)}
                 </AlertDescription>
               </Alert>
             ) : (
-              <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+              <Alert variant="destructive" className="bg-destructive/5 border-destructive/20">
                 <XCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Review needed</strong>
-                  <p className="mt-1 text-sm">{topLender.rejection_reason || 'Our team will contact you with options.'}</p>
+                <AlertDescription className="text-sm">
+                  {topLender.rejection_reason || 'Our team will contact you with options.'}
                 </AlertDescription>
               </Alert>
             )}
@@ -204,109 +190,51 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
               variant="ghost" 
               size="sm" 
               onClick={() => setShowBreakdown(!showBreakdown)}
-              className="w-full justify-center text-muted-foreground"
+              className="w-full justify-center text-muted-foreground text-xs"
             >
               {showBreakdown ? 'Hide' : 'View'} Score Breakdown
               <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
             </Button>
             
             {showBreakdown && (
-              <div className="space-y-3 pt-3 border-t">
-                <ScoreBar label="University Score" value={topLender.university_score} />
-                <ScoreBar label="Academic Score" value={topLender.student_score} />
-                <ScoreBar label="Co-Applicant Score" value={topLender.co_applicant_score} />
+              <div className="space-y-2 pt-2 border-t">
+                <ScoreBar label="University" value={topLender.university_score} />
+                <ScoreBar label="Academic" value={topLender.student_score} />
+                <ScoreBar label="Co-Applicant" value={topLender.co_applicant_score} />
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Lender Selection Section */}
+      {/* Lender Selection - All visible at once */}
       {recommendedLenders.length > 0 && (
-        <div className="space-y-6">
-          {/* Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Choose Your Lender</h2>
-              <p className="text-muted-foreground mt-1">
-                {totalLenders} lender{totalLenders !== 1 ? 's' : ''} matched to your profile
-              </p>
-            </div>
-            {totalLenders > 1 && (
-              <LenderViewToggle view={viewMode} onViewChange={setViewMode} />
-            )}
-          </div>
+        <LenderComparisonGrid
+          lenders={sortedLenders}
+          selectedLenderId={selectedLenderId}
+          onSelect={handleLenderSelection}
+          isUpdating={isUpdating}
+        />
+      )}
 
-          {/* Top Recommendation Hero */}
-          {topLender && viewMode === 'cards' && (
-            <LenderHeroCard
-              lender={topLender}
-              isSelected={selectedLenderId === topLender.lender_id}
-              onSelect={() => handleLenderSelection(topLender.lender_id)}
-              isUpdating={isUpdating}
-            />
-          )}
-
-          {/* Other Lenders */}
-          {otherLenders.length > 0 && (
-            <>
-              {viewMode === 'cards' ? (
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowAllLenders(!showAllLenders)}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <span className="font-medium text-foreground">
-                      Compare {otherLenders.length} other lender{otherLenders.length !== 1 ? 's' : ''}
-                    </span>
-                    <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${showAllLenders ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {showAllLenders && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in">
-                      {otherLenders.map((lender) => (
-                        <LenderCard
-                          key={lender.lender_id}
-                          lender={lender}
-                          isSelected={selectedLenderId === lender.lender_id}
-                          onSelect={() => handleLenderSelection(lender.lender_id)}
-                          isUpdating={isUpdating}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <LenderComparisonTable
-                  lenders={sortedLenders}
-                  selectedLenderId={selectedLenderId}
-                  onSelect={handleLenderSelection}
-                  isUpdating={isUpdating}
-                />
-              )}
-            </>
-          )}
-
-          {/* Selection Confirmation */}
-          {selectedLenderId && (
-            <div className="p-4 bg-success/10 border border-success/20 rounded-xl text-center animate-fade-in">
-              <p className="text-sm text-success font-medium flex items-center justify-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Lender preference saved successfully
-              </p>
-            </div>
-          )}
+      {/* Selection Confirmation */}
+      {selectedLenderId && (
+        <div className="p-3 bg-success/10 border border-success/20 rounded-lg text-center">
+          <p className="text-sm text-success font-medium flex items-center justify-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            Lender preference saved
+          </p>
         </div>
       )}
 
       {/* No Lenders Fallback */}
       {recommendedLenders.length === 0 && (
         <Card>
-          <CardContent className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-              <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
+          <CardContent className="text-center py-10">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+              <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Our team will recommend suitable lenders and contact you shortly.
             </p>
           </CardContent>
@@ -314,21 +242,21 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       )}
 
       {/* What Happens Next */}
-      <div className="max-w-2xl mx-auto space-y-4">
-        <h3 className="text-xl font-bold text-center">What Happens Next?</h3>
-        <div className="space-y-3">
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-center">What's Next?</h3>
+        <div className="space-y-2">
           {[
-            { num: 1, title: 'Lender Review', desc: 'Our partner lenders will review your application within 24 hours' },
-            { num: 2, title: 'Upload Documents', desc: 'Complete your application by uploading required documents' },
-            { num: 3, title: 'Get Approved', desc: 'Receive your loan approval and fund your education!' },
+            { num: 1, title: 'Lender Review', desc: 'Review within 24 hours' },
+            { num: 2, title: 'Upload Documents', desc: 'Complete your application' },
+            { num: 3, title: 'Get Approved', desc: 'Fund your education!' },
           ].map(({ num, title, desc }) => (
-            <div key={num} className="flex gap-4 p-4 rounded-xl bg-muted/30 border">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+            <div key={num} className="flex gap-3 p-3 rounded-lg bg-muted/30 border">
+              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
                 {num}
               </div>
               <div>
-                <p className="font-semibold text-foreground">{title}</p>
-                <p className="text-sm text-muted-foreground">{desc}</p>
+                <p className="font-medium text-foreground text-sm">{title}</p>
+                <p className="text-xs text-muted-foreground">{desc}</p>
               </div>
             </div>
           ))}
@@ -336,11 +264,11 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
       </div>
 
       {/* Action Buttons */}
-      <div className="text-center space-y-4">
-        <div className="flex flex-wrap gap-3 justify-center">
+      <div className="text-center space-y-3">
+        <div className="flex gap-3 justify-center">
           <Button 
             variant="outline"
-            size="lg"
+            size="sm"
             className="gap-2"
             onClick={() => {
               const text = `Just applied for my education loan! Case ID: ${caseId}`;
@@ -357,9 +285,9 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
           </Button>
           <Button 
             variant="outline"
-            size="lg"
+            size="sm"
             className="gap-2"
-            onClick={() => toast.info('PDF download feature coming soon!')}
+            onClick={() => toast.info('PDF download coming soon!')}
           >
             <Download className="h-4 w-4" />
             Download
@@ -367,8 +295,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
         </div>
         <Button 
           onClick={() => navigate('/student')} 
-          size="lg"
-          className="px-10 h-12 text-base font-semibold"
+          className="px-8"
         >
           Go to Dashboard →
         </Button>
@@ -379,12 +306,12 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
 
 // Helper component for score bars
 const ScoreBar = ({ label, value }: { label: string; value?: number }) => (
-  <div className="space-y-1.5">
-    <div className="flex justify-between items-center text-sm">
+  <div className="space-y-1">
+    <div className="flex justify-between items-center text-xs">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold">{Math.round(value || 0)}/100</span>
+      <span className="font-medium">{Math.round(value || 0)}/100</span>
     </div>
-    <Progress value={value || 0} className="h-2" />
+    <Progress value={value || 0} className="h-1.5" />
   </div>
 );
 
