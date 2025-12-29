@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import type { StudentApplicationData } from '@/types/student-application';
+import type { StudentApplicationData, Relationship, EmploymentType, HighestQualification } from '@/types/student-application';
 import { transformToEdgeFunctionPayload } from '@/utils/studentApplicationHelpers';
 import { studentApplicationSchema } from '@/lib/validation/studentValidation';
 
@@ -36,6 +36,58 @@ const clearForeignDrafts = (currentPhone: string) => {
   });
 };
 
+// Transform database lead data to application form data
+const transformLeadToApplicationData = (
+  lead: any,
+  student: any,
+  coApplicant: any,
+  universityIds: string[]
+): Partial<StudentApplicationData> => {
+  return {
+    // Personal details from student
+    name: student?.name || '',
+    email: student?.email || '',
+    phone: student?.phone || '',
+    dateOfBirth: student?.date_of_birth || '',
+    gender: student?.gender || '',
+    city: student?.city || '',
+    state: student?.state || '',
+    postalCode: student?.postal_code || '',
+    nationality: student?.nationality || 'Indian',
+    creditScore: student?.credit_score || undefined,
+    
+    // Academic background
+    highestQualification: (student?.highest_qualification as HighestQualification) || undefined,
+    tenthPercentage: student?.tenth_percentage || undefined,
+    twelfthPercentage: student?.twelfth_percentage || undefined,
+    bachelorsPercentage: student?.bachelors_percentage || undefined,
+    bachelorsCgpa: student?.bachelors_cgpa || undefined,
+    mastersPercentage: student?.masters_percentage || undefined,
+    mastersCgpa: student?.masters_cgpa || undefined,
+    
+    // Study details from lead
+    studyDestination: lead?.study_destination || '',
+    universities: universityIds || [],
+    loanType: lead?.loan_type || 'unsecured',
+    loanAmount: lead?.loan_amount ? Number(lead.loan_amount) : undefined,
+    intakeMonth: lead?.intake_month || undefined,
+    intakeYear: lead?.intake_year || undefined,
+    
+    // Co-applicant details
+    coApplicantName: coApplicant?.name || '',
+    coApplicantPhone: coApplicant?.phone || '',
+    coApplicantEmail: coApplicant?.email || '',
+    coApplicantRelationship: (coApplicant?.relationship as Relationship) || undefined,
+    coApplicantMonthlySalary: coApplicant?.monthly_salary || coApplicant?.salary || undefined,
+    coApplicantEmploymentType: (coApplicant?.employment_type as EmploymentType) || undefined,
+    coApplicantOccupation: coApplicant?.occupation || '',
+    coApplicantEmployer: coApplicant?.employer || '',
+    coApplicantEmploymentDuration: coApplicant?.employment_duration_years || undefined,
+    coApplicantPinCode: coApplicant?.pin_code || '',
+    coApplicantCreditScore: coApplicant?.credit_score || undefined,
+  };
+};
+
 export const useStudentApplication = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -43,6 +95,8 @@ export const useStudentApplication = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userPhone, setUserPhone] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [existingLeadId, setExistingLeadId] = useState<string | null>(null);
   
   // Smart defaults for better UX
   const getDefaultIntake = () => {
@@ -85,15 +139,18 @@ export const useStudentApplication = () => {
   }, []);
 
   // Load saved form data - only after we know the user's phone
+  // Priority: 1) DB existing lead (edit mode), 2) localStorage draft, 3) sessionStorage eligibility
   useEffect(() => {
     if (isInitialized) return; // Only run once
     
     const loadData = async () => {
       try {
-        // Get user's phone
+        // Get user's phone and email
+        const { data: { user } } = await supabase.auth.getUser();
         let phone = userPhone;
+        let userEmail = user?.email;
+        
         if (!phone) {
-          const { data: { user } } = await supabase.auth.getUser();
           if (user?.user_metadata?.phone) {
             phone = user.user_metadata.phone.replace(/\D/g, '').slice(-10);
           } else if (user?.email?.includes('@student.loan.app')) {
@@ -101,6 +158,69 @@ export const useStudentApplication = () => {
           }
         }
         
+        // PRIORITY 1: Check for existing lead in database (edit mode)
+        if (userEmail) {
+          console.log('🔍 Checking for existing lead in DB for:', userEmail);
+          
+          // Get student by email
+          const { data: student } = await supabase
+            .from('students')
+            .select('*')
+            .eq('email', userEmail)
+            .maybeSingle();
+          
+          if (student) {
+            console.log('📋 Found student:', student.id);
+            
+            // Get their most recent lead with co-applicant
+            const { data: lead } = await supabase
+              .from('leads_new')
+              .select(`
+                *,
+                co_applicants(*)
+              `)
+              .eq('student_id', student.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (lead) {
+              console.log('📋 Found existing lead:', lead.case_id);
+              
+              // Get university IDs for this lead
+              const { data: leadUniversities } = await supabase
+                .from('lead_universities')
+                .select('university_id')
+                .eq('lead_id', lead.id);
+              
+              const universityIds = leadUniversities?.map(lu => lu.university_id) || [];
+              
+              // Transform DB data to form data
+              const prefillData = transformLeadToApplicationData(
+                lead,
+                student,
+                lead.co_applicants,
+                universityIds
+              );
+              
+              console.log('✅ Pre-filling form with existing lead data');
+              setApplicationData(prev => ({ ...prev, ...prefillData }));
+              setIsEditMode(true);
+              setExistingLeadId(lead.id);
+              setIsInitialized(true);
+              
+              // Clear any stale drafts since we're loading from DB
+              if (phone && phone.length === 10) {
+                clearForeignDrafts(phone);
+                localStorage.removeItem(getStorageKey(phone));
+              }
+              
+              return;
+            }
+          }
+        }
+        
+        // PRIORITY 2: Load from localStorage draft
         if (phone && phone.length === 10) {
           // Clear drafts from other users
           clearForeignDrafts(phone);
@@ -126,7 +246,7 @@ export const useStudentApplication = () => {
           }
         }
         
-        // No valid draft - check for pre-fill from eligibility check
+        // PRIORITY 3: Pre-fill from eligibility check
         const eligibility = sessionStorage.getItem('eligibility_form');
         if (eligibility) {
           const data = JSON.parse(eligibility);
@@ -310,6 +430,9 @@ export const useStudentApplication = () => {
         student_pin_code: payload.student_pin_code,
         country: payload.country,
         loan_amount: payload.amount_requested,
+        // Pass edit mode info so edge function knows this is an update
+        is_edit: isEditMode,
+        existing_lead_id: existingLeadId,
       };
 
       const { data: result, error } = await supabase.functions.invoke('create-lead-student', {
@@ -327,6 +450,12 @@ export const useStudentApplication = () => {
           description: result?.lead?.partner_name 
             ? `${result.lead.partner_name} has already started your application. We've linked your account.`
             : "Your application was already started by a partner.",
+          duration: 5000,
+        });
+      } else if (isEditMode) {
+        toast({
+          title: "Application Updated!",
+          description: `Your changes have been saved. Case ID: ${result?.lead?.case_id || 'N/A'}`,
           duration: 5000,
         });
       } else {
@@ -358,6 +487,8 @@ export const useStudentApplication = () => {
     currentStep,
     applicationData,
     isSubmitting,
+    isEditMode,
+    existingLeadId,
     updateApplicationData,
     nextStep,
     prevStep,
