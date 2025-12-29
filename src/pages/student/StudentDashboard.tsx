@@ -16,6 +16,7 @@ import { filterLeadForStudent } from '@/utils/rolePermissions';
 import { STUDENT_EDIT_LOCKED_STATUSES } from '@/constants/studentPermissions';
 import StudentDocumentChecklist from '@/components/student/StudentDocumentChecklist';
 import ChangeLenderModal from '@/components/student/ChangeLenderModal';
+import StudentUploadSheet from '@/components/student/StudentUploadSheet';
 import ActionRequiredBanner from '@/components/student/ActionRequiredBanner';
 import ApplicationStepper, { getStepFromStatus } from '@/components/student/ApplicationStepper';
 import LenderStatusCard from '@/components/student/LenderStatusCard';
@@ -69,6 +70,7 @@ const StudentDashboard = () => {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [hasLead, setHasLead] = useState(false);
   const [showChangeLender, setShowChangeLender] = useState(false);
+  const [showUploadSheet, setShowUploadSheet] = useState(false);
   const [docStats, setDocStats] = useState<DocStats>({ pending: 0, uploaded: 0, total: 0, rejected: 0 });
 
   const isEditLocked = lead ? STUDENT_EDIT_LOCKED_STATUSES.includes(lead.status as any) : true;
@@ -133,7 +135,7 @@ const StudentDashboard = () => {
   };
 
   const handleUploadDocuments = () => {
-    navigate('/student/apply');
+    setShowUploadSheet(true);
   };
 
   const handleStartApplication = () => {
@@ -304,6 +306,17 @@ const StudentDashboard = () => {
           leadId={lead.id}
           currentLenderId={lead.target_lender_id}
           onLenderChanged={fetchStudentData}
+        />
+      )}
+
+      {/* Upload Sheet */}
+      {lead && (
+        <StudentUploadSheet
+          open={showUploadSheet}
+          onOpenChange={setShowUploadSheet}
+          leadId={lead.id}
+          studentName={profile?.name}
+          onUploadComplete={fetchStudentData}
         />
       )}
     </div>
