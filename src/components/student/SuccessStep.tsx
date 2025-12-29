@@ -2,14 +2,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronUp, Star, AlertTriangle, ThumbsUp, Share2, Download } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  AlertCircle, 
+  XCircle, 
+  Share2, 
+  Download,
+  ChevronDown
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LenderCard from './LenderCard';
+import LenderHeroCard from './LenderHeroCard';
+import LenderComparisonTable from './LenderComparisonTable';
+import LenderViewToggle from './LenderViewToggle';
 import { ConfettiAnimation } from './ConfettiAnimation';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { formatCurrency } from '@/utils/formatters';
 
 interface LenderData {
@@ -65,82 +74,29 @@ interface SuccessStepProps {
   recommendedLenders: LenderData[];
 }
 
-const FIT_GROUP_CONFIG = {
-  best_fit: {
-    label: 'Best Fit',
-    description: 'These lenders are excellent matches based on your profile',
-    icon: Star,
-    color: 'text-success',
-    bgColor: 'bg-success/10',
-    borderColor: 'border-success/30',
-  },
-  also_consider: {
-    label: 'Also Consider',
-    description: 'Good options that may have minor trade-offs',
-    icon: ThumbsUp,
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-    borderColor: 'border-primary/30',
-  },
-  possible_but_risky: {
-    label: 'Other Options',
-    description: 'May require additional documentation or have stricter criteria',
-    icon: AlertCircle,
-    color: 'text-warning',
-    bgColor: 'bg-warning/10',
-    borderColor: 'border-warning/30',
-  },
-  not_suitable: {
-    label: 'Not Recommended',
-    description: 'These lenders may not be the best fit for your profile',
-    icon: AlertTriangle,
-    color: 'text-destructive',
-    bgColor: 'bg-destructive/10',
-    borderColor: 'border-destructive/30',
-  },
-};
-
 const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    best_fit: true,
-    also_consider: true,
-    possible_but_risky: false,
-    not_suitable: false,
-  });
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [showAllLenders, setShowAllLenders] = useState(false);
   
-  // Group lenders by fit category
-  const groupedLenders = useMemo(() => {
-    const groups: Record<string, LenderData[]> = {
-      best_fit: [],
-      also_consider: [],
-      possible_but_risky: [],
-      not_suitable: [],
-    };
-    
-    recommendedLenders.forEach(lender => {
-      const group = lender.fit_group || (lender.is_preferred ? 'best_fit' : 'also_consider');
-      if (groups[group]) {
-        groups[group].push(lender);
-      } else {
-        groups.also_consider.push(lender);
-      }
-    });
-    
-    // Sort each group by compatibility score
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => b.compatibility_score - a.compatibility_score);
-    });
-    
-    return groups;
+  // Sort lenders by compatibility score and identify top lender
+  const sortedLenders = useMemo(() => {
+    return [...recommendedLenders].sort((a, b) => b.compatibility_score - a.compatibility_score);
   }, [recommendedLenders]);
   
-  const assignedLender = recommendedLenders[0]; // First lender is the assigned one
+  const topLender = sortedLenders[0];
+  const otherLenders = sortedLenders.slice(1);
   const totalLenders = recommendedLenders.length;
-  
+
+  const [showConfetti, setShowConfetti] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowConfetti(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLenderSelection = async (lenderId: string) => {
     if (!leadId) {
@@ -169,295 +125,223 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     }
   };
 
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  const [showConfetti, setShowConfetti] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const renderLenderSection = (groupKey: string, lenders: LenderData[]) => {
-    if (lenders.length === 0) return null;
-    
-    const config = FIT_GROUP_CONFIG[groupKey as keyof typeof FIT_GROUP_CONFIG];
-    const IconComponent = config.icon;
-    const isExpanded = expandedSections[groupKey];
-    
-    return (
-      <div key={groupKey} className="space-y-3">
-        <Collapsible open={isExpanded} onOpenChange={() => toggleSection(groupKey)}>
-          <CollapsibleTrigger asChild>
-            <button className={`w-full flex items-center justify-between p-4 rounded-lg border ${config.borderColor} ${config.bgColor} hover:opacity-90 transition-opacity`}>
-              <div className="flex items-center gap-3">
-                <IconComponent className={`h-5 w-5 ${config.color}`} />
-                <div className="text-left">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    {config.label}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      ({lenders.length} lender{lenders.length !== 1 ? 's' : ''})
-                    </span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{config.description}</p>
-                </div>
-              </div>
-              {isExpanded ? (
-                <ChevronUp className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              )}
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-4">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {lenders.map((lender) => (
-                <div key={lender.lender_id}>
-                  <LenderCard
-                    lender={lender}
-                    isSelected={selectedLenderId === lender.lender_id}
-                    onSelect={() => handleLenderSelection(lender.lender_id)}
-                    isUpdating={isUpdating}
-                  />
-                </div>
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
-    );
-  };
-
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-10 pb-8">
       {/* Confetti Animation */}
       {showConfetti && <ConfettiAnimation />}
 
-      {/* Success Icon and Message */}
-      <div className="text-center space-y-6">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10">
-          <CheckCircle2 className="h-14 w-14 text-success" />
+      {/* Success Header */}
+      <div className="text-center space-y-5">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success/10">
+          <CheckCircle2 className="h-10 w-10 text-success" />
         </div>
         <div className="space-y-3">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-            Congratulations! Application Submitted
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+            Application Submitted! 🎉
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground max-w-md mx-auto">
             Your loan application has been successfully submitted
           </p>
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 rounded-lg border border-border/50">
-            <p className="text-sm text-muted-foreground">Your Case ID:</p>
-            <span className="font-mono font-bold text-xl text-primary">{caseId}</span>
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-muted/50 rounded-lg border">
+            <span className="text-sm text-muted-foreground">Case ID:</span>
+            <span className="font-mono font-bold text-lg text-primary">{caseId}</span>
           </div>
         </div>
       </div>
 
-      {/* Eligibility Card */}
-      {assignedLender?.eligibility_score !== undefined && requestedAmount && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
+      {/* Eligibility Summary Card */}
+      {topLender?.eligibility_score !== undefined && requestedAmount && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              {assignedLender.approval_status === 'approved' ? '✅' : '⚠️'} 
-              Your Loan Eligibility with {assignedLender.lender_name}
+              {topLender.approval_status === 'approved' ? '✅' : '⚠️'} 
+              Your Eligibility Summary
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">You Requested</p>
-                <p className="text-2xl font-bold">{formatCurrency(requestedAmount)}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-background border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Requested</p>
+                <p className="text-xl font-bold">{formatCurrency(requestedAmount)}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Eligibility Score</p>
-                <p className="text-2xl font-bold text-primary">
-                  {Math.round(assignedLender.eligibility_score)}/100
+              <div className="p-4 rounded-xl bg-background border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Eligible</p>
+                <p className="text-xl font-bold text-success">
+                  {topLender.eligible_loan_max ? formatCurrency(topLender.eligible_loan_max) : '—'}
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-background border col-span-2 sm:col-span-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Score</p>
+                <p className="text-xl font-bold text-primary">
+                  {Math.round(topLender.eligibility_score)}/100
                 </p>
               </div>
             </div>
             
-            {assignedLender.approval_status === 'approved' ? (
-              <>
-                <Alert className="bg-green-50 border-green-200">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription>
-                    <strong className="text-green-700">Congratulations! You're Approved</strong>
-                    <p className="text-lg font-bold text-green-700 mt-2">
-                      Eligible Loan: {formatCurrency(assignedLender.eligible_loan_min || 0)} - {formatCurrency(assignedLender.eligible_loan_max || 0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      This is {assignedLender.loan_band_percentage} of your requested amount, based on your profile strength
-                    </p>
-                    {assignedLender.interest_rate_min && assignedLender.interest_rate_max && (
-                      <p className="text-sm text-green-700 mt-2">
-                        💰 Expected Interest Rate: {assignedLender.interest_rate_min}% - {assignedLender.interest_rate_max}% p.a.
-                      </p>
-                    )}
-                  </AlertDescription>
-                </Alert>
-                
-                {assignedLender.eligible_loan_max && assignedLender.eligible_loan_max < requestedAmount && (
-                  <Alert variant="default" className="bg-yellow-50 border-yellow-200">
-                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-sm text-yellow-800">
-                      💡 <strong>Note:</strong> Your eligible amount is ₹{((requestedAmount - assignedLender.eligible_loan_max) / 100000).toFixed(1)}L lower than requested.
-                      You may need to arrange the difference from other sources (family contribution, scholarships, etc.)
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </>
+            {topLender.approval_status === 'approved' ? (
+              <Alert className="bg-success/10 border-success/30">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success">
+                  <strong>Great news!</strong> You're pre-approved for a loan up to {formatCurrency(topLender.eligible_loan_max || 0)}.
+                  {topLender.loan_band_percentage && (
+                    <span className="text-sm opacity-80 block mt-1">
+                      This is {topLender.loan_band_percentage} of your requested amount.
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
             ) : (
-              <Alert variant="destructive" className="bg-red-50 border-red-200">
-                <XCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">
-                  <strong>Not eligible with this lender</strong>
-                  <p className="mt-1">{assignedLender.rejection_reason || 'Does not meet minimum eligibility criteria'}</p>
-                  <p className="mt-2 text-sm">💬 Don't worry! Our team will review your application and suggest alternative lenders.</p>
+              <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+                <XCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Review needed</strong>
+                  <p className="mt-1 text-sm">{topLender.rejection_reason || 'Our team will contact you with options.'}</p>
                 </AlertDescription>
               </Alert>
             )}
             
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm" 
               onClick={() => setShowBreakdown(!showBreakdown)}
-              className="w-full"
+              className="w-full justify-center text-muted-foreground"
             >
-              {showBreakdown ? 'Hide' : 'Show'} Score Breakdown
+              {showBreakdown ? 'Hide' : 'View'} Score Breakdown
+              <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
             </Button>
             
             {showBreakdown && (
               <div className="space-y-3 pt-3 border-t">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">University Score:</span>
-                    <span className="font-semibold text-lg">{Math.round(assignedLender.university_score || 0)}/100</span>
-                  </div>
-                  <Progress value={assignedLender.university_score || 0} className="h-2" />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Academic Score:</span>
-                    <span className="font-semibold text-lg">{Math.round(assignedLender.student_score || 0)}/100</span>
-                  </div>
-                  <Progress value={assignedLender.student_score || 0} className="h-2" />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Co-Applicant Score:</span>
-                    <span className="font-semibold text-lg">{Math.round(assignedLender.co_applicant_score || 0)}/100</span>
-                  </div>
-                  <Progress value={assignedLender.co_applicant_score || 0} className="h-2" />
-                </div>
+                <ScoreBar label="University Score" value={topLender.university_score} />
+                <ScoreBar label="Academic Score" value={topLender.student_score} />
+                <ScoreBar label="Co-Applicant Score" value={topLender.co_applicant_score} />
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Recommended Lenders Section */}
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">Compare All Lenders</h2>
-          <p className="text-muted-foreground">
-            We've evaluated {totalLenders} lenders based on your profile. 
-            Compare their terms and select your preferred lender.
-          </p>
-          {totalLenders > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {groupedLenders.best_fit.length > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
-                  <Star className="h-3 w-3" />
-                  {groupedLenders.best_fit.length} Best Fit
-                </span>
+      {/* Lender Selection Section */}
+      {recommendedLenders.length > 0 && (
+        <div className="space-y-6">
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Choose Your Lender</h2>
+              <p className="text-muted-foreground mt-1">
+                {totalLenders} lender{totalLenders !== 1 ? 's' : ''} matched to your profile
+              </p>
+            </div>
+            {totalLenders > 1 && (
+              <LenderViewToggle view={viewMode} onViewChange={setViewMode} />
+            )}
+          </div>
+
+          {/* Top Recommendation Hero */}
+          {topLender && viewMode === 'cards' && (
+            <LenderHeroCard
+              lender={topLender}
+              isSelected={selectedLenderId === topLender.lender_id}
+              onSelect={() => handleLenderSelection(topLender.lender_id)}
+              isUpdating={isUpdating}
+            />
+          )}
+
+          {/* Other Lenders */}
+          {otherLenders.length > 0 && (
+            <>
+              {viewMode === 'cards' ? (
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setShowAllLenders(!showAllLenders)}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="font-medium text-foreground">
+                      Compare {otherLenders.length} other lender{otherLenders.length !== 1 ? 's' : ''}
+                    </span>
+                    <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${showAllLenders ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showAllLenders && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in">
+                      {otherLenders.map((lender) => (
+                        <LenderCard
+                          key={lender.lender_id}
+                          lender={lender}
+                          isSelected={selectedLenderId === lender.lender_id}
+                          onSelect={() => handleLenderSelection(lender.lender_id)}
+                          isUpdating={isUpdating}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <LenderComparisonTable
+                  lenders={sortedLenders}
+                  selectedLenderId={selectedLenderId}
+                  onSelect={handleLenderSelection}
+                  isUpdating={isUpdating}
+                />
               )}
-              {groupedLenders.also_consider.length > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                  <ThumbsUp className="h-3 w-3" />
-                  {groupedLenders.also_consider.length} Also Consider
-                </span>
-              )}
-              {groupedLenders.possible_but_risky.length > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium">
-                  <AlertCircle className="h-3 w-3" />
-                  {groupedLenders.possible_but_risky.length} Other Options
-                </span>
-              )}
+            </>
+          )}
+
+          {/* Selection Confirmation */}
+          {selectedLenderId && (
+            <div className="p-4 bg-success/10 border border-success/20 rounded-xl text-center animate-fade-in">
+              <p className="text-sm text-success font-medium flex items-center justify-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Lender preference saved successfully
+              </p>
             </div>
           )}
         </div>
+      )}
 
-        {recommendedLenders && recommendedLenders.length > 0 ? (
-          <div className="space-y-6">
-            {renderLenderSection('best_fit', groupedLenders.best_fit)}
-            {renderLenderSection('also_consider', groupedLenders.also_consider)}
-            {renderLenderSection('possible_but_risky', groupedLenders.possible_but_risky)}
-            {renderLenderSection('not_suitable', groupedLenders.not_suitable)}
-            
-            {selectedLenderId && (
-              <div className="p-4 bg-success/10 border border-success/20 rounded-lg text-center">
-                <p className="text-sm text-success font-medium">
-                  ✓ Your lender preference has been saved successfully
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">
-                Our team will recommend suitable lenders based on your profile and contact you shortly.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* No Lenders Fallback */}
+      {recommendedLenders.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+              <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground">
+              Our team will recommend suitable lenders and contact you shortly.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* What Happens Next Timeline */}
-      <div className="max-w-2xl mx-auto space-y-4 animate-fade-in" style={{ animationDelay: '600ms' }}>
+      {/* What Happens Next */}
+      <div className="max-w-2xl mx-auto space-y-4">
         <h3 className="text-xl font-bold text-center">What Happens Next?</h3>
         <div className="space-y-3">
-          <div className="flex gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10 stagger-fade-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-            <div>
-              <p className="font-semibold">Within 24 hours: Lender Review</p>
-              <p className="text-sm text-muted-foreground">Our partner lenders will review your application</p>
+          {[
+            { num: 1, title: 'Lender Review', desc: 'Our partner lenders will review your application within 24 hours' },
+            { num: 2, title: 'Upload Documents', desc: 'Complete your application by uploading required documents' },
+            { num: 3, title: 'Get Approved', desc: 'Receive your loan approval and fund your education!' },
+          ].map(({ num, title, desc }) => (
+            <div key={num} className="flex gap-4 p-4 rounded-xl bg-muted/30 border">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                {num}
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">{title}</p>
+                <p className="text-sm text-muted-foreground">{desc}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10 stagger-fade-5">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
-            <div>
-              <p className="font-semibold">Upload Documents</p>
-              <p className="text-sm text-muted-foreground">Complete your application by uploading required documents</p>
-            </div>
-          </div>
-          <div className="flex gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10 stagger-fade-6">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
-            <div>
-              <p className="font-semibold">Get Approved</p>
-              <p className="text-sm text-muted-foreground">Receive your loan approval and fund your education!</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="text-center space-y-4 animate-fade-in" style={{ animationDelay: '700ms' }}>
+      <div className="text-center space-y-4">
         <div className="flex flex-wrap gap-3 justify-center">
           <Button 
             variant="outline"
             size="lg"
-            className="gap-2 hover-lift"
+            className="gap-2"
             onClick={() => {
               const text = `Just applied for my education loan! Case ID: ${caseId}`;
               if (navigator.share) {
@@ -469,7 +353,7 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
             }}
           >
             <Share2 className="h-4 w-4" />
-            Share Achievement
+            Share
           </Button>
           <Button 
             variant="outline"
@@ -478,13 +362,13 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
             onClick={() => toast.info('PDF download feature coming soon!')}
           >
             <Download className="h-4 w-4" />
-            Download Summary
+            Download
           </Button>
         </div>
         <Button 
           onClick={() => navigate('/student')} 
           size="lg"
-          className="px-12 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+          className="px-10 h-12 text-base font-semibold"
         >
           Go to Dashboard →
         </Button>
@@ -492,5 +376,16 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     </div>
   );
 };
+
+// Helper component for score bars
+const ScoreBar = ({ label, value }: { label: string; value?: number }) => (
+  <div className="space-y-1.5">
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold">{Math.round(value || 0)}/100</span>
+    </div>
+    <Progress value={value || 0} className="h-2" />
+  </div>
+);
 
 export default SuccessStep;
