@@ -44,6 +44,8 @@ import {
 } from "@/utils/leadCompleteness";
 import { QUALIFICATION_OPTIONS, TEST_TYPES } from "@/utils/leadCompletionSchema";
 import { INDIAN_STATES } from "@/constants/indianStates";
+import { UniversitySelector } from "@/components/ui/university-selector";
+import { CourseCombobox } from "@/components/ui/course-combobox";
 import { 
   Loader2, 
   User, 
@@ -56,7 +58,8 @@ import {
   ChevronDown,
   FileText,
   Plus,
-  Trash2
+  Trash2,
+  BookOpen
 } from "lucide-react";
 import { PaginatedLead } from "@/hooks/usePaginatedLeads";
 
@@ -192,6 +195,13 @@ export function AdminLeadEditModal({
   const [academicTests, setAcademicTests] = useState<AcademicTest[]>([]);
   const [originalTests, setOriginalTests] = useState<AcademicTest[]>([]);
   
+  // University and course state
+  const [universities, setUniversities] = useState<string[]>(['']);
+  const [originalUniversities, setOriginalUniversities] = useState<string[]>([]);
+  const [courseId, setCourseId] = useState<string>('');
+  const [originalCourseId, setOriginalCourseId] = useState<string>('');
+  const [isCustomCourse, setIsCustomCourse] = useState(false);
+  
   const { toast } = useToast();
   const { logFieldChanges } = useAuditLog();
 
@@ -226,6 +236,19 @@ export function AdminLeadEditModal({
         .from('academic_tests')
         .select('*')
         .eq('student_id', lead.student_id);
+
+      // Fetch linked universities
+      const { data: universitiesData } = await supabase
+        .from('lead_universities')
+        .select('university_id')
+        .eq('lead_id', lead.id);
+
+      // Fetch linked courses
+      const { data: coursesData } = await supabase
+        .from('lead_courses')
+        .select('course_id, is_custom_course, custom_course_name')
+        .eq('lead_id', lead.id)
+        .limit(1);
 
       const newFormData: FormData = {
         student_name: studentData?.name || '',
@@ -276,6 +299,27 @@ export function AdminLeadEditModal({
       }));
       setAcademicTests(tests);
       setOriginalTests(JSON.parse(JSON.stringify(tests)));
+
+      // Set universities
+      const uniIds = (universitiesData || []).map(u => u.university_id).filter(Boolean);
+      const uniList = uniIds.length > 0 ? uniIds : [''];
+      setUniversities(uniList);
+      setOriginalUniversities([...uniList]);
+
+      // Set course
+      if (coursesData && coursesData.length > 0) {
+        const courseInfo = coursesData[0];
+        const courseValue = courseInfo.is_custom_course 
+          ? (courseInfo.custom_course_name || '') 
+          : (courseInfo.course_id || '');
+        setCourseId(courseValue);
+        setOriginalCourseId(courseValue);
+        setIsCustomCourse(courseInfo.is_custom_course || false);
+      } else {
+        setCourseId('');
+        setOriginalCourseId('');
+        setIsCustomCourse(false);
+      }
 
       // Calculate completeness
       const leadWithDetails = {
@@ -423,14 +467,29 @@ export function AdminLeadEditModal({
     return { toDelete, toUpdate, toInsert };
   }, [academicTests, originalTests]);
 
+  // Check if universities changed
+  const universitiesChanged = useCallback(() => {
+    const cleanedCurrent = universities.filter(u => u && u.trim()).sort();
+    const cleanedOriginal = originalUniversities.filter(u => u && u.trim()).sort();
+    if (cleanedCurrent.length !== cleanedOriginal.length) return true;
+    return cleanedCurrent.some((u, i) => u !== cleanedOriginal[i]);
+  }, [universities, originalUniversities]);
+
+  // Check if course changed
+  const courseChanged = useCallback(() => {
+    return courseId !== originalCourseId;
+  }, [courseId, originalCourseId]);
+
   const handleSubmit = async () => {
     if (!lead) return;
     
     const changes = getChangedFields();
     const testChanges = getTestChanges();
     const hasTestChanges = testChanges.toDelete.length > 0 || testChanges.toUpdate.length > 0 || testChanges.toInsert.length > 0;
+    const hasUniversityChanges = universitiesChanged();
+    const hasCourseChanges = courseChanged();
     
-    if (changes.length === 0 && !hasTestChanges) {
+    if (changes.length === 0 && !hasTestChanges && !hasUniversityChanges && !hasCourseChanges) {
       toast({
         title: 'No changes',
         description: 'No fields have been modified',
@@ -506,6 +565,50 @@ export function AdminLeadEditModal({
         if (error) throw error;
       }
 
+      // Handle university changes
+      if (hasUniversityChanges) {
+        // Delete existing university links
+        await supabase
+          .from('lead_universities')
+          .delete()
+          .eq('lead_id', lead.id);
+
+        // Insert new university links
+        const validUniversities = universities.filter(u => u && u.trim() && u.length > 10);
+        if (validUniversities.length > 0) {
+          const { error } = await supabase
+            .from('lead_universities')
+            .insert(validUniversities.map(uniId => ({
+              lead_id: lead.id,
+              university_id: uniId,
+            })));
+          if (error) throw error;
+        }
+      }
+
+      // Handle course changes
+      if (hasCourseChanges) {
+        // Delete existing course link
+        await supabase
+          .from('lead_courses')
+          .delete()
+          .eq('lead_id', lead.id);
+
+        // Insert new course link if course is set
+        if (courseId && courseId.trim()) {
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
+          const { error } = await supabase
+            .from('lead_courses')
+            .insert({
+              lead_id: lead.id,
+              course_id: isUUID ? courseId : universities[0] || courseId, // Use university as fallback for custom courses
+              is_custom_course: !isUUID || isCustomCourse,
+              custom_course_name: !isUUID || isCustomCourse ? courseId : null,
+            });
+          if (error) throw error;
+        }
+      }
+
       // Handle academic test changes
       if (testChanges.toDelete.length > 0) {
         const { error } = await supabase
@@ -558,7 +661,7 @@ export function AdminLeadEditModal({
       }
 
       // Log activity
-      const totalChanges = changes.length + testChanges.toDelete.length + testChanges.toUpdate.length + testChanges.toInsert.length;
+      const totalChanges = changes.length + testChanges.toDelete.length + testChanges.toUpdate.length + testChanges.toInsert.length + (hasUniversityChanges ? 1 : 0) + (hasCourseChanges ? 1 : 0);
       await supabase.from('application_activities').insert({
         lead_id: lead.id,
         activity_type: 'admin_edit',
@@ -568,6 +671,8 @@ export function AdminLeadEditModal({
           tests_added: testChanges.toInsert.length,
           tests_updated: testChanges.toUpdate.length,
           tests_deleted: testChanges.toDelete.length,
+          universities_changed: hasUniversityChanges,
+          course_changed: hasCourseChanges,
           notes: formData.admin_notes,
         },
       });
@@ -594,7 +699,9 @@ export function AdminLeadEditModal({
   const changedFieldsCount = getChangedFields().length;
   const testChanges = getTestChanges();
   const totalTestChanges = testChanges.toDelete.length + testChanges.toUpdate.length + testChanges.toInsert.length;
-  const totalChanges = changedFieldsCount + totalTestChanges;
+  const hasUniChanges = universitiesChanged();
+  const hasCrsChanges = courseChanged();
+  const totalChanges = changedFieldsCount + totalTestChanges + (hasUniChanges ? 1 : 0) + (hasCrsChanges ? 1 : 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -962,6 +1069,49 @@ export function AdminLeadEditModal({
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* University & Course Card */}
+                {formData.study_destination && (
+                  <Card>
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <BookOpen className="h-4 w-4" />
+                        University & Program
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Select up to 5 universities and a course/program
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Universities</Label>
+                        <UniversitySelector
+                          country={formData.study_destination}
+                          universities={universities}
+                          onChange={setUniversities}
+                        />
+                      </div>
+                      
+                      {universities[0] && universities[0].length > 10 && (
+                        <div className="space-y-2">
+                          <Label>Course / Program</Label>
+                          <CourseCombobox
+                            universityId={universities[0]}
+                            value={courseId}
+                            onChange={(value, customFlag) => {
+                              setCourseId(value);
+                              setIsCustomCourse(customFlag || false);
+                            }}
+                            placeholder="Search or enter course name..."
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Select from available courses or enter a custom course name
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               {/* Co-Applicant Tab */}
