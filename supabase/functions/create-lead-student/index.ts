@@ -338,15 +338,216 @@ serve(async (req) => {
       }
     }
 
-    // CASE 1: Existing partner-created lead found
+    // Decide whether we should update an existing lead (prevents “submit again but nothing saves”)
+    // - Edit mode: explicit existing_lead_id
+    // - Non-edit, but authenticated and an existing lead exists for same intake/destination: update that lead
+    const leadIdForUpdate = (body?.is_edit && body?.existing_lead_id)
+      ? body.existing_lead_id
+      : existingLead?.id;
+
+    const shouldUpdateExistingLead = isAuthenticated && !!leadIdForUpdate;
+
+    if (shouldUpdateExistingLead) {
+      console.log('📝 Updating existing lead (authenticated submission):', leadIdForUpdate, body?.is_edit ? '(edit mode)' : '(auto-update)');
+
+      const { data: verifyLead, error: verifyError } = await supabaseAdmin
+        .from('leads_new')
+        .select('id, case_id, student_id, co_applicant_id, partner_id')
+        .eq('id', leadIdForUpdate)
+        .maybeSingle();
+
+      if (verifyError || !verifyLead) {
+        throw new Error('Could not verify lead for update');
+      }
+
+      // Verify ownership using auth email ↔ student.email
+      const { data: leadStudent, error: leadStudentError } = await supabaseAdmin
+        .from('students')
+        .select('email')
+        .eq('id', verifyLead.student_id)
+        .maybeSingle();
+
+      if (leadStudentError || !leadStudent) {
+        throw new Error('Could not verify lead ownership');
+      }
+
+      if (authenticatedUser?.email && leadStudent?.email?.toLowerCase() !== authenticatedUser.email.toLowerCase()) {
+        throw new Error('You can only update your own application');
+      }
+
+      // Partner name if mapped
+      let partnerNameForLead: string | null = null;
+      if (verifyLead.partner_id) {
+        const { data: partnerData } = await supabaseAdmin
+          .from('partners')
+          .select('name')
+          .eq('id', verifyLead.partner_id)
+          .maybeSingle();
+        partnerNameForLead = partnerData?.name || null;
+      }
+
+      // Update student record
+      const { error: updateStudentError } = await supabaseAdmin
+        .from('students')
+        .update({
+          name: body.student_name?.trim(),
+          phone: cleanStudentPhone,
+          postal_code: body.student_pin_code?.trim(),
+          date_of_birth: body.date_of_birth || null,
+          gender: body.gender || null,
+          city: body.city || null,
+          state: body.state || null,
+          nationality: body.nationality || 'Indian',
+          highest_qualification: body.highest_qualification || null,
+          tenth_percentage: body.tenth_percentage || null,
+          twelfth_percentage: body.twelfth_percentage || null,
+          bachelors_percentage: body.bachelors_percentage || null,
+          bachelors_cgpa: body.bachelors_cgpa || null,
+          masters_percentage: body.masters_percentage || null,
+          masters_cgpa: body.masters_cgpa || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', verifyLead.student_id);
+
+      if (updateStudentError) {
+        console.warn('⚠️ Failed to update student:', updateStudentError.message);
+      } else {
+        console.log('✅ Updated student record');
+      }
+
+      // Update co-applicant record
+      const cleanCoApplicantPhone = body.co_applicant_phone
+        ? cleanPhoneNumber(body.co_applicant_phone)
+        : cleanStudentPhone;
+      const coApplicantSalary = parseFloat(body.co_applicant_monthly_salary || '50000');
+
+      const { error: updateCoAppError } = await supabaseAdmin
+        .from('co_applicants')
+        .update({
+          name: body.co_applicant_name?.trim() || 'Co-Applicant',
+          phone: cleanCoApplicantPhone,
+          email: body.co_applicant_email?.trim() || null,
+          relationship: body.co_applicant_relationship || 'parent',
+          salary: coApplicantSalary * 12,
+          monthly_salary: coApplicantSalary,
+          employment_type: body.co_applicant_employment_type || null,
+          occupation: body.co_applicant_occupation || null,
+          employer: body.co_applicant_employer || null,
+          employment_duration_years: body.co_applicant_employment_duration || null,
+          pin_code: body.co_applicant_pin_code?.trim() || '000000',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', verifyLead.co_applicant_id);
+
+      if (updateCoAppError) {
+        console.warn('⚠️ Failed to update co-applicant:', updateCoAppError.message);
+      } else {
+        console.log('✅ Updated co-applicant record');
+      }
+
+      // Update lead record
+      const { error: updateLeadError } = await supabaseAdmin
+        .from('leads_new')
+        .update({
+          loan_amount: loanAmount,
+          loan_type: body.loan_type || 'unsecured',
+          loan_classification: (body.loan_type === 'secured') ? 'secured_property' : 'unsecured',
+          study_destination: studyDestination,
+          intake_month: intakeMonth,
+          intake_year: intakeYear,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', leadIdForUpdate);
+
+      if (updateLeadError) {
+        console.warn('⚠️ Failed to update lead:', updateLeadError.message);
+      } else {
+        console.log('✅ Updated lead record');
+      }
+
+      // Update universities - delete old and insert new
+      if (body.universities && Array.isArray(body.universities)) {
+        await supabaseAdmin
+          .from('lead_universities')
+          .delete()
+          .eq('lead_id', leadIdForUpdate);
+
+        const universityInserts = body.universities
+          .filter((uid: string) => uid && uid.length > 10)
+          .map((uid: string) => ({
+            lead_id: leadIdForUpdate,
+            university_id: uid,
+          }));
+
+        if (universityInserts.length > 0) {
+          const { error: uniInsertError } = await supabaseAdmin
+            .from('lead_universities')
+            .insert(universityInserts);
+
+          if (uniInsertError) {
+            console.warn('⚠️ Failed to update universities:', uniInsertError.message);
+          } else {
+            console.log(`✅ Updated ${universityInserts.length} university associations`);
+          }
+        }
+      }
+
+      // Log the update for audit trail
+      await supabaseAdmin
+        .from('field_audit_log')
+        .insert({
+          lead_id: leadIdForUpdate,
+          table_name: 'leads_new',
+          field_name: 'application_edit',
+          old_value: null,
+          new_value: body?.is_edit ? 'Student edited application' : 'Student re-submitted application (updated existing)',
+          changed_by_type: 'student',
+          changed_by_id: authenticatedUser?.id || null,
+          change_source: 'student_portal',
+          change_reason: body?.is_edit ? 'Student edited their application' : 'Student re-submitted their application',
+        });
+
+      // Re-run AI lender evaluation with updated data
+      const recommendedLenders = await evaluateLendersForLead(
+        supabaseAdmin,
+        leadIdForUpdate,
+        studyDestination,
+        loanAmount
+      );
+
+      console.log('✅ Existing lead update completed');
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          lead: {
+            id: leadIdForUpdate,
+            case_id: verifyLead.case_id,
+            requested_amount: loanAmount,
+            is_partner_lead: !!verifyLead.partner_id,
+            partner_name: partnerNameForLead,
+          },
+          recommended_lenders: recommendedLenders,
+          message: 'Your application has been updated successfully.',
+          is_existing: true,
+          is_updated: true,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    // CASE 1: Existing partner-created lead found (unauthenticated flow)
     if (existingLead && existingLead.partner_id) {
       console.log('✅ Found existing partner-created lead:', existingLead.case_id);
       console.log('   Partner:', partnerName);
-      
+
       // Update existing lead if it's a quick lead and we have more data
       if (existingLead.is_quick_lead && isAuthenticated) {
         console.log('📝 Updating quick lead to full application');
-        
+
         const { error: updateError } = await supabaseAdmin
           .from('leads_new')
           .update({
@@ -361,7 +562,6 @@ serve(async (req) => {
         }
       }
 
-      // ===== AI LENDER EVALUATION FOR EXISTING PARTNER LEAD =====
       const recommendedLenders = await evaluateLendersForLead(
         supabaseAdmin,
         existingLead.id,
@@ -390,18 +590,17 @@ serve(async (req) => {
       );
     }
 
-    // CASE 2: Existing organic lead found
+    // CASE 2: Existing organic lead found (unauthenticated flow)
     if (existingLead && !existingLead.partner_id) {
       console.log('✅ Found existing organic lead:', existingLead.case_id);
-      
-      // ===== AI LENDER EVALUATION FOR EXISTING ORGANIC LEAD =====
+
       const recommendedLenders = await evaluateLendersForLead(
         supabaseAdmin,
         existingLead.id,
         existingLead.study_destination || studyDestination,
         parseFloat(existingLead.loan_amount) || loanAmount
       );
-      
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -415,184 +614,6 @@ serve(async (req) => {
           recommended_lenders: recommendedLenders,
           message: 'Found your existing application.',
           is_existing: true,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
-
-    // CASE 2.5: EDIT MODE - Update existing lead with new data
-    if (body.is_edit && body.existing_lead_id) {
-      console.log('📝 EDIT MODE: Updating existing lead:', body.existing_lead_id);
-      
-      // Verify the lead belongs to the authenticated user's student
-      const { data: verifyLead, error: verifyError } = await supabaseAdmin
-        .from('leads_new')
-        .select('id, case_id, student_id, co_applicant_id')
-        .eq('id', body.existing_lead_id)
-        .maybeSingle();
-      
-      if (verifyError || !verifyLead) {
-        throw new Error('Could not verify lead ownership for edit');
-      }
-      
-      // Get the student to verify ownership
-      const { data: leadStudent } = await supabaseAdmin
-        .from('students')
-        .select('email')
-        .eq('id', verifyLead.student_id)
-        .single();
-      
-      // Verify the authenticated user owns this lead
-      if (isAuthenticated && authenticatedUser?.email && 
-          leadStudent?.email?.toLowerCase() !== authenticatedUser.email.toLowerCase()) {
-        throw new Error('You can only edit your own application');
-      }
-      
-      // Update student record
-      const { error: updateStudentError } = await supabaseAdmin
-        .from('students')
-        .update({
-          name: body.student_name?.trim(),
-          phone: cleanStudentPhone,
-          postal_code: body.student_pin_code?.trim(),
-          date_of_birth: body.date_of_birth || null,
-          gender: body.gender || null,
-          city: body.city || null,
-          state: body.state || null,
-          nationality: body.nationality || 'Indian',
-          highest_qualification: body.highest_qualification || null,
-          tenth_percentage: body.tenth_percentage || null,
-          twelfth_percentage: body.twelfth_percentage || null,
-          bachelors_percentage: body.bachelors_percentage || null,
-          bachelors_cgpa: body.bachelors_cgpa || null,
-          masters_percentage: body.masters_percentage || null,
-          masters_cgpa: body.masters_cgpa || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', verifyLead.student_id);
-      
-      if (updateStudentError) {
-        console.warn('⚠️ Failed to update student:', updateStudentError.message);
-      } else {
-        console.log('✅ Updated student record');
-      }
-      
-      // Update co-applicant record
-      const cleanCoApplicantPhone = body.co_applicant_phone 
-        ? cleanPhoneNumber(body.co_applicant_phone) 
-        : cleanStudentPhone;
-      const coApplicantSalary = parseFloat(body.co_applicant_monthly_salary || '50000');
-      
-      const { error: updateCoAppError } = await supabaseAdmin
-        .from('co_applicants')
-        .update({
-          name: body.co_applicant_name?.trim() || 'Co-Applicant',
-          phone: cleanCoApplicantPhone,
-          email: body.co_applicant_email?.trim() || null,
-          relationship: body.co_applicant_relationship || 'parent',
-          salary: coApplicantSalary * 12,
-          monthly_salary: coApplicantSalary,
-          employment_type: body.co_applicant_employment_type || null,
-          occupation: body.co_applicant_occupation || null,
-          employer: body.co_applicant_employer || null,
-          employment_duration_years: body.co_applicant_employment_duration || null,
-          pin_code: body.co_applicant_pin_code?.trim() || '000000',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', verifyLead.co_applicant_id);
-      
-      if (updateCoAppError) {
-        console.warn('⚠️ Failed to update co-applicant:', updateCoAppError.message);
-      } else {
-        console.log('✅ Updated co-applicant record');
-      }
-      
-      // Update lead record
-      const { error: updateLeadError } = await supabaseAdmin
-        .from('leads_new')
-        .update({
-          loan_amount: loanAmount,
-          loan_type: body.loan_type || 'unsecured',
-          loan_classification: (body.loan_type === 'secured') ? 'secured_property' : 'unsecured',
-          study_destination: studyDestination,
-          intake_month: intakeMonth,
-          intake_year: intakeYear,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', body.existing_lead_id);
-      
-      if (updateLeadError) {
-        console.warn('⚠️ Failed to update lead:', updateLeadError.message);
-      } else {
-        console.log('✅ Updated lead record');
-      }
-      
-      // Update universities - delete old and insert new
-      if (body.universities && Array.isArray(body.universities)) {
-        // Delete existing university associations
-        await supabaseAdmin
-          .from('lead_universities')
-          .delete()
-          .eq('lead_id', body.existing_lead_id);
-        
-        // Insert new university associations
-        const universityInserts = body.universities
-          .filter((uid: string) => uid && uid.length > 10)
-          .map((uid: string) => ({
-            lead_id: body.existing_lead_id,
-            university_id: uid,
-          }));
-        
-        if (universityInserts.length > 0) {
-          await supabaseAdmin
-            .from('lead_universities')
-            .insert(universityInserts);
-          console.log(`✅ Updated ${universityInserts.length} university associations`);
-        }
-      }
-      
-      // Log the edit for audit trail
-      await supabaseAdmin
-        .from('field_audit_log')
-        .insert({
-          lead_id: body.existing_lead_id,
-          table_name: 'leads_new',
-          field_name: 'application_edit',
-          old_value: null,
-          new_value: 'Student updated application',
-          changed_by_type: 'student',
-          changed_by_id: authenticatedUser?.id || null,
-          change_source: 'student_portal',
-          change_reason: 'Student edited their application',
-        });
-      
-      // Re-run AI lender evaluation with updated data
-      const recommendedLenders = await evaluateLendersForLead(
-        supabaseAdmin,
-        body.existing_lead_id,
-        studyDestination,
-        loanAmount
-      );
-      
-      console.log('✅ Edit mode update completed');
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          lead: {
-            id: body.existing_lead_id,
-            case_id: verifyLead.case_id,
-            requested_amount: loanAmount,
-            is_partner_lead: false,
-            partner_name: null,
-          },
-          recommended_lenders: recommendedLenders,
-          message: 'Your application has been updated successfully.',
-          is_existing: true,
-          is_updated: true,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

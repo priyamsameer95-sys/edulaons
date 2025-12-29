@@ -172,49 +172,53 @@ export const useStudentApplication = () => {
           if (student) {
             console.log('📋 Found student:', student.id);
             
-            // Get their most recent lead with co-applicant
+            // Get their most recent lead
             const { data: lead } = await supabase
               .from('leads_new')
-              .select(`
-                *,
-                co_applicants(*)
-              `)
+              .select('*')
               .eq('student_id', student.id)
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
-            
+
             if (lead) {
               console.log('📋 Found existing lead:', lead.case_id);
-              
+
+              // Fetch co-applicant separately (avoid relying on implicit relationship joins)
+              const { data: coApplicant } = await supabase
+                .from('co_applicants')
+                .select('*')
+                .eq('id', lead.co_applicant_id)
+                .maybeSingle();
+
               // Get university IDs for this lead
               const { data: leadUniversities } = await supabase
                 .from('lead_universities')
                 .select('university_id')
                 .eq('lead_id', lead.id);
-              
+
               const universityIds = leadUniversities?.map(lu => lu.university_id) || [];
-              
+
               // Transform DB data to form data
               const prefillData = transformLeadToApplicationData(
                 lead,
                 student,
-                lead.co_applicants,
+                coApplicant,
                 universityIds
               );
-              
+
               console.log('✅ Pre-filling form with existing lead data');
               setApplicationData(prev => ({ ...prev, ...prefillData }));
               setIsEditMode(true);
               setExistingLeadId(lead.id);
               setIsInitialized(true);
-              
+
               // Clear any stale drafts since we're loading from DB
               if (phone && phone.length === 10) {
                 clearForeignDrafts(phone);
                 localStorage.removeItem(getStorageKey(phone));
               }
-              
+
               return;
             }
           }
