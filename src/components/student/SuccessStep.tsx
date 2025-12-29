@@ -1,13 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle2, 
-  XCircle, 
   Share2, 
-  Download,
-  ChevronDown
+  Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
@@ -15,52 +10,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LenderComparisonGrid from './LenderComparisonGrid';
 import { ConfettiAnimation } from './ConfettiAnimation';
-import { formatCurrency } from '@/utils/formatters';
 
 interface LenderData {
   lender_id: string;
   lender_name: string;
   lender_code: string;
-  lender_description: string | null;
+  lender_description?: string | null;
   logo_url: string | null;
-  website: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
   interest_rate_min: number | null;
-  interest_rate_max: number | null;
-  loan_amount_min: number | null;
+  interest_rate_max?: number | null;
+  loan_amount_min?: number | null;
   loan_amount_max: number | null;
-  processing_fee: number | null;
-  foreclosure_charges: number | null;
-  moratorium_period: string | null;
   processing_time_days: number | null;
-  disbursement_time_days: number | null;
-  approval_rate: number | null;
-  key_features: string[] | null;
-  eligible_expenses: any[] | null;
-  required_documents: string[] | null;
+  approval_rate?: number | null;
+  eligible_expenses?: any[] | null;
   compatibility_score: number;
-  is_preferred: boolean;
-  eligibility_score?: number;
-  university_score?: number;
-  student_score?: number;
-  co_applicant_score?: number;
-  approval_status?: 'approved' | 'rejected' | 'pending';
-  rejection_reason?: string | null;
-  eligible_loan_min?: number | null;
+  is_preferred?: boolean;
   eligible_loan_max?: number | null;
-  rate_tier?: string | null;
-  loan_band_percentage?: string | null;
-  university_breakdown?: any;
-  student_breakdown?: any;
-  co_applicant_breakdown?: any;
-  fit_group?: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
   student_facing_reason?: string;
-  justification?: string;
-  risk_flags?: string[];
-  bre_rules_matched?: string[];
-  probability_band?: 'high' | 'medium' | 'low';
-  processing_time_estimate?: string;
 }
 
 interface SuccessStepProps {
@@ -70,18 +37,15 @@ interface SuccessStepProps {
   recommendedLenders: LenderData[];
 }
 
-const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: SuccessStepProps) => {
+const SuccessStep = ({ caseId, leadId, recommendedLenders }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showBreakdown, setShowBreakdown] = useState(false);
   
   // Sort lenders by compatibility score
   const sortedLenders = useMemo(() => {
     return [...recommendedLenders].sort((a, b) => b.compatibility_score - a.compatibility_score);
   }, [recommendedLenders]);
-  
-  const topLender = sortedLenders[0];
 
   const [showConfetti, setShowConfetti] = useState(true);
 
@@ -141,72 +105,6 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
         </div>
       </div>
 
-      {/* Eligibility Summary */}
-      {topLender?.eligibility_score !== undefined && requestedAmount && (
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              {topLender.approval_status === 'approved' ? '✅' : '⚠️'} 
-              Eligibility Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Requested</p>
-                <p className="text-lg font-bold">{formatCurrency(requestedAmount)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Eligible</p>
-                <p className="text-lg font-bold text-success">
-                  {topLender.eligible_loan_max ? formatCurrency(topLender.eligible_loan_max) : '—'}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Score</p>
-                <p className="text-lg font-bold text-primary">
-                  {Math.round(topLender.eligibility_score)}/100
-                </p>
-              </div>
-            </div>
-            
-            {topLender.approval_status === 'approved' ? (
-              <Alert className="bg-success/5 border-success/20">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                <AlertDescription className="text-success text-sm">
-                  Pre-approved for up to {formatCurrency(topLender.eligible_loan_max || 0)}
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Alert variant="destructive" className="bg-destructive/5 border-destructive/20">
-                <XCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  {topLender.rejection_reason || 'Our team will contact you with options.'}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowBreakdown(!showBreakdown)}
-              className="w-full justify-center text-muted-foreground text-xs"
-            >
-              {showBreakdown ? 'Hide' : 'View'} Score Breakdown
-              <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
-            </Button>
-            
-            {showBreakdown && (
-              <div className="space-y-2 pt-2 border-t">
-                <ScoreBar label="University" value={topLender.university_score} />
-                <ScoreBar label="Academic" value={topLender.student_score} />
-                <ScoreBar label="Co-Applicant" value={topLender.co_applicant_score} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Lender Selection - All visible at once */}
       {recommendedLenders.length > 0 && (
         <LenderComparisonGrid
@@ -229,16 +127,14 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
 
       {/* No Lenders Fallback */}
       {recommendedLenders.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-10">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
-              <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Our team will recommend suitable lenders and contact you shortly.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border bg-card p-8 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+            <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Our team will recommend suitable lenders and contact you shortly.
+          </p>
+        </div>
       )}
 
       {/* What Happens Next */}
@@ -303,16 +199,5 @@ const SuccessStep = ({ caseId, leadId, requestedAmount, recommendedLenders }: Su
     </div>
   );
 };
-
-// Helper component for score bars
-const ScoreBar = ({ label, value }: { label: string; value?: number }) => (
-  <div className="space-y-1">
-    <div className="flex justify-between items-center text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{Math.round(value || 0)}/100</span>
-    </div>
-    <Progress value={value || 0} className="h-1.5" />
-  </div>
-);
 
 export default SuccessStep;
