@@ -323,18 +323,51 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
 
     // Fallback to rule-based scoring if AI didn't work
     if (evaluations.length === 0) {
-      console.log('📋 Using rule-based fallback scoring')
+      console.log('📋 Using enhanced rule-based scoring')
+      
+      // Find min/max values for normalization
+      const allRates = lenders.map(l => l.interest_rate_min).filter(r => r !== null) as number[]
+      const minRate = Math.min(...allRates)
+      const maxRate = Math.max(...allRates)
+      
+      const allAmounts = lenders.map(l => l.loan_amount_max).filter(a => a !== null) as number[]
+      const maxLoanAmount = Math.max(...allAmounts)
+      
+      const allTimes = lenders.map(l => l.processing_time_days || l.processing_time_range_min).filter(t => t !== null) as number[]
+      const minTime = Math.min(...allTimes)
+      const maxTime = Math.max(...allTimes)
+      
       evaluations = lenders.map(lender => {
         let score = 50
         const factors: string[] = []
         const riskFlags: string[] = []
 
-        // Loan amount fit
+        // === Interest Rate Score (up to 20 points) ===
+        // Lower rate = higher score
+        if (lender.interest_rate_min && minRate && maxRate && maxRate > minRate) {
+          const rateRange = maxRate - minRate
+          const normalizedRate = (maxRate - lender.interest_rate_min) / rateRange // 1 = lowest rate, 0 = highest
+          const rateBonus = Math.round(normalizedRate * 20)
+          score += rateBonus
+          if (normalizedRate >= 0.7) {
+            factors.push('Competitive interest rate')
+          } else if (normalizedRate <= 0.3) {
+            riskFlags.push('Higher interest rate')
+          }
+        }
+
+        // === Loan Amount Coverage (up to 15 points) ===
         const amount = loanAmount || lead.loan_amount
         if (lender.loan_amount_min && lender.loan_amount_max) {
           if (amount >= lender.loan_amount_min && amount <= lender.loan_amount_max) {
             score += 15
             factors.push('Loan amount within range')
+            
+            // Bonus if lender can offer more headroom
+            if (lender.loan_amount_max > amount * 1.2) {
+              score += 3
+              factors.push('Good loan headroom available')
+            }
           } else if (amount < lender.loan_amount_min) {
             score -= 10
             riskFlags.push('Loan amount below minimum')
@@ -342,9 +375,25 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
             score -= 5
             riskFlags.push('Loan amount exceeds maximum')
           }
+        } else if (lender.loan_amount_max && lender.loan_amount_max >= amount) {
+          score += 10
+          factors.push('Sufficient loan capacity')
         }
 
-        // Country restrictions
+        // === Processing Time Score (up to 10 points) ===
+        // Faster processing = higher score
+        const processingTime = lender.processing_time_days || lender.processing_time_range_min
+        if (processingTime && minTime && maxTime && maxTime > minTime) {
+          const timeRange = maxTime - minTime
+          const normalizedTime = (maxTime - processingTime) / timeRange // 1 = fastest, 0 = slowest
+          const timeBonus = Math.round(normalizedTime * 10)
+          score += timeBonus
+          if (normalizedTime >= 0.7) {
+            factors.push('Fast processing time')
+          }
+        }
+
+        // === Country/Destination Match (up to 10 points) ===
         const destination = studyDestination || lead.study_destination
         if (lender.country_restrictions?.length) {
           if (lender.country_restrictions.includes(destination?.toUpperCase())) {
@@ -354,40 +403,74 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
             score -= 5
             riskFlags.push('Non-preferred destination')
           }
+        } else {
+          // No restrictions = universal coverage (small bonus)
+          score += 3
         }
 
-        // Income expectations
+        // === Income Expectations (up to 15 points) ===
         const coAppSalary = coApplicant?.monthly_salary
         if (coAppSalary) {
           if (lender.income_expectations_min && coAppSalary >= lender.income_expectations_min) {
             score += 15
             factors.push('Income meets expectations')
+            
+            // Extra bonus for significantly exceeding
+            if (lender.income_expectations_min && coAppSalary >= lender.income_expectations_min * 1.5) {
+              score += 5
+              factors.push('Strong income profile')
+            }
           } else if (lender.income_expectations_min && coAppSalary < lender.income_expectations_min) {
             score -= 10
             riskFlags.push('Income below expectations')
+          } else {
+            // No income expectations defined
+            score += 5
           }
         }
 
-        // Employment type
+        // === Employment Type (up to 8 points) ===
         const empType = coApplicant?.employment_type
-        if (empType === 'salaried' || empType === 'government') {
-          score += 5
-          factors.push('Stable employment')
+        if (empType === 'salaried') {
+          score += 8
+          factors.push('Salaried employment')
+        } else if (empType === 'government') {
+          score += 10
+          factors.push('Government employment')
+        } else if (empType === 'self-employed') {
+          score += 3
+          factors.push('Self-employed')
         }
 
-        // Preferred rank bonus
+        // === Preferred Rank Bonus (up to 9 points) ===
         if (lender.preferred_rank && lender.preferred_rank <= 3) {
-          score += (4 - lender.preferred_rank) * 3
+          const rankBonus = (4 - lender.preferred_rank) * 3
+          score += rankBonus
           factors.push(`Priority lender (rank ${lender.preferred_rank})`)
         }
 
-        // Experience score
-        if (lender.experience_score && lender.experience_score >= 7) {
-          score += 5
-          factors.push('High experience score')
+        // === Experience Score (up to 5 points) ===
+        if (lender.experience_score) {
+          if (lender.experience_score >= 8) {
+            score += 5
+            factors.push('Excellent service record')
+          } else if (lender.experience_score >= 6) {
+            score += 3
+            factors.push('Good service record')
+          }
         }
 
-        // Cap score
+        // === Education Loan Specialization ===
+        const lenderCode = lender.code?.toUpperCase() || ''
+        const isEducationFocused = ['CREDILA', 'AVANSE', 'INCRED', 'AUXILO', 'HDFC_CREDILA'].some(
+          code => lenderCode.includes(code)
+        )
+        if (isEducationFocused) {
+          score += 5
+          factors.push('Education loan specialist')
+        }
+
+        // Cap score at 100, floor at 0
         score = Math.min(100, Math.max(0, score))
 
         // Determine group
@@ -401,16 +484,34 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
         if (score >= 80) probability_band = 'high'
         else if (score >= 60) probability_band = 'medium'
 
+        // Generate student-facing reason
+        let studentReason = ''
+        if (score >= 80) {
+          if (factors.includes('Competitive interest rate')) {
+            studentReason = 'Best rates with strong approval chances for your profile'
+          } else if (factors.includes('Fast processing time')) {
+            studentReason = 'Quick processing with competitive terms'
+          } else {
+            studentReason = 'Excellent match for your loan requirements'
+          }
+        } else if (score >= 60) {
+          studentReason = 'Good fit for your financial profile'
+        } else if (score >= 40) {
+          studentReason = 'May require additional documentation'
+        } else {
+          studentReason = 'Limited fit - consider alternatives'
+        }
+
         // Generate justification
         let justification = ''
         if (score >= 80) {
-          justification = `${lender.name} is an excellent match. ${factors.slice(0, 2).join(', ')}.`
+          justification = `${lender.name} is an excellent match. ${factors.slice(0, 3).join(', ')}.`
         } else if (score >= 60) {
-          justification = `${lender.name} is a good option. ${factors[0] || 'General fit'}.`
+          justification = `${lender.name} is a solid option. ${factors.slice(0, 2).join(', ')}.`
         } else if (score >= 40) {
-          justification = `${lender.name} may work but has concerns: ${riskFlags[0] || 'Limited data'}.`
+          justification = `${lender.name} may work but has concerns: ${riskFlags.slice(0, 2).join(', ') || 'Limited match'}.`
         } else {
-          justification = `${lender.name} is not recommended: ${riskFlags.join(', ') || 'Poor fit'}.`
+          justification = `${lender.name} is not recommended: ${riskFlags.join(', ') || 'Poor overall fit'}.`
         }
 
         return {
@@ -420,16 +521,14 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
           probability_band,
           processing_time_estimate: lender.processing_time_range_min && lender.processing_time_range_max
             ? `${lender.processing_time_range_min}-${lender.processing_time_range_max} days`
-            : lender.processing_time_days 
-              ? `~${lender.processing_time_days} days` 
+            : processingTime 
+              ? `~${processingTime} days` 
               : 'Not specified',
           justification,
           risk_flags: riskFlags,
           bre_rules_matched: factors,
           group,
-          student_facing_reason: score >= 60 
-            ? `Strong fit for your ${destination || ''} loan profile`.trim()
-            : 'May need additional review',
+          student_facing_reason: studentReason,
         }
       })
 
@@ -488,7 +587,7 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
           ? `AI recommends ${evaluations[0]?.lender_name} with ${overallConfidence}% confidence`
           : 'Low confidence - human review recommended',
         confidence_score: overallConfidence,
-        model_version: aiUnavailable ? '2.0-rule-based' : '2.0-gemini-flash',
+        model_version: aiUnavailable ? '2.1-rule-based-enhanced' : '2.0-gemini-flash',
         inputs_snapshot: inputsSnapshot,
         ai_unavailable: aiUnavailable,
         student_facing_reason: evaluations[0]?.student_facing_reason || null,
