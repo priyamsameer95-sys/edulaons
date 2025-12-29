@@ -1,17 +1,23 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bell, FileText, UserPlus, RefreshCw, CheckCircle, XCircle, Target, AlertTriangle, MessageCircle, ExternalLink, Clock } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Bell, FileText, UserPlus, RefreshCw, CheckCircle, XCircle, Target, AlertTriangle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+
+type TimeFilter = '24h' | '7d' | 'all';
 
 interface ActivityItem {
   id: string;
@@ -21,7 +27,7 @@ interface ActivityItem {
   created_at: string;
   lead_id: string | null;
   is_read: boolean;
-  is_notification: boolean; // true if from notifications table (can be marked read)
+  is_notification: boolean;
   metadata?: Record<string, any>;
 }
 
@@ -30,57 +36,69 @@ interface AdminNotificationBellProps {
 }
 
 export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps) {
-  const navigate = useNavigate();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('24h');
 
   const unreadCount = activities.filter(a => !a.is_read && a.is_notification).length;
-  const totalCount = activities.length;
+
+  const getTimeFilterDate = useCallback((filter: TimeFilter) => {
+    const now = new Date();
+    switch (filter) {
+      case '24h':
+        return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      case '7d':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      case 'all':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // max 30 days
+    }
+  }, []);
+
+  const filteredActivities = useMemo(() => {
+    const filterDate = getTimeFilterDate(timeFilter);
+    return activities.filter(a => new Date(a.created_at) >= filterDate);
+  }, [activities, timeFilter, getTimeFilterDate]);
 
   const fetchActivities = useCallback(async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      const last24Hours = new Date();
-      last24Hours.setHours(last24Hours.getHours() - 24);
-      const last24HoursISO = last24Hours.toISOString();
+      // Fetch up to 30 days for all filter options
+      const last30Days = new Date();
+      last30Days.setDate(last30Days.getDate() - 30);
+      const last30DaysISO = last30Days.toISOString();
 
-      // Fetch all data sources in parallel
       const [notificationsRes, leadsRes, documentsRes, statusHistoryRes] = await Promise.all([
-        // 1. Existing notifications
         supabase
           .from("notifications")
           .select("*")
           .eq("user_id", user.user.id)
-          .gte("created_at", last24HoursISO)
+          .gte("created_at", last30DaysISO)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        
+        supabase
+          .from("leads_new")
+          .select("id, case_id, created_at, student:students(name, phone)")
+          .gte("created_at", last30DaysISO)
           .order("created_at", { ascending: false })
           .limit(50),
         
-        // 2. New leads created
-        supabase
-          .from("leads_new")
-          .select("id, case_id, created_at, student:students(name)")
-          .gte("created_at", last24HoursISO)
-          .order("created_at", { ascending: false })
-          .limit(20),
-        
-        // 3. Documents uploaded/verified
         supabase
           .from("lead_documents")
-          .select("id, lead_id, verification_status, created_at, updated_at, document_type:document_types(name), lead:leads_new(case_id, student:students(name))")
-          .gte("created_at", last24HoursISO)
+          .select("id, lead_id, verification_status, created_at, updated_at, document_type:document_types(name), lead:leads_new(case_id, student:students(name, phone))")
+          .gte("created_at", last30DaysISO)
           .order("created_at", { ascending: false })
-          .limit(30),
+          .limit(50),
         
-        // 4. Status changes
         supabase
           .from("lead_status_history")
-          .select("id, lead_id, old_status, new_status, created_at, lead:leads_new(case_id, student:students(name))")
-          .gte("created_at", last24HoursISO)
+          .select("id, lead_id, old_status, new_status, created_at, lead:leads_new(case_id, student:students(name, phone))")
+          .gte("created_at", last30DaysISO)
           .order("created_at", { ascending: false })
-          .limit(20),
+          .limit(50),
       ]);
 
       const allActivities: ActivityItem[] = [];
@@ -103,24 +121,27 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
         }
       }
 
-      // Transform new leads (avoid duplicates with notifications)
+      // Transform new leads
       const notificationLeadIds = new Set(
         notificationsRes.data?.filter(n => n.notification_type === 'lead_created' && n.lead_id).map(n => n.lead_id) || []
       );
       
       if (leadsRes.data) {
         for (const lead of leadsRes.data) {
-          if (notificationLeadIds.has(lead.id)) continue; // Skip if already have notification
-          const studentName = (lead.student as any)?.name || 'Unknown';
+          if (notificationLeadIds.has(lead.id)) continue;
+          const student = lead.student as any;
+          const studentName = student?.name || 'Unknown';
+          const studentPhone = student?.phone || null;
           allActivities.push({
             id: `lead-${lead.id}`,
             type: 'lead_created',
             title: 'New Lead Created',
-            message: `${lead.case_id} - ${studentName}`,
+            message: `Lead ${lead.case_id} created for ${studentName}`,
             created_at: lead.created_at,
             lead_id: lead.id,
-            is_read: true, // Activity items are read-only
+            is_read: true,
             is_notification: false,
+            metadata: { name: studentName, phone: studentPhone, case_id: lead.case_id },
           });
         }
       }
@@ -138,10 +159,12 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       
       if (documentsRes.data) {
         for (const doc of documentsRes.data) {
-          if (notificationDocIds.has(doc.id)) continue; // Skip if already have notification
+          if (notificationDocIds.has(doc.id)) continue;
           const docTypeName = (doc.document_type as any)?.name || 'Document';
-          const studentName = (doc.lead as any)?.student?.name || 'Unknown';
-          const caseId = (doc.lead as any)?.case_id || '';
+          const lead = doc.lead as any;
+          const studentName = lead?.student?.name || 'Unknown';
+          const studentPhone = lead?.student?.phone || null;
+          const caseId = lead?.case_id || '';
           
           allActivities.push({
             id: `doc-${doc.id}`,
@@ -152,6 +175,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
             lead_id: doc.lead_id,
             is_read: true,
             is_notification: false,
+            metadata: { name: studentName, phone: studentPhone, case_id: caseId },
           });
         }
       }
@@ -170,8 +194,10 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       if (statusHistoryRes.data) {
         for (const status of statusHistoryRes.data) {
           if (notificationStatusIds.has(status.id)) continue;
-          const studentName = (status.lead as any)?.student?.name || 'Unknown';
-          const caseId = (status.lead as any)?.case_id || '';
+          const lead = status.lead as any;
+          const studentName = lead?.student?.name || 'Unknown';
+          const studentPhone = lead?.student?.phone || null;
+          const caseId = lead?.case_id || '';
           const oldStatus = formatStatus(status.old_status);
           const newStatus = formatStatus(status.new_status);
           
@@ -184,15 +210,13 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
             lead_id: status.lead_id,
             is_read: true,
             is_notification: false,
-            metadata: { old_status: status.old_status, new_status: status.new_status },
+            metadata: { name: studentName, phone: studentPhone, case_id: caseId, old_status: status.old_status, new_status: status.new_status },
           });
         }
       }
 
-      // Sort by created_at descending
       allActivities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      setActivities(allActivities.slice(0, 50));
+      setActivities(allActivities.slice(0, 100));
     } catch (err) {
       console.error("Failed to fetch activities:", err);
     } finally {
@@ -203,48 +227,15 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
   useEffect(() => {
     fetchActivities();
 
-    // Subscribe to realtime notifications
     const setupChannel = async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
       const channel = supabase
         .channel("admin-notifications")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${user.user.id}`,
-          },
-          () => {
-            // Refetch all activities on new notification
-            fetchActivities();
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "leads_new",
-          },
-          () => {
-            fetchActivities();
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "lead_documents",
-          },
-          () => {
-            fetchActivities();
-          }
-        )
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.user.id}` }, () => fetchActivities())
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "leads_new" }, () => fetchActivities())
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "lead_documents" }, () => fetchActivities())
         .subscribe();
 
       return channel;
@@ -254,119 +245,169 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
     setupChannel().then(c => { channel = c; });
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      if (channel) supabase.removeChannel(channel);
     };
   }, [fetchActivities]);
 
   const markAsRead = async (activityId: string) => {
-    // Only mark notifications as read
     if (!activityId.startsWith('notif-')) return;
-    
     const notifId = activityId.replace('notif-', '');
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("id", notifId);
-
-    setActivities((prev) =>
-      prev.map((a) => (a.id === activityId ? { ...a, is_read: true } : a))
-    );
+    await supabase.from("notifications").update({ is_read: true }).eq("id", notifId);
+    setActivities(prev => prev.map(a => (a.id === activityId ? { ...a, is_read: true } : a)));
   };
 
   const markAllAsRead = async () => {
-    const unreadNotifIds = activities
-      .filter(a => !a.is_read && a.is_notification)
-      .map(a => a.id.replace('notif-', ''));
-    
+    const unreadNotifIds = activities.filter(a => !a.is_read && a.is_notification).map(a => a.id.replace('notif-', ''));
     if (unreadNotifIds.length === 0) return;
-
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .in("id", unreadNotifIds);
-
-    setActivities((prev) => prev.map((a) => 
-      a.is_notification ? { ...a, is_read: true } : a
-    ));
+    await supabase.from("notifications").update({ is_read: true }).in("id", unreadNotifIds);
+    setActivities(prev => prev.map(a => (a.is_notification ? { ...a, is_read: true } : a)));
   };
 
   const handleActivityClick = async (activity: ActivityItem) => {
-    // Mark as read if it's a notification
     if (!activity.is_read && activity.is_notification) {
       await markAsRead(activity.id);
     }
-
     setOpen(false);
 
-    // Navigate to lead detail if lead_id exists
-    if (activity.lead_id) {
-      const tab = getTabFromType(activity.type);
-      if (onOpenLead) {
-        onOpenLead(activity.lead_id, tab);
-      }
+    if (activity.lead_id && onOpenLead) {
+      const focus = getFocusParam(activity.type);
+      onOpenLead(activity.lead_id, focus);
     }
   };
 
-  const getTabFromType = (type: string): string => {
+  const getFocusParam = (type: string): string => {
     switch (type) {
+      case 'lender_assigned': return 'lender';
+      case 'status_change': return 'timeline';
       case 'document_uploaded':
       case 'document_verified':
-      case 'document_rejected':
-        return 'documents';
-      case 'status_change':
-        return 'timeline';
-      case 'clarification_raised':
-        return 'clarifications';
-      case 'lender_assigned':
-        return 'lender';
-      default:
-        return 'overview';
+      case 'document_rejected': return 'documents';
+      default: return 'overview';
     }
   };
 
   const getTypeIcon = (type: string) => {
+    const iconClass = "h-3.5 w-3.5 shrink-0";
     switch (type) {
-      case "document_uploaded":
-        return <FileText className="h-4 w-4 text-blue-500" />;
-      case "lead_created":
-        return <UserPlus className="h-4 w-4 text-green-500" />;
-      case "status_change":
-        return <RefreshCw className="h-4 w-4 text-orange-500" />;
-      case "document_verified":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "document_rejected":
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case "lender_assigned":
-        return <Target className="h-4 w-4 text-purple-500" />;
-      case "action_required":
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-      case "clarification_raised":
-        return <MessageCircle className="h-4 w-4 text-cyan-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-muted-foreground" />;
+      case "document_uploaded": return <FileText className={cn(iconClass, "text-blue-500")} />;
+      case "lead_created": return <UserPlus className={cn(iconClass, "text-green-500")} />;
+      case "status_change": return <RefreshCw className={cn(iconClass, "text-orange-500")} />;
+      case "document_verified": return <CheckCircle className={cn(iconClass, "text-green-500")} />;
+      case "document_rejected": return <XCircle className={cn(iconClass, "text-red-500")} />;
+      case "lender_assigned": return <Target className={cn(iconClass, "text-purple-500")} />;
+      case "action_required": return <AlertTriangle className={cn(iconClass, "text-amber-500")} />;
+      case "clarification_raised": return <MessageCircle className={cn(iconClass, "text-cyan-500")} />;
+      default: return <Bell className={cn(iconClass, "text-muted-foreground")} />;
     }
   };
 
-  const getTypeBadge = (type: string, isNotification: boolean) => {
-    const labels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-      document_uploaded: { label: 'Document', variant: 'secondary' },
-      lead_created: { label: 'New Lead', variant: 'default' },
-      status_change: { label: 'Status', variant: 'outline' },
-      document_verified: { label: 'Verified', variant: 'default' },
-      document_rejected: { label: 'Rejected', variant: 'destructive' },
-      lender_assigned: { label: 'Lender', variant: 'secondary' },
-      action_required: { label: 'Action', variant: 'destructive' },
-      clarification_raised: { label: 'Clarification', variant: 'outline' },
-    };
-    const config = labels[type] || { label: 'Update', variant: 'secondary' as const };
+  const formatCompactTime = (date: string) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getPhoneLast4 = (phone: string | null | undefined): string | null => {
+    if (!phone) return null;
+    const digits = phone.replace(/\D/g, '');
+    return digits.length >= 4 ? `…${digits.slice(-4)}` : null;
+  };
+
+  const extractNameOrId = (activity: ActivityItem): string => {
+    const meta = activity.metadata;
+    if (meta?.name && meta.name !== 'Unknown') return meta.name;
+    if (meta?.case_id) return meta.case_id;
+    if (activity.lead_id) return activity.lead_id.slice(0, 8);
+    return '';
+  };
+
+  const renderNotificationRow = (activity: ActivityItem) => {
+    const name = extractNameOrId(activity);
+    const phoneLast4 = getPhoneLast4(activity.metadata?.phone);
+    const time = formatCompactTime(activity.created_at);
+    const isUnread = !activity.is_read && activity.is_notification;
+
+    const rowContent = (
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors",
+          isUnread && "bg-primary/5"
+        )}
+        onClick={() => handleActivityClick(activity)}
+      >
+        {getTypeIcon(activity.type)}
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+          <span className={cn("text-xs truncate", isUnread && "font-medium")}>
+            {activity.title}
+          </span>
+          {name && (
+            <>
+              <span className="text-muted-foreground text-xs shrink-0">•</span>
+              <span className="text-xs text-muted-foreground truncate">{name}</span>
+            </>
+          )}
+          {phoneLast4 && (
+            <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{phoneLast4}</span>
+          )}
+        </div>
+        <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{time}</span>
+        {isUnread && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
+      </div>
+    );
+
+    // Desktop hover card for details
     return (
-      <Badge variant={config.variant} className="text-[10px] px-1.5 py-0 h-4">
-        {config.label}
-      </Badge>
+      <HoverCard key={activity.id} openDelay={300} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          {rowContent}
+        </HoverCardTrigger>
+        <HoverCardContent side="left" align="start" className="w-64 p-3 text-xs space-y-1.5">
+          {activity.lead_id && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Lead ID</span>
+              <span className="font-mono">{activity.lead_id.slice(0, 8)}…</span>
+            </div>
+          )}
+          {activity.metadata?.name && activity.metadata.name !== 'Unknown' && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name</span>
+              <span>{activity.metadata.name}</span>
+            </div>
+          )}
+          {activity.metadata?.phone && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Phone</span>
+              <span>{activity.metadata.phone}</span>
+            </div>
+          )}
+          {activity.metadata?.case_id && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Case</span>
+              <span>{activity.metadata.case_id}</span>
+            </div>
+          )}
+          {activity.metadata?.new_status && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Status</span>
+              <span>{formatStatus(activity.metadata.new_status)}</span>
+            </div>
+          )}
+          <div className="pt-1 border-t text-muted-foreground">{activity.message}</div>
+        </HoverCardContent>
+      </HoverCard>
     );
   };
+
+  const filterCount = filteredActivities.length;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -383,88 +424,50 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96 p-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <h4 className="font-medium text-sm">Last 24 Hours</h4>
-            {totalCount > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {totalCount} {totalCount === 1 ? 'activity' : 'activities'}
-              </Badge>
-            )}
+      <PopoverContent align="end" className="w-80 p-0">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+          <div className="flex items-center gap-1">
+            {(['24h', '7d', 'all'] as TimeFilter[]).map((f) => (
+              <Button
+                key={f}
+                variant={timeFilter === f ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-6 px-2 text-[10px]"
+                onClick={() => setTimeFilter(f)}
+              >
+                {f === 'all' ? 'All' : f}
+              </Button>
+            ))}
           </div>
+          <span className="text-xs text-muted-foreground tabular-nums">{filterCount}</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs h-auto py-1 px-2 text-muted-foreground hover:text-foreground"
+              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
               onClick={markAllAsRead}
             >
               Mark all read
             </Button>
           )}
         </div>
-        <ScrollArea className="h-[400px]">
+
+        {/* Notification List */}
+        <ScrollArea className="h-[300px]">
           {loading ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
-              Loading activity...
+            <div className="p-6 text-center text-xs text-muted-foreground">
+              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+              Loading...
             </div>
-          ) : activities.length === 0 ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">
-              <Bell className="h-10 w-10 mx-auto mb-3 opacity-20" />
-              <p className="font-medium">No activity in the last 24 hours</p>
-              <p className="text-xs mt-1">
-                All quiet! New leads, documents, and updates will appear here
-              </p>
+          ) : filteredActivities.length === 0 ? (
+            <div className="p-8 text-center text-xs text-muted-foreground">
+              <Bell className="h-8 w-8 mx-auto mb-2 opacity-20" />
+              <p>No activity</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className={cn(
-                    "px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors group",
-                    !activity.is_read && activity.is_notification && "bg-primary/5"
-                  )}
-                  onClick={() => handleActivityClick(activity)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5">
-                      {getTypeIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {getTypeBadge(activity.type, activity.is_notification)}
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(activity.created_at), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                      </div>
-                      <p className={cn(
-                        "text-sm line-clamp-1",
-                        !activity.is_read && activity.is_notification && "font-medium"
-                      )}>
-                        {activity.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                        {activity.message}
-                      </p>
-                      {activity.lead_id && (
-                        <div className="flex items-center gap-1 mt-1.5 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                          <ExternalLink className="h-3 w-3" />
-                          View Lead Details
-                        </div>
-                      )}
-                    </div>
-                    {!activity.is_read && activity.is_notification && (
-                      <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    )}
-                  </div>
-                </div>
-              ))}
+              {filteredActivities.map(renderNotificationRow)}
             </div>
           )}
         </ScrollArea>
@@ -473,10 +476,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
   );
 }
 
-// Helper to format status for display
 function formatStatus(status: string | null): string {
   if (!status) return 'Unknown';
-  return status
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
