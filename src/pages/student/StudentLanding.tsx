@@ -273,27 +273,61 @@ const StudentLanding = () => {
         setAuthStep('success');
         toast.success('Phone verified successfully!');
 
-        // Wait for success animation, then navigate
-        setTimeout(() => {
-          // Find country data for proper value mapping
-          const countryData = COUNTRIES.find(c => c.code === formData.country);
+        // Find country data for proper value mapping
+        const countryData = COUNTRIES.find(c => c.code === formData.country);
+        
+        // Save complete eligibility data for pre-filling application form
+        sessionStorage.setItem('eligibility_form', JSON.stringify({
+          student_name: formData.student_name,
+          student_phone: formData.student_phone.replace(/\D/g, ''),
+          country: formData.country,
+          country_value: countryData?.value || formData.country,
+          university_id: formData.university_id,
+          loan_amount: formData.loan_amount[0] * 100000,
+          co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')) || 0,
+          verified: true,
+          timestamp: new Date().toISOString(),
+          source: 'student_landing'
+        }));
+        console.log('📤 Saved eligibility data to sessionStorage for pre-fill');
+
+        // CRITICAL: Establish the auth session BEFORE navigating
+        // This prevents the double OTP verification issue
+        if (data.auth?.token) {
+          console.log('🔐 Establishing auth session via verifyOtp...');
+          const { error: signInError } = await supabase.auth.verifyOtp({
+            token_hash: data.auth.token,
+            type: 'magiclink'
+          });
           
-          // Save complete eligibility data for pre-filling application form
-          sessionStorage.setItem('eligibility_form', JSON.stringify({
-            student_name: formData.student_name,
-            student_phone: formData.student_phone.replace(/\D/g, ''),
-            country: formData.country,
-            country_value: countryData?.value || formData.country,
-            university_id: formData.university_id,
-            loan_amount: formData.loan_amount[0] * 100000,
-            co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')) || 0,
-            verified: true,
-            timestamp: new Date().toISOString(),
-            source: 'student_landing'
-          }));
-          console.log('📤 Saved eligibility data to sessionStorage for pre-fill');
-          navigate('/student');
-        }, 1500);
+          if (signInError) {
+            console.warn('⚠️ verifyOtp failed, using magic link fallback:', signInError.message);
+            // Fallback: use the action link directly
+            if (data.auth.actionLink) {
+              window.location.href = data.auth.actionLink;
+              return;
+            }
+          } else {
+            console.log('✅ Auth session established successfully');
+            // Session is established, wait for success animation then navigate
+            setTimeout(() => {
+              navigate('/student', { replace: true });
+            }, 1200);
+            return;
+          }
+        }
+        
+        // Fallback if no token - use action link
+        if (data.auth?.actionLink) {
+          console.log('🔗 Using action link for auth');
+          window.location.href = data.auth.actionLink;
+          return;
+        }
+        
+        // Last resort - just navigate (user may need to re-auth)
+        setTimeout(() => {
+          navigate('/student', { replace: true });
+        }, 1200);
       } else {
         setAuthStep('otp');
         setOtpError(data?.error || 'Invalid OTP');
