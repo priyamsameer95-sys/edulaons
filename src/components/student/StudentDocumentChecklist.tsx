@@ -1,32 +1,31 @@
 /**
- * Student Document Checklist Component
+ * Student Document Checklist - Enhanced with Category Grouping
  * 
- * Shows document requirements and upload status for students
+ * Shows document requirements grouped by category.
+ * Includes tooltips explaining why each document is needed.
  */
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   FileText, 
-  Upload, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle,
-  X,
   Loader2,
-  ChevronDown,
-  ChevronUp
+  User,
+  Users,
+  GraduationCap,
+  Briefcase,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import DocumentCategoryGroup from './DocumentCategoryGroup';
 
 interface DocumentType {
   id: string;
   name: string;
   category: string;
+  description: string | null;
   required: boolean;
 }
 
@@ -40,14 +39,28 @@ interface UploadedDoc {
 interface StudentDocumentChecklistProps {
   leadId: string;
   compact?: boolean;
+  onStatsUpdate?: (stats: { pending: number; uploaded: number; total: number; rejected: number }) => void;
 }
 
-const StudentDocumentChecklist = ({ leadId, compact = false }: StudentDocumentChecklistProps) => {
+// Map category names to labels and icons
+const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; order: number }> = {
+  'KYC': { label: 'Student Documents', icon: User, order: 1 },
+  'Academic': { label: 'Academic Documents', icon: GraduationCap, order: 2 },
+  'Financial': { label: 'Financial Documents', icon: Briefcase, order: 3 },
+  'Co-Applicant': { label: 'Co-Applicant Documents', icon: Users, order: 4 },
+  'Collateral': { label: 'Collateral Documents', icon: Building2, order: 5 },
+  'Other': { label: 'Other Documents', icon: FileText, order: 6 },
+};
+
+const StudentDocumentChecklist = ({ 
+  leadId, 
+  compact = false,
+  onStatsUpdate 
+}: StudentDocumentChecklistProps) => {
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(!compact);
 
   useEffect(() => {
     fetchDocumentData();
@@ -58,7 +71,7 @@ const StudentDocumentChecklist = ({ leadId, compact = false }: StudentDocumentCh
       const [typesRes, docsRes] = await Promise.all([
         supabase
           .from('document_types')
-          .select('id, name, category, required')
+          .select('id, name, category, description, required')
           .order('display_order', { ascending: true }),
         supabase
           .from('lead_documents')
@@ -75,10 +88,12 @@ const StudentDocumentChecklist = ({ leadId, compact = false }: StudentDocumentCh
     }
   };
 
-  const getDocumentStatus = (typeId: string) => {
+  const getDocumentStatus = (typeId: string): 'required' | 'pending' | 'verified' | 'rejected' => {
     const doc = uploadedDocs.find(d => d.document_type_id === typeId);
-    if (!doc) return 'pending';
-    return doc.verification_status;
+    if (!doc) return 'required';
+    if (doc.verification_status === 'verified') return 'verified';
+    if (doc.verification_status === 'rejected') return 'rejected';
+    return 'pending';
   };
 
   const handleFileUpload = async (typeId: string, file: File) => {
@@ -120,7 +135,7 @@ const StudentDocumentChecklist = ({ leadId, compact = false }: StudentDocumentCh
       if (dbError) throw dbError;
 
       setUploadedDocs(prev => [...prev, newDoc]);
-      toast.success('Document uploaded');
+      toast.success('Document uploaded successfully');
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
     } finally {
@@ -128,11 +143,58 @@ const StudentDocumentChecklist = ({ leadId, compact = false }: StudentDocumentCh
     }
   };
 
+  // Calculate stats
   const requiredDocs = documentTypes.filter(d => d.required);
-  const pendingCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'pending').length;
+  const uploadedCount = requiredDocs.filter(d => {
+    const status = getDocumentStatus(d.id);
+    return status === 'pending' || status === 'verified';
+  }).length;
   const verifiedCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'verified').length;
+  const pendingCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'required').length;
   const rejectedCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'rejected').length;
   const progress = requiredDocs.length > 0 ? (verifiedCount / requiredDocs.length) * 100 : 0;
+
+  // Notify parent of stats
+  useEffect(() => {
+    if (!loading && onStatsUpdate) {
+      onStatsUpdate({
+        pending: pendingCount,
+        uploaded: uploadedCount,
+        total: requiredDocs.length,
+        rejected: rejectedCount,
+      });
+    }
+  }, [loading, pendingCount, uploadedCount, requiredDocs.length, rejectedCount, onStatsUpdate]);
+
+  // Group documents by category
+  const groupedDocuments = requiredDocs.reduce((acc, doc) => {
+    const category = doc.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    const uploadedDoc = uploadedDocs.find(u => u.document_type_id === doc.id);
+    acc[category].push({
+      id: doc.id,
+      name: doc.name,
+      description: doc.description,
+      status: getDocumentStatus(doc.id),
+      uploadedFilename: uploadedDoc?.original_filename,
+    });
+    return acc;
+  }, {} as Record<string, Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    status: 'required' | 'pending' | 'verified' | 'rejected';
+    uploadedFilename?: string;
+  }>>);
+
+  // Sort categories by order
+  const sortedCategories = Object.keys(groupedDocuments).sort((a, b) => {
+    const orderA = CATEGORY_CONFIG[a]?.order ?? 99;
+    const orderB = CATEGORY_CONFIG[b]?.order ?? 99;
+    return orderA - orderB;
+  });
 
   if (loading) {
     return (
@@ -144,119 +206,92 @@ const StudentDocumentChecklist = ({ leadId, compact = false }: StudentDocumentCh
     );
   }
 
-  const StatusIcon = ({ status }: { status: string }) => {
-    if (status === 'verified') return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
-    if (status === 'rejected') return <X className="w-4 h-4 text-red-600" />;
-    if (status === 'pending' && uploadedDocs.some(d => d.verification_status === 'pending')) {
-      return <Clock className="w-4 h-4 text-amber-600" />;
-    }
-    return <AlertCircle className="w-4 h-4 text-muted-foreground" />;
-  };
+  if (compact) {
+    // Compact view - just show summary
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Documents
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {pendingCount > 0 && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                  {pendingCount} pending
+                </span>
+              )}
+              {rejectedCount > 0 && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  {rejectedCount} need reupload
+                </span>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-muted-foreground">Progress</span>
+            <span className="text-xs font-medium text-foreground">{verifiedCount}/{requiredDocs.length}</span>
+          </div>
+          <Progress value={progress} className="h-1.5" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
-      <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Documents
-              </CardTitle>
-              <div className="flex items-center gap-3">
-                {pendingCount > 0 && (
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                    {pendingCount} pending
-                  </span>
-                )}
-                {rejectedCount > 0 && (
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                    {rejectedCount} need reupload
-                  </span>
-                )}
-                {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <CardContent className="space-y-4">
-            {/* Progress */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-muted-foreground">Upload Progress</span>
-                <span className="text-xs font-medium text-foreground">{verifiedCount}/{requiredDocs.length}</span>
-              </div>
-              <Progress value={progress} className="h-1.5" />
-            </div>
-
-            {/* Document List */}
-            <div className="space-y-2">
-              {requiredDocs.slice(0, compact ? 5 : undefined).map(docType => {
-                const status = getDocumentStatus(docType.id);
-                const uploaded = uploadedDocs.find(d => d.document_type_id === docType.id);
-                const isUploading = uploading === docType.id;
-
-                return (
-                  <div 
-                    key={docType.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-lg border",
-                      status === 'verified' ? "bg-emerald-50/50 border-emerald-200" :
-                      status === 'rejected' ? "bg-red-50/50 border-red-200" :
-                      uploaded ? "bg-amber-50/50 border-amber-200" :
-                      "bg-muted/30 border-border"
-                    )}
-                  >
-                    <StatusIcon status={status} />
-                    <span className="flex-1 text-sm font-medium text-foreground truncate">
-                      {docType.name}
-                    </span>
-
-                    {!uploaded || status === 'rejected' ? (
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileUpload(docType.id, file);
-                          }}
-                          disabled={isUploading}
-                        />
-                        <Button variant="ghost" size="sm" className="h-7 px-2" asChild>
-                          <span>
-                            {isUploading ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Upload className="w-3.5 h-3.5" />
-                            )}
-                          </span>
-                        </Button>
-                      </label>
-                    ) : (
-                      <span className={cn(
-                        "text-[10px] font-medium px-1.5 py-0.5 rounded",
-                        status === 'verified' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                      )}>
-                        {status === 'verified' ? '✓' : '⏳'}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {compact && requiredDocs.length > 5 && (
-              <Button variant="ghost" size="sm" className="w-full text-xs">
-                View all {requiredDocs.length} documents
-              </Button>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Required Documents
+          </CardTitle>
+          <span className="text-sm text-muted-foreground">
+            {pendingCount + rejectedCount > 0 ? (
+              <span className="font-medium text-foreground">{pendingCount + rejectedCount} pending</span>
+            ) : (
+              <span className="text-emerald-600 font-medium">All uploaded</span>
             )}
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
+            {' '}of {requiredDocs.length}
+          </span>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-3">
+        {/* Progress Overview */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-muted-foreground">Verification Progress</span>
+            <span className="text-xs font-medium text-foreground">{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </div>
+
+        {/* Category Groups */}
+        {sortedCategories.map((category) => {
+          const config = CATEGORY_CONFIG[category] || { label: category, icon: FileText, order: 99 };
+          const docs = groupedDocuments[category];
+          
+          // Determine if this category should be expanded (has pending items)
+          const hasPending = docs.some(d => d.status === 'required' || d.status === 'rejected');
+          
+          return (
+            <DocumentCategoryGroup
+              key={category}
+              category={category}
+              categoryLabel={config.label}
+              categoryIcon={config.icon}
+              documents={docs}
+              onUpload={handleFileUpload}
+              uploadingId={uploading}
+              defaultExpanded={hasPending}
+            />
+          );
+        })}
+      </CardContent>
     </Card>
   );
 };
