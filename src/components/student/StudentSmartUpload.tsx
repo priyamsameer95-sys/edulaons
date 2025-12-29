@@ -3,6 +3,7 @@
  * 
  * Desktop-first design with simplified confidence display.
  * Filters document types to student-uploadable categories only.
+ * Includes AI validation step before upload for quality/content checking.
  */
 import { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDocumentClassification, QueuedFile, ClassificationResult } from '@/hooks/useDocumentClassification';
+import { useDocumentValidation, ValidationResult } from '@/hooks/useDocumentValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
@@ -23,9 +25,11 @@ import {
   AlertTriangle,
   Trash2,
   Check,
-  Shield
+  Shield,
+  FileCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import AIValidationFeedback from './AIValidationFeedback';
 
 interface DocumentType {
   id: string;
@@ -39,6 +43,12 @@ interface UploadedDocument {
   id: string;
   document_type_id: string;
   verification_status?: string;
+}
+
+// Extended queue file with validation
+interface ExtendedQueuedFile extends QueuedFile {
+  validationStatus?: 'idle' | 'validating' | 'validated';
+  validation?: ValidationResult | null;
 }
 
 interface StudentSmartUploadProps {
@@ -85,8 +95,9 @@ const StudentSmartUpload = ({
   coApplicantName,
   uploadedDocuments = []
 }: StudentSmartUploadProps) => {
-  const [queue, setQueue] = useState<QueuedFile[]>([]);
+  const [queue, setQueue] = useState<ExtendedQueuedFile[]>([]);
   const { classifyDocument } = useDocumentClassification();
+  const { validateDocument } = useDocumentValidation();
 
   // Filter document types to student-uploadable categories
   const studentDocTypes = useMemo(() => {
@@ -124,21 +135,23 @@ const StudentSmartUpload = ({
     }
 
     // Add to queue as classifying
-    const queuedFile: QueuedFile = {
+    const queuedFile: ExtendedQueuedFile = {
       id: fileId,
       file,
       preview,
       status: 'classifying',
+      validationStatus: 'idle',
     };
     
     setQueue(prev => [...prev, queuedFile]);
 
-    // Classify the document
+    // Step 1: Classify the document
     const classification = await classifyDocument(file);
     
     if (classification) {
       const matchingType = findMatchingDocType(classification);
 
+      // Update with classification, then start validation
       setQueue(prev => prev.map(q => 
         q.id === fileId 
           ? { 
@@ -147,9 +160,34 @@ const StudentSmartUpload = ({
               classification,
               selectedDocumentTypeId: matchingType?.id,
               selectedCategory: classification.detected_category,
+              validationStatus: 'validating',
             } 
           : q
       ));
+
+      // Step 2: Validate the document if we have a matching type
+      if (matchingType) {
+        const validation = await validateDocument(file, matchingType.name);
+        setQueue(prev => prev.map(q => 
+          q.id === fileId 
+            ? { 
+                ...q, 
+                validationStatus: 'validated',
+                validation,
+              } 
+            : q
+        ));
+      } else {
+        // No matching type - skip validation
+        setQueue(prev => prev.map(q => 
+          q.id === fileId 
+            ? { 
+                ...q, 
+                validationStatus: 'idle',
+              } 
+            : q
+        ));
+      }
     } else {
       setQueue(prev => prev.map(q => 
         q.id === fileId 
@@ -157,11 +195,12 @@ const StudentSmartUpload = ({
               ...q, 
               status: 'classified', 
               classification: undefined,
+              validationStatus: 'idle',
             } 
           : q
       ));
     }
-  }, [classifyDocument, findMatchingDocType]);
+  }, [classifyDocument, validateDocument, findMatchingDocType]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     await Promise.all(acceptedFiles.map(processFile));
@@ -178,18 +217,36 @@ const StudentSmartUpload = ({
     maxSize: 10 * 1024 * 1024,
   });
 
-  const handleTypeChange = useCallback((fileId: string, documentTypeId: string) => {
+  const handleTypeChange = useCallback(async (fileId: string, documentTypeId: string) => {
     const docType = studentDocTypes.find(dt => dt.id === documentTypeId);
+    const queuedFile = queue.find(q => q.id === fileId);
+    
     setQueue(prev => prev.map(q => 
       q.id === fileId 
         ? { 
             ...q, 
             selectedDocumentTypeId: documentTypeId,
             selectedCategory: docType?.category || q.selectedCategory,
+            validationStatus: 'validating',
+            validation: null,
           } 
         : q
     ));
-  }, [studentDocTypes]);
+
+    // Re-validate with new document type
+    if (queuedFile && docType) {
+      const validation = await validateDocument(queuedFile.file, docType.name);
+      setQueue(prev => prev.map(q => 
+        q.id === fileId 
+          ? { 
+              ...q, 
+              validationStatus: 'validated',
+              validation,
+            } 
+          : q
+      ));
+    }
+  }, [studentDocTypes, queue, validateDocument]);
 
   // Check if detected name matches student or co-applicant
   const getNameMatchStatus = (detectedName?: string) => {
@@ -223,7 +280,7 @@ const StudentSmartUpload = ({
     };
   };
 
-  const handleUpload = useCallback(async (queuedFile: QueuedFile) => {
+  const handleUpload = useCallback(async (queuedFile: ExtendedQueuedFile) => {
     if (!queuedFile.selectedDocumentTypeId) {
       toast.error('Please select document type');
       return;
@@ -256,7 +313,15 @@ const StudentSmartUpload = ({
 
       if (uploadError) throw uploadError;
 
-      // Create database record with AI classification data
+      // Build validation notes combining classification and validation results
+      const validationNotes = [
+        queuedFile.classification?.notes,
+        queuedFile.validation?.notes,
+        queuedFile.validation?.redFlags?.length ? `Red flags: ${queuedFile.validation.redFlags.join(', ')}` : null,
+      ].filter(Boolean).join(' | ');
+
+      // Create database record with AI classification + validation data
+      // Status is 'pending' for student uploads - Admin will approve/reject
       const { error: dbError } = await supabase
         .from('lead_documents')
         .insert({
@@ -268,12 +333,16 @@ const StudentSmartUpload = ({
           file_size: queuedFile.file.size,
           mime_type: queuedFile.file.type,
           upload_status: 'uploaded',
-          verification_status: 'uploaded',
+          // Set to 'pending' so Admin must approve/reject
+          verification_status: 'pending',
           uploaded_by: 'student',
+          // AI Classification data
           ai_detected_type: queuedFile.classification?.detected_type,
           ai_confidence_score: queuedFile.classification?.confidence,
-          ai_quality_assessment: queuedFile.classification?.quality,
-          ai_validation_notes: queuedFile.classification?.notes,
+          ai_quality_assessment: queuedFile.validation?.qualityAssessment || queuedFile.classification?.quality,
+          // AI Validation data
+          ai_validation_status: queuedFile.validation?.validationStatus || 'manual_review',
+          ai_validation_notes: validationNotes || null,
           ai_validated_at: new Date().toISOString(),
         });
 
@@ -488,6 +557,13 @@ const StudentSmartUpload = ({
                           </div>
                         )}
 
+                        {/* AI Validation Feedback */}
+                        {(queuedFile.validationStatus === 'validating' || queuedFile.validationStatus === 'validated') && (
+                          <AIValidationFeedback
+                            status={queuedFile.validationStatus}
+                            validation={queuedFile.validation}
+                          />
+                        )}
                         {/* Name match indicator - Simplified */}
                         {queuedFile.classification?.detected_name && (() => {
                           const nameMatch = getNameMatchStatus(queuedFile.classification.detected_name);

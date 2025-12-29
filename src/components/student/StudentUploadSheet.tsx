@@ -100,26 +100,31 @@ const StudentUploadSheet = ({
 
   // Calculate stats
   const requiredDocs = documentTypes.filter(d => d.required);
-  const getDocStatus = (typeId: string): 'required' | 'pending' | 'verified' | 'rejected' => {
+  const getDocStatus = (typeId: string): 'required' | 'pending' | 'uploaded' | 'verified' | 'rejected' | 'resubmission_required' => {
     const doc = uploadedDocs.find(d => d.document_type_id === typeId);
     if (!doc) return 'required';
     if (doc.verification_status === 'verified') return 'verified';
     if (doc.verification_status === 'rejected') return 'rejected';
+    if (doc.verification_status === 'resubmission_required') return 'resubmission_required';
+    if (doc.verification_status === 'uploaded') return 'uploaded';
     return 'pending';
   };
 
   const uploadedCount = requiredDocs.filter(d => {
     const status = getDocStatus(d.id);
-    return status === 'pending' || status === 'verified';
+    return status === 'pending' || status === 'uploaded' || status === 'verified';
   }).length;
   const verifiedCount = requiredDocs.filter(d => getDocStatus(d.id) === 'verified').length;
-  const rejectedCount = requiredDocs.filter(d => getDocStatus(d.id) === 'rejected').length;
+  const rejectedCount = requiredDocs.filter(d => {
+    const status = getDocStatus(d.id);
+    return status === 'rejected' || status === 'resubmission_required';
+  }).length;
 
   // Build document lists
   const uploadedDocsList = requiredDocs
     .filter(d => {
       const status = getDocStatus(d.id);
-      return status === 'pending' || status === 'verified';
+      return status === 'pending' || status === 'uploaded' || status === 'verified';
     })
     .map(d => {
       const uploadedDoc = uploadedDocs.find(u => u.document_type_id === d.id);
@@ -134,7 +139,7 @@ const StudentUploadSheet = ({
   const pendingDocsList = requiredDocs
     .filter(d => {
       const status = getDocStatus(d.id);
-      return status === 'required' || status === 'rejected';
+      return status === 'required' || status === 'rejected' || status === 'resubmission_required';
     })
     .map(d => ({
       id: d.id,
