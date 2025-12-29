@@ -91,71 +91,70 @@ const LenderFeaturedCard = ({
     >
       {/* Top Match Ribbon - or placeholder for consistent height */}
       {isTopMatch ? (
-        <div className="bg-gradient-to-r from-warning to-warning/80 text-warning-foreground py-2 px-4 flex items-center justify-center gap-2 h-[40px]">
+        <div className="bg-gradient-to-r from-warning to-warning/80 text-warning-foreground py-2.5 px-4 flex items-center justify-center gap-2">
           <Sparkles className="h-4 w-4" />
           <span className="text-xs font-bold uppercase tracking-wider">Best Match for You</span>
           <Sparkles className="h-4 w-4" />
         </div>
       ) : (
-        <div className="h-[40px]" /> 
+        <div className="h-[44px]" /> 
       )}
 
-      {/* Header Section */}
-      <div className="p-5 pb-4">
-        <div className="flex items-start gap-4">
+      {/* Header Section - Cleaner layout */}
+      <div className="p-4 pb-3">
+        <div className="flex items-center gap-3">
           {/* Logo */}
           <div className={cn(
-            "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border-2",
+            "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 border",
             isTopMatch ? "bg-warning/5 border-warning/20" : "bg-muted/30 border-border/40"
           )}>
             {lender.logo_url ? (
               <img 
                 src={lender.logo_url} 
                 alt={lender.lender_name} 
-                className="w-9 h-9 object-contain" 
+                className="w-8 h-8 object-contain" 
               />
             ) : (
-              <Building2 className="h-7 w-7 text-muted-foreground" />
+              <Building2 className="h-6 w-6 text-muted-foreground" />
             )}
           </div>
           
-          {/* Name & Match */}
+          {/* Name & Match Badge */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-foreground text-lg leading-tight truncate">
+              <h4 className="font-bold text-foreground text-base leading-tight truncate">
                 {lender.lender_name}
               </h4>
-              {isTopMatch && <Star className="h-5 w-5 text-warning fill-warning flex-shrink-0" />}
+              {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
             </div>
             
-            {/* Match Score - Prominent */}
-            <div className="flex items-center gap-2 mt-1.5">
-              <div className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-bold",
+            <div className="flex items-center gap-2 mt-1">
+              <span className={cn(
+                "px-2 py-0.5 rounded text-xs font-bold",
                 lender.compatibility_score >= 85 ? "bg-success/10 text-success" :
                 lender.compatibility_score >= 70 ? "bg-primary/10 text-primary" :
                 "bg-muted text-muted-foreground"
               )}>
                 {lender.compatibility_score}% Match
-              </div>
+              </span>
               {!isTopMatch && (
-                <span className="text-xs text-muted-foreground">#{rank} Recommendation</span>
+                <span className="text-[11px] text-muted-foreground">#{rank}</span>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* AI Insight - Fixed height for consistent alignment */}
-      <div className="px-5">
-        <div className="min-h-[88px] bg-gradient-to-br from-primary/5 via-primary/10 to-info/5 rounded-xl p-4 border border-primary/15">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Zap className="h-4 w-4 text-primary" />
+      {/* Why This Lender - Proper height with full text visibility */}
+      <div className="px-4 pb-3">
+        <div className="bg-gradient-to-br from-primary/5 via-primary/8 to-info/5 rounded-lg p-3 border border-primary/10">
+          <div className="flex gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Zap className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div className="flex-1">
-              <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Why This Lender?</p>
-              <p className="text-sm text-foreground leading-relaxed line-clamp-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-0.5">Why This Lender?</p>
+              <p className="text-xs text-foreground leading-relaxed">
                 {lender.student_facing_reason || 'Matched based on your loan requirements and financial profile.'}
               </p>
             </div>
@@ -163,42 +162,54 @@ const LenderFeaturedCard = ({
         </div>
       </div>
 
-      {/* Quick Stats - Compact inline */}
-      <div className="px-5 py-3">
-        <div className="flex items-center justify-between py-2.5 px-4 rounded-xl bg-muted/30 border border-border/40">
-          <div className="flex items-center gap-1.5">
-            <Percent className="h-4 w-4 text-success" />
-            <span className="text-sm font-bold text-foreground">{lender.interest_rate_min || '—'}%</span>
-            <span className="text-[10px] text-muted-foreground uppercase">rate</span>
+      {/* Key Stats - Vertical layout for better readability */}
+      <div className="px-4 pb-3">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Percent className="h-3.5 w-3.5 text-success" />
+            </div>
+            <p className="text-sm font-bold text-foreground tabular-nums">
+              {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
+            </p>
+            <p className="text-[9px] text-muted-foreground font-medium uppercase mt-0.5">Rate</p>
           </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-1.5">
-            <Wallet className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-foreground">
+          
+          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Wallet className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <p className="text-sm font-bold text-foreground tabular-nums">
               {displayAmount ? `₹${(displayAmount / 10000000).toFixed(1)}Cr` : '—'}
-            </span>
+            </p>
+            <p className="text-[9px] text-muted-foreground font-medium uppercase mt-0.5">Max Loan</p>
           </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4 text-info" />
-            <span className="text-sm font-bold text-foreground">{lender.processing_time_days || '7-10'}d</span>
+          
+          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Clock className="h-3.5 w-3.5 text-info" />
+            </div>
+            <p className="text-sm font-bold text-foreground tabular-nums">
+              {lender.processing_time_days || '7-10'}d
+            </p>
+            <p className="text-[9px] text-muted-foreground font-medium uppercase mt-0.5">Process</p>
           </div>
         </div>
       </div>
 
       {/* View Details - Expandable Section */}
-      <div className="px-5">
+      <div className="px-4 pb-2">
         <button
           onClick={() => setShowDetails(!showDetails)}
           className={cn(
-            "w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all",
+            "w-full flex items-center justify-between py-2.5 px-3 rounded-lg transition-all",
             "bg-muted/30 hover:bg-muted/50 border border-border/40",
             showDetails && "bg-muted/50"
           )}
         >
-          <span className="text-sm font-semibold text-foreground">View Full Details</span>
+          <span className="text-xs font-semibold text-foreground">View Full Details</span>
           <ChevronDown className={cn(
-            "h-5 w-5 text-muted-foreground transition-transform duration-300",
+            "h-4 w-4 text-muted-foreground transition-transform duration-300",
             showDetails && "rotate-180"
           )} />
         </button>
@@ -206,62 +217,16 @@ const LenderFeaturedCard = ({
 
       {/* Expanded Details */}
       {showDetails && (
-        <div className="px-5 py-4 space-y-4 animate-fade-in">
-          {/* Key Metrics Grid */}
-          <div>
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Loan Details</p>
-            <div className="grid grid-cols-4 gap-2">
-              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-success/10 flex items-center justify-center mb-1.5">
-                  <Percent className="h-4 w-4 text-success" />
-                </div>
-                <p className="text-base font-bold text-foreground tabular-nums">
-                  {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
-                </p>
-                <p className="text-[9px] text-muted-foreground font-medium uppercase">Rate</p>
-              </div>
-              
-              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1.5">
-                  <Wallet className="h-4 w-4 text-primary" />
-                </div>
-                <p className="text-base font-bold text-foreground tabular-nums">
-                  {displayAmount ? `₹${(displayAmount / 10000000).toFixed(1)}Cr` : '—'}
-                </p>
-                <p className="text-[9px] text-muted-foreground font-medium uppercase">Max Loan</p>
-              </div>
-              
-              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-info/10 flex items-center justify-center mb-1.5">
-                  <Clock className="h-4 w-4 text-info" />
-                </div>
-                <p className="text-base font-bold text-foreground tabular-nums">
-                  {lender.processing_time_days || '7-10'}
-                </p>
-                <p className="text-[9px] text-muted-foreground font-medium uppercase">Days</p>
-              </div>
-              
-              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
-                <div className="w-8 h-8 mx-auto rounded-lg bg-warning/10 flex items-center justify-center mb-1.5">
-                  <FileCheck className="h-4 w-4 text-warning" />
-                </div>
-                <p className="text-base font-bold text-foreground tabular-nums">
-                  {lender.processing_fee ? `${lender.processing_fee}%` : '1%'}
-                </p>
-                <p className="text-[9px] text-muted-foreground font-medium uppercase">Fee</p>
-              </div>
-            </div>
-          </div>
-
+        <div className="px-4 py-3 space-y-3 animate-fade-in border-t border-border/30">
           {/* Benefits */}
           {benefits.length > 0 && (
             <div>
-              <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-2">Highlights</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-2">Highlights</p>
+              <div className="flex flex-wrap gap-1.5">
                 {benefits.map((benefit, idx) => (
-                  <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/5 border border-success/15 whitespace-nowrap">
-                    <benefit.icon className="h-3.5 w-3.5 text-success flex-shrink-0" />
-                    <span className="text-xs text-foreground/80 whitespace-nowrap">{benefit.text}</span>
+                  <div key={idx} className="flex items-center gap-1 px-2 py-1 rounded bg-success/5 border border-success/15">
+                    <benefit.icon className="h-3 w-3 text-success flex-shrink-0" />
+                    <span className="text-[10px] text-foreground/80">{benefit.text}</span>
                   </div>
                 ))}
               </div>
@@ -270,12 +235,12 @@ const LenderFeaturedCard = ({
 
           {/* Expenses Covered */}
           <div>
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-2">What's Covered</p>
-            <div className="grid grid-cols-2 gap-2">
+            <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-2">What's Covered</p>
+            <div className="grid grid-cols-2 gap-1.5">
               {expensesCovered.map((expense, idx) => (
-                <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-success/5 border border-success/10">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
-                  <span className="text-xs text-foreground/80">
+                <div key={idx} className="flex items-center gap-1.5 p-1.5 rounded bg-success/5 border border-success/10">
+                  <CheckCircle2 className="h-3 w-3 text-success flex-shrink-0" />
+                  <span className="text-[10px] text-foreground/80 truncate">
                     {typeof expense === 'string' ? expense : expense.name || 'Covered'}
                   </span>
                 </div>
@@ -284,47 +249,46 @@ const LenderFeaturedCard = ({
           </div>
           
           {/* Additional Info */}
-          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
-            <div className="p-3 rounded-lg bg-muted/30">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Moratorium</p>
-              <p className="text-sm font-semibold text-foreground">{lender.moratorium_period || 'Course + 6 months'}</p>
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40">
+            <div className="p-2 rounded bg-muted/30">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wide mb-0.5">Moratorium</p>
+              <p className="text-xs font-semibold text-foreground">{lender.moratorium_period || 'Course + 6mo'}</p>
             </div>
-            <div className="p-3 rounded-lg bg-muted/30">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Collateral</p>
-              <p className="text-sm font-semibold text-foreground">May be required</p>
+            <div className="p-2 rounded bg-muted/30">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wide mb-0.5">Processing Fee</p>
+              <p className="text-xs font-semibold text-foreground">{lender.processing_fee ? `${lender.processing_fee}%` : '~1%'}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Spacer */}
-      <div className="flex-1 min-h-3" />
+      <div className="flex-1 min-h-2" />
 
       {/* Select Button */}
-      <div className="p-5 pt-3">
+      <div className="p-4 pt-2">
         <Button
           onClick={() => onSelect(lender.lender_id)}
           disabled={isUpdating}
-          size="lg"
           className={cn(
-            "w-full h-12 font-bold text-sm rounded-xl transition-all",
+            "w-full h-10 font-bold text-sm rounded-lg transition-all",
             isSelected 
-              ? "bg-success hover:bg-success/90 text-success-foreground shadow-lg shadow-success/20" 
+              ? "bg-success hover:bg-success/90 text-success-foreground shadow-md shadow-success/20" 
               : isTopMatch 
-                ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" 
+                ? "bg-primary hover:bg-primary/90 shadow-md shadow-primary/20" 
                 : ""
           )}
           variant={isSelected ? "default" : isTopMatch ? "default" : "outline"}
         >
           {isSelected ? (
             <>
-              <Check className="h-5 w-5 mr-2" />
-              Lender Selected
+              <Check className="h-4 w-4 mr-1.5" />
+              Selected
             </>
           ) : (
             <>
               Choose This Lender
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <ArrowRight className="h-4 w-4 ml-1.5" />
             </>
           )}
         </Button>
