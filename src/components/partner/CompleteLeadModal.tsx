@@ -552,8 +552,8 @@ export const CompleteLeadModal = ({
         .from("leads_new")
         .update({
           quick_lead_completed_at: new Date().toISOString(),
-          study_destination: studyDestination || null,
-          loan_type: (loanType as any) || null,
+          study_destination: (studyDestination || null) as Database["public"]["Enums"]["study_destination_enum"] | null,
+          loan_type: (loanType || null) as Database["public"]["Enums"]["loan_type_enum"] | null,
           loan_amount: loanAmountNum ?? (lead.loan_amount || null),
           intake_month: intakeMonthNum,
           intake_year: intakeYearNum,
@@ -973,9 +973,9 @@ export const CompleteLeadModal = ({
                 <GraduationCap className="h-4 w-4" />
                 Course / Program <span className="text-destructive">*</span>
               </Label>
-              {existingData?.universityId ? (
+              {universities[0] && universities[0].length > 10 ? (
                 <CourseCombobox
-                  universityId={existingData.universityId}
+                  universityId={universities[0]}
                   value={courseId}
                   onChange={(value, isCustom) => {
                     setCourseId(value);
@@ -1001,9 +1001,9 @@ export const CompleteLeadModal = ({
                   className={errors.courseId ? 'border-destructive' : ''}
                 />
               )}
-              {!existingData?.universityId && (
+              {!(universities[0] && universities[0].length > 10) && (
                 <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md">
-                  💡 We couldn't fetch your university automatically — please enter your course name manually.
+                  💡 Select a university first to see available courses, or enter a custom course name.
                 </p>
               )}
               {errors.courseId && (
