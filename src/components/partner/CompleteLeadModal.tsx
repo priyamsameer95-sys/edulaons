@@ -31,12 +31,26 @@ import {
   User,
   Users,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { CourseCombobox } from "@/components/ui/course-combobox";
 import { Progress } from "@/components/ui/progress";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 import { Database } from "@/integrations/supabase/types";
+import { ALL_STATES_AND_UTS } from "@/constants/indianStates";
+import { 
+  GENDER_OPTIONS, 
+  OCCUPATION_OPTIONS, 
+  EMPLOYMENT_TYPE_OPTIONS 
+} from "@/utils/leadCompletionSchema";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 type RelationshipEnum = Database["public"]["Enums"]["relationship_enum"];
 
@@ -49,12 +63,20 @@ interface CompleteLeadModalProps {
 
 interface FormErrors {
   studentPinCode?: string;
+  studentDob?: string;
+  studentGender?: string;
+  studentCity?: string;
+  studentState?: string;
   courseId?: string;
   coApplicantName?: string;
   coApplicantRelationship?: string;
   coApplicantPhone?: string;
   coApplicantSalary?: string;
   coApplicantPinCode?: string;
+  coApplicantOccupation?: string;
+  coApplicantEmployer?: string;
+  coApplicantEmploymentType?: string;
+  coApplicantEmploymentDuration?: string;
 }
 
 interface ExistingData {
@@ -93,21 +115,35 @@ export const CompleteLeadModal = ({
   const [fetchingData, setFetchingData] = useState(false);
   const [existingData, setExistingData] = useState<ExistingData | null>(null);
   
-  // Student field
+  // Student fields
   const [studentPinCode, setStudentPinCode] = useState<string>("");
+  const [studentDob, setStudentDob] = useState<string>("");
+  const [studentGender, setStudentGender] = useState<string>("");
+  const [studentCity, setStudentCity] = useState<string>("");
+  const [studentState, setStudentState] = useState<string>("");
   
   // Course field
   const [courseId, setCourseId] = useState<string>("");
   const [isCustomCourse, setIsCustomCourse] = useState(false);
   
-  // Co-applicant fields
+  // Co-applicant required fields
   const [coApplicantName, setCoApplicantName] = useState<string>("");
   const [coApplicantRelationship, setCoApplicantRelationship] = useState<RelationshipEnum | "">("");
   const [coApplicantPhone, setCoApplicantPhone] = useState<string>("");
   const [coApplicantSalary, setCoApplicantSalary] = useState<string>("");
   const [coApplicantPinCode, setCoApplicantPinCode] = useState<string>("");
   
+  // Co-applicant optional employment fields
+  const [coApplicantOccupation, setCoApplicantOccupation] = useState<string>("");
+  const [coApplicantEmployer, setCoApplicantEmployer] = useState<string>("");
+  const [coApplicantEmploymentType, setCoApplicantEmploymentType] = useState<string>("");
+  const [coApplicantEmploymentDuration, setCoApplicantEmploymentDuration] = useState<string>("");
+  
   const [errors, setErrors] = useState<FormErrors>({});
+  
+  // Collapsible sections state
+  const [optionalStudentOpen, setOptionalStudentOpen] = useState(false);
+  const [optionalCoAppOpen, setOptionalCoAppOpen] = useState(false);
 
   // Fetch existing data when modal opens
   useEffect(() => {
@@ -138,24 +174,30 @@ export const CompleteLeadModal = ({
           .eq("lead_id", lead.id)
           .maybeSingle();
 
-        // Fetch student data for PIN code
+        // Fetch student data - including optional fields
         const { data: studentData } = await supabase
           .from("students")
-          .select("postal_code")
+          .select("postal_code, date_of_birth, gender, city, state")
           .eq("id", lead.student_id)
           .single();
 
-      // Fetch co-applicant data
+        // Fetch co-applicant data - including optional fields
         const { data: coAppData } = await supabase
           .from("co_applicants")
-          .select("name, relationship, phone, pin_code, salary")
+          .select("name, relationship, phone, pin_code, salary, occupation, employer, employment_type, employment_duration_years")
           .eq("id", lead.co_applicant_id)
           .single();
 
-        // Pre-populate fields - check for placeholder values
+        // Pre-populate required fields
         const studentPin = studentData?.postal_code;
         const isStudentPinPlaceholder = !studentPin || studentPin === "000000";
         setStudentPinCode(isStudentPinPlaceholder ? "" : studentPin);
+        
+        // Pre-populate optional student fields
+        setStudentDob(studentData?.date_of_birth || "");
+        setStudentGender(studentData?.gender || "");
+        setStudentCity(studentData?.city || "");
+        setStudentState(studentData?.state || "");
 
         // Pre-populate course if exists
         if (courseData) {
@@ -168,6 +210,7 @@ export const CompleteLeadModal = ({
           }
         }
 
+        // Co-applicant required fields
         const coName = coAppData?.name;
         const isCoNamePlaceholder = !coName || coName === "Co-Applicant";
         setCoApplicantName(isCoNamePlaceholder ? "" : coName);
@@ -179,13 +222,20 @@ export const CompleteLeadModal = ({
         const coPhone = coAppData?.phone;
         setCoApplicantPhone(coPhone || "");
 
-        // Pre-populate salary - check for placeholder (0 or null)
         const coSalary = coAppData?.salary;
         setCoApplicantSalary(coSalary && coSalary > 0 ? String(coSalary) : "");
 
         const coPin = coAppData?.pin_code;
         const isCoPinPlaceholder = !coPin || coPin === "000000";
         setCoApplicantPinCode(isCoPinPlaceholder ? "" : coPin);
+        
+        // Co-applicant optional employment fields
+        setCoApplicantOccupation(coAppData?.occupation || "");
+        setCoApplicantEmployer(coAppData?.employer || "");
+        setCoApplicantEmploymentType(coAppData?.employment_type || "");
+        setCoApplicantEmploymentDuration(
+          coAppData?.employment_duration_years ? String(coAppData.employment_duration_years) : ""
+        );
 
         setExistingData({
           universityId: uniData?.university_id || null,
@@ -222,16 +272,31 @@ export const CompleteLeadModal = ({
   }, [open, lead]);
 
   const resetForm = () => {
+    // Student fields
     setStudentPinCode("");
+    setStudentDob("");
+    setStudentGender("");
+    setStudentCity("");
+    setStudentState("");
+    // Course
     setCourseId("");
     setIsCustomCourse(false);
+    // Co-applicant required
     setCoApplicantName("");
     setCoApplicantRelationship("");
     setCoApplicantPhone("");
     setCoApplicantSalary("");
     setCoApplicantPinCode("");
+    // Co-applicant optional
+    setCoApplicantOccupation("");
+    setCoApplicantEmployer("");
+    setCoApplicantEmploymentType("");
+    setCoApplicantEmploymentDuration("");
+    // Reset UI state
     setErrors({});
     setExistingData(null);
+    setOptionalStudentOpen(false);
+    setOptionalCoAppOpen(false);
   };
 
   const handleClose = () => {
@@ -242,7 +307,7 @@ export const CompleteLeadModal = ({
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Student PIN Code validation (6 digits)
+    // Student PIN Code validation (6 digits) - REQUIRED
     if (!studentPinCode.trim()) {
       newErrors.studentPinCode = "Required";
     } else if (!/^\d{6}$/.test(studentPinCode.trim())) {
@@ -254,26 +319,26 @@ export const CompleteLeadModal = ({
       newErrors.courseId = "Please select or enter a course/program";
     }
 
-    // Co-Applicant Name validation
+    // Co-Applicant Name validation - REQUIRED
     if (!coApplicantName.trim()) {
       newErrors.coApplicantName = "Required";
     } else if (coApplicantName.trim().length < 2) {
       newErrors.coApplicantName = "Name must be at least 2 characters";
     }
 
-    // Co-Applicant Relationship validation
+    // Co-Applicant Relationship validation - REQUIRED
     if (!coApplicantRelationship) {
       newErrors.coApplicantRelationship = "Required";
     }
 
-    // Co-Applicant Phone validation (10 digits, starts with 6-9)
+    // Co-Applicant Phone validation (10 digits, starts with 6-9) - REQUIRED
     if (!coApplicantPhone.trim()) {
       newErrors.coApplicantPhone = "Required";
     } else if (!/^[6-9]\d{9}$/.test(coApplicantPhone.trim())) {
       newErrors.coApplicantPhone = "Enter valid 10-digit number";
     }
 
-    // Co-Applicant Salary validation (required, must be positive number)
+    // Co-Applicant Salary validation - REQUIRED
     if (!coApplicantSalary.trim()) {
       newErrors.coApplicantSalary = "Required for eligibility";
     } else {
@@ -283,11 +348,27 @@ export const CompleteLeadModal = ({
       }
     }
 
-    // Co-Applicant PIN Code validation (6 digits)
+    // Co-Applicant PIN Code validation (6 digits) - REQUIRED
     if (!coApplicantPinCode.trim()) {
       newErrors.coApplicantPinCode = "Required";
     } else if (!/^\d{6}$/.test(coApplicantPinCode.trim())) {
       newErrors.coApplicantPinCode = "Enter valid 6-digit PIN";
+    }
+
+    // Optional field validations (only if filled)
+    if (studentCity.trim() && studentCity.trim().length < 2) {
+      newErrors.studentCity = "City must be at least 2 characters";
+    }
+    
+    if (coApplicantEmployer.trim() && coApplicantEmployer.trim().length < 2) {
+      newErrors.coApplicantEmployer = "Employer name must be at least 2 characters";
+    }
+    
+    if (coApplicantEmploymentDuration.trim()) {
+      const duration = parseInt(coApplicantEmploymentDuration, 10);
+      if (isNaN(duration) || duration < 0 || duration > 50) {
+        newErrors.coApplicantEmploymentDuration = "Enter valid years (0-50)";
+      }
     }
 
     setErrors(newErrors);
@@ -304,11 +385,15 @@ export const CompleteLeadModal = ({
     setLoading(true);
 
     try {
-      // Update student with PIN code
+      // Update student with all fields
       const { error: studentError } = await supabase
         .from("students")
         .update({
           postal_code: studentPinCode.trim(),
+          date_of_birth: studentDob || null,
+          gender: studentGender || null,
+          city: studentCity.trim() || null,
+          state: studentState || null,
         })
         .eq("id", lead.student_id);
 
@@ -324,21 +409,16 @@ export const CompleteLeadModal = ({
 
       if (leadError) throw leadError;
 
-      // Save course association - handle custom vs existing course
+      // Save course association
       try {
-        // First, delete any existing course associations for this lead
         await supabase
           .from("lead_courses")
           .delete()
           .eq("lead_id", lead.id);
 
         if (isCustomCourse || !existingData.universityId) {
-          // For custom courses, we need a placeholder course or skip if DB doesn't allow null
-          // Store custom course name in lead notes or a separate field
           console.log("Custom course entered:", courseId);
-          // We'll store this as a note since lead_courses requires a valid course_id
         } else if (courseId && existingData.universityId) {
-          // Insert the selected course
           const { error: courseError } = await supabase
             .from("lead_courses")
             .insert({
@@ -349,15 +429,13 @@ export const CompleteLeadModal = ({
 
           if (courseError) {
             console.warn("Could not save course association:", courseError);
-            // Don't throw - course is optional for completing lead
           }
         }
       } catch (courseErr) {
         console.warn("Error handling course:", courseErr);
-        // Continue - course save is not critical
       }
 
-      // Update co-applicant with all fields including salary
+      // Update co-applicant with all fields
       const salaryValue = parseInt(coApplicantSalary.replace(/,/g, ''), 10);
       const { error: coAppError } = await supabase
         .from("co_applicants")
@@ -367,6 +445,12 @@ export const CompleteLeadModal = ({
           phone: coApplicantPhone.trim(),
           salary: salaryValue,
           pin_code: coApplicantPinCode.trim(),
+          occupation: coApplicantOccupation || null,
+          employer: coApplicantEmployer.trim() || null,
+          employment_type: coApplicantEmploymentType || null,
+          employment_duration_years: coApplicantEmploymentDuration 
+            ? parseInt(coApplicantEmploymentDuration, 10) 
+            : null,
         })
         .eq("id", lead.co_applicant_id);
 
@@ -394,20 +478,19 @@ export const CompleteLeadModal = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="space-y-3">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Sparkles className="h-5 w-5 text-primary" />
-            Final Step: Complete Your Application
+            Complete Application Details
           </DialogTitle>
           <DialogDescription className="text-sm">
-            We've saved your profile for <span className="font-medium text-foreground">{lead.student?.name}</span>. Just confirm the last few details below to finalize.
+            Complete all required fields and optional details for <span className="font-medium text-foreground">{lead.student?.name}</span>.
           </DialogDescription>
-          {/* Progress Indicator */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Application progress</span>
-              <span className="font-medium text-primary">90% Complete</span>
+              <span className="font-medium text-primary">Almost there!</span>
             </div>
             <Progress value={90} className="h-2" />
           </div>
@@ -420,7 +503,7 @@ export const CompleteLeadModal = ({
           </div>
         ) : (
           <div className="space-y-5 py-4 overflow-y-auto flex-1">
-            {/* Already Captured Data - Read Only Confirmation */}
+            {/* Already Captured Data */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Check className="h-4 w-4 text-green-500" />
@@ -466,7 +549,7 @@ export const CompleteLeadModal = ({
               </div>
             </div>
 
-            {/* Student Details Section */}
+            {/* Student Details Section - Required */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -474,7 +557,7 @@ export const CompleteLeadModal = ({
               </h4>
               <div className="space-y-2">
                 <Label className="text-sm">
-                  Student PIN Code <span className="text-destructive">*</span>
+                  PIN Code <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   placeholder="6-digit PIN code"
@@ -493,9 +576,81 @@ export const CompleteLeadModal = ({
                   <p className="text-xs text-destructive">{errors.studentPinCode}</p>
                 )}
               </div>
+              
+              {/* Optional Student Fields - Collapsible */}
+              <Collapsible open={optionalStudentOpen} onOpenChange={setOptionalStudentOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
+                    <span className="text-xs">Additional Details (Optional)</span>
+                    {optionalStudentOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Date of Birth</Label>
+                      <Input
+                        type="date"
+                        value={studentDob}
+                        onChange={(e) => setStudentDob(e.target.value)}
+                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Gender</Label>
+                      <Select value={studentGender} onValueChange={setStudentGender}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GENDER_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">City</Label>
+                      <Input
+                        placeholder="Enter city"
+                        value={studentCity}
+                        onChange={(e) => {
+                          setStudentCity(e.target.value);
+                          if (errors.studentCity) {
+                            setErrors(prev => ({ ...prev, studentCity: undefined }));
+                          }
+                        }}
+                        className={errors.studentCity ? 'border-destructive' : ''}
+                      />
+                      {errors.studentCity && (
+                        <p className="text-xs text-destructive">{errors.studentCity}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">State</Label>
+                      <Select value={studentState} onValueChange={setStudentState}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_STATES_AND_UTS.map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
 
-            {/* Course Selection - Required */}
+            {/* Course Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <GraduationCap className="h-4 w-4" />
@@ -646,7 +801,7 @@ export const CompleteLeadModal = ({
               </div>
 
               {/* PIN Code Row */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="space-y-2">
                   <Label className="text-sm">
                     PIN Code <span className="text-destructive">*</span>
@@ -669,6 +824,92 @@ export const CompleteLeadModal = ({
                   )}
                 </div>
               </div>
+              
+              {/* Optional Employment Fields - Collapsible */}
+              <Collapsible open={optionalCoAppOpen} onOpenChange={setOptionalCoAppOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
+                    <span className="text-xs flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      Employment Details (Optional)
+                    </span>
+                    {optionalCoAppOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Occupation</Label>
+                      <Select value={coApplicantOccupation} onValueChange={setCoApplicantOccupation}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OCCUPATION_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Employer</Label>
+                      <Input
+                        placeholder="Company name"
+                        value={coApplicantEmployer}
+                        onChange={(e) => {
+                          setCoApplicantEmployer(e.target.value);
+                          if (errors.coApplicantEmployer) {
+                            setErrors(prev => ({ ...prev, coApplicantEmployer: undefined }));
+                          }
+                        }}
+                        className={errors.coApplicantEmployer ? 'border-destructive' : ''}
+                      />
+                      {errors.coApplicantEmployer && (
+                        <p className="text-xs text-destructive">{errors.coApplicantEmployer}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Employment Type</Label>
+                      <Select value={coApplicantEmploymentType} onValueChange={setCoApplicantEmploymentType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EMPLOYMENT_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Employment Duration (Years)</Label>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 5"
+                        min="0"
+                        max="50"
+                        value={coApplicantEmploymentDuration}
+                        onChange={(e) => {
+                          setCoApplicantEmploymentDuration(e.target.value);
+                          if (errors.coApplicantEmploymentDuration) {
+                            setErrors(prev => ({ ...prev, coApplicantEmploymentDuration: undefined }));
+                          }
+                        }}
+                        className={errors.coApplicantEmploymentDuration ? 'border-destructive' : ''}
+                      />
+                      {errors.coApplicantEmploymentDuration && (
+                        <p className="text-xs text-destructive">{errors.coApplicantEmploymentDuration}</p>
+                      )}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </div>
         )}
@@ -690,7 +931,7 @@ export const CompleteLeadModal = ({
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Finalizing...
+                Saving...
               </>
             ) : (
               <>

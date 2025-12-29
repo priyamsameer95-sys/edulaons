@@ -22,6 +22,7 @@ export interface LeadCompletionField {
   isConditionallyRequired?: boolean;     // True if requirement depends on other fields
   conditionDescription?: string;         // Description of when field is required
   formFieldKey?: string;                 // Key used in form state (if different from path)
+  isEditable?: boolean;                  // Whether this field is editable in Complete Lead form
 }
 
 // Student required fields
@@ -53,7 +54,8 @@ const STUDENT_REQUIRED_FIELDS: LeadCompletionField[] = [
     displayName: 'Student PIN Code', 
     section: 'student', 
     isRequired: true,
-    formFieldKey: 'studentPinCode'
+    formFieldKey: 'studentPinCode',
+    isEditable: true
   },
 ];
 
@@ -99,7 +101,8 @@ const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
-    formFieldKey: 'coApplicantName'
+    formFieldKey: 'coApplicantName',
+    isEditable: true
   },
   { 
     key: 'co_applicant_relationship', 
@@ -109,7 +112,8 @@ const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
-    formFieldKey: 'coApplicantRelationship'
+    formFieldKey: 'coApplicantRelationship',
+    isEditable: true
   },
   { 
     key: 'co_applicant_phone', 
@@ -119,7 +123,8 @@ const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
-    formFieldKey: 'coApplicantPhone'
+    formFieldKey: 'coApplicantPhone',
+    isEditable: true
   },
   { 
     key: 'co_applicant_salary', 
@@ -129,7 +134,8 @@ const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required for loan eligibility calculation',
-    formFieldKey: 'coApplicantSalary'
+    formFieldKey: 'coApplicantSalary',
+    isEditable: true
   },
   { 
     key: 'co_applicant_pin_code', 
@@ -139,7 +145,8 @@ const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
-    formFieldKey: 'coApplicantPinCode'
+    formFieldKey: 'coApplicantPinCode',
+    isEditable: true
   },
 ];
 
@@ -150,21 +157,36 @@ const OPTIONAL_FIELDS: LeadCompletionField[] = [
     path: 'student.date_of_birth', 
     displayName: 'Date of Birth', 
     section: 'student', 
-    isRequired: false 
+    isRequired: false,
+    formFieldKey: 'studentDob',
+    isEditable: true
+  },
+  { 
+    key: 'student_gender', 
+    path: 'student.gender', 
+    displayName: 'Gender', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentGender',
+    isEditable: true
   },
   { 
     key: 'student_city', 
     path: 'student.city', 
     displayName: 'City', 
     section: 'student', 
-    isRequired: false 
+    isRequired: false,
+    formFieldKey: 'studentCity',
+    isEditable: true
   },
   { 
     key: 'student_state', 
     path: 'student.state', 
     displayName: 'State', 
     section: 'student', 
-    isRequired: false 
+    isRequired: false,
+    formFieldKey: 'studentState',
+    isEditable: true
   },
   { 
     key: 'loan_type', 
@@ -179,7 +201,9 @@ const OPTIONAL_FIELDS: LeadCompletionField[] = [
     displayName: 'Co-Applicant Occupation', 
     section: 'co_applicant', 
     isRequired: false,
-    isConditionallyRequired: true
+    isConditionallyRequired: true,
+    formFieldKey: 'coApplicantOccupation',
+    isEditable: true
   },
   { 
     key: 'co_applicant_employer', 
@@ -187,7 +211,29 @@ const OPTIONAL_FIELDS: LeadCompletionField[] = [
     displayName: 'Co-Applicant Employer', 
     section: 'co_applicant', 
     isRequired: false,
-    isConditionallyRequired: true
+    isConditionallyRequired: true,
+    formFieldKey: 'coApplicantEmployer',
+    isEditable: true
+  },
+  { 
+    key: 'co_applicant_employment_type', 
+    path: 'co_applicant.employment_type', 
+    displayName: 'Employment Type', 
+    section: 'co_applicant', 
+    isRequired: false,
+    isConditionallyRequired: true,
+    formFieldKey: 'coApplicantEmploymentType',
+    isEditable: true
+  },
+  { 
+    key: 'co_applicant_employment_duration', 
+    path: 'co_applicant.employment_duration_years', 
+    displayName: 'Employment Duration', 
+    section: 'co_applicant', 
+    isRequired: false,
+    isConditionallyRequired: true,
+    formFieldKey: 'coApplicantEmploymentDuration',
+    isEditable: true
   },
   { 
     key: 'partner_id', 
@@ -308,6 +354,7 @@ export interface MissingFieldResult {
   section: LeadCompletionField['section'];
   isRequired: boolean;
   formFieldKey?: string;
+  isEditable?: boolean;
 }
 
 export interface LeadCompletionResult {
@@ -347,6 +394,7 @@ export function getLeadMissingFields(lead: {
         section: field.section,
         isRequired: true,
         formFieldKey: field.formFieldKey,
+        isEditable: field.isEditable,
       });
     }
   }
@@ -361,6 +409,7 @@ export function getLeadMissingFields(lead: {
         section: field.section,
         isRequired: false,
         formFieldKey: field.formFieldKey,
+        isEditable: field.isEditable,
       });
     }
   }
@@ -393,16 +442,47 @@ export function getEditableRequiredFields(): LeadCompletionField[] {
 }
 
 /**
+ * Get all editable fields (required + optional) for Complete Lead form
+ */
+export function getAllEditableFields(): LeadCompletionField[] {
+  const editableRequired = [
+    STUDENT_REQUIRED_FIELDS.find(f => f.key === 'student_postal_code')!,
+    ...CO_APPLICANT_REQUIRED_FIELDS,
+  ];
+  
+  const editableOptional = OPTIONAL_FIELDS.filter(f => f.isEditable);
+  
+  return [...editableRequired, ...editableOptional];
+}
+
+/**
  * Check if a field is editable in the Complete Lead form
  */
 export function isFieldEditableInCompleteForm(fieldKey: string): boolean {
-  const editableKeys = [
-    'student_postal_code',
-    'co_applicant_name',
-    'co_applicant_relationship',
-    'co_applicant_phone',
-    'co_applicant_salary',
-    'co_applicant_pin_code',
-  ];
-  return editableKeys.includes(fieldKey);
+  const allFields = [...STUDENT_REQUIRED_FIELDS, ...CO_APPLICANT_REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
+  const field = allFields.find(f => f.key === fieldKey);
+  return field?.isEditable ?? false;
 }
+
+// Constants for dropdowns
+export const GENDER_OPTIONS = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+export const OCCUPATION_OPTIONS = [
+  { value: 'salaried', label: 'Salaried' },
+  { value: 'self_employed', label: 'Self Employed' },
+  { value: 'professional', label: 'Professional' },
+  { value: 'business_owner', label: 'Business Owner' },
+  { value: 'retired', label: 'Retired' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+export const EMPLOYMENT_TYPE_OPTIONS = [
+  { value: 'full_time', label: 'Full-time' },
+  { value: 'part_time', label: 'Part-time' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'freelance', label: 'Freelance' },
+] as const;
