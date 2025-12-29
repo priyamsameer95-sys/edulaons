@@ -423,6 +423,184 @@ serve(async (req) => {
       );
     }
 
+    // CASE 2.5: EDIT MODE - Update existing lead with new data
+    if (body.is_edit && body.existing_lead_id) {
+      console.log('📝 EDIT MODE: Updating existing lead:', body.existing_lead_id);
+      
+      // Verify the lead belongs to the authenticated user's student
+      const { data: verifyLead, error: verifyError } = await supabaseAdmin
+        .from('leads_new')
+        .select('id, case_id, student_id, co_applicant_id')
+        .eq('id', body.existing_lead_id)
+        .maybeSingle();
+      
+      if (verifyError || !verifyLead) {
+        throw new Error('Could not verify lead ownership for edit');
+      }
+      
+      // Get the student to verify ownership
+      const { data: leadStudent } = await supabaseAdmin
+        .from('students')
+        .select('email')
+        .eq('id', verifyLead.student_id)
+        .single();
+      
+      // Verify the authenticated user owns this lead
+      if (isAuthenticated && authenticatedUser?.email && 
+          leadStudent?.email?.toLowerCase() !== authenticatedUser.email.toLowerCase()) {
+        throw new Error('You can only edit your own application');
+      }
+      
+      // Update student record
+      const { error: updateStudentError } = await supabaseAdmin
+        .from('students')
+        .update({
+          name: body.student_name?.trim(),
+          phone: cleanStudentPhone,
+          postal_code: body.student_pin_code?.trim(),
+          date_of_birth: body.date_of_birth || null,
+          gender: body.gender || null,
+          city: body.city || null,
+          state: body.state || null,
+          nationality: body.nationality || 'Indian',
+          highest_qualification: body.highest_qualification || null,
+          tenth_percentage: body.tenth_percentage || null,
+          twelfth_percentage: body.twelfth_percentage || null,
+          bachelors_percentage: body.bachelors_percentage || null,
+          bachelors_cgpa: body.bachelors_cgpa || null,
+          masters_percentage: body.masters_percentage || null,
+          masters_cgpa: body.masters_cgpa || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', verifyLead.student_id);
+      
+      if (updateStudentError) {
+        console.warn('⚠️ Failed to update student:', updateStudentError.message);
+      } else {
+        console.log('✅ Updated student record');
+      }
+      
+      // Update co-applicant record
+      const cleanCoApplicantPhone = body.co_applicant_phone 
+        ? cleanPhoneNumber(body.co_applicant_phone) 
+        : cleanStudentPhone;
+      const coApplicantSalary = parseFloat(body.co_applicant_monthly_salary || '50000');
+      
+      const { error: updateCoAppError } = await supabaseAdmin
+        .from('co_applicants')
+        .update({
+          name: body.co_applicant_name?.trim() || 'Co-Applicant',
+          phone: cleanCoApplicantPhone,
+          email: body.co_applicant_email?.trim() || null,
+          relationship: body.co_applicant_relationship || 'parent',
+          salary: coApplicantSalary * 12,
+          monthly_salary: coApplicantSalary,
+          employment_type: body.co_applicant_employment_type || null,
+          occupation: body.co_applicant_occupation || null,
+          employer: body.co_applicant_employer || null,
+          employment_duration_years: body.co_applicant_employment_duration || null,
+          pin_code: body.co_applicant_pin_code?.trim() || '000000',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', verifyLead.co_applicant_id);
+      
+      if (updateCoAppError) {
+        console.warn('⚠️ Failed to update co-applicant:', updateCoAppError.message);
+      } else {
+        console.log('✅ Updated co-applicant record');
+      }
+      
+      // Update lead record
+      const { error: updateLeadError } = await supabaseAdmin
+        .from('leads_new')
+        .update({
+          loan_amount: loanAmount,
+          loan_type: body.loan_type || 'unsecured',
+          loan_classification: (body.loan_type === 'secured') ? 'secured_property' : 'unsecured',
+          study_destination: studyDestination,
+          intake_month: intakeMonth,
+          intake_year: intakeYear,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', body.existing_lead_id);
+      
+      if (updateLeadError) {
+        console.warn('⚠️ Failed to update lead:', updateLeadError.message);
+      } else {
+        console.log('✅ Updated lead record');
+      }
+      
+      // Update universities - delete old and insert new
+      if (body.universities && Array.isArray(body.universities)) {
+        // Delete existing university associations
+        await supabaseAdmin
+          .from('lead_universities')
+          .delete()
+          .eq('lead_id', body.existing_lead_id);
+        
+        // Insert new university associations
+        const universityInserts = body.universities
+          .filter((uid: string) => uid && uid.length > 10)
+          .map((uid: string) => ({
+            lead_id: body.existing_lead_id,
+            university_id: uid,
+          }));
+        
+        if (universityInserts.length > 0) {
+          await supabaseAdmin
+            .from('lead_universities')
+            .insert(universityInserts);
+          console.log(`✅ Updated ${universityInserts.length} university associations`);
+        }
+      }
+      
+      // Log the edit for audit trail
+      await supabaseAdmin
+        .from('field_audit_log')
+        .insert({
+          lead_id: body.existing_lead_id,
+          table_name: 'leads_new',
+          field_name: 'application_edit',
+          old_value: null,
+          new_value: 'Student updated application',
+          changed_by_type: 'student',
+          changed_by_id: authenticatedUser?.id || null,
+          change_source: 'student_portal',
+          change_reason: 'Student edited their application',
+        });
+      
+      // Re-run AI lender evaluation with updated data
+      const recommendedLenders = await evaluateLendersForLead(
+        supabaseAdmin,
+        body.existing_lead_id,
+        studyDestination,
+        loanAmount
+      );
+      
+      console.log('✅ Edit mode update completed');
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          lead: {
+            id: body.existing_lead_id,
+            case_id: verifyLead.case_id,
+            requested_amount: loanAmount,
+            is_partner_lead: false,
+            partner_name: null,
+          },
+          recommended_lenders: recommendedLenders,
+          message: 'Your application has been updated successfully.',
+          is_existing: true,
+          is_updated: true,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
     // CASE 3: Create new organic lead
     console.log('📝 Creating new organic lead (no partner)');
 
