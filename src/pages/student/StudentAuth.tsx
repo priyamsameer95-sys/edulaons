@@ -175,13 +175,14 @@ const StudentAuth = () => {
     setIsLoading(true);
     setOtpError(false);
     try {
-      const fullPhone = `+91${phone}`;
+      // Normalize phone - send just 10 digits (edge function handles normalization too)
+      const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
       const {
         data,
         error
       } = await supabase.functions.invoke('verify-student-otp', {
         body: {
-          phone: fullPhone,
+          phone: normalizedPhone,
           otp,
           name: name.trim() || undefined
         }

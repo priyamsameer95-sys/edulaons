@@ -35,8 +35,15 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Clean phone number (remove spaces, dashes, etc.)
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '')
+    // Clean phone number (remove spaces, dashes, +, etc.) and normalize country code
+    let cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '')
+    
+    // Strip +91 or 91 prefix for Indian numbers (normalize to 10 digits)
+    if (cleanPhone.startsWith('91') && cleanPhone.length === 12) {
+      cleanPhone = cleanPhone.substring(2)
+    }
+    
+    console.log('📱 Phone normalized:', { original: phone, cleaned: cleanPhone })
     
     // Validate OTP (hardcoded for now)
     if (otp !== VALID_OTP) {
@@ -132,46 +139,44 @@ Deno.serve(async (req) => {
       
       console.log('🆕 Creating new student with email:', generatedEmail)
       
-      // Use upsert to handle race conditions - if phone exists, just return existing
-      const { data: newStudent, error: createStudentError } = await supabase
+      // Try to insert new student (avoid ignoreDuplicates + .single() issue)
+      const { data: newStudent, error: insertError } = await supabase
         .from('students')
-        .upsert({
+        .insert({
           phone: cleanPhone,
           email: generatedEmail,
           name: studentName,
           otp_enabled: true,
           is_activated: false, // Not activated until they have a lead
-        }, { 
-          onConflict: 'phone',
-          ignoreDuplicates: true // Don't update existing, just return
         })
         .select('id, email, name')
         .single()
 
-      if (createStudentError) {
-        // Handle unique constraint violation gracefully
-        if (createStudentError.code === '23505') {
-          console.log('⚠️ Phone already exists (race condition), fetching existing student')
-          const { data: existingByPhone } = await supabase
+      if (insertError) {
+        // Handle unique constraint violation OR PGRST116 (0 rows) gracefully
+        if (insertError.code === '23505' || insertError.code === 'PGRST116') {
+          console.log('⚠️ Phone already exists, fetching existing student:', insertError.code)
+          const { data: existingByPhone, error: fetchError } = await supabase
             .from('students')
             .select('id, email, name')
             .eq('phone', cleanPhone)
-            .single()
+            .maybeSingle()
           
           if (existingByPhone) {
             studentId = existingByPhone.id
             studentEmail = existingByPhone.email
             studentName = existingByPhone.name
             isNewUser = false
+            console.log('✅ Found existing student:', studentId)
           } else {
-            console.error('Could not find student after constraint error:', createStudentError)
+            console.error('Could not find student after error:', insertError, fetchError)
             return new Response(
-              JSON.stringify({ success: false, error: 'Phone number already registered with another account' }),
+              JSON.stringify({ success: false, error: 'Could not find or create student' }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
           }
         } else {
-          console.error('Error creating student:', createStudentError)
+          console.error('Error creating student:', insertError)
           return new Response(
             JSON.stringify({ success: false, error: 'Could not create student profile' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -181,6 +186,7 @@ Deno.serve(async (req) => {
         studentId = newStudent.id
         studentEmail = newStudent.email
         hasLead = false // New user has no lead
+        console.log('✅ Created new student:', studentId)
       }
     }
 
