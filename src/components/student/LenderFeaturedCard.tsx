@@ -64,42 +64,43 @@ const LenderFeaturedCard = ({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card overflow-hidden transition-all flex flex-col",
-        isTopMatch && "border-l-4 border-l-warning shadow-md",
+        "rounded-xl border bg-card overflow-hidden transition-all flex flex-col h-full",
+        isTopMatch && "border-warning/50 shadow-md",
         isSelected && "ring-2 ring-success border-success",
         !isTopMatch && !isSelected && "border-border",
         isUpdating && "opacity-60 pointer-events-none"
       )}
     >
-      {/* Top Match Badge - Now inline, not absolute */}
-      {isTopMatch && (
-        <div className="px-4 pt-4 pb-0">
+      {/* Badge Area - Fixed height for alignment */}
+      <div className="h-10 px-4 flex items-center">
+        {isTopMatch ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 text-warning text-[10px] font-bold uppercase tracking-wide">
             <Building2 className="h-3 w-3" />
             Top Match
           </span>
-        </div>
-      )}
+        ) : (
+          <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide font-medium">
+            #{rank} Recommendation
+          </span>
+        )}
+      </div>
 
-      <div className={cn(
-        "p-4 space-y-4 flex-1 flex flex-col",
-        isTopMatch && "pt-3"
-      )}>
+      <div className="px-4 pb-4 space-y-4 flex-1 flex flex-col">
         {/* Header: Logo + Name + Tagline */}
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-lg bg-muted/80 flex items-center justify-center flex-shrink-0 border border-border/50">
+          <div className="w-12 h-12 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0 border border-border/40">
             {lender.logo_url ? (
               <img 
                 src={lender.logo_url} 
                 alt={lender.lender_name} 
-                className="w-7 h-7 object-contain" 
+                className="w-8 h-8 object-contain" 
               />
             ) : (
-              <Building2 className="h-5 w-5 text-muted-foreground" />
+              <Building2 className="h-6 w-6 text-muted-foreground" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 mb-0.5">
               <h4 className="font-bold text-foreground text-sm leading-tight truncate">{lender.lender_name}</h4>
               {isTopMatch && <Star className="h-3.5 w-3.5 text-warning fill-warning flex-shrink-0" />}
             </div>
@@ -107,46 +108,57 @@ const LenderFeaturedCard = ({
           </div>
         </div>
 
-        {/* AI Insight Box */}
-        {lender.student_facing_reason && (
-          <div className="rounded-lg bg-info/5 border border-info/15 p-3">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Brain className="h-3.5 w-3.5 text-info" />
-              <span className="text-[10px] font-semibold text-info uppercase tracking-wide">AI Insight</span>
-            </div>
-            <p className="text-xs text-foreground/80 leading-relaxed line-clamp-3">
-              {lender.student_facing_reason}
+        {/* AI Insight Box - Fixed min-height for alignment */}
+        <div className={cn(
+          "rounded-lg p-3 min-h-[76px]",
+          lender.student_facing_reason 
+            ? "bg-info/5 border border-info/15" 
+            : "bg-muted/20 border border-transparent"
+        )}>
+          {lender.student_facing_reason ? (
+            <>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Brain className="h-3.5 w-3.5 text-info" />
+                <span className="text-[10px] font-semibold text-info uppercase tracking-wide">AI Insight</span>
+              </div>
+              <p className="text-xs text-foreground/80 leading-relaxed line-clamp-2">
+                {lender.student_facing_reason}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground/60 italic">
+              AI analysis pending...
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Key Metrics - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-muted/40 rounded-lg py-2.5 px-2 text-center">
             <p className={cn(
-              "text-xl font-bold leading-none",
+              "text-lg font-bold leading-none",
               lender.compatibility_score >= 80 ? "text-success" : "text-foreground"
             )}>
               {lender.compatibility_score}%
             </p>
             <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Match</p>
           </div>
-          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
-            <p className="text-xl font-bold text-foreground leading-none">
+          <div className="bg-muted/40 rounded-lg py-2.5 px-2 text-center">
+            <p className="text-lg font-bold text-foreground leading-none">
               {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
             </p>
             <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Rate</p>
           </div>
-          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
-            <p className="text-base font-bold text-foreground leading-none">
+          <div className="bg-muted/40 rounded-lg py-2.5 px-2 text-center">
+            <p className="text-sm font-bold text-foreground leading-none">
               {displayAmount 
                 ? `₹${(displayAmount / 10000000).toFixed(1)} Cr`
                 : '—'}
             </p>
             <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Amount</p>
           </div>
-          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
-            <p className="text-xl font-bold text-foreground leading-none">
+          <div className="bg-muted/40 rounded-lg py-2.5 px-2 text-center">
+            <p className="text-lg font-bold text-foreground leading-none">
               {lender.processing_time_days || '7-10'}
             </p>
             <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Days</p>
@@ -156,7 +168,7 @@ const LenderFeaturedCard = ({
         {/* View Detailed Toggle */}
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
         >
           View Detailed
           <ChevronDown className={cn(
@@ -167,7 +179,7 @@ const LenderFeaturedCard = ({
 
         {/* Expanded Details */}
         {showDetails && (
-          <div className="space-y-2 animate-fade-in">
+          <div className="space-y-2 animate-fade-in border-t border-border/50 pt-3">
             <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">Expenses Covered</p>
             <div className="space-y-1.5">
               {expensesCovered.map((expense, idx) => (
@@ -183,7 +195,7 @@ const LenderFeaturedCard = ({
         )}
 
         {/* Spacer to push button to bottom */}
-        <div className="flex-1 min-h-2" />
+        <div className="flex-1" />
 
         {/* Select Button */}
         <Button
@@ -191,7 +203,7 @@ const LenderFeaturedCard = ({
           disabled={isUpdating}
           variant={isTopMatch ? "default" : "outline"}
           className={cn(
-            "w-full h-10 font-semibold text-sm",
+            "w-full h-10 font-semibold text-sm mt-auto",
             isSelected && "bg-success hover:bg-success/90 border-success text-success-foreground",
             isTopMatch && !isSelected && "shadow-sm"
           )}
