@@ -28,23 +28,67 @@ const StudentAuth = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
 
-  // Pre-fill from sessionStorage (from landing page eligibility form)
+  // Check if user just came from eligibility flow with verified OTP
+  // If so, session might still be establishing - wait for it
+  const [sessionChecking, setSessionChecking] = useState(false);
+  
   useEffect(() => {
-    try {
-      const savedData = sessionStorage.getItem('eligibility_form');
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (parsed.phone && !phone) {
-          setPhone(parsed.phone.replace(/\D/g, '').slice(-10));
+    const checkEligibilityFlowSession = async () => {
+      try {
+        const savedData = sessionStorage.getItem('eligibility_form');
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          
+          // Pre-fill phone/name if available
+          if (parsed.student_phone && !phone) {
+            setPhone(parsed.student_phone.toString().replace(/\D/g, '').slice(-10));
+          }
+          if (parsed.student_name && !name) {
+            setName(parsed.student_name);
+          }
+          
+          // If user just verified via eligibility flow, check if session is establishing
+          if (parsed.verified && !user && !loading) {
+            const timeSinceVerified = Date.now() - new Date(parsed.timestamp).getTime();
+            
+            // Only check if verified recently (within 30 seconds)
+            if (timeSinceVerified < 30000) {
+              console.log('🔍 User came from eligibility flow, checking for session...');
+              setSessionChecking(true);
+              
+              // Wait a moment for session to propagate
+              await new Promise(r => setTimeout(r, 1000));
+              
+              // Check for session
+              const { data } = await supabase.auth.getSession();
+              if (data.session) {
+                console.log('✅ Session found, redirecting to dashboard');
+                navigate('/student', { replace: true });
+                return;
+              }
+              
+              // Try once more after another delay
+              await new Promise(r => setTimeout(r, 1500));
+              const { data: retryData } = await supabase.auth.getSession();
+              if (retryData.session) {
+                console.log('✅ Session found on retry, redirecting to dashboard');
+                navigate('/student', { replace: true });
+                return;
+              }
+              
+              console.log('ℹ️ No session found, showing login form');
+              setSessionChecking(false);
+            }
+          }
         }
-        if (parsed.name && !name) {
-          setName(parsed.name);
-        }
+      } catch (e) {
+        console.log('No saved eligibility data');
+        setSessionChecking(false);
       }
-    } catch (e) {
-      console.log('No saved eligibility data');
-    }
-  }, []);
+    };
+    
+    checkEligibilityFlowSession();
+  }, [user, loading, navigate]);
 
   // Resend timer countdown
   useEffect(() => {
@@ -64,9 +108,14 @@ const StudentAuth = () => {
       });
     }
   }, [user, loading, navigate]);
-  if (loading) {
+  if (loading || sessionChecking) {
     return <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+          {sessionChecking && (
+            <p className="text-sm text-muted-foreground">Setting up your account...</p>
+          )}
+        </div>
       </div>;
   }
   if (user) {
