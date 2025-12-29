@@ -188,12 +188,95 @@ const OPTIONAL_FIELDS: LeadCompletionField[] = [
     formFieldKey: 'studentState',
     isEditable: true
   },
+  // Phase 9: New student optional fields
+  { 
+    key: 'student_nationality', 
+    path: 'student.nationality', 
+    displayName: 'Nationality', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentNationality',
+    isEditable: true
+  },
+  { 
+    key: 'student_street_address', 
+    path: 'student.street_address', 
+    displayName: 'Street Address', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentStreetAddress',
+    isEditable: true
+  },
+  { 
+    key: 'student_highest_qualification', 
+    path: 'student.highest_qualification', 
+    displayName: 'Highest Qualification', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentHighestQualification',
+    isEditable: true
+  },
+  { 
+    key: 'student_tenth_percentage', 
+    path: 'student.tenth_percentage', 
+    displayName: '10th Percentage', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentTenthPercentage',
+    isEditable: true
+  },
+  { 
+    key: 'student_twelfth_percentage', 
+    path: 'student.twelfth_percentage', 
+    displayName: '12th Percentage', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentTwelfthPercentage',
+    isEditable: true
+  },
+  { 
+    key: 'student_bachelors_percentage', 
+    path: 'student.bachelors_percentage', 
+    displayName: "Bachelor's Percentage", 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentBachelorsPercentage',
+    isEditable: true
+  },
+  { 
+    key: 'student_bachelors_cgpa', 
+    path: 'student.bachelors_cgpa', 
+    displayName: "Bachelor's CGPA", 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentBachelorsCgpa',
+    isEditable: true
+  },
+  { 
+    key: 'student_credit_score', 
+    path: 'student.credit_score', 
+    displayName: 'Student Credit Score', 
+    section: 'student', 
+    isRequired: false,
+    formFieldKey: 'studentCreditScore',
+    isEditable: true
+  },
   { 
     key: 'loan_type', 
     path: 'loan_type', 
     displayName: 'Loan Type', 
     section: 'study', 
     isRequired: false 
+  },
+  { 
+    key: 'co_applicant_email', 
+    path: 'co_applicant.email', 
+    displayName: 'Co-Applicant Email', 
+    section: 'co_applicant', 
+    isRequired: false,
+    isConditionallyRequired: true,
+    formFieldKey: 'coApplicantEmail',
+    isEditable: true
   },
   { 
     key: 'co_applicant_occupation', 
@@ -233,6 +316,17 @@ const OPTIONAL_FIELDS: LeadCompletionField[] = [
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantEmploymentDuration',
+    isEditable: true
+  },
+  // Phase 9: New co-applicant optional field
+  { 
+    key: 'co_applicant_credit_score', 
+    path: 'co_applicant.credit_score', 
+    displayName: 'Co-Applicant Credit Score', 
+    section: 'co_applicant', 
+    isRequired: false,
+    isConditionallyRequired: true,
+    formFieldKey: 'coApplicantCreditScore',
     isEditable: true
   },
   { 
@@ -471,6 +565,15 @@ export const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ] as const;
 
+export const QUALIFICATION_OPTIONS = [
+  { value: '10th', label: '10th' },
+  { value: '12th', label: '12th' },
+  { value: 'diploma', label: 'Diploma' },
+  { value: 'bachelors', label: "Bachelor's" },
+  { value: 'masters', label: "Master's" },
+  { value: 'phd', label: 'PhD' },
+] as const;
+
 export const OCCUPATION_OPTIONS = [
   { value: 'salaried', label: 'Salaried' },
   { value: 'self_employed', label: 'Self Employed' },
@@ -486,3 +589,19 @@ export const EMPLOYMENT_TYPE_OPTIONS = [
   { value: 'contract', label: 'Contract' },
   { value: 'freelance', label: 'Freelance' },
 ] as const;
+
+// Phase 3 & 7: Test types for academic tests
+export const TEST_TYPES = [
+  { value: 'ielts', label: 'IELTS', maxScore: 9, minScore: 0, category: 'language' },
+  { value: 'toefl', label: 'TOEFL', maxScore: 120, minScore: 0, category: 'language' },
+  { value: 'pte', label: 'PTE', maxScore: 90, minScore: 0, category: 'language' },
+  { value: 'duolingo', label: 'Duolingo', maxScore: 160, minScore: 0, category: 'language' },
+  { value: 'gre', label: 'GRE', maxScore: 340, minScore: 260, category: 'aptitude' },
+  { value: 'gmat', label: 'GMAT', maxScore: 800, minScore: 200, category: 'aptitude' },
+  { value: 'sat', label: 'SAT', maxScore: 1600, minScore: 400, category: 'aptitude' },
+] as const;
+
+export const TEST_CATEGORIES = {
+  language: ['ielts', 'toefl', 'pte', 'duolingo'],
+  aptitude: ['gre', 'gmat', 'sat'],
+} as const;
