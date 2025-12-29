@@ -55,8 +55,8 @@ const LenderComparisonGrid = ({
         </p>
       </div>
 
-      {/* Featured Lenders - Top 3 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Featured Lenders - Top 3 with equal height */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {featuredLenders.map((lender, index) => (
           <LenderFeaturedCard
             key={lender.lender_id}
@@ -73,16 +73,16 @@ const LenderComparisonGrid = ({
       {otherLenders.length > 0 && (
         <div className="space-y-4">
           {/* Section Divider */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="h-px flex-1 bg-border" />
-            <span className="text-sm font-medium text-muted-foreground px-2">
+            <span className="text-xs font-semibold text-muted-foreground px-3 uppercase tracking-wider">
               Other Qualified Lenders
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
 
           {/* Other Lenders List */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {visibleOtherLenders.map((lender) => (
               <LenderRowCard
                 key={lender.lender_id}
@@ -98,11 +98,11 @@ const LenderComparisonGrid = ({
           {otherLenders.length > 3 && (
             <button
               onClick={() => setShowAllOthers(!showAllOthers)}
-              className="flex items-center gap-1 mx-auto text-sm text-primary hover:text-primary/80 transition-colors"
+              className="flex items-center gap-1.5 mx-auto text-sm font-medium text-primary hover:text-primary/80 transition-colors py-2"
             >
               {showAllOthers ? 'Show fewer' : `View all ${otherLenders.length} lenders`}
               <ChevronDown className={cn(
-                "h-4 w-4 transition-transform",
+                "h-4 w-4 transition-transform duration-200",
                 showAllOthers && "rotate-180"
               )} />
             </button>
