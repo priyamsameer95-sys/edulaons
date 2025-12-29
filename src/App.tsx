@@ -9,6 +9,7 @@ import AdminLogin from "./pages/AdminLogin";
 import StudentLanding from "./pages/student/StudentLanding";
 import StudentAuth from "./pages/student/StudentAuth";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentSignedInLanding from "./pages/student/StudentSignedInLanding";
 import StudentApplicationFlow from "./components/student/StudentApplicationFlow";
 import Login from "./pages/Login";
 import PartnerLogin from "./pages/PartnerLogin";
@@ -78,6 +79,16 @@ const App = () => (
           <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
           <Route path="/admin/v2" element={<Navigate to="/dashboard/admin" replace />} />
           <Route path="/student" element={<Navigate to="/dashboard/student" replace />} />
+          
+          {/* Student Welcome Page (post-auth landing) */}
+          <Route 
+            path="/student/welcome" 
+            element={
+              <ProtectedRoute requiredRole="student">
+                <StudentSignedInLanding />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* ============ FUNCTIONAL ROUTES ============ */}
           

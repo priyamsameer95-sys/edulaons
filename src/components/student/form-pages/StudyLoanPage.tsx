@@ -95,11 +95,11 @@ const destinations = [
   { value: 'Canada', label: 'Canada', emoji: '🇨🇦', popular: true },
   { value: 'Australia', label: 'Australia', emoji: '🇦🇺', popular: true },
   { value: 'Germany', label: 'Germany', emoji: '🇩🇪' },
-  { value: 'New Zealand', label: 'NZ', emoji: '🇳🇿' },
-  { value: 'Singapore', label: 'SG', emoji: '🇸🇬' },
-  { value: 'Hong Kong', label: 'HK', emoji: '🇭🇰' },
+  { value: 'New Zealand', label: 'New Zealand', emoji: '🇳🇿' },
+  { value: 'Singapore', label: 'Singapore', emoji: '🇸🇬' },
+  { value: 'Hong Kong', label: 'Hong Kong', emoji: '🇭🇰' },
   { value: 'Japan', label: 'Japan', emoji: '🇯🇵' },
-  { value: 'Switzerland', label: 'Swiss', emoji: '🇨🇭' },
+  { value: 'Switzerland', label: 'Switzerland', emoji: '🇨🇭' },
   { value: 'China', label: 'China', emoji: '🇨🇳' },
   { value: 'Other', label: 'Other', emoji: '🌍' },
 ];
@@ -156,6 +156,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
   const debouncedSearch = useDebounce(search, 300);
 
   const showBachelors = ['bachelors', 'masters', 'phd'].includes(data.highestQualification || '');
+  const showMasters = ['masters', 'phd'].includes(data.highestQualification || '');
 
   // Load previously selected universities
   useEffect(() => {
@@ -369,8 +370,20 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                   min={0} max={100} placeholder="0-100" className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">CGPA</label>
+                <label className="text-xs text-muted-foreground mb-1 block">Bachelor's CGPA</label>
                 <input type="number" value={data.bachelorsCgpa ?? ''} onChange={e => onUpdate({ bachelorsCgpa: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  min={0} max={10} step={0.1} placeholder="0-10" className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+            </>)}
+            {showMasters && (<>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Master's %</label>
+                <input type="number" value={data.mastersPercentage ?? ''} onChange={e => onUpdate({ mastersPercentage: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  min={0} max={100} placeholder="0-100" className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Master's CGPA</label>
+                <input type="number" value={data.mastersCgpa ?? ''} onChange={e => onUpdate({ mastersCgpa: e.target.value ? parseFloat(e.target.value) : undefined })}
                   min={0} max={10} step={0.1} placeholder="0-10" className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
               </div>
             </>)}
