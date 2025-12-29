@@ -79,6 +79,7 @@ interface FormErrors {
   studentBachelorsCgpa?: string;
   studentCreditScore?: string;
   courseId?: string;
+  universities?: string;
   coApplicantName?: string;
   coApplicantRelationship?: string;
   coApplicantPhone?: string;
@@ -965,6 +966,23 @@ export const CompleteLeadModal = ({
                   </div>
                 </CollapsibleContent>
               </Collapsible>
+            </div>
+
+            {/* University Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                College / University <span className="text-destructive">*</span>
+              </Label>
+              <UniversitySelector
+                country={studyDestination}
+                universities={universities}
+                onChange={setUniversities}
+                error={errors.universities}
+              />
+              {errors.universities && (
+                <p className="text-xs text-destructive">{errors.universities}</p>
+              )}
             </div>
 
             {/* Course Selection */}
