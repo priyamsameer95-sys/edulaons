@@ -29,12 +29,36 @@ import {
   GraduationCap,
   FileText,
   Sparkles,
-  AlertCircle,
   Plus,
   Pencil,
-  RefreshCw
+  RefreshCw,
+  Shield,
+  Users,
+  Star,
+  User,
+  CheckCircle2,
+  ChevronRight,
+  Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+// Application journey steps for "What to Expect" preview
+const APPLICATION_STEPS = [
+  { id: 1, title: 'Personal Info', time: '2 min', description: 'Name, email, phone' },
+  { id: 2, title: 'Study Plans', time: '2 min', description: 'University, course, destination' },
+  { id: 3, title: 'Co-applicant', time: '3 min', description: 'Parent/guardian details' },
+  { id: 4, title: 'Compare Lenders', time: '1 min', description: 'See best offers' },
+  { id: 5, title: 'Upload Documents', time: '5 min', description: 'KYC, academic docs' },
+];
+
+// Trust signals with specific credentials
+const TRUST_SIGNALS = [
+  { icon: Shield, text: '256-bit SSL Encryption', color: 'text-emerald-600' },
+  { icon: Building2, text: 'RBI Registered Lenders', color: 'text-blue-600' },
+  { icon: Users, text: '10,000+ Students Helped', color: 'text-violet-600' },
+  { icon: Star, text: '4.8★ Google Rating', color: 'text-amber-600' },
+];
 
 interface StudentLead {
   id: string;
@@ -149,6 +173,16 @@ const StudentDashboard = () => {
     );
   }
 
+  // Get eligibility data from session storage
+  const eligibilityData = typeof window !== 'undefined' 
+    ? JSON.parse(sessionStorage.getItem('eligibilityData') || 'null') 
+    : null;
+
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -161,15 +195,35 @@ const StudentDashboard = () => {
               </div>
               <span className="font-semibold text-foreground">Eduloans by Cashkaro</span>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleLogout}
-              className="text-muted-foreground hover:text-foreground h-8 text-xs"
-            >
-              <LogOut className="w-3.5 h-3.5 mr-1.5" />
-              Logout
-            </Button>
+            
+            {/* Profile Badge in Header */}
+            <div className="flex items-center gap-3">
+              {profile && (
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border">
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-primary-foreground">
+                      {getInitials(profile.name)}
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-foreground">{studentName}</span>
+                  {hasLead && lead?.case_id && (
+                    <>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground">{lead.case_id}</span>
+                    </>
+                  )}
+                </div>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground h-8 text-xs"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -178,35 +232,135 @@ const StudentDashboard = () => {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* KB: "No application yet" state */}
         {!hasLead ? (
-          <div className="max-w-xl mx-auto text-center py-12">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <FileText className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
-              Welcome, {studentName}!
-            </h1>
-            <p className="text-muted-foreground mb-8">
-              You haven't started an application yet. Begin your education loan journey now.
-            </p>
-            <Button 
-              onClick={handleStartApplication}
-              size="lg"
-              className="h-12 px-8 font-semibold"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Start Your Application
-            </Button>
-            
-            <div className="mt-8 p-4 bg-muted/50 rounded-xl border">
-              <div className="flex items-start gap-3 text-left">
-                <Sparkles className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-medium text-sm">Quick & Easy Process</p>
-                  <p className="text-xs text-muted-foreground">
-                    Complete your application in under 10 minutes. Get matched with the best lenders.
-                  </p>
-                </div>
+          <div className="max-w-2xl mx-auto py-8">
+            {/* Profile Identity Card */}
+            {profile && (
+              <Card className="mb-6 border-emerald-500/30 bg-emerald-500/5">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-lg font-bold text-primary-foreground">
+                        {getInitials(profile.name)}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-foreground">{profile.name}</p>
+                        <BadgeCheck className="w-4 h-4 text-emerald-500" />
+                        <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/30 text-emerald-600 bg-emerald-500/10">
+                          Verified
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                        <Phone className="w-3 h-3" />
+                        <span>{profile.phone}</span>
+                        {profile.email && (
+                          <>
+                            <span>•</span>
+                            <Mail className="w-3 h-3" />
+                            <span className="truncate max-w-[150px]">{profile.email}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Welcome & CTA */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                <FileText className="w-8 h-8 text-primary" />
               </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
+                Welcome, {studentName}!
+              </h1>
+              <p className="text-muted-foreground mb-6">
+                Start your education loan journey in just a few minutes.
+              </p>
+              <Button 
+                onClick={handleStartApplication}
+                size="lg"
+                className="h-12 px-8 font-semibold"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Start Your Application
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+
+            {/* Eligibility Summary (if exists) */}
+            {eligibilityData && (
+              <Card className="mb-6 border-blue-500/30 bg-blue-500/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                    Your Eligibility Check
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {eligibilityData.loanAmount && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Loan Amount</p>
+                        <p className="font-semibold">₹{Math.round(eligibilityData.loanAmount / 100000)}L</p>
+                      </div>
+                    )}
+                    {eligibilityData.destination && (
+                      <div>
+                        <p className="text-muted-foreground text-xs">Destination</p>
+                        <p className="font-semibold">{eligibilityData.destination}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* What to Expect - Application Journey Preview */}
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  What to Expect
+                  <Badge variant="secondary" className="ml-auto text-[10px]">~13 min total</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {APPLICATION_STEPS.map((step, index) => (
+                    <div 
+                      key={step.id} 
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-primary">{step.id}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-foreground">{step.title}</p>
+                        <p className="text-xs text-muted-foreground">{step.description}</p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {step.time}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Trust Signals */}
+            <div className="grid grid-cols-2 gap-3">
+              {TRUST_SIGNALS.map((signal, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center gap-2.5 p-3 rounded-lg bg-muted/30 border border-border/50"
+                >
+                  <signal.icon className={cn("w-4 h-4 shrink-0", signal.color)} />
+                  <span className="text-xs font-medium text-foreground">{signal.text}</span>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
@@ -300,6 +454,41 @@ const StudentDashboard = () => {
 
             {/* Main Content */}
             <div className="flex flex-col gap-5">
+              {/* Profile Identity Card (for has lead state) */}
+              {profile && (
+                <Card className="border-emerald-500/30 bg-emerald-500/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                        <span className="text-lg font-bold text-primary-foreground">
+                          {getInitials(profile.name)}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-foreground">{profile.name}</p>
+                          <BadgeCheck className="w-4 h-4 text-emerald-500" />
+                          <Badge variant="outline" className="text-[10px] h-5 border-primary/30 text-primary bg-primary/10">
+                            {lead.case_id}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
+                          <Phone className="w-3 h-3" />
+                          <span>{profile.phone}</span>
+                          {profile.email && (
+                            <>
+                              <span className="hidden sm:inline">•</span>
+                              <Mail className="w-3 h-3 hidden sm:block" />
+                              <span className="hidden sm:inline truncate max-w-[150px]">{profile.email}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Status Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium w-fit">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -312,7 +501,7 @@ const StudentDashboard = () => {
                   Welcome back, <span className="text-primary">{studentName}!</span>
                 </h1>
                 <p className="text-base sm:text-lg text-muted-foreground">
-                  Your application ({lead.case_id}) status: {getStudentStatusLabel(lead.status)}.
+                  Your application status: {getStudentStatusLabel(lead.status)}.
                 </p>
               </div>
 
