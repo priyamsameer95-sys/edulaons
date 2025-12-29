@@ -39,12 +39,25 @@ export interface PaginatedLead {
   case_complexity: CaseComplexity | null;
   loan_config_updated_at: string | null;
   loan_config_updated_by: string | null;
-  // Joined data
+  // Phase 10: Expanded joined data with all fields for completeness tooltips
   student?: {
     id: string;
     name: string;
     email: string;
     phone: string;
+    postal_code?: string;
+    date_of_birth?: string;
+    gender?: string;
+    city?: string;
+    state?: string;
+    nationality?: string;
+    street_address?: string;
+    highest_qualification?: string;
+    tenth_percentage?: number;
+    twelfth_percentage?: number;
+    bachelors_percentage?: number;
+    bachelors_cgpa?: number;
+    credit_score?: number;
   };
   partner?: {
     id: string;
@@ -60,6 +73,15 @@ export interface PaginatedLead {
     id: string;
     name: string;
     relationship: string;
+    phone?: string;
+    email?: string;
+    salary?: number;
+    pin_code?: string;
+    occupation?: string;
+    employer?: string;
+    employment_type?: string;
+    employment_duration_years?: number;
+    credit_score?: number;
   };
 }
 
@@ -135,16 +157,26 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
       // Get lead IDs for fetching related data
       const leadIds = searchResults.map((r: { id: string }) => r.id);
 
-      // Fetch full lead data with relationships
+      // Phase 10: Fetch full lead data with ALL fields for completeness tooltips
       // Use explicit relationship hints due to multiple foreign keys
       const { data: fullLeads, error: leadsError } = await supabase
         .from('leads_new')
         .select(`
           *,
-          student:students!leads_new_student_id_fkey(id, name, email, phone),
+          student:students!leads_new_student_id_fkey(
+            id, name, email, phone, postal_code,
+            date_of_birth, gender, city, state,
+            nationality, street_address, highest_qualification,
+            tenth_percentage, twelfth_percentage,
+            bachelors_percentage, bachelors_cgpa, credit_score
+          ),
           partner:partners!leads_new_partner_id_fkey(id, name, partner_code),
           lender:lenders!leads_new_lender_id_fkey(id, name, code),
-          co_applicant:co_applicants!leads_new_co_applicant_id_fkey(id, name, relationship)
+          co_applicant:co_applicants!leads_new_co_applicant_id_fkey(
+            id, name, relationship, phone, email, salary, pin_code,
+            occupation, employer, employment_type,
+            employment_duration_years, credit_score
+          )
         `)
         .in('id', leadIds)
         .order('created_at', { ascending: false });
