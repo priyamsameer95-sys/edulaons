@@ -44,8 +44,10 @@ import { ALL_STATES_AND_UTS } from "@/constants/indianStates";
 import { 
   GENDER_OPTIONS, 
   OCCUPATION_OPTIONS, 
-  EMPLOYMENT_TYPE_OPTIONS 
+  EMPLOYMENT_TYPE_OPTIONS,
+  QUALIFICATION_OPTIONS 
 } from "@/utils/leadCompletionSchema";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Collapsible,
   CollapsibleContent,
@@ -67,6 +69,14 @@ interface FormErrors {
   studentGender?: string;
   studentCity?: string;
   studentState?: string;
+  studentNationality?: string;
+  studentStreetAddress?: string;
+  studentHighestQualification?: string;
+  studentTenthPercentage?: string;
+  studentTwelfthPercentage?: string;
+  studentBachelorsPercentage?: string;
+  studentBachelorsCgpa?: string;
+  studentCreditScore?: string;
   courseId?: string;
   coApplicantName?: string;
   coApplicantRelationship?: string;
@@ -77,6 +87,7 @@ interface FormErrors {
   coApplicantEmployer?: string;
   coApplicantEmploymentType?: string;
   coApplicantEmploymentDuration?: string;
+  coApplicantCreditScore?: string;
 }
 
 interface ExistingData {
@@ -121,6 +132,14 @@ export const CompleteLeadModal = ({
   const [studentGender, setStudentGender] = useState<string>("");
   const [studentCity, setStudentCity] = useState<string>("");
   const [studentState, setStudentState] = useState<string>("");
+  const [studentNationality, setStudentNationality] = useState<string>("Indian");
+  const [studentStreetAddress, setStudentStreetAddress] = useState<string>("");
+  const [studentHighestQualification, setStudentHighestQualification] = useState<string>("");
+  const [studentTenthPercentage, setStudentTenthPercentage] = useState<string>("");
+  const [studentTwelfthPercentage, setStudentTwelfthPercentage] = useState<string>("");
+  const [studentBachelorsPercentage, setStudentBachelorsPercentage] = useState<string>("");
+  const [studentBachelorsCgpa, setStudentBachelorsCgpa] = useState<string>("");
+  const [studentCreditScore, setStudentCreditScore] = useState<string>("");
   
   // Course field
   const [courseId, setCourseId] = useState<string>("");
@@ -138,6 +157,7 @@ export const CompleteLeadModal = ({
   const [coApplicantEmployer, setCoApplicantEmployer] = useState<string>("");
   const [coApplicantEmploymentType, setCoApplicantEmploymentType] = useState<string>("");
   const [coApplicantEmploymentDuration, setCoApplicantEmploymentDuration] = useState<string>("");
+  const [coApplicantCreditScore, setCoApplicantCreditScore] = useState<string>("");
   
   const [errors, setErrors] = useState<FormErrors>({});
   
@@ -174,17 +194,17 @@ export const CompleteLeadModal = ({
           .eq("lead_id", lead.id)
           .maybeSingle();
 
-        // Fetch student data - including optional fields
+        // Fetch student data - including all optional fields
         const { data: studentData } = await supabase
           .from("students")
-          .select("postal_code, date_of_birth, gender, city, state")
+          .select("postal_code, date_of_birth, gender, city, state, nationality, street_address, highest_qualification, tenth_percentage, twelfth_percentage, bachelors_percentage, bachelors_cgpa, credit_score")
           .eq("id", lead.student_id)
           .single();
 
-        // Fetch co-applicant data - including optional fields
+        // Fetch co-applicant data - including all optional fields
         const { data: coAppData } = await supabase
           .from("co_applicants")
-          .select("name, relationship, phone, pin_code, salary, occupation, employer, employment_type, employment_duration_years")
+          .select("name, relationship, phone, pin_code, salary, occupation, employer, employment_type, employment_duration_years, credit_score, email")
           .eq("id", lead.co_applicant_id)
           .single();
 
@@ -198,6 +218,14 @@ export const CompleteLeadModal = ({
         setStudentGender(studentData?.gender || "");
         setStudentCity(studentData?.city || "");
         setStudentState(studentData?.state || "");
+        setStudentNationality(studentData?.nationality || "Indian");
+        setStudentStreetAddress(studentData?.street_address || "");
+        setStudentHighestQualification(studentData?.highest_qualification || "");
+        setStudentTenthPercentage(studentData?.tenth_percentage ? String(studentData.tenth_percentage) : "");
+        setStudentTwelfthPercentage(studentData?.twelfth_percentage ? String(studentData.twelfth_percentage) : "");
+        setStudentBachelorsPercentage(studentData?.bachelors_percentage ? String(studentData.bachelors_percentage) : "");
+        setStudentBachelorsCgpa(studentData?.bachelors_cgpa ? String(studentData.bachelors_cgpa) : "");
+        setStudentCreditScore(studentData?.credit_score ? String(studentData.credit_score) : "");
 
         // Pre-populate course if exists
         if (courseData) {
@@ -236,6 +264,7 @@ export const CompleteLeadModal = ({
         setCoApplicantEmploymentDuration(
           coAppData?.employment_duration_years ? String(coAppData.employment_duration_years) : ""
         );
+        setCoApplicantCreditScore(coAppData?.credit_score ? String(coAppData.credit_score) : "");
 
         setExistingData({
           universityId: uniData?.university_id || null,
@@ -278,6 +307,14 @@ export const CompleteLeadModal = ({
     setStudentGender("");
     setStudentCity("");
     setStudentState("");
+    setStudentNationality("Indian");
+    setStudentStreetAddress("");
+    setStudentHighestQualification("");
+    setStudentTenthPercentage("");
+    setStudentTwelfthPercentage("");
+    setStudentBachelorsPercentage("");
+    setStudentBachelorsCgpa("");
+    setStudentCreditScore("");
     // Course
     setCourseId("");
     setIsCustomCourse(false);
@@ -292,6 +329,7 @@ export const CompleteLeadModal = ({
     setCoApplicantEmployer("");
     setCoApplicantEmploymentType("");
     setCoApplicantEmploymentDuration("");
+    setCoApplicantCreditScore("");
     // Reset UI state
     setErrors({});
     setExistingData(null);
@@ -360,6 +398,38 @@ export const CompleteLeadModal = ({
       newErrors.studentCity = "City must be at least 2 characters";
     }
     
+    // Student academic validations
+    if (studentTenthPercentage.trim()) {
+      const pct = parseFloat(studentTenthPercentage);
+      if (isNaN(pct) || pct < 0 || pct > 100) {
+        newErrors.studentTenthPercentage = "Enter valid percentage (0-100)";
+      }
+    }
+    if (studentTwelfthPercentage.trim()) {
+      const pct = parseFloat(studentTwelfthPercentage);
+      if (isNaN(pct) || pct < 0 || pct > 100) {
+        newErrors.studentTwelfthPercentage = "Enter valid percentage (0-100)";
+      }
+    }
+    if (studentBachelorsPercentage.trim()) {
+      const pct = parseFloat(studentBachelorsPercentage);
+      if (isNaN(pct) || pct < 0 || pct > 100) {
+        newErrors.studentBachelorsPercentage = "Enter valid percentage (0-100)";
+      }
+    }
+    if (studentBachelorsCgpa.trim()) {
+      const cgpa = parseFloat(studentBachelorsCgpa);
+      if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) {
+        newErrors.studentBachelorsCgpa = "Enter valid CGPA (0-10)";
+      }
+    }
+    if (studentCreditScore.trim()) {
+      const score = parseInt(studentCreditScore, 10);
+      if (isNaN(score) || score < 300 || score > 900) {
+        newErrors.studentCreditScore = "Enter valid score (300-900)";
+      }
+    }
+    
     if (coApplicantEmployer.trim() && coApplicantEmployer.trim().length < 2) {
       newErrors.coApplicantEmployer = "Employer name must be at least 2 characters";
     }
@@ -368,6 +438,13 @@ export const CompleteLeadModal = ({
       const duration = parseInt(coApplicantEmploymentDuration, 10);
       if (isNaN(duration) || duration < 0 || duration > 50) {
         newErrors.coApplicantEmploymentDuration = "Enter valid years (0-50)";
+      }
+    }
+    
+    if (coApplicantCreditScore.trim()) {
+      const score = parseInt(coApplicantCreditScore, 10);
+      if (isNaN(score) || score < 300 || score > 900) {
+        newErrors.coApplicantCreditScore = "Enter valid score (300-900)";
       }
     }
 
@@ -394,6 +471,14 @@ export const CompleteLeadModal = ({
           gender: studentGender || null,
           city: studentCity.trim() || null,
           state: studentState || null,
+          nationality: studentNationality.trim() || null,
+          street_address: studentStreetAddress.trim() || null,
+          highest_qualification: studentHighestQualification || null,
+          tenth_percentage: studentTenthPercentage ? parseFloat(studentTenthPercentage) : null,
+          twelfth_percentage: studentTwelfthPercentage ? parseFloat(studentTwelfthPercentage) : null,
+          bachelors_percentage: studentBachelorsPercentage ? parseFloat(studentBachelorsPercentage) : null,
+          bachelors_cgpa: studentBachelorsCgpa ? parseFloat(studentBachelorsCgpa) : null,
+          credit_score: studentCreditScore ? parseInt(studentCreditScore, 10) : null,
         })
         .eq("id", lead.student_id);
 
@@ -450,6 +535,9 @@ export const CompleteLeadModal = ({
           employment_type: coApplicantEmploymentType || null,
           employment_duration_years: coApplicantEmploymentDuration 
             ? parseInt(coApplicantEmploymentDuration, 10) 
+            : null,
+          credit_score: coApplicantCreditScore 
+            ? parseInt(coApplicantCreditScore, 10) 
             : null,
         })
         .eq("id", lead.co_applicant_id);
@@ -644,6 +732,155 @@ export const CompleteLeadModal = ({
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Nationality</Label>
+                      <Input
+                        placeholder="Enter nationality"
+                        value={studentNationality}
+                        onChange={(e) => setStudentNationality(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Highest Qualification</Label>
+                      <Select value={studentHighestQualification} onValueChange={setStudentHighestQualification}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {QUALIFICATION_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Street Address</Label>
+                    <Textarea
+                      placeholder="Enter full address"
+                      value={studentStreetAddress}
+                      onChange={(e) => setStudentStreetAddress(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  
+                  {/* Academic Scores */}
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">Academic Scores</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">10th Percentage</Label>
+                        <Input
+                          type="number"
+                          placeholder="0-100"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={studentTenthPercentage}
+                          onChange={(e) => {
+                            setStudentTenthPercentage(e.target.value);
+                            if (errors.studentTenthPercentage) {
+                              setErrors(prev => ({ ...prev, studentTenthPercentage: undefined }));
+                            }
+                          }}
+                          className={errors.studentTenthPercentage ? 'border-destructive' : ''}
+                        />
+                        {errors.studentTenthPercentage && (
+                          <p className="text-xs text-destructive">{errors.studentTenthPercentage}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">12th Percentage</Label>
+                        <Input
+                          type="number"
+                          placeholder="0-100"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={studentTwelfthPercentage}
+                          onChange={(e) => {
+                            setStudentTwelfthPercentage(e.target.value);
+                            if (errors.studentTwelfthPercentage) {
+                              setErrors(prev => ({ ...prev, studentTwelfthPercentage: undefined }));
+                            }
+                          }}
+                          className={errors.studentTwelfthPercentage ? 'border-destructive' : ''}
+                        />
+                        {errors.studentTwelfthPercentage && (
+                          <p className="text-xs text-destructive">{errors.studentTwelfthPercentage}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Bachelor's Percentage</Label>
+                        <Input
+                          type="number"
+                          placeholder="0-100"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={studentBachelorsPercentage}
+                          onChange={(e) => {
+                            setStudentBachelorsPercentage(e.target.value);
+                            if (errors.studentBachelorsPercentage) {
+                              setErrors(prev => ({ ...prev, studentBachelorsPercentage: undefined }));
+                            }
+                          }}
+                          className={errors.studentBachelorsPercentage ? 'border-destructive' : ''}
+                        />
+                        {errors.studentBachelorsPercentage && (
+                          <p className="text-xs text-destructive">{errors.studentBachelorsPercentage}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Bachelor's CGPA</Label>
+                        <Input
+                          type="number"
+                          placeholder="0-10"
+                          min="0"
+                          max="10"
+                          step="0.01"
+                          value={studentBachelorsCgpa}
+                          onChange={(e) => {
+                            setStudentBachelorsCgpa(e.target.value);
+                            if (errors.studentBachelorsCgpa) {
+                              setErrors(prev => ({ ...prev, studentBachelorsCgpa: undefined }));
+                            }
+                          }}
+                          className={errors.studentBachelorsCgpa ? 'border-destructive' : ''}
+                        />
+                        {errors.studentBachelorsCgpa && (
+                          <p className="text-xs text-destructive">{errors.studentBachelorsCgpa}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Credit Score</Label>
+                        <Input
+                          type="number"
+                          placeholder="300-900"
+                          min="300"
+                          max="900"
+                          value={studentCreditScore}
+                          onChange={(e) => {
+                            setStudentCreditScore(e.target.value);
+                            if (errors.studentCreditScore) {
+                              setErrors(prev => ({ ...prev, studentCreditScore: undefined }));
+                            }
+                          }}
+                          className={errors.studentCreditScore ? 'border-destructive' : ''}
+                        />
+                        {errors.studentCreditScore && (
+                          <p className="text-xs text-destructive">{errors.studentCreditScore}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CollapsibleContent>
@@ -905,6 +1142,28 @@ export const CompleteLeadModal = ({
                       />
                       {errors.coApplicantEmploymentDuration && (
                         <p className="text-xs text-destructive">{errors.coApplicantEmploymentDuration}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Credit Score</Label>
+                      <Input
+                        type="number"
+                        placeholder="300-900"
+                        min="300"
+                        max="900"
+                        value={coApplicantCreditScore}
+                        onChange={(e) => {
+                          setCoApplicantCreditScore(e.target.value);
+                          if (errors.coApplicantCreditScore) {
+                            setErrors(prev => ({ ...prev, coApplicantCreditScore: undefined }));
+                          }
+                        }}
+                        className={errors.coApplicantCreditScore ? 'border-destructive' : ''}
+                      />
+                      {errors.coApplicantCreditScore && (
+                        <p className="text-xs text-destructive">{errors.coApplicantCreditScore}</p>
                       )}
                     </div>
                   </div>
