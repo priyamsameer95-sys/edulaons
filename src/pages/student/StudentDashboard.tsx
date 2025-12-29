@@ -6,7 +6,7 @@
  * - Student sees "No application yet" state if no lead exists
  * - Real-time visibility & tracking via lead timeline
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +14,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { StatusTimeline } from '@/components/shared/StatusTimeline';
 import { filterLeadForStudent, getStudentStatusLabel, getStudentDocumentStatusLabel } from '@/utils/rolePermissions';
+import { STUDENT_EDIT_LOCKED_STATUSES } from '@/constants/studentPermissions';
+import StudentDocumentChecklist from '@/components/student/StudentDocumentChecklist';
+import ChangeLenderModal from '@/components/student/ChangeLenderModal';
+import ReferralSection from '@/components/student/ReferralSection';
 import { 
   ArrowRight, 
   LogOut, 
   Clock,
   Building2,
-  Percent,
   IndianRupee,
   BadgeCheck,
   Phone,
@@ -27,7 +30,9 @@ import {
   FileText,
   Sparkles,
   AlertCircle,
-  Plus
+  Plus,
+  Pencil,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +46,9 @@ interface StudentLead {
   intake_year: number | null;
   documents_status: string;
   created_at: string;
+  target_lender_id: string | null;
   partner?: { name: string } | null;
+  target_lender?: { id: string; name: string } | null;
 }
 
 interface StudentProfile {
@@ -58,56 +65,62 @@ const StudentDashboard = () => {
   const [lead, setLead] = useState<StudentLead | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [hasLead, setHasLead] = useState(false);
+  const [showChangeLender, setShowChangeLender] = useState(false);
 
-  useEffect(() => {
-    async function fetchStudentData() {
-      if (!user?.email) return;
+  const isEditLocked = lead ? STUDENT_EDIT_LOCKED_STATUSES.includes(lead.status as any) : true;
 
-      try {
-        // Fetch student profile
-        const { data: studentData, error: studentError } = await supabase
-          .from('students')
-          .select('id, name, email, phone')
-          .eq('email', user.email)
+  const fetchStudentData = useCallback(async () => {
+    if (!user?.email) return;
+
+    try {
+      // Fetch student profile
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('id, name, email, phone')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (studentError) throw studentError;
+
+      if (studentData) {
+        setProfile(studentData);
+
+        // Fetch student's lead with target lender info
+        const { data: leadData, error: leadError } = await supabase
+          .from('leads_new')
+          .select(`
+            id, case_id, status, loan_amount, study_destination,
+            intake_month, intake_year, documents_status, created_at,
+            target_lender_id,
+            partner:partners(name),
+            target_lender:lenders!leads_new_target_lender_id_fkey(id, name)
+          `)
+          .eq('student_id', studentData.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (studentError) throw studentError;
-
-        if (studentData) {
-          setProfile(studentData);
-
-          // Fetch student's lead with KB field filtering
-          const { data: leadData, error: leadError } = await supabase
-            .from('leads_new')
-            .select(`
-              id, case_id, status, loan_amount, study_destination,
-              intake_month, intake_year, documents_status, created_at,
-              partner:partners(name)
-            `)
-            .eq('student_id', studentData.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (!leadError && leadData) {
-            // KB: Apply field filtering for student view
-            const filteredLead = filterLeadForStudent(leadData);
-            setLead({
-              ...filteredLead,
-              partner: leadData.partner,
-            } as StudentLead);
-            setHasLead(true);
-          }
+        if (!leadError && leadData) {
+          const filteredLead = filterLeadForStudent(leadData);
+          setLead({
+            ...filteredLead,
+            target_lender_id: leadData.target_lender_id,
+            partner: leadData.partner,
+            target_lender: leadData.target_lender,
+          } as StudentLead);
+          setHasLead(true);
         }
-      } catch (err) {
-        console.error('Error fetching student data:', err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error('Error fetching student data:', err);
+    } finally {
+      setLoading(false);
     }
-
-    fetchStudentData();
   }, [user?.email]);
+
+  useEffect(() => {
+    fetchStudentData();
+  }, [fetchStudentData]);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -320,58 +333,68 @@ const StudentDashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Document Status */}
+              {/* Document Checklist */}
+              <StudentDocumentChecklist leadId={lead.id} />
+
+              {/* Selected Lender Card */}
               <Card>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Documents
-                    </CardTitle>
-                    <span className={cn(
-                      "text-xs font-medium px-2 py-1 rounded-full",
-                      lead.documents_status === 'verified' 
-                        ? "bg-emerald-100 text-emerald-700"
-                        : lead.documents_status === 'rejected'
-                        ? "bg-red-100 text-red-700"
-                        : "bg-amber-100 text-amber-700"
-                    )}>
-                      {getStudentDocumentStatusLabel(lead.documents_status)}
-                    </span>
-                  </div>
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Your Selected Lender
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {lead.documents_status === 'pending' || lead.documents_status === 'rejected' ? (
-                    <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200">
-                      <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-primary" />
+                      </div>
                       <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                          {lead.documents_status === 'rejected' ? 'Documents need resubmission' : 'Documents pending'}
+                        <p className="font-semibold text-foreground">
+                          {lead.target_lender?.name || 'Not selected yet'}
                         </p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                          Please upload your required documents to continue
-                        </p>
+                        {lead.target_lender && (
+                          <p className="text-xs text-muted-foreground">Preferred lender for your loan</p>
+                        )}
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Your documents are {getStudentDocumentStatusLabel(lead.documents_status).toLowerCase()}
-                    </p>
-                  )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowChangeLender(true)}
+                      className="h-8"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1.5" />
+                      Change
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* CTA */}
-              {(lead.status === 'new' || lead.documents_status !== 'verified') && (
-                <Button 
-                  onClick={handleContinueApplication}
-                  size="lg"
-                  className="w-full h-12 font-semibold"
-                >
-                  Continue Application
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                {!isEditLocked && (
+                  <Button 
+                    variant="outline"
+                    onClick={handleContinueApplication}
+                    className="h-10"
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit My Application
+                  </Button>
+                )}
+                {(lead.status === 'new' || lead.documents_status !== 'verified') && (
+                  <Button 
+                    onClick={handleContinueApplication}
+                    size="lg"
+                    className="flex-1 h-10 font-semibold"
+                  >
+                    Continue Application
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+              </div>
 
               {/* Mobile Stats */}
               <div className="lg:hidden grid grid-cols-2 gap-3">
@@ -386,10 +409,24 @@ const StudentDashboard = () => {
                   <p className="text-[10px] text-muted-foreground">Destination</p>
                 </div>
               </div>
+
+              {/* Referral Section */}
+              <ReferralSection studentId={profile?.id} studentPhone={profile?.phone} />
             </div>
           </div>
         )}
       </main>
+
+      {/* Change Lender Modal */}
+      {lead && (
+        <ChangeLenderModal
+          open={showChangeLender}
+          onOpenChange={setShowChangeLender}
+          leadId={lead.id}
+          currentLenderId={lead.target_lender_id}
+          onLenderChanged={fetchStudentData}
+        />
+      )}
     </div>
   );
 };
