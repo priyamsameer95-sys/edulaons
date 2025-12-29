@@ -257,15 +257,17 @@ const StudentLanding = () => {
   const verifyOTP = async () => {
     setAuthStep('verifying');
     setOtpError('');
-    const phone = formData.student_phone.replace(/\D/g, '');
+    // Normalize phone - send just 10 digits (edge function handles normalization too)
+    const normalizedPhone = formData.student_phone.replace(/\D/g, '').slice(-10);
     try {
       const {
         data,
         error
       } = await supabase.functions.invoke('verify-student-otp', {
         body: {
-          phone,
-          otp
+          phone: normalizedPhone,
+          otp,
+          name: formData.student_name.trim() || undefined
         }
       });
       if (error) throw error;
