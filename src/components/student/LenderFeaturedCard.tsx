@@ -64,115 +64,116 @@ const LenderFeaturedCard = ({
   return (
     <div
       className={cn(
-        "relative rounded-xl border bg-card overflow-hidden transition-all flex flex-col",
+        "rounded-xl border bg-card overflow-hidden transition-all flex flex-col",
         isTopMatch && "border-l-4 border-l-warning shadow-md",
         isSelected && "ring-2 ring-success border-success",
         !isTopMatch && !isSelected && "border-border",
         isUpdating && "opacity-60 pointer-events-none"
       )}
     >
-      {/* Top Match Badge */}
+      {/* Top Match Badge - Now inline, not absolute */}
       {isTopMatch && (
-        <div className="absolute top-4 right-4 z-10">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/15 text-warning text-xs font-bold uppercase tracking-wide">
-            <Building2 className="h-3.5 w-3.5" />
+        <div className="px-4 pt-4 pb-0">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/15 text-warning text-[10px] font-bold uppercase tracking-wide">
+            <Building2 className="h-3 w-3" />
             Top Match
           </span>
         </div>
       )}
 
-      <div className="p-6 space-y-5 flex-1 flex flex-col">
+      <div className={cn(
+        "p-4 space-y-4 flex-1 flex flex-col",
+        isTopMatch && "pt-3"
+      )}>
         {/* Header: Logo + Name + Tagline */}
-        <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-muted/80 flex items-center justify-center flex-shrink-0 border border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-lg bg-muted/80 flex items-center justify-center flex-shrink-0 border border-border/50">
             {lender.logo_url ? (
               <img 
                 src={lender.logo_url} 
                 alt={lender.lender_name} 
-                className="w-9 h-9 object-contain" 
+                className="w-7 h-7 object-contain" 
               />
             ) : (
-              <Building2 className="h-7 w-7 text-muted-foreground" />
+              <Building2 className="h-5 w-5 text-muted-foreground" />
             )}
           </div>
-          <div className="flex-1 min-w-0 pt-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-bold text-foreground text-base leading-tight">{lender.lender_name}</h4>
-              {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h4 className="font-bold text-foreground text-sm leading-tight truncate">{lender.lender_name}</h4>
+              {isTopMatch && <Star className="h-3.5 w-3.5 text-warning fill-warning flex-shrink-0" />}
             </div>
-            <p className="text-xs text-muted-foreground leading-snug">{getTagline()}</p>
+            <p className="text-[11px] text-muted-foreground leading-snug truncate">{getTagline()}</p>
           </div>
         </div>
 
         {/* AI Insight Box */}
         {lender.student_facing_reason && (
-          <div className="rounded-lg bg-info/5 border border-info/15 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-full bg-info/20 flex items-center justify-center">
-                <Brain className="h-3 w-3 text-info" />
-              </div>
-              <span className="text-xs font-semibold text-info uppercase tracking-wide">AI Insight</span>
+          <div className="rounded-lg bg-info/5 border border-info/15 p-3">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Brain className="h-3.5 w-3.5 text-info" />
+              <span className="text-[10px] font-semibold text-info uppercase tracking-wide">AI Insight</span>
             </div>
-            <p className="text-sm text-foreground/80 leading-relaxed">
+            <p className="text-xs text-foreground/80 leading-relaxed line-clamp-3">
               {lender.student_facing_reason}
             </p>
           </div>
         )}
 
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-4 gap-2 py-4 border-y border-border/50">
-          <div className="text-center px-1">
+        {/* Key Metrics - 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
             <p className={cn(
-              "text-2xl font-bold leading-none",
+              "text-xl font-bold leading-none",
               lender.compatibility_score >= 80 ? "text-success" : "text-foreground"
             )}>
               {lender.compatibility_score}%
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Match</p>
+            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Match</p>
           </div>
-          <div className="text-center px-1 border-l border-border/50">
-            <p className="text-2xl font-bold text-foreground leading-none">
+          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+            <p className="text-xl font-bold text-foreground leading-none">
               {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Rate</p>
+            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Rate</p>
           </div>
-          <div className="text-center px-1 border-l border-border/50">
-            <p className="text-lg font-bold text-foreground leading-none">
+          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+            <p className="text-base font-bold text-foreground leading-none">
               {displayAmount 
-                ? `₹${(displayAmount / 10000000).toFixed(2)} Cr`
+                ? `₹${(displayAmount / 10000000).toFixed(1)} Cr`
                 : '—'}
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Amount</p>
+            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Amount</p>
           </div>
-          <div className="text-center px-1 border-l border-border/50">
-            <p className="text-2xl font-bold text-foreground leading-none">
+          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+            <p className="text-xl font-bold text-foreground leading-none">
               {lender.processing_time_days || '7-10'}
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Days</p>
+            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1 font-medium">Days</p>
           </div>
         </div>
 
         {/* View Detailed Toggle */}
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           View Detailed
           <ChevronDown className={cn(
-            "h-3.5 w-3.5 transition-transform",
+            "h-3 w-3 transition-transform",
             showDetails && "rotate-180"
           )} />
         </button>
 
         {/* Expanded Details */}
         {showDetails && (
-          <div className="pt-3 space-y-3 animate-fade-in">
-            <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Expenses Covered</p>
-            <div className="space-y-2">
+          <div className="space-y-2 animate-fade-in">
+            <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">Expenses Covered</p>
+            <div className="space-y-1.5">
               {expensesCovered.map((expense, idx) => (
-                <div key={idx} className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                  <span className="text-sm text-foreground/80">
+                <div key={idx} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                  <span className="text-xs text-foreground/80">
                     {typeof expense === 'string' ? expense : expense.name || 'Covered'}
                   </span>
                 </div>
@@ -182,29 +183,28 @@ const LenderFeaturedCard = ({
         )}
 
         {/* Spacer to push button to bottom */}
-        <div className="flex-1" />
+        <div className="flex-1 min-h-2" />
 
         {/* Select Button */}
         <Button
           onClick={() => onSelect(lender.lender_id)}
           disabled={isUpdating}
           variant={isTopMatch ? "default" : "outline"}
-          size="lg"
           className={cn(
-            "w-full font-semibold",
+            "w-full h-10 font-semibold text-sm",
             isSelected && "bg-success hover:bg-success/90 border-success text-success-foreground",
             isTopMatch && !isSelected && "shadow-sm"
           )}
         >
           {isSelected ? (
             <>
-              <Check className="h-4 w-4 mr-2" />
+              <Check className="h-4 w-4 mr-1.5" />
               Selected
             </>
           ) : (
             <>
               Select Offer
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowRight className="h-4 w-4 ml-1.5" />
             </>
           )}
         </Button>
