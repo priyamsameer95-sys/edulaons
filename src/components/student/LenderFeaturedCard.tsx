@@ -6,9 +6,15 @@ import {
   Check, 
   ChevronDown, 
   CheckCircle2,
-  Brain,
+  Zap,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Clock,
+  Percent,
+  Wallet,
+  TrendingUp,
+  Shield,
+  FileCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +31,8 @@ interface LenderData {
   student_facing_reason?: string;
   lender_description?: string | null;
   eligible_expenses?: any[] | null;
+  moratorium_period?: string | null;
+  processing_fee?: number | null;
 }
 
 interface LenderFeaturedCardProps {
@@ -45,147 +53,188 @@ const LenderFeaturedCard = ({
   const [showDetails, setShowDetails] = useState(false);
   const isTopMatch = rank === 1;
   
-  const getTagline = () => {
-    if (lender.lender_description) return lender.lender_description;
-    if (lender.interest_rate_min && lender.interest_rate_min < 9) return 'Lowest Interest Rates';
-    if (lender.processing_time_days && lender.processing_time_days <= 7) return 'Fast Processing';
-    if (lender.compatibility_score >= 95) return 'Perfect Match';
-    return 'Education Loan Expert';
-  };
-
   const expensesCovered = lender.eligible_expenses?.length 
-    ? lender.eligible_expenses.slice(0, 3)
-    : ['100% Tuition Fees', 'Living Expenses', 'Travel & Laptop'];
+    ? lender.eligible_expenses.slice(0, 4)
+    : ['Tuition Fees', 'Living Expenses', 'Travel Costs', 'Books & Equipment'];
 
   const displayAmount = lender.eligible_loan_max || lender.loan_amount_max;
+
+  // Generate benefit highlights based on lender data
+  const getBenefits = () => {
+    const benefits = [];
+    if (lender.interest_rate_min && lender.interest_rate_min < 9) {
+      benefits.push({ icon: TrendingUp, text: 'Among the lowest rates in market' });
+    }
+    if (lender.processing_time_days && lender.processing_time_days <= 7) {
+      benefits.push({ icon: Zap, text: 'Super fast approval' });
+    }
+    if (lender.moratorium_period) {
+      benefits.push({ icon: Shield, text: `${lender.moratorium_period} moratorium` });
+    }
+    if (lender.compatibility_score >= 90) {
+      benefits.push({ icon: CheckCircle2, text: 'Excellent profile match' });
+    }
+    return benefits.slice(0, 2);
+  };
+
+  const benefits = getBenefits();
 
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card overflow-hidden transition-all duration-200 flex flex-col",
-        isTopMatch && "border-warning/40 shadow-lg shadow-warning/10",
-        isSelected && "ring-2 ring-success border-success",
-        !isTopMatch && !isSelected && "border-border hover:border-border/80",
+        "rounded-2xl border-2 bg-card overflow-hidden transition-all duration-300 flex flex-col",
+        isTopMatch && "border-warning shadow-xl shadow-warning/15 relative",
+        isSelected && "ring-2 ring-success border-success shadow-lg shadow-success/10",
+        !isTopMatch && !isSelected && "border-border/60 hover:border-primary/30 hover:shadow-lg",
         isUpdating && "opacity-60 pointer-events-none"
       )}
     >
-      {/* Header Section - Logo, Name, Badge */}
-      <div className="p-4 pb-3">
-        <div className="flex items-start gap-3">
+      {/* Top Match Ribbon */}
+      {isTopMatch && (
+        <div className="bg-gradient-to-r from-warning to-warning/80 text-warning-foreground py-2 px-4 flex items-center justify-center gap-2">
+          <Sparkles className="h-4 w-4" />
+          <span className="text-xs font-bold uppercase tracking-wider">Best Match for You</span>
+          <Sparkles className="h-4 w-4" />
+        </div>
+      )}
+
+      {/* Header Section */}
+      <div className="p-5 pb-4">
+        <div className="flex items-start gap-4">
           {/* Logo */}
-          <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center flex-shrink-0 border border-border/30">
+          <div className={cn(
+            "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border-2",
+            isTopMatch ? "bg-warning/5 border-warning/20" : "bg-muted/30 border-border/40"
+          )}>
             {lender.logo_url ? (
               <img 
                 src={lender.logo_url} 
                 alt={lender.lender_name} 
-                className="w-8 h-8 object-contain" 
+                className="w-9 h-9 object-contain" 
               />
             ) : (
-              <Building2 className="h-6 w-6 text-muted-foreground" />
+              <Building2 className="h-7 w-7 text-muted-foreground" />
             )}
           </div>
           
-          {/* Name & Tagline */}
+          {/* Name & Match */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-foreground text-base leading-tight truncate">
+              <h4 className="font-bold text-foreground text-lg leading-tight truncate">
                 {lender.lender_name}
               </h4>
-              {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
+              {isTopMatch && <Star className="h-5 w-5 text-warning fill-warning flex-shrink-0" />}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{getTagline()}</p>
-          </div>
-          
-          {/* Badge - Right side */}
-          <div className="flex-shrink-0">
-            {isTopMatch ? (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-warning/10 text-warning text-[10px] font-bold uppercase tracking-wide border border-warning/20">
-                <Sparkles className="h-3 w-3" />
-                Top Match
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2 py-1 rounded-full bg-muted/50 text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-                #{rank}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* AI Insight Box - Fixed Height */}
-      <div className="px-4">
-        <div className={cn(
-          "rounded-lg p-3 min-h-[72px] flex flex-col",
-          lender.student_facing_reason 
-            ? "bg-info/5 border border-info/20" 
-            : "bg-muted/30 border border-border/30"
-        )}>
-          {lender.student_facing_reason ? (
-            <>
-              <div className="flex items-center gap-1.5 mb-1">
-                <Brain className="h-3.5 w-3.5 text-info" />
-                <span className="text-[10px] font-semibold text-info uppercase tracking-wider">AI Insight</span>
+            
+            {/* Match Score - Prominent */}
+            <div className="flex items-center gap-2 mt-1.5">
+              <div className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-bold",
+                lender.compatibility_score >= 85 ? "bg-success/10 text-success" :
+                lender.compatibility_score >= 70 ? "bg-primary/10 text-primary" :
+                "bg-muted text-muted-foreground"
+              )}>
+                {lender.compatibility_score}% Match
               </div>
-              <p className="text-xs text-foreground/80 leading-relaxed line-clamp-2 flex-1">
-                {lender.student_facing_reason}
-              </p>
-            </>
-          ) : (
-            <p className="text-xs text-muted-foreground/60 italic my-auto">
-              AI analysis pending...
-            </p>
-          )}
+              {!isTopMatch && (
+                <span className="text-xs text-muted-foreground">#{rank} Recommendation</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Key Metrics - 2x2 Grid with white boxes */}
-      <div className="p-4 pt-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-background rounded-lg py-3 px-2 text-center border border-border/40">
-            <p className={cn(
-              "text-xl font-bold leading-none tabular-nums",
-              lender.compatibility_score >= 80 ? "text-success" : 
-              lender.compatibility_score >= 60 ? "text-foreground" : "text-muted-foreground"
-            )}>
-              {lender.compatibility_score}%
-            </p>
-            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1.5 font-semibold">Match</p>
+      {/* AI Insight - Solid, prominent styling */}
+      {lender.student_facing_reason && (
+        <div className="px-5">
+          <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-info/5 rounded-xl p-4 border border-primary/15">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Zap className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Why This Lender?</p>
+                <p className="text-sm text-foreground leading-relaxed">
+                  {lender.student_facing_reason}
+                </p>
+              </div>
+            </div>
           </div>
-          
-          <div className="bg-background rounded-lg py-3 px-2 text-center border border-border/40">
-            <p className="text-xl font-bold text-foreground leading-none tabular-nums">
+        </div>
+      )}
+
+      {/* Key Metrics - Cleaner grid */}
+      <div className="p-5">
+        <div className="grid grid-cols-4 gap-3">
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-lg bg-success/10 flex items-center justify-center mb-2">
+              <Percent className="h-5 w-5 text-success" />
+            </div>
+            <p className="text-lg font-bold text-foreground tabular-nums">
               {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
             </p>
-            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1.5 font-semibold">Rate</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Rate</p>
           </div>
           
-          <div className="bg-background rounded-lg py-3 px-2 text-center border border-border/40">
-            <p className="text-lg font-bold text-foreground leading-none tabular-nums">
-              {displayAmount 
-                ? `₹${(displayAmount / 10000000).toFixed(1)}Cr`
-                : '—'}
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-2">
+              <Wallet className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-lg font-bold text-foreground tabular-nums">
+              {displayAmount ? `₹${(displayAmount / 10000000).toFixed(1)}Cr` : '—'}
             </p>
-            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1.5 font-semibold">Amount</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Max Loan</p>
           </div>
           
-          <div className="bg-background rounded-lg py-3 px-2 text-center border border-border/40">
-            <p className="text-xl font-bold text-foreground leading-none tabular-nums">
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-lg bg-info/10 flex items-center justify-center mb-2">
+              <Clock className="h-5 w-5 text-info" />
+            </div>
+            <p className="text-lg font-bold text-foreground tabular-nums">
               {lender.processing_time_days || '7-10'}
             </p>
-            <p className="text-[9px] uppercase text-muted-foreground tracking-wider mt-1.5 font-semibold">Days</p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Days</p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-10 h-10 mx-auto rounded-lg bg-warning/10 flex items-center justify-center mb-2">
+              <FileCheck className="h-5 w-5 text-warning" />
+            </div>
+            <p className="text-lg font-bold text-foreground tabular-nums">
+              {lender.processing_fee ? `${lender.processing_fee}%` : '1%'}
+            </p>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Fee</p>
           </div>
         </div>
       </div>
 
-      {/* View Detailed Toggle */}
-      <div className="px-4">
+      {/* Benefits Pills */}
+      {benefits.length > 0 && (
+        <div className="px-5 pb-2">
+          <div className="flex flex-wrap gap-2">
+            {benefits.map((benefit, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                <benefit.icon className="h-3.5 w-3.5 text-success" />
+                <span className="text-xs text-foreground/80">{benefit.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* View Details - Expandable Section */}
+      <div className="px-5 mt-1">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+          className={cn(
+            "w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all",
+            "bg-muted/30 hover:bg-muted/50 border border-border/40",
+            showDetails && "bg-muted/50"
+          )}
         >
-          View Details
+          <span className="text-sm font-semibold text-foreground">View Full Details</span>
           <ChevronDown className={cn(
-            "h-3.5 w-3.5 transition-transform duration-200",
+            "h-5 w-5 text-muted-foreground transition-transform duration-300",
             showDetails && "rotate-180"
           )} />
         </button>
@@ -193,45 +242,64 @@ const LenderFeaturedCard = ({
 
       {/* Expanded Details */}
       {showDetails && (
-        <div className="px-4 pb-2 space-y-2 animate-fade-in border-t border-border/50 pt-3 mx-4">
-          <p className="text-[10px] font-semibold text-foreground uppercase tracking-wider">Expenses Covered</p>
-          <div className="space-y-1.5">
-            {expensesCovered.map((expense, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
-                <span className="text-xs text-foreground/80">
-                  {typeof expense === 'string' ? expense : expense.name || 'Covered'}
-                </span>
-              </div>
-            ))}
+        <div className="px-5 py-4 space-y-4 animate-fade-in">
+          {/* Expenses Covered */}
+          <div>
+            <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">What's Covered</p>
+            <div className="grid grid-cols-2 gap-2">
+              {expensesCovered.map((expense, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-success/5 border border-success/10">
+                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                  <span className="text-xs text-foreground/80 font-medium">
+                    {typeof expense === 'string' ? expense : expense.name || 'Covered'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Additional Info */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
+            <div className="p-3 rounded-lg bg-muted/30">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Moratorium</p>
+              <p className="text-sm font-semibold text-foreground">{lender.moratorium_period || 'Course + 6 months'}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Collateral</p>
+              <p className="text-sm font-semibold text-foreground">May be required</p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Spacer */}
-      <div className="flex-1 min-h-2" />
+      <div className="flex-1 min-h-3" />
 
       {/* Select Button */}
-      <div className="p-4 pt-2">
+      <div className="p-5 pt-3">
         <Button
           onClick={() => onSelect(lender.lender_id)}
           disabled={isUpdating}
-          variant={isSelected ? "default" : isTopMatch ? "default" : "outline"}
+          size="lg"
           className={cn(
-            "w-full h-11 font-semibold text-sm",
-            isSelected && "bg-success hover:bg-success/90 border-success text-success-foreground",
-            isTopMatch && !isSelected && "shadow-sm"
+            "w-full h-12 font-bold text-sm rounded-xl transition-all",
+            isSelected 
+              ? "bg-success hover:bg-success/90 text-success-foreground shadow-lg shadow-success/20" 
+              : isTopMatch 
+                ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" 
+                : ""
           )}
+          variant={isSelected ? "default" : isTopMatch ? "default" : "outline"}
         >
           {isSelected ? (
             <>
-              <Check className="h-4 w-4 mr-2" />
-              Selected
+              <Check className="h-5 w-5 mr-2" />
+              Lender Selected
             </>
           ) : (
             <>
-              Select Offer
-              <ArrowRight className="h-4 w-4 ml-2" />
+              Choose This Lender
+              <ArrowRight className="h-5 w-5 ml-2" />
             </>
           )}
         </Button>
