@@ -53,6 +53,7 @@ interface FormErrors {
   coApplicantName?: string;
   coApplicantRelationship?: string;
   coApplicantPhone?: string;
+  coApplicantSalary?: string;
   coApplicantPinCode?: string;
 }
 
@@ -103,6 +104,7 @@ export const CompleteLeadModal = ({
   const [coApplicantName, setCoApplicantName] = useState<string>("");
   const [coApplicantRelationship, setCoApplicantRelationship] = useState<RelationshipEnum | "">("");
   const [coApplicantPhone, setCoApplicantPhone] = useState<string>("");
+  const [coApplicantSalary, setCoApplicantSalary] = useState<string>("");
   const [coApplicantPinCode, setCoApplicantPinCode] = useState<string>("");
   
   const [errors, setErrors] = useState<FormErrors>({});
@@ -143,10 +145,10 @@ export const CompleteLeadModal = ({
           .eq("id", lead.student_id)
           .single();
 
-        // Fetch co-applicant data
+      // Fetch co-applicant data
         const { data: coAppData } = await supabase
           .from("co_applicants")
-          .select("name, relationship, phone, pin_code")
+          .select("name, relationship, phone, pin_code, salary")
           .eq("id", lead.co_applicant_id)
           .single();
 
@@ -176,6 +178,10 @@ export const CompleteLeadModal = ({
 
         const coPhone = coAppData?.phone;
         setCoApplicantPhone(coPhone || "");
+
+        // Pre-populate salary - check for placeholder (0 or null)
+        const coSalary = coAppData?.salary;
+        setCoApplicantSalary(coSalary && coSalary > 0 ? String(coSalary) : "");
 
         const coPin = coAppData?.pin_code;
         const isCoPinPlaceholder = !coPin || coPin === "000000";
@@ -222,6 +228,7 @@ export const CompleteLeadModal = ({
     setCoApplicantName("");
     setCoApplicantRelationship("");
     setCoApplicantPhone("");
+    setCoApplicantSalary("");
     setCoApplicantPinCode("");
     setErrors({});
     setExistingData(null);
@@ -264,6 +271,16 @@ export const CompleteLeadModal = ({
       newErrors.coApplicantPhone = "Required";
     } else if (!/^[6-9]\d{9}$/.test(coApplicantPhone.trim())) {
       newErrors.coApplicantPhone = "Enter valid 10-digit number";
+    }
+
+    // Co-Applicant Salary validation (required, must be positive number)
+    if (!coApplicantSalary.trim()) {
+      newErrors.coApplicantSalary = "Required for eligibility";
+    } else {
+      const salaryNum = parseInt(coApplicantSalary.replace(/,/g, ''), 10);
+      if (isNaN(salaryNum) || salaryNum <= 0) {
+        newErrors.coApplicantSalary = "Enter a valid amount";
+      }
     }
 
     // Co-Applicant PIN Code validation (6 digits)
@@ -340,13 +357,15 @@ export const CompleteLeadModal = ({
         // Continue - course save is not critical
       }
 
-      // Update co-applicant with all fields
+      // Update co-applicant with all fields including salary
+      const salaryValue = parseInt(coApplicantSalary.replace(/,/g, ''), 10);
       const { error: coAppError } = await supabase
         .from("co_applicants")
         .update({
           name: coApplicantName.trim(),
           relationship: coApplicantRelationship as RelationshipEnum,
           phone: coApplicantPhone.trim(),
+          salary: salaryValue,
           pin_code: coApplicantPinCode.trim(),
         })
         .eq("id", lead.co_applicant_id);
@@ -578,8 +597,8 @@ export const CompleteLeadModal = ({
                 </div>
               </div>
 
-              {/* Phone and PIN Code Row */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Phone and Salary Row */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="space-y-2">
                   <Label className="text-sm">
                     Phone <span className="text-destructive">*</span>
@@ -601,6 +620,33 @@ export const CompleteLeadModal = ({
                     <p className="text-xs text-destructive">{errors.coApplicantPhone}</p>
                   )}
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    Monthly Salary <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+                    <Input
+                      placeholder="e.g. 50000"
+                      value={coApplicantSalary}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^\d]/g, '');
+                        setCoApplicantSalary(value);
+                        if (errors.coApplicantSalary) {
+                          setErrors(prev => ({ ...prev, coApplicantSalary: undefined }));
+                        }
+                      }}
+                      className={`pl-7 ${errors.coApplicantSalary ? 'border-destructive' : ''}`}
+                    />
+                  </div>
+                  {errors.coApplicantSalary && (
+                    <p className="text-xs text-destructive">{errors.coApplicantSalary}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* PIN Code Row */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm">
                     PIN Code <span className="text-destructive">*</span>
