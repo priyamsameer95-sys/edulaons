@@ -1,7 +1,7 @@
 /**
- * Student Signed-In Landing Page
+ * Student Signed-In Landing Page - B2C Optimized
  * 
- * Shows after authentication - provides clear CTAs to start/resume application
+ * Shows after authentication - single-focus hero with clear CTA
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,17 +13,21 @@ import {
   GraduationCap, 
   ArrowRight, 
   LogOut, 
-  Clock, 
-  CheckCircle2,
-  Sparkles,
+  BadgeCheck,
   FileText,
   Users,
   Shield,
-  Zap,
-  Gift,
-  Loader2
+  Loader2,
+  Globe,
+  Sparkles,
+  ChevronRight,
+  Lock,
+  Star,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
 
 interface ExistingLead {
   id: string;
@@ -31,6 +35,8 @@ interface ExistingLead {
   status: string;
   documents_status: string;
   created_at: string;
+  loan_amount?: number;
+  study_destination?: string;
 }
 
 interface EligibilityData {
@@ -39,6 +45,14 @@ interface EligibilityData {
   country?: string;
   verified?: boolean;
 }
+
+// Trust strip items
+const TRUST_STRIP = [
+  { icon: Lock, text: '256-bit Encrypted' },
+  { icon: Building2, text: '10+ RBI Partners' },
+  { icon: Star, text: '4.8★ Rating' },
+  { icon: Users, text: '10K+ Students' },
+];
 
 const StudentSignedInLanding = () => {
   const navigate = useNavigate();
@@ -56,7 +70,6 @@ const StudentSignedInLanding = () => {
       }
 
       try {
-        // Check for eligibility data from landing page
         const savedData = sessionStorage.getItem('eligibility_form');
         if (savedData) {
           const parsed = JSON.parse(savedData);
@@ -66,7 +79,6 @@ const StudentSignedInLanding = () => {
           }
         }
 
-        // Fetch student profile and existing lead
         const { data: studentData } = await supabase
           .from('students')
           .select('id, name')
@@ -78,10 +90,9 @@ const StudentSignedInLanding = () => {
             setStudentName(studentData.name.split(' ')[0]);
           }
 
-          // Check for existing lead
           const { data: leadData } = await supabase
             .from('leads_new')
-            .select('id, case_id, status, documents_status, created_at')
+            .select('id, case_id, status, documents_status, created_at, loan_amount, study_destination')
             .eq('student_id', studentData.id)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -112,14 +123,6 @@ const StudentSignedInLanding = () => {
     navigate('/student/apply');
   };
 
-  const handleResume = () => {
-    if (existingLead) {
-      navigate('/dashboard/student');
-    } else {
-      navigate('/student/apply');
-    }
-  };
-
   const displayName = studentName.charAt(0).toUpperCase() + studentName.slice(1).toLowerCase() || 'there';
 
   if (loading) {
@@ -131,7 +134,7 @@ const StudentSignedInLanding = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-emerald-500/5">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -140,7 +143,7 @@ const StudentSignedInLanding = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <GraduationCap className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">Eduloans by Cashkaro</span>
+              <span className="font-semibold text-foreground">Eduloans</span>
             </div>
             <Button 
               variant="ghost" 
@@ -156,144 +159,137 @@ const StudentSignedInLanding = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 lg:py-12">
-        {/* Welcome Hero */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
-            <Sparkles className="w-10 h-10 text-primary" />
+      <main className="max-w-xl mx-auto px-4 sm:px-6 py-10 lg:py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Hero Section */}
+          <div className="text-center mb-8">
+            <motion.div 
+              className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mb-6"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+            >
+              <Globe className="w-10 h-10 text-primary" />
+            </motion.div>
+            
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 tracking-tight">
+              {studentName ? (
+                <>Welcome back, <span className="text-primary">{displayName}!</span></>
+              ) : (
+                <>Your Dream Abroad<br /><span className="text-primary">Starts Here</span></>
+              )}
+            </h1>
+            
+            <p className="text-lg text-muted-foreground mb-8">
+              {existingLead 
+                ? "Continue where you left off"
+                : "Get loan offers in 5 minutes"
+              }
+            </p>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Welcome, <span className="text-primary">{displayName}!</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            {existingLead 
-              ? "Continue your education loan application or start a new one."
-              : "You're just a few steps away from your education loan. Let's get started!"}
-          </p>
-        </div>
 
-        {/* Eligibility Summary (if from landing page) */}
-        {eligibilityData?.verified && (
-          <Card className="mb-6 border-primary/20 bg-primary/5">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <CheckCircle2 className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-foreground">Your Eligibility Check</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {eligibilityData.country && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Destination</p>
-                    <p className="font-medium text-foreground">{eligibilityData.country}</p>
-                  </div>
-                )}
-                {eligibilityData.loan_amount && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Loan Amount</p>
-                    <p className="font-medium text-foreground">₹{(eligibilityData.loan_amount / 100000).toFixed(1)}L</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Existing Application Card */}
-        {existingLead && (
-          <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">Existing Application</p>
-                    <p className="text-sm text-muted-foreground">Case ID: {existingLead.case_id}</p>
-                  </div>
-                </div>
-                <span className={cn(
-                  "text-xs font-medium px-2.5 py-1 rounded-full",
-                  existingLead.status === 'new' 
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-emerald-100 text-emerald-700"
-                )}>
-                  {existingLead.status === 'new' ? 'In Progress' : existingLead.status}
-                </span>
-              </div>
-              <Button 
+          {/* Existing Application Card */}
+          {existingLead && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="mb-6 border-primary/20 bg-gradient-to-r from-primary/10 to-transparent cursor-pointer hover:border-primary/40 transition-colors"
                 onClick={() => navigate('/dashboard/student')}
-                variant="outline"
-                className="w-full mt-4"
               >
-                View Application
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="font-semibold text-foreground">Application in Progress</p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {existingLead.case_id}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {existingLead.study_destination && `${existingLead.study_destination} • `}
+                        {existingLead.loan_amount && `₹${Math.round(existingLead.loan_amount / 100000)}L`}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
-        {/* Main CTA */}
-        <div className="text-center mb-10">
-          <Button 
-            onClick={handleStartApplication}
-            size="lg"
-            className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/25"
+          {/* Pre-approval Card */}
+          {eligibilityData?.verified && !existingLead && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="mb-6 border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-transparent">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <BadgeCheck className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">
+                        Pre-approved up to ₹{((eligibilityData.loan_amount || 2500000) / 100000).toFixed(0)}L
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {eligibilityData.country || 'USA'} Intake
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Main CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-center mb-8"
           >
-            {existingLead ? 'Start New Application' : 'Start Your Application'}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-          <p className="text-sm text-muted-foreground mt-3">
-            Takes less than 10 minutes
-          </p>
-        </div>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-          <Card className="border-border/50">
-            <CardContent className="p-5 text-center">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
-                <Clock className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">Quick Process</h3>
-              <p className="text-sm text-muted-foreground">Complete in under 10 minutes</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-5 text-center">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-                <Shield className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">Secure</h3>
-              <p className="text-sm text-muted-foreground">Bank-grade encryption</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-5 text-center">
-              <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6 text-violet-600" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">Multiple Lenders</h3>
-              <p className="text-sm text-muted-foreground">Compare the best rates</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Referral Teaser */}
-        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-              <Gift className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-0.5">Refer a Friend</h3>
-              <p className="text-sm text-muted-foreground">Earn rewards when your friends apply for education loans</p>
-            </div>
-            <Button variant="outline" size="sm" className="shrink-0">
-              Coming Soon
+            <Button 
+              onClick={handleStartApplication}
+              size="lg"
+              className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all w-full sm:w-auto"
+            >
+              <Sparkles className="w-5 h-5 mr-2" />
+              {existingLead ? 'Start New Application' : 'Get Loan Offers'}
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-          </CardContent>
-        </Card>
+            
+            <p className="text-sm text-muted-foreground mt-4">
+              3 Steps • No Commitment • Compare 10+ Lenders
+            </p>
+          </motion.div>
+
+          {/* Trust Strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center justify-center gap-4 flex-wrap text-xs text-muted-foreground"
+          >
+            {TRUST_STRIP.map((item, index) => (
+              <div key={index} className="flex items-center gap-1.5">
+                <item.icon className="w-3.5 h-3.5" />
+                <span>{item.text}</span>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
       </main>
     </div>
   );
