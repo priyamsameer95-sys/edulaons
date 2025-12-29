@@ -4,9 +4,25 @@
  * Per Knowledge Base:
  * - Missing field detection works universally (not just quick leads)
  * - Admin can complete/edit ANY lead regardless of origin
+ * 
+ * This file now uses the unified leadCompletionSchema for consistency
+ * between tooltip and Complete Lead form.
  */
 
 import { PaginatedLead } from '@/hooks/usePaginatedLeads';
+import { 
+  getLeadMissingFields, 
+  LeadCompletionResult,
+  MissingFieldResult 
+} from './leadCompletionSchema';
+
+// Re-export types for backward compatibility
+export interface MissingField {
+  fieldName: string;
+  displayName: string;
+  section: 'student' | 'study' | 'co_applicant' | 'lead';
+  isRequired: boolean;
+}
 
 export interface LeadCompletenessResult {
   missingRequired: MissingField[];
@@ -17,121 +33,37 @@ export interface LeadCompletenessResult {
   filledFields: number;
 }
 
-export interface MissingField {
-  fieldName: string;
-  displayName: string;
-  section: 'student' | 'study' | 'co_applicant' | 'lead';
-  isRequired: boolean;
-}
-
-// Required fields that block processing
-const REQUIRED_FIELDS: { path: string; displayName: string; section: MissingField['section'] }[] = [
-  // Student Details
-  { path: 'student.name', displayName: 'Student Name', section: 'student' },
-  { path: 'student.phone', displayName: 'Student Phone', section: 'student' },
-  { path: 'student.email', displayName: 'Student Email', section: 'student' },
-  { path: 'student.postal_code', displayName: 'Student PIN Code', section: 'student' },
-  
-  // Study Details
-  { path: 'study_destination', displayName: 'Study Destination', section: 'study' },
-  { path: 'loan_amount', displayName: 'Loan Amount', section: 'study' },
-  { path: 'intake_month', displayName: 'Intake Month', section: 'study' },
-  { path: 'intake_year', displayName: 'Intake Year', section: 'study' },
-  
-  // Co-Applicant Details
-  { path: 'co_applicant.name', displayName: 'Co-Applicant Name', section: 'co_applicant' },
-  { path: 'co_applicant.relationship', displayName: 'Relationship', section: 'co_applicant' },
-  { path: 'co_applicant.phone', displayName: 'Co-Applicant Phone', section: 'co_applicant' },
-  { path: 'co_applicant.salary', displayName: 'Co-Applicant Salary', section: 'co_applicant' },
-  { path: 'co_applicant.pin_code', displayName: 'Co-Applicant PIN Code', section: 'co_applicant' },
-];
-
-// Optional fields for a more complete profile
-const OPTIONAL_FIELDS: { path: string; displayName: string; section: MissingField['section'] }[] = [
-  { path: 'student.date_of_birth', displayName: 'Date of Birth', section: 'student' },
-  { path: 'student.city', displayName: 'City', section: 'student' },
-  { path: 'student.state', displayName: 'State', section: 'student' },
-  { path: 'loan_type', displayName: 'Loan Type', section: 'study' },
-  { path: 'co_applicant.occupation', displayName: 'Co-Applicant Occupation', section: 'co_applicant' },
-  { path: 'co_applicant.employer', displayName: 'Co-Applicant Employer', section: 'co_applicant' },
-  { path: 'partner_id', displayName: 'Partner Assignment', section: 'lead' },
-];
-
 /**
- * Get a nested value from an object using dot notation
+ * Convert new schema result to legacy format for backward compatibility
  */
-function getNestedValue(obj: any, path: string): any {
-  const parts = path.split('.');
-  let current = obj;
+function convertToLegacyFormat(result: LeadCompletionResult): LeadCompletenessResult {
+  const convertField = (f: MissingFieldResult): MissingField => ({
+    fieldName: f.key,
+    displayName: f.displayName,
+    section: f.section,
+    isRequired: f.isRequired,
+  });
   
-  for (const part of parts) {
-    if (current === null || current === undefined) {
-      return undefined;
-    }
-    current = current[part];
-  }
-  
-  return current;
-}
-
-/**
- * Check if a value is considered "filled"
- */
-function isFieldFilled(value: any): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value === 'string' && value.trim() === '') return false;
-  if (typeof value === 'number' && value === 0) return false;
-  return true;
+  return {
+    missingRequired: result.missingRequired.map(convertField),
+    missingOptional: result.missingOptional.map(convertField),
+    completenessScore: result.completenessScore,
+    isComplete: result.isComplete,
+    totalFields: result.totalFields,
+    filledFields: result.filledFields,
+  };
 }
 
 /**
  * Calculate which fields are missing regardless of lead origin
+ * Now uses the unified schema from leadCompletionSchema.ts
  */
 export function getLeadCompleteness(lead: PaginatedLead & { 
   student?: any; 
   co_applicant?: any 
 }): LeadCompletenessResult {
-  const missingRequired: MissingField[] = [];
-  const missingOptional: MissingField[] = [];
-  
-  // Check required fields
-  for (const field of REQUIRED_FIELDS) {
-    const value = getNestedValue(lead, field.path);
-    if (!isFieldFilled(value)) {
-      missingRequired.push({
-        fieldName: field.path,
-        displayName: field.displayName,
-        section: field.section,
-        isRequired: true,
-      });
-    }
-  }
-  
-  // Check optional fields
-  for (const field of OPTIONAL_FIELDS) {
-    const value = getNestedValue(lead, field.path);
-    if (!isFieldFilled(value)) {
-      missingOptional.push({
-        fieldName: field.path,
-        displayName: field.displayName,
-        section: field.section,
-        isRequired: false,
-      });
-    }
-  }
-  
-  const totalFields = REQUIRED_FIELDS.length + OPTIONAL_FIELDS.length;
-  const filledFields = totalFields - missingRequired.length - missingOptional.length;
-  const completenessScore = Math.round((filledFields / totalFields) * 100);
-  
-  return {
-    missingRequired,
-    missingOptional,
-    completenessScore,
-    isComplete: missingRequired.length === 0,
-    totalFields,
-    filledFields,
-  };
+  const result = getLeadMissingFields(lead);
+  return convertToLegacyFormat(result);
 }
 
 /**
