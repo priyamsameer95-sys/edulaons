@@ -61,7 +61,7 @@ const LenderFeaturedCard = ({
 
   // Generate benefit highlights based on lender data
   const getBenefits = () => {
-    const benefits = [];
+    const benefits: { icon: typeof TrendingUp; text: string }[] = [];
     if (lender.interest_rate_min && lender.interest_rate_min < 9) {
       benefits.push({ icon: TrendingUp, text: 'Among the lowest rates in market' });
     }
@@ -163,67 +163,31 @@ const LenderFeaturedCard = ({
         </div>
       )}
 
-      {/* Key Metrics - Cleaner grid */}
-      <div className="p-5">
-        <div className="grid grid-cols-4 gap-3">
-          <div className="text-center">
-            <div className="w-10 h-10 mx-auto rounded-lg bg-success/10 flex items-center justify-center mb-2">
-              <Percent className="h-5 w-5 text-success" />
-            </div>
-            <p className="text-lg font-bold text-foreground tabular-nums">
-              {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Rate</p>
+      {/* Quick Stats - Compact inline */}
+      <div className="px-5 py-3">
+        <div className="flex items-center justify-between py-2.5 px-4 rounded-xl bg-muted/30 border border-border/40">
+          <div className="flex items-center gap-1.5">
+            <Percent className="h-4 w-4 text-success" />
+            <span className="text-sm font-bold text-foreground">{lender.interest_rate_min || '—'}%</span>
+            <span className="text-[10px] text-muted-foreground uppercase">rate</span>
           </div>
-          
-          <div className="text-center">
-            <div className="w-10 h-10 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-2">
-              <Wallet className="h-5 w-5 text-primary" />
-            </div>
-            <p className="text-lg font-bold text-foreground tabular-nums">
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-1.5">
+            <Wallet className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-foreground">
               {displayAmount ? `₹${(displayAmount / 10000000).toFixed(1)}Cr` : '—'}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Max Loan</p>
+            </span>
           </div>
-          
-          <div className="text-center">
-            <div className="w-10 h-10 mx-auto rounded-lg bg-info/10 flex items-center justify-center mb-2">
-              <Clock className="h-5 w-5 text-info" />
-            </div>
-            <p className="text-lg font-bold text-foreground tabular-nums">
-              {lender.processing_time_days || '7-10'}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Days</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-10 h-10 mx-auto rounded-lg bg-warning/10 flex items-center justify-center mb-2">
-              <FileCheck className="h-5 w-5 text-warning" />
-            </div>
-            <p className="text-lg font-bold text-foreground tabular-nums">
-              {lender.processing_fee ? `${lender.processing_fee}%` : '1%'}
-            </p>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Fee</p>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-4 w-4 text-info" />
+            <span className="text-sm font-bold text-foreground">{lender.processing_time_days || '7-10'}d</span>
           </div>
         </div>
       </div>
 
-      {/* Benefits Pills */}
-      {benefits.length > 0 && (
-        <div className="px-5 pb-2">
-          <div className="flex flex-wrap gap-2">
-            {benefits.map((benefit, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 whitespace-nowrap">
-                <benefit.icon className="h-3.5 w-3.5 text-success flex-shrink-0" />
-                <span className="text-xs text-foreground/80 whitespace-nowrap">{benefit.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* View Details - Expandable Section */}
-      <div className="px-5 mt-1">
+      <div className="px-5">
         <button
           onClick={() => setShowDetails(!showDetails)}
           className={cn(
@@ -243,14 +207,75 @@ const LenderFeaturedCard = ({
       {/* Expanded Details */}
       {showDetails && (
         <div className="px-5 py-4 space-y-4 animate-fade-in">
+          {/* Key Metrics Grid */}
+          <div>
+            <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Loan Details</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-success/10 flex items-center justify-center mb-1.5">
+                  <Percent className="h-4 w-4 text-success" />
+                </div>
+                <p className="text-base font-bold text-foreground tabular-nums">
+                  {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
+                </p>
+                <p className="text-[9px] text-muted-foreground font-medium uppercase">Rate</p>
+              </div>
+              
+              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1.5">
+                  <Wallet className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-base font-bold text-foreground tabular-nums">
+                  {displayAmount ? `₹${(displayAmount / 10000000).toFixed(1)}Cr` : '—'}
+                </p>
+                <p className="text-[9px] text-muted-foreground font-medium uppercase">Max Loan</p>
+              </div>
+              
+              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-info/10 flex items-center justify-center mb-1.5">
+                  <Clock className="h-4 w-4 text-info" />
+                </div>
+                <p className="text-base font-bold text-foreground tabular-nums">
+                  {lender.processing_time_days || '7-10'}
+                </p>
+                <p className="text-[9px] text-muted-foreground font-medium uppercase">Days</p>
+              </div>
+              
+              <div className="text-center p-3 rounded-lg bg-muted/30 border border-border/30">
+                <div className="w-8 h-8 mx-auto rounded-lg bg-warning/10 flex items-center justify-center mb-1.5">
+                  <FileCheck className="h-4 w-4 text-warning" />
+                </div>
+                <p className="text-base font-bold text-foreground tabular-nums">
+                  {lender.processing_fee ? `${lender.processing_fee}%` : '1%'}
+                </p>
+                <p className="text-[9px] text-muted-foreground font-medium uppercase">Fee</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Benefits */}
+          {benefits.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-2">Highlights</p>
+              <div className="flex flex-wrap gap-2">
+                {benefits.map((benefit, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/5 border border-success/15 whitespace-nowrap">
+                    <benefit.icon className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                    <span className="text-xs text-foreground/80 whitespace-nowrap">{benefit.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Expenses Covered */}
           <div>
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">What's Covered</p>
+            <p className="text-xs font-bold text-foreground uppercase tracking-wider mb-2">What's Covered</p>
             <div className="grid grid-cols-2 gap-2">
               {expensesCovered.map((expense, idx) => (
-                <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-success/5 border border-success/10">
-                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                  <span className="text-xs text-foreground/80 font-medium">
+                <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-success/5 border border-success/10">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                  <span className="text-xs text-foreground/80">
                     {typeof expense === 'string' ? expense : expense.name || 'Covered'}
                   </span>
                 </div>
