@@ -37,6 +37,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { CourseCombobox } from "@/components/ui/course-combobox";
+import { UniversitySelector } from "@/components/ui/university-selector";
 import { Progress } from "@/components/ui/progress";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 import { Database } from "@/integrations/supabase/types";
@@ -91,8 +92,8 @@ interface FormErrors {
 }
 
 interface ExistingData {
-  universityId: string | null;
-  universityName: string | null;
+  universities: string[];
+  firstUniversityName: string | null;
   intakeMonth: number | null;
   intakeYear: number | null;
   loanAmount: number | null;
@@ -107,6 +108,22 @@ const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
+
+const STUDY_DESTINATIONS = [
+  "USA",
+  "Canada",
+  "UK",
+  "Australia",
+  "Germany",
+  "Ireland",
+  "New Zealand",
+  "Other",
+];
+
+const LOAN_TYPE_OPTIONS = [
+  { value: "secured", label: "Secured" },
+  { value: "unsecured", label: "Unsecured" },
+] as const;
 
 const RELATIONSHIP_OPTIONS: { value: RelationshipEnum; label: string }[] = [
   { value: "parent", label: "Parent" },
@@ -140,6 +157,15 @@ export const CompleteLeadModal = ({
   const [studentBachelorsPercentage, setStudentBachelorsPercentage] = useState<string>("");
   const [studentBachelorsCgpa, setStudentBachelorsCgpa] = useState<string>("");
   const [studentCreditScore, setStudentCreditScore] = useState<string>("");
+  const [studentEmail, setStudentEmail] = useState<string>("");
+
+  // Study fields (same set as Add Lead)
+  const [studyDestination, setStudyDestination] = useState<string>("");
+  const [intakeMonth, setIntakeMonth] = useState<string>("");
+  const [intakeYear, setIntakeYear] = useState<string>("");
+  const [loanAmount, setLoanAmount] = useState<string>("");
+  const [loanType, setLoanType] = useState<string>("");
+  const [universities, setUniversities] = useState<string[]>([""]);
   
   // Course field
   const [courseId, setCourseId] = useState<string>("");
@@ -172,15 +198,25 @@ export const CompleteLeadModal = ({
 
       setFetchingData(true);
       try {
-        // Fetch lead_universities to get university info
-        const { data: uniData } = await supabase
+        // Fetch universities (can be multiple)
+        const { data: uniRows } = await supabase
           .from("lead_universities")
-          .select(`
-            university_id,
-            universities!inner(id, name, country)
-          `)
-          .eq("lead_id", lead.id)
-          .single();
+          .select("university_id")
+          .eq("lead_id", lead.id);
+
+        const uniIds = (uniRows || []).map(r => r.university_id).filter(Boolean);
+        setUniversities(uniIds.length > 0 ? uniIds : [""]);
+
+        // Fetch first university name for the summary header (best-effort)
+        let firstUniversityName: string | null = null;
+        if (uniIds[0]) {
+          const { data: uni } = await supabase
+            .from("universities")
+            .select("name")
+            .eq("id", uniIds[0])
+            .maybeSingle();
+          firstUniversityName = uni?.name || null;
+        }
 
         // Fetch existing course if any
         const { data: courseData } = await supabase
@@ -197,7 +233,7 @@ export const CompleteLeadModal = ({
         // Fetch student data - including all optional fields
         const { data: studentData } = await supabase
           .from("students")
-          .select("postal_code, date_of_birth, gender, city, state, nationality, street_address, highest_qualification, tenth_percentage, twelfth_percentage, bachelors_percentage, bachelors_cgpa, credit_score")
+          .select("email, postal_code, date_of_birth, gender, city, state, nationality, street_address, highest_qualification, tenth_percentage, twelfth_percentage, bachelors_percentage, bachelors_cgpa, credit_score")
           .eq("id", lead.student_id)
           .single();
 
@@ -212,7 +248,9 @@ export const CompleteLeadModal = ({
         const studentPin = studentData?.postal_code;
         const isStudentPinPlaceholder = !studentPin || studentPin === "000000";
         setStudentPinCode(isStudentPinPlaceholder ? "" : studentPin);
-        
+
+        setStudentEmail(studentData?.email || "");
+
         // Pre-populate optional student fields
         setStudentDob(studentData?.date_of_birth || "");
         setStudentGender(studentData?.gender || "");
@@ -226,6 +264,13 @@ export const CompleteLeadModal = ({
         setStudentBachelorsPercentage(studentData?.bachelors_percentage ? String(studentData.bachelors_percentage) : "");
         setStudentBachelorsCgpa(studentData?.bachelors_cgpa ? String(studentData.bachelors_cgpa) : "");
         setStudentCreditScore(studentData?.credit_score ? String(studentData.credit_score) : "");
+
+        // Pre-populate study fields
+        setStudyDestination(lead.study_destination || "");
+        setLoanType(lead.loan_type || "");
+        setLoanAmount(lead.loan_amount ? String(lead.loan_amount) : "");
+        setIntakeMonth(lead.intake_month ? String(lead.intake_month) : "");
+        setIntakeYear(lead.intake_year ? String(lead.intake_year) : "");
 
         // Pre-populate course if exists
         if (courseData) {
@@ -267,8 +312,8 @@ export const CompleteLeadModal = ({
         setCoApplicantCreditScore(coAppData?.credit_score ? String(coAppData.credit_score) : "");
 
         setExistingData({
-          universityId: uniData?.university_id || null,
-          universityName: (uniData?.universities as any)?.name || null,
+          universities: uniIds.length > 0 ? uniIds : [""],
+          firstUniversityName,
           intakeMonth: lead.intake_month,
           intakeYear: lead.intake_year,
           loanAmount: lead.loan_amount,
@@ -281,8 +326,8 @@ export const CompleteLeadModal = ({
       } catch (error) {
         console.error("Error fetching existing data:", error);
         setExistingData({
-          universityId: null,
-          universityName: null,
+          universities: [""],
+          firstUniversityName: null,
           intakeMonth: lead.intake_month,
           intakeYear: lead.intake_year,
           loanAmount: lead.loan_amount,
@@ -315,21 +360,34 @@ export const CompleteLeadModal = ({
     setStudentBachelorsPercentage("");
     setStudentBachelorsCgpa("");
     setStudentCreditScore("");
+    setStudentEmail("");
+
+    // Study
+    setStudyDestination("");
+    setIntakeMonth("");
+    setIntakeYear("");
+    setLoanAmount("");
+    setLoanType("");
+    setUniversities([""]);
+
     // Course
     setCourseId("");
     setIsCustomCourse(false);
+
     // Co-applicant required
     setCoApplicantName("");
     setCoApplicantRelationship("");
     setCoApplicantPhone("");
     setCoApplicantSalary("");
     setCoApplicantPinCode("");
+
     // Co-applicant optional
     setCoApplicantOccupation("");
     setCoApplicantEmployer("");
     setCoApplicantEmploymentType("");
     setCoApplicantEmploymentDuration("");
     setCoApplicantCreditScore("");
+
     // Reset UI state
     setErrors({});
     setExistingData(null);
@@ -466,6 +524,7 @@ export const CompleteLeadModal = ({
       const { error: studentError } = await supabase
         .from("students")
         .update({
+          email: studentEmail.trim() || null,
           postal_code: studentPinCode.trim(),
           date_of_birth: studentDob || null,
           gender: studentGender || null,
@@ -484,15 +543,34 @@ export const CompleteLeadModal = ({
 
       if (studentError) throw studentError;
 
-      // Update lead to mark as completed
+      // Update lead (mark completed + allow editing the same fields as Add Lead)
+      const loanAmountNum = loanAmount.trim() ? parseInt(loanAmount.replace(/,/g, ""), 10) : null;
+      const intakeMonthNum = intakeMonth.trim() ? parseInt(intakeMonth, 10) : null;
+      const intakeYearNum = intakeYear.trim() ? parseInt(intakeYear, 10) : null;
+
       const { error: leadError } = await supabase
         .from("leads_new")
         .update({
           quick_lead_completed_at: new Date().toISOString(),
+          study_destination: studyDestination || null,
+          loan_type: (loanType as any) || null,
+          loan_amount: loanAmountNum ?? (lead.loan_amount || null),
+          intake_month: intakeMonthNum,
+          intake_year: intakeYearNum,
         })
         .eq("id", lead.id);
 
       if (leadError) throw leadError;
+
+      // Save universities
+      await supabase.from("lead_universities").delete().eq("lead_id", lead.id);
+      const validUniversities = universities.filter(u => u && u.trim() && u.length > 10);
+      if (validUniversities.length > 0) {
+        const { error: uniSaveError } = await supabase
+          .from("lead_universities")
+          .insert(validUniversities.map(university_id => ({ lead_id: lead.id, university_id })));
+        if (uniSaveError) throw uniSaveError;
+      }
 
       // Save course association
       try {
@@ -501,9 +579,11 @@ export const CompleteLeadModal = ({
           .delete()
           .eq("lead_id", lead.id);
 
-        if (isCustomCourse || !existingData.universityId) {
+        const primaryUniversityId = universities.find(u => u && u.trim() && u.length > 10) || null;
+
+        if (isCustomCourse || !primaryUniversityId) {
           console.log("Custom course entered:", courseId);
-        } else if (courseId && existingData.universityId) {
+        } else if (courseId && primaryUniversityId) {
           const { error: courseError } = await supabase
             .from("lead_courses")
             .insert({
@@ -598,12 +678,12 @@ export const CompleteLeadModal = ({
                 Already Captured
               </h4>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {existingData?.universityName && (
+                {existingData?.firstUniversityName && (
                   <div className="flex items-start gap-2">
                     <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">University</p>
-                      <p className="font-medium">{existingData.universityName}</p>
+                      <p className="font-medium">{existingData.firstUniversityName}</p>
                     </div>
                   </div>
                 )}
