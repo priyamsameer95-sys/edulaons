@@ -213,9 +213,9 @@ const LenderFeaturedCard = ({
         <div className="px-5 pb-2">
           <div className="flex flex-wrap gap-2">
             {benefits.map((benefit, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
-                <benefit.icon className="h-3.5 w-3.5 text-success" />
-                <span className="text-xs text-foreground/80">{benefit.text}</span>
+              <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 whitespace-nowrap">
+                <benefit.icon className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                <span className="text-xs text-foreground/80 whitespace-nowrap">{benefit.text}</span>
               </div>
             ))}
           </div>
