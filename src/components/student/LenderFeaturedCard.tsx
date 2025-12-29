@@ -64,8 +64,8 @@ const LenderFeaturedCard = ({
   return (
     <div
       className={cn(
-        "relative rounded-xl border bg-card overflow-hidden transition-all",
-        isTopMatch && "border-l-4 border-l-warning",
+        "relative rounded-xl border bg-card overflow-hidden transition-all flex flex-col",
+        isTopMatch && "border-l-4 border-l-warning shadow-md",
         isSelected && "ring-2 ring-success border-success",
         !isTopMatch && !isSelected && "border-border",
         isUpdating && "opacity-60 pointer-events-none"
@@ -73,122 +73,127 @@ const LenderFeaturedCard = ({
     >
       {/* Top Match Badge */}
       {isTopMatch && (
-        <div className="absolute top-3 right-3">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-warning/10 text-warning text-xs font-semibold">
-            <Building2 className="h-3 w-3" />
+        <div className="absolute top-4 right-4 z-10">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/15 text-warning text-xs font-bold uppercase tracking-wide">
+            <Building2 className="h-3.5 w-3.5" />
             Top Match
           </span>
         </div>
       )}
 
-      <div className="p-5 space-y-4">
+      <div className="p-6 space-y-5 flex-1 flex flex-col">
         {/* Header: Logo + Name + Tagline */}
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-xl bg-muted/80 flex items-center justify-center flex-shrink-0 border border-border/50">
             {lender.logo_url ? (
               <img 
                 src={lender.logo_url} 
                 alt={lender.lender_name} 
-                className="w-8 h-8 object-contain" 
+                className="w-9 h-9 object-contain" 
               />
             ) : (
-              <Building2 className="h-6 w-6 text-muted-foreground" />
+              <Building2 className="h-7 w-7 text-muted-foreground" />
             )}
           </div>
-          <div className="flex-1 min-w-0 pt-0.5">
-            <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-foreground text-lg">{lender.lender_name}</h4>
+          <div className="flex-1 min-w-0 pt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-bold text-foreground text-base leading-tight">{lender.lender_name}</h4>
               {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
             </div>
-            <p className="text-sm text-muted-foreground">{getTagline()}</p>
+            <p className="text-xs text-muted-foreground leading-snug">{getTagline()}</p>
           </div>
         </div>
 
         {/* AI Insight Box */}
         {lender.student_facing_reason && (
-          <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Brain className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium text-primary">AI Insight</span>
+          <div className="rounded-lg bg-info/5 border border-info/15 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-5 h-5 rounded-full bg-info/20 flex items-center justify-center">
+                <Brain className="h-3 w-3 text-info" />
+              </div>
+              <span className="text-xs font-semibold text-info uppercase tracking-wide">AI Insight</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-foreground/80 leading-relaxed">
               {lender.student_facing_reason}
             </p>
           </div>
         )}
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-4 gap-3">
-          <div className="text-center">
+        <div className="grid grid-cols-4 gap-2 py-4 border-y border-border/50">
+          <div className="text-center px-1">
             <p className={cn(
-              "text-xl font-bold",
-              lender.compatibility_score >= 90 ? "text-success" : "text-foreground"
+              "text-2xl font-bold leading-none",
+              lender.compatibility_score >= 80 ? "text-success" : "text-foreground"
             )}>
               {lender.compatibility_score}%
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-0.5">Match</p>
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Match</p>
           </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-foreground">
+          <div className="text-center px-1 border-l border-border/50">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-0.5">Rate</p>
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Rate</p>
           </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-foreground">
+          <div className="text-center px-1 border-l border-border/50">
+            <p className="text-lg font-bold text-foreground leading-none">
               {displayAmount 
                 ? `₹${(displayAmount / 10000000).toFixed(2)} Cr`
                 : '—'}
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-0.5">Amount</p>
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Amount</p>
           </div>
-          <div className="text-center">
-            <p className="text-xl font-bold text-foreground">
-              {lender.processing_time_days ? `${lender.processing_time_days}` : '7-10'}
+          <div className="text-center px-1 border-l border-border/50">
+            <p className="text-2xl font-bold text-foreground leading-none">
+              {lender.processing_time_days || '7-10'}
             </p>
-            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-0.5">Days</p>
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wider mt-1.5 font-medium">Days</p>
           </div>
         </div>
 
         {/* View Detailed Toggle */}
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           View Detailed
           <ChevronDown className={cn(
-            "h-4 w-4 transition-transform",
+            "h-3.5 w-3.5 transition-transform",
             showDetails && "rotate-180"
           )} />
         </button>
 
         {/* Expanded Details */}
         {showDetails && (
-          <div className="pt-2 border-t border-border space-y-3">
-            <div>
-              <p className="text-xs font-medium text-foreground mb-2">Expenses Covered</p>
-              <div className="space-y-1.5">
-                {expensesCovered.map((expense, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                    <span className="text-muted-foreground">
-                      {typeof expense === 'string' ? expense : expense.name || 'Covered'}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          <div className="pt-3 space-y-3 animate-fade-in">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Expenses Covered</p>
+            <div className="space-y-2">
+              {expensesCovered.map((expense, idx) => (
+                <div key={idx} className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                  <span className="text-sm text-foreground/80">
+                    {typeof expense === 'string' ? expense : expense.name || 'Covered'}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
+
+        {/* Spacer to push button to bottom */}
+        <div className="flex-1" />
 
         {/* Select Button */}
         <Button
           onClick={() => onSelect(lender.lender_id)}
           disabled={isUpdating}
           variant={isTopMatch ? "default" : "outline"}
+          size="lg"
           className={cn(
-            "w-full h-11 text-sm font-medium",
-            isSelected && "bg-success hover:bg-success/90 border-success"
+            "w-full font-semibold",
+            isSelected && "bg-success hover:bg-success/90 border-success text-success-foreground",
+            isTopMatch && !isSelected && "shadow-sm"
           )}
         >
           {isSelected ? (
