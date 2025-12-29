@@ -36,6 +36,8 @@ export interface AcademicBackground {
   twelfthPercentage?: number;
   bachelorsPercentage?: number;
   bachelorsCgpa?: number;
+  mastersPercentage?: number;
+  mastersCgpa?: number;
   tests?: TestScore[];
 }
 
