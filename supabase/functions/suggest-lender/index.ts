@@ -35,6 +35,93 @@ interface AIResponse {
   ai_notes: string;
 }
 
+// Generate personalized student-facing reason from actual BRE evaluation
+function generatePersonalizedReason(
+  lender: any,
+  applicantProfile: any,
+  score: number,
+  factors: string[],
+  riskFlags: string[]
+): string {
+  const positives: string[] = []
+  const concerns: string[] = []
+  
+  // Format loan amount
+  const loanAmount = applicantProfile.loan_amount
+  const formattedAmount = loanAmount >= 10000000 
+    ? `₹${(loanAmount / 10000000).toFixed(1)}Cr` 
+    : `₹${Math.round(loanAmount / 100000)}L`
+  
+  // Format co-applicant salary
+  const coAppSalary = applicantProfile.co_applicant?.monthly_salary
+  const formattedSalary = coAppSalary 
+    ? (coAppSalary >= 100000 
+        ? `₹${(coAppSalary / 100000).toFixed(1)}L` 
+        : `₹${Math.round(coAppSalary / 1000)}K`)
+    : null
+  
+  // Interest rate - use actual lender data
+  if (factors.includes('Competitive interest rate') && lender.interest_rate_min) {
+    positives.push(`${lender.interest_rate_min}% rate – among lowest`)
+  }
+  
+  // Loan amount coverage
+  if (factors.includes('Loan amount within range')) {
+    positives.push(`covers your ${formattedAmount}`)
+  } else if (riskFlags.includes('Loan amount exceeds maximum')) {
+    concerns.push('may need collateral for full amount')
+  }
+  
+  // Income qualification
+  if (factors.includes('Income meets expectations') && formattedSalary) {
+    positives.push(`${formattedSalary}/mo income qualifies`)
+  } else if (factors.includes('Strong income profile') && formattedSalary) {
+    positives.push(`strong income at ${formattedSalary}/mo`)
+  } else if (riskFlags.includes('Income below expectations')) {
+    concerns.push('income docs may need support')
+  }
+  
+  // Destination preference
+  const destination = applicantProfile.study_destination
+  if (factors.includes('Preferred destination') && destination) {
+    positives.push(`specializes in ${destination} loans`)
+  }
+  
+  // Processing speed
+  if (factors.includes('Fast processing time') && lender.processing_time_days) {
+    positives.push(`quick ${lender.processing_time_days}-day processing`)
+  }
+  
+  // Education specialist
+  if (factors.includes('Education loan specialist')) {
+    positives.push('education loan expert')
+  }
+  
+  // Employment type bonus
+  if (factors.includes('Government employment')) {
+    positives.push('favorable terms for govt employees')
+  } else if (factors.includes('Salaried employment')) {
+    positives.push('standard salaried terms apply')
+  }
+  
+  // Build the final personalized reason
+  if (positives.length >= 2 && concerns.length === 0) {
+    return `${positives[0]}, ${positives[1]}.`
+  } else if (positives.length >= 1 && concerns.length >= 1) {
+    return `${positives[0]}, but ${concerns[0]}.`
+  } else if (positives.length >= 1) {
+    return `${positives[0]}.`
+  } else if (concerns.length >= 1) {
+    return `Possible option, but ${concerns[0]}.`
+  } else if (score >= 70) {
+    return `Good overall fit for your ${formattedAmount} loan requirement.`
+  } else if (score >= 50) {
+    return `Standard terms available for your profile.`
+  } else {
+    return `Limited match – consider higher-ranked options.`
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -484,23 +571,14 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
         if (score >= 80) probability_band = 'high'
         else if (score >= 60) probability_band = 'medium'
 
-        // Generate student-facing reason
-        let studentReason = ''
-        if (score >= 80) {
-          if (factors.includes('Competitive interest rate')) {
-            studentReason = 'Best rates with strong approval chances for your profile'
-          } else if (factors.includes('Fast processing time')) {
-            studentReason = 'Quick processing with competitive terms'
-          } else {
-            studentReason = 'Excellent match for your loan requirements'
-          }
-        } else if (score >= 60) {
-          studentReason = 'Good fit for your financial profile'
-        } else if (score >= 40) {
-          studentReason = 'May require additional documentation'
-        } else {
-          studentReason = 'Limited fit - consider alternatives'
-        }
+        // Generate PERSONALIZED student-facing reason using actual data
+        const studentReason = generatePersonalizedReason(
+          lender, 
+          applicantProfile, 
+          score, 
+          factors, 
+          riskFlags
+        )
 
         // Generate justification
         let justification = ''
