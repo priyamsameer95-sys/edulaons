@@ -25,6 +25,7 @@ import {
   Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface SmartDocumentUploadProps {
   leadId: string;
@@ -40,8 +41,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 // Format document type name - remove underscores and capitalize
-const formatDocTypeName = (name: string): string => 
-  name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const formatDocTypeName = (name: string): string => formatDisplayText(name);
 
 const CATEGORY_ORDER = ['student', 'financial_co_applicant', 'non_financial_co_applicant', 'collateral', 'nri_financial'];
 

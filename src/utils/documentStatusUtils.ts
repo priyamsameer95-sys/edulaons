@@ -18,7 +18,7 @@ export const documentStatusLabels: Record<DocumentStatus, string> = {
   verified: 'Verified',
   pending: 'Pending',
   rejected: 'Re-upload',
-  not_uploaded: 'Not uploaded',
+  not_uploaded: 'Not Uploaded',
 };
 
 export const documentStatusTooltips: Record<DocumentStatus, string> = {

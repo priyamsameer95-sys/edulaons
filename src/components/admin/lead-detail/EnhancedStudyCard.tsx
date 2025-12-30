@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { UniversityCombobox } from '@/components/ui/university-combobox';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface LeadUniversity {
   id: string;
@@ -529,14 +530,14 @@ export function EnhancedStudyCard({
                   <SelectContent>
                     {LOAN_CLASSIFICATIONS.map(c => (
                       <SelectItem key={c} value={c} className="capitalize">
-                        {c.replace(/_/g, ' ')}
+                        {formatDisplayText(c)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : lead.loan_classification ? (
                 <Badge variant="outline" className="mt-1 capitalize">
-                  {lead.loan_classification.replace(/_/g, ' ')}
+                  {formatDisplayText(lead.loan_classification)}
                 </Badge>
               ) : null}
             </div>

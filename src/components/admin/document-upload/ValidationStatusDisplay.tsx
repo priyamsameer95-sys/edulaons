@@ -1,6 +1,7 @@
 import { CheckCircle, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ValidationResult } from '@/hooks/useDocumentValidation';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface ValidationStatusDisplayProps {
   isValidating: boolean;
@@ -113,7 +114,7 @@ export function ValidationStatusDisplay({
           <div className="flex flex-wrap gap-1 mt-2">
             {redFlags.map((flag, i) => (
               <span key={i} className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 rounded">
-                {flag.replace(/_/g, ' ')}
+                {formatDisplayText(flag)}
               </span>
             ))}
           </div>

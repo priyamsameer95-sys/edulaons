@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { History, User, Bot, ArrowRight } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useFieldAuditLog, FieldAuditEntry } from '@/hooks/useFieldAuditLog';
-import { formatDisplayEmail } from '@/utils/formatters';
+import { formatDisplayEmail, formatDisplayText } from '@/utils/formatters';
 
 interface FieldAuditTimelineProps {
   leadId: string;
@@ -30,8 +30,8 @@ const formatFieldName = (tableName: string, fieldName: string): string => {
     'salary': 'Salary',
     'credit_score': 'Credit Score',
   };
-  const table = tableMap[tableName] || tableName;
-  const field = fieldMap[fieldName] || fieldName.replace(/_/g, ' ');
+  const table = tableMap[tableName] || formatDisplayText(tableName);
+  const field = fieldMap[fieldName] || formatDisplayText(fieldName);
   return `${table} → ${field}`;
 };
 
