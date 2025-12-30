@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { isPlaceholderEmail, formatDisplayEmail, validateEmail } from '@/utils/formatters';
 
 interface Student {
   id: string;
@@ -56,22 +57,40 @@ export function EnhancedStudentCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState<Partial<Student>>({});
+  const [emailError, setEmailError] = useState<string | null>(null);
   const { logFieldChanges } = useAuditLog();
 
   const handleEdit = () => {
-    setEditData({ ...student });
+    const initialData = { ...student };
+    
+    // If email is a placeholder, clear it for editing
+    if (isPlaceholderEmail(student.email)) {
+      initialData.email = '';
+    }
+    
+    setEditData(initialData);
     setIsEditing(true);
+    setEmailError(null);
   };
 
   const handleCancel = () => {
     setEditData({});
     setIsEditing(false);
+    setEmailError(null);
   };
 
   const handleSave = async () => {
+    // Validate email before saving
+    const error = validateEmail(editData.email);
+    if (error) {
+      setEmailError(error);
+      toast.error(error);
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Track which fields changed
+      // Track which fields changed - compare with original student data
       const changedFields: { field: string; oldValue: string | null; newValue: string | null }[] = [];
       
       Object.keys(editData).forEach(key => {
@@ -96,7 +115,7 @@ export function EnhancedStudentCard({
         .update({
           name: editData.name,
           phone: editData.phone,
-          email: editData.email,
+          email: editData.email || student.email, // Keep original if empty
           dob: editData.dob,
           gender: editData.gender,
           nationality: editData.nationality,
@@ -130,6 +149,7 @@ export function EnhancedStudentCard({
 
       toast.success('Student details updated');
       setIsEditing(false);
+      setEmailError(null);
       onUpdate?.();
     } catch (error) {
       console.error('Error updating student:', error);
@@ -144,6 +164,47 @@ export function EnhancedStudentCard({
     if (score >= 750) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     if (score >= 650) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
     return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  };
+
+  const renderEmailField = () => {
+    if (isEditing && isAdmin) {
+      return (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Email</Label>
+          <Input
+            type="email"
+            value={editData.email || ''}
+            onChange={(e) => {
+              setEditData(prev => ({ ...prev, email: e.target.value }));
+              setEmailError(null);
+            }}
+            placeholder="Enter real email address"
+            className={`h-8 text-sm ${emailError ? 'border-destructive' : ''}`}
+          />
+          {emailError && (
+            <p className="text-xs text-destructive">{emailError}</p>
+          )}
+        </div>
+      );
+    }
+    
+    // Display mode - format placeholder emails nicely
+    const { display, isPlaceholder } = formatDisplayEmail(student.email);
+    return (
+      <div className="space-y-0.5">
+        <p className="text-xs text-muted-foreground">Email</p>
+        <div className="flex items-center gap-2">
+          <p className={`text-sm font-medium ${isPlaceholder ? 'text-muted-foreground italic' : ''}`}>
+            {display}
+          </p>
+          {isPlaceholder && (
+            <Badge variant="outline" className="text-[10px] h-4 px-1">
+              Auto-generated
+            </Badge>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderField = (label: string, value: string | number | null | undefined, field?: keyof Student, type: 'text' | 'number' | 'date' | 'select' = 'text', options?: string[]) => {
@@ -225,7 +286,7 @@ export function EnhancedStudentCard({
         <div className="grid grid-cols-2 gap-3">
           {renderField('Full Name', student.name, 'name')}
           {renderField('Phone', student.phone, 'phone')}
-          {renderField('Email', student.email, 'email')}
+          {renderEmailField()}
           {renderField('Date of Birth', student.dob ? format(new Date(student.dob), 'dd MMM yyyy') : null, 'dob', 'date')}
           {renderField('Gender', student.gender, 'gender', 'select', ['Male', 'Female', 'Other'])}
           {renderField('Nationality', student.nationality, 'nationality')}

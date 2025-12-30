@@ -67,3 +67,68 @@ export const formatRelativeTime = (date: string | Date): string =>
 
 export const formatNumber = (value: number): string => 
   new Intl.NumberFormat('en-IN').format(value);
+
+// Placeholder email patterns - system-generated when real email is not available
+const PLACEHOLDER_EMAIL_PATTERNS = [
+  '@temp.placeholder',
+  '@quick.placeholder',
+  '@student.placeholder',
+  '@student.loan.app',
+  '@lead.',
+];
+
+/**
+ * Check if an email is a system-generated placeholder
+ */
+export function isPlaceholderEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const lowerEmail = email.toLowerCase();
+  return PLACEHOLDER_EMAIL_PATTERNS.some(pattern => lowerEmail.includes(pattern));
+}
+
+/**
+ * Format email for display - shows user-friendly text for placeholders
+ */
+export function formatDisplayEmail(email: string | null | undefined): {
+  display: string;
+  isPlaceholder: boolean;
+  extractedPhone?: string;
+} {
+  if (!email) {
+    return { display: 'Not provided', isPlaceholder: false };
+  }
+  
+  if (isPlaceholderEmail(email)) {
+    const phone = email.split('@')[0];
+    return {
+      display: `No email (Phone: ${phone})`,
+      isPlaceholder: true,
+      extractedPhone: phone,
+    };
+  }
+  
+  return { display: email, isPlaceholder: false };
+}
+
+/**
+ * Validate email format - returns error message or null if valid
+ * Blocks placeholder email patterns from being saved
+ */
+export function validateEmail(email: string | null | undefined): string | null {
+  if (!email || email.trim() === '') {
+    return null; // Empty is allowed (optional field)
+  }
+  
+  // Block placeholder patterns
+  if (isPlaceholderEmail(email)) {
+    return 'Please enter a real email address';
+  }
+  
+  // Standard email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return 'Invalid email format';
+  }
+  
+  return null; // Valid
+}

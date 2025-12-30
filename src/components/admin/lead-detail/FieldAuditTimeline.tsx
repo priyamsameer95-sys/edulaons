@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { History, User, Bot, ArrowRight } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useFieldAuditLog, FieldAuditEntry } from '@/hooks/useFieldAuditLog';
+import { formatDisplayEmail } from '@/utils/formatters';
 
 interface FieldAuditTimelineProps {
   leadId: string;
@@ -94,9 +95,17 @@ export function FieldAuditTimeline({ leadId }: FieldAuditTimelineProps) {
                     </div>
                     <p className="text-sm font-medium">{formatFieldName(entry.table_name, entry.field_name)}</p>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground line-through">{entry.old_value || '(empty)'}</span>
+                      <span className="text-muted-foreground line-through">
+                        {entry.field_name === 'email' 
+                          ? formatDisplayEmail(entry.old_value).display 
+                          : (entry.old_value || '(empty)')}
+                      </span>
                       <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-medium">{entry.new_value || '(empty)'}</span>
+                      <span className="font-medium">
+                        {entry.field_name === 'email' 
+                          ? formatDisplayEmail(entry.new_value).display 
+                          : (entry.new_value || '(empty)')}
+                      </span>
                     </div>
                     {entry.changed_by_name && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">

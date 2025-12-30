@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { formatDisplayEmail } from '@/utils/formatters';
 
 interface AuditLog {
   id: string;
@@ -192,8 +193,10 @@ export function AuditLogViewer() {
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        {getActionBadge(log.action, log.success)}
-                        <span className="text-sm font-medium">{log.target_user_email}</span>
+                      {getActionBadge(log.action, log.success)}
+                        <span className={`text-sm font-medium ${formatDisplayEmail(log.target_user_email).isPlaceholder ? 'text-muted-foreground italic' : ''}`}>
+                          {formatDisplayEmail(log.target_user_email).display}
+                        </span>
                       </div>
                       <span className="text-sm text-muted-foreground">
                         {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm:ss')}
@@ -214,7 +217,10 @@ export function AuditLogViewer() {
                     
                     <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground mt-3 pt-3 border-t">
                       <div>
-                        <strong>Performed by:</strong> {log.performed_by}
+                        <strong>Performed by:</strong>{' '}
+                        <span className={formatDisplayEmail(log.performed_by).isPlaceholder ? 'italic' : ''}>
+                          {formatDisplayEmail(log.performed_by).display}
+                        </span>
                       </div>
                       <div>
                         <strong>IP:</strong> {log.ip_address || 'N/A'}
