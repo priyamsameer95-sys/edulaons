@@ -22,74 +22,7 @@ interface PartnerDocumentGridProps {
   onSelect: (id: string) => void;
 }
 
-// Category color mapping
-const CATEGORY_COLORS: Record<string, {
-  bg: string;
-  border: string;
-  text: string;
-  accent: string;
-  progressBg: string;
-  progressFill: string;
-}> = {
-  STUDENT: {
-    bg: 'bg-blue-50 dark:bg-blue-950/30',
-    border: 'border-blue-200 dark:border-blue-800',
-    text: 'text-blue-700 dark:text-blue-300',
-    accent: 'bg-blue-500',
-    progressBg: 'bg-blue-100 dark:bg-blue-900',
-    progressFill: 'bg-blue-500'
-  },
-  FINANCIAL_CO_APPLICANT: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    accent: 'bg-emerald-500',
-    progressBg: 'bg-emerald-100 dark:bg-emerald-900',
-    progressFill: 'bg-emerald-500'
-  },
-  NRI_FINANCIAL: {
-    bg: 'bg-purple-50 dark:bg-purple-950/30',
-    border: 'border-purple-200 dark:border-purple-800',
-    text: 'text-purple-700 dark:text-purple-300',
-    accent: 'bg-purple-500',
-    progressBg: 'bg-purple-100 dark:bg-purple-900',
-    progressFill: 'bg-purple-500'
-  },
-  NON_FINANCIAL_CO_APPLICANT: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-800',
-    text: 'text-amber-700 dark:text-amber-300',
-    accent: 'bg-amber-500',
-    progressBg: 'bg-amber-100 dark:bg-amber-900',
-    progressFill: 'bg-amber-500'
-  },
-  COLLATERAL: {
-    bg: 'bg-orange-50 dark:bg-orange-950/30',
-    border: 'border-orange-200 dark:border-orange-800',
-    text: 'text-orange-700 dark:text-orange-300',
-    accent: 'bg-orange-500',
-    progressBg: 'bg-orange-100 dark:bg-orange-900',
-    progressFill: 'bg-orange-500'
-  }
-};
-
-const DEFAULT_CATEGORY_COLORS = {
-  bg: 'bg-slate-50 dark:bg-slate-950/30',
-  border: 'border-slate-200 dark:border-slate-800',
-  text: 'text-slate-700 dark:text-slate-300',
-  accent: 'bg-slate-500',
-  progressBg: 'bg-slate-100 dark:bg-slate-900',
-  progressFill: 'bg-slate-500'
-};
-
-// Friendly category names
-const CATEGORY_LABELS: Record<string, string> = {
-  STUDENT: 'Student Documents',
-  FINANCIAL_CO_APPLICANT: 'Financial Co-Applicant',
-  NRI_FINANCIAL: 'NRI Financial Documents',
-  NON_FINANCIAL_CO_APPLICANT: 'Non-Financial Co-Applicant',
-  COLLATERAL: 'Collateral & Property'
-};
+import { getCategoryLabel, getCategoryColors } from '@/constants/categoryLabels';
 
 export function PartnerDocumentGrid({
   documentTypes,
@@ -151,9 +84,6 @@ export function PartnerDocumentGrid({
     return { total, uploaded, needsAttention };
   }, [documentTypes, uploadedDocuments]);
 
-  const getCategoryColors = (category: string) => {
-    return CATEGORY_COLORS[category] || DEFAULT_CATEGORY_COLORS;
-  };
 
   const handleViewDocument = (docTypeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -267,7 +197,7 @@ export function PartnerDocumentGrid({
                     <div className={cn('w-1 h-8 rounded-full', colors.accent)} />
                     <div>
                       <h3 className={cn('text-sm font-semibold', colors.text)}>
-                        {CATEGORY_LABELS[category] || category}
+                        {getCategoryLabel(category)}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {progress?.required || 0} required • {progress?.total || 0} total

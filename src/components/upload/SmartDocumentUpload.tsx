@@ -26,19 +26,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDisplayText } from '@/utils/formatters';
+import { getCategoryLabel } from '@/constants/categoryLabels';
 
 interface SmartDocumentUploadProps {
   leadId: string;
   onUploadComplete?: () => void;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  student: 'Student KYC',
-  financial_co_applicant: 'Co-Applicant Financial',
-  non_financial_co_applicant: 'Non-Financial Co-Applicant',
-  collateral: 'Property/Collateral',
-  nri_financial: 'NRI Documents',
-};
 
 // Format document type name - remove underscores and capitalize
 const formatDocTypeName = (name: string): string => formatDisplayText(name);
@@ -396,7 +389,7 @@ export function SmartDocumentUpload({ leadId, onUploadComplete }: SmartDocumentU
                                 ).map(([category, types]) => (
                                   <div key={category}>
                                     <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
-                                      {CATEGORY_LABELS[category] || category}
+                                      {getCategoryLabel(category)}
                                     </div>
                                     {types.map(dt => (
                                       <SelectItem key={dt.id} value={dt.id} className="text-xs">
@@ -503,7 +496,7 @@ export function SmartDocumentUpload({ leadId, onUploadComplete }: SmartDocumentU
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
                         <span className="font-medium text-sm text-foreground">
-                          {CATEGORY_LABELS[category] || category}
+                          {getCategoryLabel(category)}
                         </span>
                       </div>
                       <Badge variant="default" className="text-xs">

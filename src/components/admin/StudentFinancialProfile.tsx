@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Users, Briefcase, TrendingUp } from "lucide-react";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, formatDisplayText } from "@/utils/formatters";
 
 interface CoApplicant {
   name: string;
@@ -38,16 +38,6 @@ interface StudentFinancialProfileProps {
 }
 
 const StudentFinancialProfile = ({ lead, coApplicant, scores }: StudentFinancialProfileProps) => {
-  const formatRelationship = (rel: string) => {
-    return rel.charAt(0).toUpperCase() + rel.slice(1).replace('_', ' ');
-  };
-
-  const formatEmploymentType = (type?: string | null) => {
-    if (!type) return 'Not Specified';
-    return type.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
 
   const getRateTierBadge = (tier?: string | null) => {
     if (!tier) return { variant: 'outline' as const, label: 'N/A' };
@@ -88,7 +78,7 @@ const StudentFinancialProfile = ({ lead, coApplicant, scores }: StudentFinancial
             <div>
               <label className="text-sm text-muted-foreground">Loan Type</label>
               <Badge variant="secondary" className="mt-2 text-sm">
-                {lead.loan_type.charAt(0).toUpperCase() + lead.loan_type.slice(1)}
+                {formatDisplayText(lead.loan_type)}
               </Badge>
             </div>
           </div>
@@ -155,7 +145,7 @@ const StudentFinancialProfile = ({ lead, coApplicant, scores }: StudentFinancial
             <div>
               <label className="text-sm text-muted-foreground">Relationship</label>
               <Badge variant="secondary" className="mt-1">
-                {formatRelationship(coApplicant.relationship)}
+                {formatDisplayText(coApplicant.relationship)}
               </Badge>
             </div>
           </div>
@@ -176,7 +166,7 @@ const StudentFinancialProfile = ({ lead, coApplicant, scores }: StudentFinancial
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm text-muted-foreground">Employment Type</label>
-              <p className="font-medium">{formatEmploymentType(coApplicant.employment_type)}</p>
+              <p className="font-medium">{formatDisplayText(coApplicant.employment_type) || 'Not Specified'}</p>
             </div>
             <div>
               <label className="text-sm text-muted-foreground">PIN Code</label>

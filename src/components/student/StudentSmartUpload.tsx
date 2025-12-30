@@ -63,12 +63,7 @@ interface StudentSmartUploadProps {
 // Student-uploadable categories only
 const STUDENT_CATEGORIES = ['KYC', 'Academic', 'Financial', 'Co-Applicant'];
 
-const CATEGORY_LABELS: Record<string, string> = {
-  'KYC': 'Student Documents',
-  'Academic': 'Academic Documents',
-  'Financial': 'Financial Documents',
-  'Co-Applicant': 'Co-Applicant Documents',
-};
+import { getCategoryLabel } from '@/constants/categoryLabels';
 
 // User-friendly quality messages
 const QUALITY_MESSAGES: Record<string, { text: string; variant: 'success' | 'warning' | 'error' }> = {
@@ -620,7 +615,7 @@ const StudentSmartUpload = ({
                             {Object.entries(groupedDocTypes).map(([category, types]) => (
                               <div key={category}>
                                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                  {CATEGORY_LABELS[category] || category}
+                                  {getCategoryLabel(category)}
                                 </div>
                                 {types.map(dt => (
                                   <SelectItem key={dt.id} value={dt.id} className="text-sm">

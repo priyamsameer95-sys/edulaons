@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GraduationCap, Award, MapPin, User } from "lucide-react";
+import { formatDisplayText } from "@/utils/formatters";
 
 interface Student {
   name: string;
@@ -31,10 +32,6 @@ interface StudentAcademicProfileProps {
 }
 
 const StudentAcademicProfile = ({ student, testScores }: StudentAcademicProfileProps) => {
-  const formatQualification = (qual?: string | null) => {
-    if (!qual) return 'Not Specified';
-    return qual.charAt(0).toUpperCase() + qual.slice(1);
-  };
 
   const getScoreBadge = (percentage?: number | null) => {
     if (!percentage) return { variant: 'outline' as const, label: 'N/A' };
@@ -121,7 +118,7 @@ const StudentAcademicProfile = ({ student, testScores }: StudentAcademicProfileP
           <div>
             <label className="text-sm text-muted-foreground">Highest Qualification</label>
             <div className="flex items-center gap-2 mt-1">
-              <p className="font-medium">{formatQualification(student.highest_qualification)}</p>
+              <p className="font-medium">{formatDisplayText(student.highest_qualification) || 'Not Specified'}</p>
             </div>
           </div>
 

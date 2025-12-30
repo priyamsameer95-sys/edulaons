@@ -133,14 +133,24 @@ export function validateEmail(email: string | null | undefined): string | null {
   return null; // Valid
 }
 
+// Known acronyms that should remain uppercase
+const ACRONYMS = ['NRI', 'PAN', 'PIN', 'GST', 'KYC', 'FD', 'OTP', 'PD', 'EMI', 'LAN', 'ITR', 'DOB', 'ID', 'PDF', 'URL', 'API'];
+
 /**
  * Format snake_case or underscore-separated text for display
  * - Replaces underscores with spaces
  * - Capitalizes first letter of each word
+ * - Preserves known acronyms (NRI, PAN, KYC, etc.)
  */
 export function formatDisplayText(text: string | null | undefined): string {
   if (!text) return '';
   return text
     .replace(/_/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase());
+    .split(' ')
+    .map(word => {
+      const upper = word.toUpperCase();
+      if (ACRONYMS.includes(upper)) return upper;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
 }
