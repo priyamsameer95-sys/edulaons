@@ -23,6 +23,7 @@ import { CourseCombobox } from "@/components/ui/course-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { convertINRToWords, formatIndianNumber } from "@/utils/currencyFormatter";
 
 interface AddNewLeadModalProps {
   open: boolean;
@@ -194,49 +195,12 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
   }, []);
 
   const formatCurrencyInput = useCallback((value: string): string => {
-    const num = value.replace(/,/g, '').replace(/\D/g, '');
-    if (!num) return '';
-    return parseInt(num).toLocaleString('en-IN');
+    return formatIndianNumber(value);
   }, []);
 
-  const numberToWords = (n: number): string => {
-    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
-      'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    return n.toString();
-  };
-
-  const getAmountInWords = useCallback((value: string): string => {
-    const num = parseInt(value.replace(/,/g, '') || '0');
-    if (num === 0) return '';
-    if (num >= 10000000) {
-      const crores = num / 10000000;
-      const wholeCrores = Math.floor(crores);
-      const decimalPart = Math.round((crores - wholeCrores) * 100);
-      if (decimalPart === 0) return `${numberToWords(wholeCrores)} Crore`;
-      return `${numberToWords(wholeCrores)}.${decimalPart.toString().padStart(2, '0')} Crore`;
-    }
-    if (num >= 100000) {
-      const lakhs = num / 100000;
-      const wholeLakhs = Math.floor(lakhs);
-      const decimalPart = Math.round((lakhs - wholeLakhs) * 100);
-      if (decimalPart === 0) return `${numberToWords(wholeLakhs)} Lakh`;
-      return `${numberToWords(wholeLakhs)}.${decimalPart.toString().padStart(2, '0')} Lakh`;
-    }
-    if (num >= 1000) {
-      const thousands = num / 1000;
-      const wholeThousands = Math.floor(thousands);
-      const decimalPart = Math.round((thousands - wholeThousands) * 10);
-      if (decimalPart === 0) return `${numberToWords(wholeThousands)} Thousand`;
-      return `${wholeThousands}.${decimalPart} Thousand`;
-    }
-    return `₹${num.toLocaleString('en-IN')}`;
-  }, []);
-
-  const loanAmountInWords = useMemo(() => getAmountInWords(formData.loan_amount), [formData.loan_amount, getAmountInWords]);
-  const salaryInWords = useMemo(() => getAmountInWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary, getAmountInWords]);
+  // Convert amounts to words using centralized function
+  const loanAmountInWords = useMemo(() => convertINRToWords(formData.loan_amount), [formData.loan_amount]);
+  const salaryInWords = useMemo(() => convertINRToWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary]);
 
   const validateStep = (step: number): boolean => {
     const newErrors: FormErrors = {};
@@ -753,7 +717,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                 {errors.loan_amount ? (
                   <p className="text-xs text-destructive">{errors.loan_amount}</p>
                 ) : loanAmountInWords && (
-                  <p className="text-xs text-primary font-medium">₹ {loanAmountInWords}</p>
+                  <p className="text-xs text-primary font-medium">{loanAmountInWords}</p>
                 )}
               </div>
 
@@ -849,7 +813,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                 {errors.co_applicant_monthly_salary ? (
                   <p className="text-xs text-destructive">{errors.co_applicant_monthly_salary}</p>
                 ) : salaryInWords && (
-                  <p className="text-xs text-primary font-medium">₹ {salaryInWords} /month</p>
+                  <p className="text-xs text-primary font-medium">{salaryInWords}</p>
                 )}
               </div>
 

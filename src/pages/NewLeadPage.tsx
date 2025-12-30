@@ -413,7 +413,7 @@ const NewLeadPage = () => {
                   max={1000000000}
                   className={errors.amount_requested ? 'border-destructive' : ''}
                 />
-                {amountInWords && <p className="text-xs text-muted-foreground">₹ {amountInWords}</p>}
+                {amountInWords && <p className="text-xs text-muted-foreground">{amountInWords}</p>}
               </div>
             </div>
           </div>
@@ -478,7 +478,7 @@ const NewLeadPage = () => {
                   max={100000000}
                   className={errors.co_applicant_salary ? 'border-destructive' : ''}
                 />
-                {salaryInWords && <p className="text-xs text-muted-foreground">₹ {salaryInWords}</p>}
+                {salaryInWords && <p className="text-xs text-muted-foreground">{salaryInWords}</p>}
               </div>
               <div className="space-y-2">
                 <Label>PIN Code <span className="text-destructive">*</span></Label>

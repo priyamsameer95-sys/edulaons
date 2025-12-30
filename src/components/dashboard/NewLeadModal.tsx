@@ -746,7 +746,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                   />
                   {amountInWords && (
                     <p className="text-sm text-muted-foreground">
-                      ₹ {amountInWords}
+                      {amountInWords}
                     </p>
                   )}
                 </div>
