@@ -3,40 +3,76 @@ import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
+// ============================================================
+// INTERFACES
+// ============================================================
+
+interface StudentData {
+  name: string;
+  phone: string;
+  email?: string;
+  postal_code?: string;
+  city?: string;
+  state?: string;
+  date_of_birth?: string;
+  highest_qualification?: string;
+  tenth_percentage?: number;
+  twelfth_percentage?: number;
+  bachelors_cgpa?: number;
+  bachelors_percentage?: number;
+  credit_score?: number;
+}
+
+interface CoApplicantData {
+  name: string;
+  relationship: string;
+  salary: number;
+  phone?: string;
+  email?: string;
+  pin_code?: string;
+  occupation?: string;
+  employer?: string;
+  employment_type?: string;
+  credit_score?: number;
+}
+
+interface TestScore {
+  test_type: string;
+  score: string;
+  test_date?: string;
+}
+
+interface StatusHistoryRecord {
+  new_status: string;
+  created_at: string;
+  changed_by?: string;
+}
+
 interface LeadData {
   id: string;
   case_id: string;
-  student?: {
-    name: string;
-    phone: string;
-    email?: string;
-    postal_code?: string;
-    city?: string;
-    state?: string;
-    date_of_birth?: string;
-    highest_qualification?: string;
-  };
-  co_applicant?: {
-    name: string;
-    relationship: string;
-    salary: number;
-    phone?: string;
-    email?: string;
-    pin_code?: string;
-    occupation?: string;
-    employer?: string;
-  };
+  student?: StudentData;
+  co_applicant?: CoApplicantData;
   loan_amount: number;
   loan_type: string;
   loan_classification?: string;
   lender?: {
     name: string;
+    code?: string;
+  };
+  partner?: {
+    name: string;
+    partner_code: string;
   };
   study_destination: string;
   intake_month?: number;
   intake_year?: number;
   status: string;
   created_at: string;
+  test_scores?: TestScore[];
+  status_history?: StatusHistoryRecord[];
+  sanction_amount?: number;
+  sanction_date?: string;
 }
 
 interface LeadDocument {
@@ -44,9 +80,16 @@ interface LeadDocument {
   document_type_id: string;
   original_filename: string;
   file_path: string;
+  verification_status?: string;
+  verified_at?: string;
+  verified_by?: string;
+  verification_notes?: string;
+  ai_validation_status?: string;
+  uploaded_at?: string;
   document_types?: {
     name: string;
     category: string;
+    required?: boolean;
   } | null;
 }
 
@@ -56,9 +99,65 @@ interface LeadUniversity {
   country: string;
 }
 
+interface DocumentManifestEntry {
+  type: string;
+  category: string;
+  filename: string;
+  status: string;
+  verified_by?: string;
+  verified_at?: string;
+  ai_status?: string;
+  uploaded_at?: string;
+}
+
+interface DocumentManifest {
+  generated_at: string;
+  case_id: string;
+  student_name: string;
+  total_documents: number;
+  verified: number;
+  pending: number;
+  rejected: number;
+  documents: DocumentManifestEntry[];
+}
+
+// ============================================================
+// DOCUMENT CATEGORY MAPPINGS
+// ============================================================
+
+const CATEGORY_ORDER: Record<string, { order: number; folder: string }> = {
+  'KYC': { order: 1, folder: '01_KYC' },
+  'Academic': { order: 2, folder: '02_Academic' },
+  'Financial': { order: 3, folder: '03_Financial' },
+  'Collateral': { order: 4, folder: '04_Collateral' },
+  'Admission': { order: 5, folder: '05_Admission' },
+  'Other': { order: 6, folder: '06_Other' },
+};
+
+function getCategoryFolder(category: string): string {
+  return CATEGORY_ORDER[category]?.folder || CATEGORY_ORDER['Other'].folder;
+}
+
+function getVerificationStatusLabel(status?: string): string {
+  switch (status?.toLowerCase()) {
+    case 'verified':
+      return 'Verified';
+    case 'rejected':
+      return 'Rejected';
+    case 'pending':
+    default:
+      return 'Pending';
+  }
+}
+
+// ============================================================
+// PDF GENERATION
+// ============================================================
+
 function generateProfilePDF(
   lead: LeadData,
-  universities: LeadUniversity[]
+  universities: LeadUniversity[],
+  documents: LeadDocument[]
 ): Blob {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -76,6 +175,7 @@ function generateProfilePDF(
   const lightGray = [243, 244, 246] as const;
   const green = [22, 163, 74] as const;
   const amber = [217, 119, 6] as const;
+  const red = [220, 38, 38] as const;
 
   const formatCurrency = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
   const formatIntake = () => {
@@ -235,6 +335,36 @@ function generateProfilePDF(
     { label: 'Qualification', value: lead.student?.highest_qualification || 'N/A' },
   ]);
 
+  // ============= ACADEMIC SCORES SECTION (NEW) =============
+  const academicFields: Array<{label: string, value: string}> = [];
+  
+  if (lead.student?.tenth_percentage) {
+    academicFields.push({ label: '10th Percentage', value: `${lead.student.tenth_percentage}%` });
+  }
+  if (lead.student?.twelfth_percentage) {
+    academicFields.push({ label: '12th Percentage', value: `${lead.student.twelfth_percentage}%` });
+  }
+  if (lead.student?.bachelors_cgpa) {
+    academicFields.push({ label: 'Bachelor\'s CGPA', value: lead.student.bachelors_cgpa.toString() });
+  }
+  if (lead.student?.bachelors_percentage) {
+    academicFields.push({ label: 'Bachelor\'s %', value: `${lead.student.bachelors_percentage}%` });
+  }
+  if (lead.student?.credit_score) {
+    academicFields.push({ label: 'Credit Score', value: lead.student.credit_score.toString() });
+  }
+  
+  // Add test scores if available
+  if (lead.test_scores && lead.test_scores.length > 0) {
+    lead.test_scores.forEach(ts => {
+      academicFields.push({ label: ts.test_type.toUpperCase(), value: ts.score });
+    });
+  }
+
+  if (academicFields.length > 0) {
+    drawSectionBox('ACADEMIC SCORES', academicFields);
+  }
+
   // ============= CO-APPLICANT DETAILS SECTION =============
   drawSectionBox('CO-APPLICANT DETAILS', [
     { label: 'Name', value: lead.co_applicant?.name || 'N/A' },
@@ -245,15 +375,33 @@ function generateProfilePDF(
     { label: 'Occupation', value: lead.co_applicant?.occupation || 'N/A' },
     { label: 'Employer', value: lead.co_applicant?.employer || 'N/A' },
     { label: 'Annual Salary', value: lead.co_applicant?.salary ? formatCurrency(lead.co_applicant.salary) : 'N/A' },
+    ...(lead.co_applicant?.credit_score ? [{ label: 'Credit Score', value: lead.co_applicant.credit_score.toString() }] : []),
   ]);
 
   // ============= LOAN DETAILS SECTION =============
-  drawSectionBox('LOAN DETAILS', [
+  const loanFields = [
     { label: 'Amount Requested', value: formatCurrency(lead.loan_amount) },
     { label: 'Loan Type', value: lead.loan_type?.replace('_', ' ').toUpperCase() || 'N/A' },
     { label: 'Classification', value: lead.loan_classification?.replace('_', ' ').toUpperCase() || 'Not Set' },
     { label: 'Assigned Lender', value: lead.lender?.name || 'Not Assigned' },
-  ]);
+  ];
+  
+  if (lead.sanction_amount) {
+    loanFields.push({ label: 'Sanction Amount', value: formatCurrency(lead.sanction_amount) });
+  }
+  if (lead.sanction_date) {
+    loanFields.push({ label: 'Sanction Date', value: format(new Date(lead.sanction_date), 'dd MMM yyyy') });
+  }
+
+  drawSectionBox('LOAN DETAILS', loanFields);
+
+  // ============= REFERRAL PARTNER SECTION (NEW) =============
+  if (lead.partner) {
+    drawSectionBox('REFERRAL PARTNER', [
+      { label: 'Partner Name', value: lead.partner.name },
+      { label: 'Partner Code', value: lead.partner.partner_code },
+    ]);
+  }
 
   // ============= UNIVERSITIES SECTION =============
   if (universities.length > 0) {
@@ -287,12 +435,137 @@ function generateProfilePDF(
     y = uniBoxY + uniBoxHeight + 10;
   }
 
+  // ============= DOCUMENT STATUS SECTION (NEW) =============
+  if (documents.length > 0) {
+    checkPageBreak(40 + Math.ceil(documents.length / 2) * 10);
+    
+    const verifiedCount = documents.filter(d => d.verification_status === 'verified').length;
+    const pendingCount = documents.filter(d => d.verification_status === 'pending' || !d.verification_status).length;
+    const rejectedCount = documents.filter(d => d.verification_status === 'rejected').length;
+    
+    const docBoxY = y;
+    const docRows = Math.ceil(documents.length / 2);
+    const docBoxHeight = 35 + (docRows * 10);
+    
+    drawRoundedRect(margin, docBoxY, contentWidth, docBoxHeight, 4, lightGray);
+    
+    doc.setFillColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+    doc.roundedRect(margin, docBoxY, contentWidth, 16, 4, 4, 'F');
+    doc.setFillColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+    doc.rect(margin, docBoxY + 8, contentWidth, 8, 'F');
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('DOCUMENT STATUS', margin + 10, docBoxY + 11);
+    
+    // Summary line
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${verifiedCount} Verified • ${pendingCount} Pending • ${rejectedCount} Rejected`, pageWidth - margin - 10, docBoxY + 11, { align: 'right' });
+    
+    // Document list with icons
+    let docY = docBoxY + 26;
+    const colWidth = (contentWidth - 20) / 2;
+    
+    doc.setFontSize(9);
+    for (let i = 0; i < documents.length; i += 2) {
+      // Left column
+      const leftDoc = documents[i];
+      const leftStatus = leftDoc.verification_status;
+      const leftIcon = leftStatus === 'verified' ? '✓' : leftStatus === 'rejected' ? '✗' : '○';
+      const leftColor = leftStatus === 'verified' ? green : leftStatus === 'rejected' ? red : amber;
+      
+      doc.setTextColor(leftColor[0], leftColor[1], leftColor[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.text(leftIcon, margin + 10, docY);
+      doc.setTextColor(black[0], black[1], black[2]);
+      doc.setFont('helvetica', 'normal');
+      const leftName = leftDoc.document_types?.name || 'Document';
+      doc.text(leftName.length > 25 ? leftName.substring(0, 22) + '...' : leftName, margin + 18, docY);
+      
+      // Right column
+      if (documents[i + 1]) {
+        const rightDoc = documents[i + 1];
+        const rightStatus = rightDoc.verification_status;
+        const rightIcon = rightStatus === 'verified' ? '✓' : rightStatus === 'rejected' ? '✗' : '○';
+        const rightColor = rightStatus === 'verified' ? green : rightStatus === 'rejected' ? red : amber;
+        
+        doc.setTextColor(rightColor[0], rightColor[1], rightColor[2]);
+        doc.setFont('helvetica', 'bold');
+        doc.text(rightIcon, margin + 10 + colWidth, docY);
+        doc.setTextColor(black[0], black[1], black[2]);
+        doc.setFont('helvetica', 'normal');
+        const rightName = rightDoc.document_types?.name || 'Document';
+        doc.text(rightName.length > 25 ? rightName.substring(0, 22) + '...' : rightName, margin + 18 + colWidth, docY);
+      }
+      
+      docY += 10;
+    }
+    
+    y = docBoxY + docBoxHeight + 10;
+  }
+
+  // ============= STATUS TIMELINE SECTION (NEW) =============
+  if (lead.status_history && lead.status_history.length > 0) {
+    const keyMilestones = lead.status_history.slice(0, 6); // Show up to 6 milestones
+    
+    checkPageBreak(50);
+    
+    const timelineBoxY = y;
+    const timelineBoxHeight = 45;
+    
+    drawRoundedRect(margin, timelineBoxY, contentWidth, timelineBoxHeight, 4, lightGray);
+    
+    doc.setFillColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+    doc.roundedRect(margin, timelineBoxY, contentWidth, 16, 4, 4, 'F');
+    doc.setFillColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+    doc.rect(margin, timelineBoxY + 8, contentWidth, 8, 'F');
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('STATUS TIMELINE', margin + 10, timelineBoxY + 11);
+    
+    // Draw timeline
+    const timelineY = timelineBoxY + 28;
+    const stepWidth = (contentWidth - 30) / Math.max(keyMilestones.length - 1, 1);
+    
+    doc.setFontSize(7);
+    keyMilestones.forEach((milestone, idx) => {
+      const stepX = margin + 15 + (idx * stepWidth);
+      
+      // Circle
+      doc.setFillColor(green[0], green[1], green[2]);
+      doc.circle(stepX, timelineY, 3, 'F');
+      
+      // Line to next
+      if (idx < keyMilestones.length - 1) {
+        doc.setDrawColor(green[0], green[1], green[2]);
+        doc.setLineWidth(1);
+        doc.line(stepX + 3, timelineY, stepX + stepWidth - 3, timelineY);
+      }
+      
+      // Status label
+      doc.setTextColor(black[0], black[1], black[2]);
+      const statusLabel = milestone.new_status.replace(/_/g, ' ').substring(0, 10);
+      doc.text(statusLabel, stepX, timelineY + 8, { align: 'center' });
+      
+      // Date
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      const dateLabel = format(new Date(milestone.created_at), 'dd MMM');
+      doc.text(dateLabel, stepX, timelineY + 13, { align: 'center' });
+    });
+    
+    y = timelineBoxY + timelineBoxHeight + 10;
+  }
+
   // ============= STATUS FOOTER BAR =============
   checkPageBreak(25);
   
   const statusY = y;
   const status = lead.status?.replace(/_/g, ' ').toUpperCase() || 'N/A';
-  const isApproved = ['DISBURSED', 'SANCTIONED', 'PF_PAID'].some(s => status.includes(s));
+  const isApproved = ['DISBURSED', 'SANCTIONED', 'PF_PAID', 'SANCTION_LETTER'].some(s => status.includes(s));
   const statusColor = isApproved ? green : amber;
   
   drawRoundedRect(margin, statusY, contentWidth, 20, 4, statusColor);
@@ -319,6 +592,10 @@ function generateProfilePDF(
   return doc.output('blob');
 }
 
+// ============================================================
+// FILE DOWNLOAD UTILITIES
+// ============================================================
+
 async function fetchDocumentFile(filePath: string): Promise<Blob | null> {
   try {
     const { data, error } = await supabase.storage
@@ -337,6 +614,10 @@ async function fetchDocumentFile(filePath: string): Promise<Blob | null> {
   }
 }
 
+// ============================================================
+// MAIN EXPORT FUNCTION
+// ============================================================
+
 export async function downloadLeadPackage(
   lead: LeadData,
   documents: LeadDocument[],
@@ -344,7 +625,6 @@ export async function downloadLeadPackage(
 ): Promise<boolean> {
   try {
     const zip = new JSZip();
-    const shortId = lead.id.slice(0, 8);
 
     onProgress?.('Fetching complete lead data...');
 
@@ -356,22 +636,48 @@ export async function downloadLeadPackage(
         student:students!leads_new_student_id_fkey(
           id, name, email, phone, postal_code, city, state, 
           date_of_birth, highest_qualification, country, nationality,
-          tenth_percentage, twelfth_percentage, bachelors_cgpa, bachelors_percentage
+          tenth_percentage, twelfth_percentage, bachelors_cgpa, bachelors_percentage,
+          credit_score
         ),
         co_applicant:co_applicants!leads_new_co_applicant_id_fkey(
           id, name, relationship, salary, phone, email, 
           pin_code, occupation, employer, employment_type,
           monthly_salary, credit_score
         ),
-        lender:lenders!leads_new_lender_id_fkey(id, name, code)
+        lender:lenders!leads_new_lender_id_fkey(id, name, code),
+        partner:partners!leads_new_partner_id_fkey(id, name, partner_code)
       `)
       .eq('id', lead.id)
       .maybeSingle();
+
+    // Fetch test scores
+    let testScores: TestScore[] = [];
+    if (fullLeadData?.student_id) {
+      const studentId = Array.isArray(fullLeadData.student) ? fullLeadData.student[0]?.id : fullLeadData.student?.id;
+      if (studentId) {
+        const { data: testData } = await supabase
+          .from('academic_tests')
+          .select('test_type, score, test_date')
+          .eq('student_id', studentId);
+        testScores = testData || [];
+      }
+    }
+
+    // Fetch status history
+    let statusHistory: StatusHistoryRecord[] = [];
+    const { data: historyData } = await supabase
+      .from('lead_status_history')
+      .select('new_status, created_at, changed_by')
+      .eq('lead_id', lead.id)
+      .order('created_at', { ascending: true })
+      .limit(10);
+    statusHistory = historyData || [];
 
     // Extract first element from arrays (Supabase returns joined data as arrays when isOneToOne: false)
     const studentData = fullLeadData ? (Array.isArray(fullLeadData.student) ? fullLeadData.student[0] : fullLeadData.student) : null;
     const coApplicantData = fullLeadData ? (Array.isArray(fullLeadData.co_applicant) ? fullLeadData.co_applicant[0] : fullLeadData.co_applicant) : null;
     const lenderData = fullLeadData ? (Array.isArray(fullLeadData.lender) ? fullLeadData.lender[0] : fullLeadData.lender) : null;
+    const partnerData = fullLeadData ? (Array.isArray(fullLeadData.partner) ? fullLeadData.partner[0] : fullLeadData.partner) : null;
 
     // Use fetched data or fall back to passed lead data
     const completeLead: LeadData = fullLeadData ? {
@@ -386,6 +692,11 @@ export async function downloadLeadPackage(
         state: studentData.state,
         date_of_birth: studentData.date_of_birth,
         highest_qualification: studentData.highest_qualification,
+        tenth_percentage: studentData.tenth_percentage,
+        twelfth_percentage: studentData.twelfth_percentage,
+        bachelors_cgpa: studentData.bachelors_cgpa,
+        bachelors_percentage: studentData.bachelors_percentage,
+        credit_score: studentData.credit_score,
       } : lead.student,
       co_applicant: coApplicantData ? {
         name: coApplicantData.name,
@@ -396,16 +707,22 @@ export async function downloadLeadPackage(
         pin_code: coApplicantData.pin_code,
         occupation: coApplicantData.occupation,
         employer: coApplicantData.employer,
+        credit_score: coApplicantData.credit_score,
       } : lead.co_applicant,
       loan_amount: fullLeadData.loan_amount,
       loan_type: fullLeadData.loan_type,
       loan_classification: fullLeadData.loan_classification,
-      lender: lenderData ? { name: lenderData.name } : lead.lender,
+      lender: lenderData ? { name: lenderData.name, code: lenderData.code } : lead.lender,
+      partner: partnerData ? { name: partnerData.name, partner_code: partnerData.partner_code } : undefined,
       study_destination: fullLeadData.study_destination,
       intake_month: fullLeadData.intake_month,
       intake_year: fullLeadData.intake_year,
       status: fullLeadData.status,
       created_at: fullLeadData.created_at,
+      test_scores: testScores,
+      status_history: statusHistory,
+      sanction_amount: fullLeadData.sanction_amount,
+      sanction_date: fullLeadData.sanction_date,
     } : lead;
 
     if (leadError) {
@@ -430,31 +747,116 @@ export async function downloadLeadPackage(
         country: u.universities.country
       }));
 
+    // Fetch complete document data with verification status
+    onProgress?.('Fetching document details...');
+    const { data: fullDocuments } = await supabase
+      .from('lead_documents')
+      .select(`
+        id, document_type_id, original_filename, file_path,
+        verification_status, verified_at, verified_by, verification_notes,
+        ai_validation_status, uploaded_at,
+        document_types(name, category, required)
+      `)
+      .eq('lead_id', lead.id);
+
+    const enrichedDocuments: LeadDocument[] = (fullDocuments || documents).map((doc: any) => ({
+      id: doc.id,
+      document_type_id: doc.document_type_id,
+      original_filename: doc.original_filename,
+      file_path: doc.file_path,
+      verification_status: doc.verification_status,
+      verified_at: doc.verified_at,
+      verified_by: doc.verified_by,
+      verification_notes: doc.verification_notes,
+      ai_validation_status: doc.ai_validation_status,
+      uploaded_at: doc.uploaded_at,
+      document_types: doc.document_types,
+    }));
+
     // Generate PDF profile summary with complete data
     onProgress?.('Generating profile PDF...');
-    const profilePdf = generateProfilePDF(completeLead, universities);
+    const profilePdf = generateProfilePDF(completeLead, universities, enrichedDocuments);
     zip.file('Profile_Summary.pdf', profilePdf);
 
-    // Create documents folder
+    // Create category-based document folders
     const docsFolder = zip.folder('Documents');
+    const failedDownloads: string[] = [];
     
-    if (documents.length > 0) {
-      onProgress?.(`Downloading ${documents.length} documents...`);
-      
-      // Download all documents in parallel
-      const downloadPromises = documents.map(async (doc, index) => {
-        onProgress?.(`Downloading ${index + 1}/${documents.length}: ${doc.original_filename}`);
-        
-        const blob = await fetchDocumentFile(doc.file_path);
-        if (blob && docsFolder) {
-          const docTypeName = doc.document_types?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Document';
-          const fileName = `${docTypeName}_${doc.original_filename}`;
-          docsFolder.file(fileName, blob);
-        }
-        return { success: !!blob, name: doc.original_filename };
-      });
+    // Group documents by category
+    const docsByCategory: Record<string, LeadDocument[]> = {};
+    enrichedDocuments.forEach(doc => {
+      const category = doc.document_types?.category || 'Other';
+      if (!docsByCategory[category]) {
+        docsByCategory[category] = [];
+      }
+      docsByCategory[category].push(doc);
+    });
 
-      await Promise.all(downloadPromises);
+    if (enrichedDocuments.length > 0) {
+      onProgress?.(`Downloading ${enrichedDocuments.length} documents...`);
+      
+      // Create manifest
+      const manifest: DocumentManifest = {
+        generated_at: new Date().toISOString(),
+        case_id: completeLead.case_id,
+        student_name: completeLead.student?.name || 'Unknown',
+        total_documents: enrichedDocuments.length,
+        verified: enrichedDocuments.filter(d => d.verification_status === 'verified').length,
+        pending: enrichedDocuments.filter(d => d.verification_status === 'pending' || !d.verification_status).length,
+        rejected: enrichedDocuments.filter(d => d.verification_status === 'rejected').length,
+        documents: [],
+      };
+
+      // Download all documents and organize by category
+      for (const [category, docs] of Object.entries(docsByCategory)) {
+        const categoryFolder = getCategoryFolder(category);
+        const catFolder = docsFolder?.folder(categoryFolder);
+
+        for (const doc of docs) {
+          const docIndex = enrichedDocuments.indexOf(doc) + 1;
+          onProgress?.(`Downloading ${docIndex}/${enrichedDocuments.length}: ${doc.original_filename}`);
+          
+          const blob = await fetchDocumentFile(doc.file_path);
+          
+          if (blob && catFolder) {
+            const docTypeName = doc.document_types?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Document';
+            const verificationStatus = getVerificationStatusLabel(doc.verification_status);
+            const fileName = `${docTypeName}_${verificationStatus}_${doc.original_filename}`;
+            catFolder.file(fileName, blob);
+            
+            // Add to manifest
+            manifest.documents.push({
+              type: doc.document_types?.name || 'Unknown',
+              category: category,
+              filename: doc.original_filename,
+              status: verificationStatus.toLowerCase(),
+              verified_by: doc.verified_by || undefined,
+              verified_at: doc.verified_at || undefined,
+              ai_status: doc.ai_validation_status || undefined,
+              uploaded_at: doc.uploaded_at || undefined,
+            });
+          } else {
+            failedDownloads.push(doc.original_filename);
+          }
+        }
+      }
+
+      // Add manifest file
+      docsFolder?.file('manifest.json', JSON.stringify(manifest, null, 2));
+
+      // Add error log if any downloads failed
+      if (failedDownloads.length > 0) {
+        const errorLog = `Download Errors Report
+Generated: ${new Date().toISOString()}
+Case ID: ${completeLead.case_id}
+
+Failed to download ${failedDownloads.length} document(s):
+${failedDownloads.map((f, i) => `${i + 1}. ${f}`).join('\n')}
+
+Please re-download these documents individually from the application.
+`;
+        docsFolder?.file('_download_errors.txt', errorLog);
+      }
     } else {
       docsFolder?.file('_no_documents_uploaded.txt', 'No documents have been uploaded for this lead yet.');
     }
@@ -494,6 +896,7 @@ export async function downloadLeadPackage(
     return true;
   } catch (error) {
     console.error('Error creating lead package:', error);
+    onProgress?.('Error creating package. Please try again.');
     return false;
   }
 }
