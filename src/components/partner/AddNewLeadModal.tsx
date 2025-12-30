@@ -24,6 +24,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { convertINRToWords, formatIndianNumber } from "@/utils/currencyFormatter";
+import { ALL_STATES_AND_UTS } from "@/constants/indianStates";
+import { OCCUPATION_OPTIONS, EMPLOYER_TYPE_OPTIONS, INCOME_RANGE_OPTIONS } from "@/utils/leadCompletionSchema";
 
 interface AddNewLeadModalProps {
   open: boolean;
@@ -58,9 +60,10 @@ interface FormData {
   co_applicant_name: string;
   co_applicant_relationship: string;
   co_applicant_phone: string;
-  co_applicant_pin_code: string;
-  co_applicant_monthly_salary: string;
+  co_applicant_state: string;
+  co_applicant_income_range: string;
   co_applicant_occupation: string;
+  co_applicant_employer_type: string;
   co_applicant_employer: string;
 }
 
@@ -135,9 +138,10 @@ const initialFormData: FormData = {
   co_applicant_name: "",
   co_applicant_relationship: "",
   co_applicant_phone: "",
-  co_applicant_pin_code: "",
-  co_applicant_monthly_salary: "",
+  co_applicant_state: "",
+  co_applicant_income_range: "",
   co_applicant_occupation: "",
+  co_applicant_employer_type: "",
   co_applicant_employer: "",
 };
 
@@ -200,7 +204,10 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
 
   // Convert amounts to words using centralized function
   const loanAmountInWords = useMemo(() => convertINRToWords(formData.loan_amount), [formData.loan_amount]);
-  const salaryInWords = useMemo(() => convertINRToWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary]);
+  
+  // Check if employer name should be shown
+  const showEmployerType = formData.co_applicant_occupation === 'salaried' || formData.co_applicant_occupation === 'professional';
+  const showEmployerName = (showEmployerType && (formData.co_applicant_employer_type === 'private' || formData.co_applicant_employer_type === 'mnc')) || formData.co_applicant_occupation === 'business_owner';
 
   const validateStep = (step: number): boolean => {
     const newErrors: FormErrors = {};
@@ -286,17 +293,16 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
         newErrors.co_applicant_phone = "Invalid number";
       }
 
-      if (!formData.co_applicant_pin_code.trim()) {
-        newErrors.co_applicant_pin_code = "Required";
-      } else if (!/^\d{6}$/.test(formData.co_applicant_pin_code.trim())) {
-        newErrors.co_applicant_pin_code = "Must be 6 digits";
+      if (!formData.co_applicant_state) {
+        newErrors.co_applicant_state = "Required";
       }
 
-      const salary = parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, ''));
-      if (!formData.co_applicant_monthly_salary) {
-        newErrors.co_applicant_monthly_salary = "Required";
-      } else if (isNaN(salary) || salary < 10000) {
-        newErrors.co_applicant_monthly_salary = "Min ₹10,000";
+      if (!formData.co_applicant_occupation) {
+        newErrors.co_applicant_occupation = "Required";
+      }
+
+      if (!formData.co_applicant_income_range) {
+        newErrors.co_applicant_income_range = "Required";
       }
     }
 
@@ -343,9 +349,10 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           co_applicant_name: formData.co_applicant_name.trim(),
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_phone: formData.co_applicant_phone.replace(/\D/g, ''),
-          co_applicant_pin_code: formData.co_applicant_pin_code.trim(),
-          co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')),
-          co_applicant_occupation: formData.co_applicant_occupation.trim() || undefined,
+          co_applicant_state: formData.co_applicant_state,
+          co_applicant_monthly_salary: parseInt(formData.co_applicant_income_range),
+          co_applicant_occupation: formData.co_applicant_occupation || undefined,
+          co_applicant_employer_type: formData.co_applicant_employer_type || undefined,
           co_applicant_employer: formData.co_applicant_employer.trim() || undefined,
           // Partner
           partner_id: partnerId,
@@ -745,7 +752,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           {currentStep === 3 && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="co_applicant_name" className="text-sm">Co-Applicant Name *</Label>
+                <Label htmlFor="co_applicant_name" className="text-sm">Name *</Label>
                 <Input
                   id="co_applicant_name"
                   value={formData.co_applicant_name}
@@ -775,67 +782,117 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="co_applicant_phone" className="text-sm">Phone Number *</Label>
-                <Input
-                  id="co_applicant_phone"
-                  value={formData.co_applicant_phone}
-                  onChange={(e) => handleInputChange('co_applicant_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="10 digit mobile"
-                  className={errors.co_applicant_phone ? 'border-destructive' : ''}
-                />
+                <Label htmlFor="co_applicant_phone" className="text-sm">Phone *</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+91</span>
+                  <Input
+                    id="co_applicant_phone"
+                    inputMode="numeric"
+                    value={formData.co_applicant_phone}
+                    onChange={(e) => handleInputChange('co_applicant_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="98765 43210"
+                    className={cn("pl-12", errors.co_applicant_phone ? 'border-destructive' : '')}
+                  />
+                </div>
                 {errors.co_applicant_phone && <p className="text-xs text-destructive">{errors.co_applicant_phone}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="co_applicant_pin_code" className="text-sm">PIN Code *</Label>
-                <Input
-                  id="co_applicant_pin_code"
-                  value={formData.co_applicant_pin_code}
-                  onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="6 digit PIN"
-                  className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
-                />
-                {errors.co_applicant_pin_code && <p className="text-xs text-destructive">{errors.co_applicant_pin_code}</p>}
+                <Label className="text-sm">State *</Label>
+                <Select
+                  value={formData.co_applicant_state}
+                  onValueChange={(value) => handleInputChange('co_applicant_state', value)}
+                >
+                  <SelectTrigger className={errors.co_applicant_state ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_STATES_AND_UTS.map((state) => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.co_applicant_state && <p className="text-xs text-destructive">{errors.co_applicant_state}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="co_applicant_monthly_salary" className="text-sm">Monthly Income *</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
+                <Label className="text-sm">Occupation *</Label>
+                <Select
+                  value={formData.co_applicant_occupation}
+                  onValueChange={(value) => {
+                    handleInputChange('co_applicant_occupation', value);
+                    // Reset employer type and name when occupation changes
+                    handleInputChange('co_applicant_employer_type', '');
+                    handleInputChange('co_applicant_employer', '');
+                  }}
+                >
+                  <SelectTrigger className={errors.co_applicant_occupation ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select occupation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OCCUPATION_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.co_applicant_occupation && <p className="text-xs text-destructive">{errors.co_applicant_occupation}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">Monthly Income *</Label>
+                <Select
+                  value={formData.co_applicant_income_range}
+                  onValueChange={(value) => handleInputChange('co_applicant_income_range', value)}
+                >
+                  <SelectTrigger className={errors.co_applicant_income_range ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select income range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INCOME_RANGE_OPTIONS.map((i) => (
+                      <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.co_applicant_income_range && <p className="text-xs text-destructive">{errors.co_applicant_income_range}</p>}
+              </div>
+
+              {/* Conditional Employer Type - only show for Salaried/Professional */}
+              {showEmployerType && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Employer Type</Label>
+                  <Select
+                    value={formData.co_applicant_employer_type}
+                    onValueChange={(value) => {
+                      handleInputChange('co_applicant_employer_type', value);
+                      handleInputChange('co_applicant_employer', '');
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select employer type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYER_TYPE_OPTIONS.map((e) => (
+                        <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Conditional Company/Business Name */}
+              {showEmployerName && (
+                <div className={cn("space-y-1.5", !showEmployerType && "col-span-2")}>
+                  <Label htmlFor="co_applicant_employer" className="text-sm">
+                    {formData.co_applicant_occupation === 'business_owner' ? 'Business Name' : 'Company Name'}
+                  </Label>
                   <Input
-                    id="co_applicant_monthly_salary"
-                    value={formData.co_applicant_monthly_salary}
-                    onChange={(e) => handleInputChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))}
-                    placeholder="50,000"
-                    className={cn("pl-7", errors.co_applicant_monthly_salary ? 'border-destructive' : '')}
+                    id="co_applicant_employer"
+                    value={formData.co_applicant_employer}
+                    onChange={(e) => handleInputChange('co_applicant_employer', e.target.value)}
+                    placeholder={formData.co_applicant_occupation === 'business_owner' ? 'Enter business name' : 'Enter company name'}
                   />
                 </div>
-                {errors.co_applicant_monthly_salary ? (
-                  <p className="text-xs text-destructive">{errors.co_applicant_monthly_salary}</p>
-                ) : salaryInWords && (
-                  <p className="text-xs text-primary font-medium">{salaryInWords}</p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="co_applicant_occupation" className="text-sm">Occupation</Label>
-                <Input
-                  id="co_applicant_occupation"
-                  value={formData.co_applicant_occupation}
-                  onChange={(e) => handleInputChange('co_applicant_occupation', e.target.value)}
-                  placeholder="e.g., Business, Salaried"
-                />
-              </div>
-
-              <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="co_applicant_employer" className="text-sm">Employer/Business Name</Label>
-                <Input
-                  id="co_applicant_employer"
-                  value={formData.co_applicant_employer}
-                  onChange={(e) => handleInputChange('co_applicant_employer', e.target.value)}
-                  placeholder="Company or business name"
-                />
-              </div>
+              )}
             </div>
           )}
         </div>
