@@ -151,6 +151,8 @@ serve(async (req) => {
     }
 
     // Save to database with uploader info
+    // KB: Partner upload sets status = UPLOADED (awaiting admin review)
+    // Only Admin can change to VERIFIED or NEED_ATTENTION (rejected)
     const { data: documentRecord, error: dbError } = await supabase
       .from('lead_documents')
       .insert({
@@ -162,7 +164,7 @@ serve(async (req) => {
         file_size: file.size,
         mime_type: file.type,
         upload_status: 'uploaded',
-        verification_status: 'pending', // Changed from 'uploaded' to 'pending' for proper review flow
+        verification_status: 'uploaded', // KB: Partner upload → UPLOADED status
         uploaded_by: uploaderId,
       })
       .select()

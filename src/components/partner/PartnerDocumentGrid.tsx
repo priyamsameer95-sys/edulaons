@@ -1,10 +1,31 @@
+/**
+ * Partner Document Grid
+ * 
+ * KB Compliance:
+ * - Partner is READ-ONLY for status. Partner can ONLY upload/re-upload documents.
+ * - Partner cannot set or change status in any way.
+ * - Only Admin/Super Admin can change status.
+ * - No underscores anywhere in UI. Title Case labels only.
+ * 
+ * Status Display:
+ * - Pending: Not uploaded yet → show "Upload" button
+ * - Uploaded: Awaiting admin review → read-only
+ * - Need Attention: Admin rejected → show "Re-upload" + admin reason
+ * - Verified: Admin approved → read-only
+ */
 import { useMemo, useState } from 'react';
 import { Check, AlertTriangle, Clock, Upload, XCircle, CheckCircle2, Eye, RefreshCw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { getDocumentStatus, getDocumentRejectionReason, partnerDocumentStatusLabels, documentStatusTooltips } from '@/utils/documentStatusUtils';
+import { 
+  getDocumentStatus, 
+  getDocumentRejectionReason, 
+  partnerDocumentStatusLabels, 
+  partnerDocumentStatusTooltips,
+  canPartnerUpload
+} from '@/utils/documentStatusUtils';
 import { DocumentPreviewDialog } from '@/components/admin/document-upload/DocumentPreviewDialog';
 import type { LeadDocument } from '@/hooks/useLeadDocuments';
 import { getCategoryLabel, getCategoryColors } from '@/constants/categoryLabels';
@@ -173,9 +194,12 @@ export function PartnerDocumentGrid({
   };
 
   // Get action button based on status
+  // KB: Partner can ONLY upload (if pending) or re-upload (if need attention)
+  // Partner CANNOT: Mark Verified, Approve/Reject, Change Status, or use any status dropdowns
   const getActionButton = (docId: string, status: string, isRequired: boolean) => {
     switch (status) {
       case 'not_uploaded':
+        // KB: PENDING → show "Upload"
         return (
           <Button
             type="button"
@@ -192,6 +216,7 @@ export function PartnerDocumentGrid({
           </Button>
         );
       case 'rejected':
+        // KB: NEED_ATTENTION → show "Re-upload" + admin reason (shown separately)
         return (
           <Button
             type="button"
@@ -208,11 +233,12 @@ export function PartnerDocumentGrid({
           </Button>
         );
       case 'verified':
-        // Verified - no upload action, read-only
+        // KB: VERIFIED → read-only, no upload action unless Admin changes to NEED_ATTENTION
         return null;
       case 'uploaded':
       case 'pending':
-        // In Review - no edit allowed, just view
+        // KB: UPLOADED → read-only, awaiting admin review
+        // Optional: could allow re-upload before review, but default is OFF per KB
         return null;
       default:
         return null;
@@ -448,12 +474,12 @@ export function PartnerDocumentGrid({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs">
-                          <p className="text-xs">{documentStatusTooltips[status]}</p>
+                          <p className="text-xs">{partnerDocumentStatusTooltips[status]}</p>
                           {isRequired && status === 'not_uploaded' && (
                             <p className="text-xs text-red-500 mt-1">This document is required for processing</p>
                           )}
                           {status === 'verified' && (
-                            <p className="text-xs text-emerald-600 mt-1">This document has been verified by admin</p>
+                            <p className="text-xs text-emerald-600 mt-1">Document verified by admin</p>
                           )}
                           {(status === 'uploaded' || status === 'pending') && (
                             <p className="text-xs text-amber-600 mt-1">Awaiting admin review</p>
