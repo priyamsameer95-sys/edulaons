@@ -592,39 +592,29 @@ export const EMPLOYMENT_TYPE_OPTIONS = [
 
 // Employer type options for conditional display based on occupation
 export const EMPLOYER_TYPE_OPTIONS = [
-  { value: 'private_company', label: 'Private Company' },
+  { value: 'private', label: 'Private Company' },
   { value: 'government', label: 'Government' },
   { value: 'psu', label: 'PSU' },
   { value: 'mnc', label: 'MNC' },
 ] as const;
 
-// Salary quick-select chip options (in INR)
-export const SALARY_QUICK_OPTIONS = [
-  { value: 25000, label: '₹25K' },
-  { value: 40000, label: '₹40K' },
-  { value: 50000, label: '₹50K' },
-  { value: 75000, label: '₹75K' },
-  { value: 100000, label: '₹1L+' },
+export const INCOME_RANGE_OPTIONS = [
+  { value: '25000', label: '₹25,000 - ₹40,000' },
+  { value: '40000', label: '₹40,000 - ₹60,000' },
+  { value: '60000', label: '₹60,000 - ₹80,000' },
+  { value: '80000', label: '₹80,000 - ₹1,00,000' },
+  { value: '100000', label: '₹1,00,000 - ₹1,50,000' },
+  { value: '150000', label: '₹1,50,000+' },
 ] as const;
 
-// Relationship options with icons for chip display
-export const RELATIONSHIP_OPTIONS = [
-  { value: 'parent', label: 'Parent', icon: '👨‍👩‍👦' },
-  { value: 'spouse', label: 'Spouse', icon: '💑' },
-  { value: 'sibling', label: 'Sibling', icon: '👫' },
-  { value: 'guardian', label: 'Guardian', icon: '🛡️' },
-  { value: 'other', label: 'Other', icon: '👤' },
-] as const;
-
-// Phase 3 & 7: Test types for academic tests
 export const TEST_TYPES = [
-  { value: 'ielts', label: 'IELTS', maxScore: 9, minScore: 0, category: 'language' },
-  { value: 'toefl', label: 'TOEFL', maxScore: 120, minScore: 0, category: 'language' },
-  { value: 'pte', label: 'PTE', maxScore: 90, minScore: 0, category: 'language' },
-  { value: 'duolingo', label: 'Duolingo', maxScore: 160, minScore: 0, category: 'language' },
-  { value: 'gre', label: 'GRE', maxScore: 340, minScore: 260, category: 'aptitude' },
-  { value: 'gmat', label: 'GMAT', maxScore: 800, minScore: 200, category: 'aptitude' },
-  { value: 'sat', label: 'SAT', maxScore: 1600, minScore: 400, category: 'aptitude' },
+  { value: 'ielts', label: 'IELTS', minScore: 0, maxScore: 9 },
+  { value: 'toefl', label: 'TOEFL', minScore: 0, maxScore: 120 },
+  { value: 'pte', label: 'PTE', minScore: 10, maxScore: 90 },
+  { value: 'duolingo', label: 'Duolingo', minScore: 10, maxScore: 160 },
+  { value: 'gre', label: 'GRE', minScore: 260, maxScore: 340 },
+  { value: 'gmat', label: 'GMAT', minScore: 200, maxScore: 800 },
+  { value: 'sat', label: 'SAT', minScore: 400, maxScore: 1600 },
 ] as const;
 
 export const TEST_CATEGORIES = {
