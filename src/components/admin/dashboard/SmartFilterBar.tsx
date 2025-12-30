@@ -1,8 +1,9 @@
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, X } from 'lucide-react';
+import { STATUS_CONFIG, PHASE_CONFIG, ProcessPhase, LeadStatusExtended } from '@/constants/processFlow';
 
 interface SmartFilterBarProps {
   searchTerm: string;
@@ -14,15 +15,33 @@ interface SmartFilterBarProps {
   partners: PartnerOption[];
 }
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Status' },
-  { value: 'new', label: 'New' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'document_review', label: 'Doc Review' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-];
+// Legacy statuses to exclude from dropdown (they have equivalents in new flow)
+const LEGACY_STATUSES = ['new', 'contacted', 'in_progress', 'document_review', 'approved'];
+
+// Generate grouped status options from processFlow.ts
+function getGroupedStatusOptions(): Record<ProcessPhase, { value: string; label: string }[]> {
+  const grouped: Record<ProcessPhase, { value: string; label: string }[]> = {
+    pre_login: [],
+    with_lender: [],
+    sanction: [],
+    disbursement: [],
+    terminal: [],
+  };
+
+  Object.values(STATUS_CONFIG)
+    .filter(s => !LEGACY_STATUSES.includes(s.value)) // Exclude legacy
+    .sort((a, b) => a.step - b.step)
+    .forEach(status => {
+      grouped[status.phase].push({
+        value: status.value,
+        label: status.shortLabel,
+      });
+    });
+
+  return grouped;
+}
+
+const GROUPED_OPTIONS = getGroupedStatusOptions();
 
 export function SmartFilterBar({
   searchTerm,
@@ -34,6 +53,13 @@ export function SmartFilterBar({
   partners,
 }: SmartFilterBarProps) {
   const hasActiveFilters = statusFilter !== 'all' || partnerFilter !== 'all';
+  
+  // Get display label for current filter value
+  const getFilterLabel = (value: string): string => {
+    if (value === 'all') return 'All Status';
+    const config = STATUS_CONFIG[value as LeadStatusExtended];
+    return config?.shortLabel || value;
+  };
   
   return (
     <div className="flex items-center gap-3 flex-1">
@@ -52,17 +78,85 @@ export function SmartFilterBar({
       <div className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-lg h-9">
         <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         
-        {/* Status dropdown - consistent height and padding */}
+        {/* Status dropdown - grouped by phase */}
         <Select value={statusFilter} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-[120px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2 font-medium">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[130px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2 font-medium">
+            <SelectValue placeholder="Status">{getFilterLabel(statusFilter)}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="bg-popover">
-            {STATUS_OPTIONS.map((status) => (
-              <SelectItem key={status.value} value={status.value} className="text-xs py-2">
-                {status.label}
-              </SelectItem>
-            ))}
+          <SelectContent className="bg-popover max-h-[400px]">
+            <SelectItem value="all" className="text-xs py-2 font-medium">
+              All Status
+            </SelectItem>
+            
+            <SelectSeparator />
+            
+            {/* Pre-Login Phase */}
+            <SelectGroup>
+              <SelectLabel className="text-[10px] text-muted-foreground font-semibold px-2">
+                {PHASE_CONFIG.pre_login.label}
+              </SelectLabel>
+              {GROUPED_OPTIONS.pre_login.map((status) => (
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+            
+            <SelectSeparator />
+            
+            {/* With Lender Phase */}
+            <SelectGroup>
+              <SelectLabel className="text-[10px] text-muted-foreground font-semibold px-2">
+                {PHASE_CONFIG.with_lender.label}
+              </SelectLabel>
+              {GROUPED_OPTIONS.with_lender.map((status) => (
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+            
+            <SelectSeparator />
+            
+            {/* Sanction Phase */}
+            <SelectGroup>
+              <SelectLabel className="text-[10px] text-muted-foreground font-semibold px-2">
+                {PHASE_CONFIG.sanction.label}
+              </SelectLabel>
+              {GROUPED_OPTIONS.sanction.map((status) => (
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+            
+            <SelectSeparator />
+            
+            {/* Disbursement Phase */}
+            <SelectGroup>
+              <SelectLabel className="text-[10px] text-muted-foreground font-semibold px-2">
+                {PHASE_CONFIG.disbursement.label}
+              </SelectLabel>
+              {GROUPED_OPTIONS.disbursement.map((status) => (
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+            
+            <SelectSeparator />
+            
+            {/* Terminal States */}
+            <SelectGroup>
+              <SelectLabel className="text-[10px] text-muted-foreground font-semibold px-2">
+                {PHASE_CONFIG.terminal.label}
+              </SelectLabel>
+              {GROUPED_OPTIONS.terminal.map((status) => (
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
 
