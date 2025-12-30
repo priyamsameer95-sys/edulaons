@@ -250,6 +250,35 @@ serve(async (req) => {
     }
     console.log('✅ Quick lead created:', lead.case_id);
 
+    // Create audit log entry for lead creation
+    const { error: auditError } = await supabaseAdmin
+      .from('field_audit_log')
+      .insert({
+        lead_id: lead.id,
+        table_name: 'leads_new',
+        field_name: 'lead_created',
+        old_value: null,
+        new_value: JSON.stringify({
+          case_id: lead.case_id,
+          is_quick_lead: true,
+          source: 'partner_quick',
+          student_name: body.student_name,
+          loan_amount: loanAmount,
+          study_destination: studyDestination,
+        }),
+        changed_by_id: user.id,
+        changed_by_name: user.email,
+        changed_by_type: isAdmin ? 'admin' : 'partner',
+        change_source: 'api',
+        change_reason: 'Quick lead creation',
+      });
+    
+    if (auditError) {
+      console.warn('⚠️ Audit log failed:', auditError.message);
+    } else {
+      console.log('✅ Audit log created');
+    }
+
     // Create university association if provided
     if (body.university_id) {
       await supabaseAdmin

@@ -67,22 +67,44 @@ export function useDocumentValidation(options?: UseDocumentValidationOptions) {
         return skipResult;
       }
 
-      // For PDFs, we can't easily extract images on client side
-      // So we'll skip PDF validation for now (could enhance later with PDF.js)
+      // For PDFs, we pass to the validation function which can handle them
+      // The edge function can extract text or flag for manual review
       if (isPdf) {
-        const skipResult: ValidationResult = {
-          isValid: true,
-          detectedType: 'document',
-          expectedType: expectedDocumentType,
-          confidence: 0,
-          qualityAssessment: 'acceptable',
-          validationStatus: 'manual_review',
-          notes: 'PDF documents require manual verification',
-          redFlags: []
-        };
-        setValidationResult(skipResult);
-        options?.onValidationComplete?.(skipResult);
-        return skipResult;
+        // Send PDF metadata to edge function for processing
+        // Note: Full PDF content validation would require server-side processing
+        const { data, error } = await supabase.functions.invoke('validate-document', {
+          body: {
+            mimeType: file.type,
+            expectedDocumentType,
+            documentId,
+            isPdf: true,
+            fileName: file.name,
+            fileSize: file.size,
+          }
+        });
+
+        if (error) {
+          console.error('PDF validation function error:', error);
+          // Fall back to manual review for PDFs
+          const fallbackResult: ValidationResult = {
+            isValid: true,
+            detectedType: 'document',
+            expectedType: expectedDocumentType,
+            confidence: 0,
+            qualityAssessment: 'acceptable',
+            validationStatus: 'manual_review',
+            notes: 'PDF document - requires manual verification',
+            redFlags: []
+          };
+          setValidationResult(fallbackResult);
+          options?.onValidationComplete?.(fallbackResult);
+          return fallbackResult;
+        }
+
+        const result = data as ValidationResult;
+        setValidationResult(result);
+        options?.onValidationComplete?.(result);
+        return result;
       }
 
       // Convert image to base64
