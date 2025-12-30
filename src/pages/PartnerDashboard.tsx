@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, AlertCircle, Building2 } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { isPlaceholderEmail } from "@/utils/formatters";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerKPIs } from "@/hooks/usePartnerKPIs";
 import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
@@ -75,6 +77,9 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
   const [leadDetailInitialTab, setLeadDetailInitialTab] = useState("overview");
 
+  // Debounce search for performance
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   // Filter leads based on status and search
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -95,12 +100,16 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         }
       }
 
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+      // Search filter (exclude placeholder emails from search)
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
+        const studentEmail = lead.student?.email || '';
+        const emailMatch = !isPlaceholderEmail(studentEmail) && 
+                           studentEmail.toLowerCase().includes(query);
+        
         const matchesSearch =
           (lead.student?.name || '').toLowerCase().includes(query) ||
-          (lead.student?.email || '').toLowerCase().includes(query) ||
+          emailMatch ||
           (lead.student?.phone || '').toLowerCase().includes(query) ||
           lead.case_id.toLowerCase().includes(query);
         if (!matchesSearch) return false;
@@ -108,7 +117,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
 
       return true;
     });
-  }, [leads, statusFilter, searchQuery]);
+  }, [leads, statusFilter, debouncedSearch]);
 
   const handleNewLead = () => {
     setShowNewLead(true);
@@ -289,6 +298,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         <PartnerLeadsTable
           leads={filteredLeads}
           loading={leadsLoading}
+          searchQuery={debouncedSearch}
           onUploadDocs={handleUploadDocs}
           onCompleteLead={handleCompleteLead}
           onNewLead={handleNewLead}

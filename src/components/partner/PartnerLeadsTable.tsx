@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eye, Upload, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles, Lock } from "lucide-react";
+import { Eye, Upload, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles, Lock, Search } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -28,6 +28,7 @@ import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 interface PartnerLeadsTableProps {
   leads: RefactoredLead[];
   loading: boolean;
+  searchQuery?: string;
   onUploadDocs: (lead: RefactoredLead) => void;
   onCompleteLead?: (lead: RefactoredLead) => void;
   onNewLead?: () => void;
@@ -335,9 +336,32 @@ const EmptyState = memo(({ onNewLead }: { onNewLead?: () => void }) => (
 
 EmptyState.displayName = 'EmptyState';
 
+// No search results component
+const NoSearchResults = memo(({ query }: { query: string }) => (
+  <div className="flex flex-col items-center justify-center py-12 px-4 bg-card border rounded-lg">
+    <div className="text-center space-y-3 max-w-md">
+      <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+        <Search className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <div className="space-y-1">
+        <h3 className="text-lg font-semibold">No results found</h3>
+        <p className="text-sm text-muted-foreground">
+          No leads matching "{query}"
+        </p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Try searching by name, phone number, or case ID
+      </p>
+    </div>
+  </div>
+));
+
+NoSearchResults.displayName = 'NoSearchResults';
+
 export const PartnerLeadsTable = memo(({
   leads,
   loading,
+  searchQuery,
   onUploadDocs,
   onCompleteLead,
   onNewLead,
@@ -379,6 +403,9 @@ export const PartnerLeadsTable = memo(({
   }
 
   if (leads.length === 0) {
+    if (searchQuery && searchQuery.trim()) {
+      return <NoSearchResults query={searchQuery} />;
+    }
     return <EmptyState onNewLead={onNewLead} />;
   }
 
