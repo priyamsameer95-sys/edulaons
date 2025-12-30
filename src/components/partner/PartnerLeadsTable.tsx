@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eye, Upload, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles, Lock, Search } from "lucide-react";
+import { Eye, Upload, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles, Lock, Search, Clock } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
@@ -139,7 +139,7 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
                   <TooltipTrigger asChild>
                     <Badge 
                       variant="outline" 
-                      className="text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1 cursor-help"
+                      className="h-5 px-2 text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1 cursor-help"
                     >
                       <Zap className="h-3 w-3" />
                       Quick
@@ -184,8 +184,9 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 w-fit cursor-help">
-                    🟡 Pending
+                  <Badge variant="outline" className="h-6 px-2.5 text-xs bg-amber-50 text-amber-700 border-amber-200 w-fit cursor-help gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    Pending
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent className="bg-popover text-popover-foreground border max-w-[200px]">
@@ -205,8 +206,8 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-dashed cursor-help text-xs">
-                    <Lock className="h-3 w-3 mr-1" />
+                  <Badge variant="outline" className="h-6 px-2.5 text-xs bg-muted/50 text-muted-foreground border-dashed cursor-help gap-1.5">
+                    <Lock className="h-3 w-3" />
                     Locked
                   </Badge>
                 </TooltipTrigger>
@@ -221,10 +222,10 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
                 variant="outline"
                 size="sm"
                 onClick={handleUploadClick}
-                className="h-7 px-2.5 text-xs gap-1.5 border-dashed hover:border-primary hover:bg-primary/5"
+                className="h-6 px-2.5 text-xs gap-1.5 border-dashed hover:border-primary hover:bg-primary/5 font-medium"
               >
                 <Upload className="h-3 w-3" />
-                Upload Docs
+                Upload
               </Button>
             ) : (
               <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
