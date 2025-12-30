@@ -1,9 +1,8 @@
 /**
  * Stage Timeline
  * 
- * Simplified 5-step timeline without lock icons.
- * Only current + completed steps highlighted.
- * Future steps muted (not scary).
+ * Simple 5-step journey visualization.
+ * Only current + completed highlighted. No locks, no fear.
  */
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,18 +13,15 @@ interface StageTimelineProps {
 }
 
 const STAGES = [
-  { id: 1, label: 'Created' },
+  { id: 1, label: 'Application Created' },
   { id: 2, label: 'Documents' },
-  { id: 3, label: 'Review' },
-  { id: 4, label: 'Approval' },
+  { id: 3, label: 'Lender Review' },
+  { id: 4, label: 'Approved' },
   { id: 5, label: 'Disbursed' },
 ];
 
-// Map lead status to timeline step
 export const getTimelineStep = (status: string, documentsStatus: string): number => {
-  if (documentsStatus !== 'verified') {
-    return 2;
-  }
+  if (documentsStatus !== 'verified') return 2;
 
   const statusMap: Record<string, number> = {
     'new': 2,
@@ -48,20 +44,24 @@ export const getTimelineStep = (status: string, documentsStatus: string): number
 const StageTimeline = ({ currentStep, className }: StageTimelineProps) => {
   return (
     <div className={cn(
-      "p-4 lg:p-6 bg-card border border-border rounded-2xl",
+      "p-6 lg:p-8 bg-card border border-border rounded-2xl",
       className
     )}>
-      {/* Desktop/Tablet - Horizontal */}
-      <div className="hidden sm:block">
-        <div className="flex items-center justify-between relative">
+      <h3 className="text-sm font-medium text-muted-foreground mb-6 text-center lg:text-left">
+        Your Journey
+      </h3>
+      
+      {/* Desktop - Horizontal */}
+      <div className="hidden md:block">
+        <div className="flex items-start justify-between relative">
           {/* Background line */}
-          <div className="absolute top-4 left-[10%] right-[10%] h-0.5 bg-border" />
+          <div className="absolute top-5 left-[8%] right-[8%] h-0.5 bg-border" />
           
           {/* Progress line */}
           <div 
-            className="absolute top-4 left-[10%] h-0.5 bg-primary transition-all duration-700 ease-out"
+            className="absolute top-5 left-[8%] h-0.5 bg-primary transition-all duration-700"
             style={{ 
-              width: `${Math.max(0, ((currentStep - 1) / (STAGES.length - 1)) * 80)}%` 
+              width: `${Math.max(0, ((currentStep - 1) / (STAGES.length - 1)) * 84)}%` 
             }}
           />
 
@@ -75,19 +75,19 @@ const StageTimeline = ({ currentStep, className }: StageTimelineProps) => {
                 {/* Circle */}
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
                     "border-2",
                     isCompleted && "bg-primary border-primary",
                     isActive && "bg-primary border-primary ring-4 ring-primary/20",
-                    isFuture && "bg-muted border-muted-foreground/20"
+                    isFuture && "bg-card border-muted-foreground/20"
                   )}
                 >
                   {isCompleted ? (
-                    <Check className="w-4 h-4 text-primary-foreground" />
+                    <Check className="w-5 h-5 text-primary-foreground" />
                   ) : isActive ? (
-                    <span className="w-2 h-2 rounded-full bg-primary-foreground" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary-foreground" />
                   ) : (
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span className="text-sm font-medium text-muted-foreground/60">
                       {stage.id}
                     </span>
                   )}
@@ -96,10 +96,10 @@ const StageTimeline = ({ currentStep, className }: StageTimelineProps) => {
                 {/* Label */}
                 <span
                   className={cn(
-                    "mt-2 text-xs font-medium text-center",
+                    "mt-3 text-sm font-medium text-center max-w-[100px]",
                     isCompleted && "text-primary",
                     isActive && "text-foreground font-semibold",
-                    isFuture && "text-muted-foreground/60"
+                    isFuture && "text-muted-foreground/50"
                   )}
                 >
                   {stage.label}
@@ -110,17 +110,17 @@ const StageTimeline = ({ currentStep, className }: StageTimelineProps) => {
         </div>
       </div>
 
-      {/* Mobile - Compact Horizontal */}
-      <div className="sm:hidden">
-        <div className="flex items-center justify-between relative px-2">
+      {/* Mobile - Compact */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between relative px-4">
           {/* Background line */}
-          <div className="absolute top-3 left-6 right-6 h-0.5 bg-border" />
+          <div className="absolute top-4 left-8 right-8 h-0.5 bg-border" />
           
           {/* Progress line */}
           <div 
-            className="absolute top-3 left-6 h-0.5 bg-primary transition-all duration-500"
+            className="absolute top-4 left-8 h-0.5 bg-primary transition-all duration-500"
             style={{ 
-              width: `${Math.max(0, ((currentStep - 1) / (STAGES.length - 1)) * (100 - 12))}%` 
+              width: `${Math.max(0, ((currentStep - 1) / (STAGES.length - 1)) * 85)}%` 
             }}
           />
 
@@ -133,23 +133,18 @@ const StageTimeline = ({ currentStep, className }: StageTimelineProps) => {
               <div key={stage.id} className="flex flex-col items-center relative z-10">
                 <div
                   className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium",
+                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium",
                     "border-2 transition-all",
                     isCompleted && "bg-primary border-primary text-primary-foreground",
                     isActive && "bg-primary border-primary text-primary-foreground ring-2 ring-primary/20",
-                    isFuture && "bg-muted border-muted-foreground/20 text-muted-foreground"
+                    isFuture && "bg-card border-muted-foreground/20 text-muted-foreground/50"
                   )}
                 >
-                  {isCompleted ? (
-                    <Check className="w-3 h-3" />
-                  ) : (
-                    stage.id
-                  )}
+                  {isCompleted ? <Check className="w-4 h-4" /> : stage.id}
                 </div>
                 
-                {/* Only show label for active step on mobile */}
                 {isActive && (
-                  <span className="mt-1.5 text-[10px] font-semibold text-foreground whitespace-nowrap">
+                  <span className="mt-2 text-xs font-semibold text-foreground whitespace-nowrap">
                     {stage.label}
                   </span>
                 )}
