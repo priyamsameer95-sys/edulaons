@@ -9,6 +9,7 @@ interface StatusLabelProps {
 
 const statusStyles: Record<DocumentStatus, string> = {
   verified: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  uploaded: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   rejected: 'bg-destructive/10 text-destructive',
   not_uploaded: 'bg-muted text-muted-foreground',
