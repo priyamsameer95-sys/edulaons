@@ -1,7 +1,8 @@
 /**
  * Profile Summary PDF Generator
  * 
- * Generates a complete profile PDF with ALL fields from the Add Lead form.
+ * Generates a beautiful, professional student pitch document.
+ * Designed to impress lenders with a clean, modern layout.
  * Uses ASCII-safe characters only to avoid font rendering issues.
  */
 
@@ -14,12 +15,21 @@ import {
   drawRoundedRect,
   drawSectionBox,
   drawSectionHeader,
+  drawFieldsGrid,
+  drawModernCard,
+  drawMetricCard,
+  drawGradientHeader,
+  drawStatusPill,
+  drawProgressBar,
+  drawScoreBadge,
+  drawStatusIndicator,
   formatCurrency,
   formatDateSafe,
   getStatusText,
-  drawStatusIndicator,
   addPageNumbers,
+  calculateDocCompletion,
   PDF_COLORS,
+  EXTENDED_COLORS,
   type LayoutState,
 } from './layout';
 
@@ -35,146 +45,298 @@ function formatIntake(lead: LeadData): string {
 }
 
 /**
- * Draw the header bar with branding
+ * Get profile strength based on data completeness
  */
-function drawHeader(state: LayoutState, lead: LeadData): void {
-  const { doc, margin, pageWidth } = state;
+function getProfileStrength(lead: LeadData, documents: LeadDocument[]): { 
+  label: string; 
+  color: readonly [number, number, number];
+  score: number;
+} {
+  let score = 0;
   
-  // Blue header bar
-  doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.rect(0, 0, pageWidth, 40, 'F');
+  // Student details (30 points)
+  if (lead.student?.name) score += 5;
+  if (lead.student?.phone) score += 5;
+  if (lead.student?.email) score += 5;
+  if (lead.student?.date_of_birth) score += 5;
+  if (lead.student?.highest_qualification) score += 5;
+  if (lead.student?.postal_code && lead.student.postal_code !== '000000') score += 5;
   
-  // Branding
-  doc.setFontSize(10);
+  // Academic (20 points)
+  if (lead.student?.tenth_percentage) score += 5;
+  if (lead.student?.twelfth_percentage) score += 5;
+  if (lead.test_scores && lead.test_scores.length > 0) score += 10;
+  
+  // Co-applicant (20 points)
+  if (lead.co_applicant?.name && lead.co_applicant.name !== 'Co-Applicant') {
+    score += 10;
+    if (lead.co_applicant.salary > 0 || (lead.co_applicant.monthly_salary && lead.co_applicant.monthly_salary > 0)) {
+      score += 10;
+    }
+  }
+  
+  // Documents (30 points)
+  const verifiedDocs = documents.filter(d => d.verification_status === 'verified').length;
+  score += Math.min(verifiedDocs * 5, 30);
+  
+  if (score >= 80) return { label: 'Strong', color: PDF_COLORS.green, score };
+  if (score >= 50) return { label: 'Good', color: EXTENDED_COLORS.accent, score };
+  if (score >= 30) return { label: 'Moderate', color: PDF_COLORS.amber, score };
+  return { label: 'Needs Data', color: PDF_COLORS.red, score };
+}
+
+/**
+ * Draw the hero header section
+ */
+function drawHeroHeader(state: LayoutState, lead: LeadData): void {
+  const { doc, margin, pageWidth, contentWidth } = state;
+  
+  // Gradient header background
+  drawGradientHeader(doc, 0, 0, pageWidth, 48);
+  
+  // Branding - top left
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(230, 230, 255);
+  doc.text('EDULOAN by CashKaro', margin, 10);
+  
+  // Student name - hero text
+  doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('EDULOAN by CashKaro', margin, 12);
+  const studentName = lead.student?.name || 'Student Profile';
+  doc.text(studentName, margin, 26);
   
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Student Application Profile', margin, 25);
-  
-  doc.setFontSize(9);
+  // Case ID badge
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Case ID: ${lead.case_id}`, margin, 34);
-  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageWidth - margin, 34, { align: 'right' });
+  doc.setTextColor(220, 220, 255);
+  doc.text(`Case ID: ${lead.case_id}`, margin, 36);
   
-  state.y = 50;
+  // Status pill - top right
+  const status = lead.status?.replace(/_/g, ' ').toUpperCase() || 'NEW';
+  const isPositive = ['DISBURSED', 'SANCTIONED', 'PF_PAID', 'SANCTION_LETTER'].some(s => status.includes(s));
+  const pillColor = isPositive ? PDF_COLORS.green : EXTENDED_COLORS.accent;
+  
+  doc.setFontSize(7);
+  const statusWidth = doc.getTextWidth(status) + 10;
+  const pillX = pageWidth - margin - statusWidth;
+  
+  // White pill background
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(pillX, 22, statusWidth, 12, 6, 6, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(pillColor[0], pillColor[1], pillColor[2]);
+  doc.text(status, pillX + 5, 30);
+  
+  // Generation date
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(200, 200, 255);
+  doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, HH:mm')}`, pageWidth - margin, 10, { align: 'right' });
+  
+  state.y = 56;
 }
 
 /**
- * Draw summary cards (loan + destination)
+ * Draw the hero metric cards (3 cards)
  */
-function drawSummaryCards(state: LayoutState, lead: LeadData): void {
+function drawHeroCards(state: LayoutState, lead: LeadData, documents: LeadDocument[]): void {
   const { doc, margin, contentWidth } = state;
-  const cardWidth = (contentWidth - 10) / 2;
-  const cardHeight = 45;
+  const cardWidth = (contentWidth - 8) / 3;
+  const cardHeight = 38;
   const y = state.y;
   
-  // Left Card - Loan Summary
-  drawRoundedRect(doc, margin, y, cardWidth, cardHeight, 3, PDF_COLORS.lightBlue, [219, 234, 254]);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.text('LOAN SUMMARY', margin + 8, y + 12);
+  // Card 1: Loan Amount
+  drawMetricCard(
+    doc, margin, y, cardWidth, cardHeight,
+    'Loan Amount',
+    formatCurrency(lead.loan_amount),
+    `${lead.loan_type?.replace('_', ' ') || 'N/A'} | ${lead.lender?.name || 'Lender TBD'}`,
+    PDF_COLORS.primaryBlue
+  );
   
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
-  doc.text(formatCurrency(lead.loan_amount), margin + 8, y + 26);
+  // Card 2: Study Destination
+  drawMetricCard(
+    doc, margin + cardWidth + 4, y, cardWidth, cardHeight,
+    'Destination',
+    lead.study_destination || 'N/A',
+    `Intake: ${formatIntake(lead)}`,
+    EXTENDED_COLORS.purple
+  );
   
-  doc.setFontSize(9);
+  // Card 3: Profile Strength
+  const profile = getProfileStrength(lead, documents);
+  const docCompletion = calculateDocCompletion(documents);
+  
+  drawModernCard(doc, margin + (cardWidth + 4) * 2, y, cardWidth, cardHeight, profile.color);
+  
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+  doc.text('PROFILE STRENGTH', margin + (cardWidth + 4) * 2 + 8, y + 10);
+  
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(profile.color[0], profile.color[1], profile.color[2]);
+  doc.text(profile.label, margin + (cardWidth + 4) * 2 + 8, y + 22);
+  
+  // Progress bar for documents
+  const barX = margin + (cardWidth + 4) * 2 + 8;
+  const barWidth = cardWidth - 16;
+  drawProgressBar(doc, barX, y + 28, barWidth, 4, docCompletion.percentage, EXTENDED_COLORS.cardBorder, profile.color);
+  
+  doc.setFontSize(6);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
-  const loanTypeText = lead.loan_type?.replace('_', ' ').toUpperCase() || 'N/A';
-  doc.text(`${loanTypeText} | ${lead.lender?.name || 'Lender TBD'}`, margin + 8, y + 36);
-
-  // Right Card - Study Destination
-  const rightCardX = margin + cardWidth + 10;
-  drawRoundedRect(doc, rightCardX, y, cardWidth, cardHeight, 3, PDF_COLORS.lightBlue, [219, 234, 254]);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.text('STUDY DESTINATION', rightCardX + 8, y + 12);
+  doc.text(`${docCompletion.verified}/${docCompletion.total} docs verified`, barX, y + 36);
   
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
-  doc.text(lead.study_destination || 'N/A', rightCardX + 8, y + 26);
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
-  doc.text(`Intake: ${formatIntake(lead)}`, rightCardX + 8, y + 36);
-
-  state.y += cardHeight + 15;
+  state.y = y + cardHeight + 8;
 }
 
 /**
- * Build student fields array - ALL fields, show N/A for missing
+ * Draw student snapshot section (compact two-column card)
  */
-function getStudentFields(lead: LeadData): PDFField[] {
+function drawStudentSnapshot(state: LayoutState, lead: LeadData): void {
+  const { doc, margin, contentWidth } = state;
   const s = lead.student;
-  return [
-    { label: 'Name', value: s?.name || 'N/A' },
+  
+  const boxY = state.y;
+  const boxHeight = 68;
+  
+  // Section card
+  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.white, EXTENDED_COLORS.cardBorder);
+  
+  // Header
+  doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
+  doc.roundedRect(margin, boxY, contentWidth, 12, 4, 4, 'F');
+  doc.rect(margin, boxY + 6, contentWidth, 6, 'F');
+  
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('STUDENT PROFILE', margin + 6, boxY + 8);
+  
+  // Two column layout
+  const colWidth = (contentWidth - 12) / 2;
+  let leftY = boxY + 20;
+  let rightY = boxY + 20;
+  
+  const leftFields: PDFField[] = [
     { label: 'Phone', value: s?.phone || 'N/A' },
     { label: 'Email', value: s?.email || 'N/A' },
+    { label: 'DOB', value: formatDateSafe(s?.date_of_birth) },
     { label: 'Gender', value: s?.gender || 'N/A' },
-    { label: 'Date of Birth', value: formatDateSafe(s?.date_of_birth) },
-    { label: 'Nationality', value: s?.nationality || 'N/A' },
+  ];
+  
+  const rightFields: PDFField[] = [
+    { label: 'Location', value: `${s?.city || 'N/A'}, ${s?.state || ''}`.replace(/, $/, '') },
     { label: 'PIN Code', value: s?.postal_code && s.postal_code !== '000000' ? s.postal_code : 'N/A' },
-    { label: 'City', value: s?.city || 'N/A' },
-    { label: 'State', value: s?.state || 'N/A' },
-    { label: 'Street Address', value: s?.street_address || 'N/A' },
-    { label: 'Highest Qualification', value: s?.highest_qualification || 'N/A' },
+    { label: 'Qualification', value: s?.highest_qualification || 'N/A' },
     { label: 'Credit Score', value: s?.credit_score ? s.credit_score.toString() : 'N/A' },
   ];
+  
+  doc.setFontSize(7);
+  
+  // Left column
+  leftFields.forEach((field, i) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+    doc.text(field.label + ':', margin + 6, leftY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
+    const truncated = field.value.length > 30 ? field.value.substring(0, 27) + '...' : field.value;
+    doc.text(truncated, margin + 32, leftY);
+    leftY += 10;
+  });
+  
+  // Right column
+  rightFields.forEach((field, i) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+    doc.text(field.label + ':', margin + 6 + colWidth, rightY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
+    const truncated = field.value.length > 25 ? field.value.substring(0, 22) + '...' : field.value;
+    doc.text(truncated, margin + 32 + colWidth, rightY);
+    rightY += 10;
+  });
+  
+  state.y = boxY + boxHeight + 6;
 }
 
 /**
- * Build academic scores fields
+ * Draw academic scores with test badges
  */
-function getAcademicFields(lead: LeadData): PDFField[] {
+function drawAcademicSection(state: LayoutState, lead: LeadData): void {
+  const { doc, margin, contentWidth } = state;
   const s = lead.student;
-  const fields: PDFField[] = [
-    { label: '10th Percentage', value: s?.tenth_percentage ? `${s.tenth_percentage}%` : 'N/A' },
-    { label: '12th Percentage', value: s?.twelfth_percentage ? `${s.twelfth_percentage}%` : 'N/A' },
-    { label: "Bachelor's CGPA", value: s?.bachelors_cgpa ? s.bachelors_cgpa.toString() : 'N/A' },
-    { label: "Bachelor's Percentage", value: s?.bachelors_percentage ? `${s.bachelors_percentage}%` : 'N/A' },
-  ];
   
-  // Add test scores
-  if (lead.test_scores && lead.test_scores.length > 0) {
-    lead.test_scores.forEach(ts => {
-      let testValue = ts.score;
-      if (ts.test_date) {
-        testValue += ` (${formatDateSafe(ts.test_date, 'dd MMM yyyy')}`;
-        if (ts.expiry_date) {
-          testValue += ` to ${formatDateSafe(ts.expiry_date, 'dd MMM yyyy')}`;
-        }
-        testValue += ')';
-      }
-      fields.push({ label: ts.test_type.toUpperCase(), value: testValue });
+  checkPageBreak(state, 55);
+  
+  const boxY = state.y;
+  const hasTests = lead.test_scores && lead.test_scores.length > 0;
+  const boxHeight = hasTests ? 50 : 35;
+  
+  // Section card
+  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.white, EXTENDED_COLORS.cardBorder);
+  
+  // Header
+  doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
+  doc.roundedRect(margin, boxY, contentWidth, 12, 4, 4, 'F');
+  doc.rect(margin, boxY + 6, contentWidth, 6, 'F');
+  
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('ACADEMIC PROFILE', margin + 6, boxY + 8);
+  
+  // Academic scores as inline badges
+  let badgeX = margin + 6;
+  const badgeY = boxY + 20;
+  
+  if (s?.tenth_percentage) {
+    badgeX += drawScoreBadge(doc, badgeX, badgeY, '10th', `${s.tenth_percentage}%`, PDF_COLORS.primaryBlue);
+  }
+  if (s?.twelfth_percentage) {
+    badgeX += drawScoreBadge(doc, badgeX, badgeY, '12th', `${s.twelfth_percentage}%`, PDF_COLORS.primaryBlue);
+  }
+  if (s?.bachelors_cgpa) {
+    badgeX += drawScoreBadge(doc, badgeX, badgeY, 'CGPA', s.bachelors_cgpa.toString(), EXTENDED_COLORS.purple);
+  }
+  if (s?.bachelors_percentage) {
+    badgeX += drawScoreBadge(doc, badgeX, badgeY, "Bachelor's", `${s.bachelors_percentage}%`, EXTENDED_COLORS.purple);
+  }
+  
+  // Test scores row
+  if (hasTests) {
+    let testX = margin + 6;
+    const testY = boxY + 36;
+    
+    lead.test_scores!.forEach(ts => {
+      const testLabel = ts.test_type.toUpperCase();
+      testX += drawScoreBadge(doc, testX, testY, testLabel, ts.score, PDF_COLORS.green);
     });
   }
   
-  return fields;
+  state.y = boxY + boxHeight + 6;
 }
 
 /**
- * Build co-applicant fields - ALL fields, show N/A for missing
+ * Draw co-applicant section
  */
-function getCoApplicantFields(lead: LeadData): PDFField[] {
+function drawCoApplicantSection(state: LayoutState, lead: LeadData): void {
   const c = lead.co_applicant;
   const isPlaceholder = !c || c.name === 'Co-Applicant' || (c.salary === 0 && !c.phone);
   
   if (isPlaceholder) {
-    return [
-      { label: 'Status', value: 'No co-applicant data provided' },
-    ];
+    const fields: PDFField[] = [{ label: 'Status', value: 'No co-applicant data provided' }];
+    drawSectionBox(state, 'CO-APPLICANT', fields);
+    return;
   }
   
-  // Format salary - prefer annual, show monthly if available
+  // Format salary
   let salaryValue = 'N/A';
   if (c.salary && c.salary > 0) {
     salaryValue = `${formatCurrency(c.salary)} (Annual)`;
@@ -182,42 +344,20 @@ function getCoApplicantFields(lead: LeadData): PDFField[] {
     salaryValue = `${formatCurrency(c.monthly_salary)} (Monthly)`;
   }
   
-  return [
+  const fields: PDFField[] = [
     { label: 'Name', value: c.name || 'N/A' },
     { label: 'Relationship', value: c.relationship || 'N/A' },
     { label: 'Phone', value: c.phone || 'N/A' },
     { label: 'Email', value: c.email || 'N/A' },
-    { label: 'PIN Code', value: c.pin_code && c.pin_code !== '000000' ? c.pin_code : 'N/A' },
     { label: 'Occupation', value: c.occupation || 'N/A' },
     { label: 'Employer', value: c.employer || 'N/A' },
     { label: 'Employment Type', value: c.employment_type || 'N/A' },
-    { label: 'Employment Duration', value: c.employment_duration_years ? `${c.employment_duration_years} years` : 'N/A' },
     { label: 'Salary', value: salaryValue },
+    { label: 'PIN Code', value: c.pin_code && c.pin_code !== '000000' ? c.pin_code : 'N/A' },
     { label: 'Credit Score', value: c.credit_score ? c.credit_score.toString() : 'N/A' },
   ];
-}
-
-/**
- * Build loan details fields
- */
-function getLoanFields(lead: LeadData): PDFField[] {
-  const fields: PDFField[] = [
-    { label: 'Amount Requested', value: formatCurrency(lead.loan_amount) },
-    { label: 'Loan Type', value: lead.loan_type?.replace('_', ' ').toUpperCase() || 'N/A' },
-    { label: 'Classification', value: lead.loan_classification?.replace('_', ' ').toUpperCase() || 'N/A' },
-    { label: 'Assigned Lender', value: lead.lender?.name || 'Not Assigned' },
-    { label: 'Study Destination', value: lead.study_destination || 'N/A' },
-    { label: 'Intake', value: formatIntake(lead) },
-  ];
   
-  if (lead.sanction_amount) {
-    fields.push({ label: 'Sanction Amount', value: formatCurrency(lead.sanction_amount) });
-  }
-  if (lead.sanction_date) {
-    fields.push({ label: 'Sanction Date', value: formatDateSafe(lead.sanction_date) });
-  }
-  
-  return fields;
+  drawSectionBox(state, 'CO-APPLICANT', fields);
 }
 
 /**
@@ -226,51 +366,60 @@ function getLoanFields(lead: LeadData): PDFField[] {
 function drawUniversitiesSection(state: LayoutState, universities: LeadUniversity[]): void {
   const { doc, margin, contentWidth } = state;
   
-  checkPageBreak(state, 30 + universities.length * 8);
+  checkPageBreak(state, 25 + universities.length * 7);
   
   const boxY = state.y;
-  const boxHeight = universities.length > 0 ? 22 + (universities.length * 8) + 5 : 35;
+  const boxHeight = universities.length > 0 ? 16 + (universities.length * 7) + 4 : 28;
   
-  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.lightGray);
+  // Section card
+  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.white, EXTENDED_COLORS.cardBorder);
   
   // Header
   doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.roundedRect(margin, boxY, contentWidth, 16, 4, 4, 'F');
-  doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.rect(margin, boxY + 8, contentWidth, 8, 'F');
+  doc.roundedRect(margin, boxY, contentWidth, 12, 4, 4, 'F');
+  doc.rect(margin, boxY + 6, contentWidth, 6, 'F');
   
-  doc.setFontSize(11);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('UNIVERSITIES APPLIED', margin + 10, boxY + 11);
+  doc.text('UNIVERSITIES APPLIED', margin + 6, boxY + 8);
   
-  let uniY = boxY + 26;
-  doc.setFontSize(9);
+  // Count badge
+  doc.setFontSize(7);
+  doc.text(`${universities.length} ${universities.length === 1 ? 'university' : 'universities'}`, contentWidth + margin - 6, boxY + 8, { align: 'right' });
+  
+  let uniY = boxY + 20;
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
+  doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
   
   if (universities.length > 0) {
     universities.forEach((uni, idx) => {
-      doc.text(`${idx + 1}. ${uni.name} - ${uni.city}, ${uni.country}`, margin + 10, uniY);
-      uniY += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${idx + 1}.`, margin + 6, uniY);
+      doc.setFont('helvetica', 'normal');
+      const uniText = `${uni.name} - ${uni.city}, ${uni.country}`;
+      const truncated = uniText.length > 80 ? uniText.substring(0, 77) + '...' : uniText;
+      doc.text(truncated, margin + 12, uniY);
+      uniY += 7;
     });
   } else {
-    doc.text('No universities specified', margin + 10, uniY);
+    doc.text('No universities specified', margin + 6, uniY);
   }
   
-  state.y = boxY + boxHeight + 10;
+  state.y = boxY + boxHeight + 6;
 }
 
 /**
- * Draw document status section with text-based status (no unicode icons)
+ * Draw document status dashboard
  */
-function drawDocumentStatusSection(state: LayoutState, documents: LeadDocument[]): void {
+function drawDocumentDashboard(state: LayoutState, documents: LeadDocument[]): void {
   const { doc, margin, contentWidth, pageWidth } = state;
   
   const docRows = Math.ceil(documents.length / 2);
-  const boxHeight = documents.length > 0 ? 35 + (docRows * 12) : 35;
+  const boxHeight = documents.length > 0 ? 28 + (docRows * 9) : 28;
   
-  checkPageBreak(state, boxHeight + 10);
+  checkPageBreak(state, boxHeight + 8);
   
   const verifiedCount = documents.filter(d => d.verification_status === 'verified').length;
   const pendingCount = documents.filter(d => d.verification_status === 'pending' || !d.verification_status).length;
@@ -278,182 +427,166 @@ function drawDocumentStatusSection(state: LayoutState, documents: LeadDocument[]
   
   const boxY = state.y;
   
-  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.lightGray);
+  // Section card
+  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.white, EXTENDED_COLORS.cardBorder);
   
   // Header
   doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.roundedRect(margin, boxY, contentWidth, 16, 4, 4, 'F');
-  doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.rect(margin, boxY + 8, contentWidth, 8, 'F');
+  doc.roundedRect(margin, boxY, contentWidth, 12, 4, 4, 'F');
+  doc.rect(margin, boxY + 6, contentWidth, 6, 'F');
   
-  doc.setFontSize(11);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('DOCUMENT STATUS', margin + 10, boxY + 11);
+  doc.text('DOCUMENT STATUS', margin + 6, boxY + 8);
   
-  // Summary
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${verifiedCount} Verified | ${pendingCount} Pending | ${rejectedCount} Rejected`, pageWidth - margin - 10, boxY + 11, { align: 'right' });
+  // Summary counts in header
+  doc.setFontSize(6);
+  const summaryText = `${verifiedCount} Verified | ${pendingCount} Pending | ${rejectedCount} Rejected`;
+  doc.text(summaryText, contentWidth + margin - 6, boxY + 8, { align: 'right' });
   
   if (documents.length === 0) {
-    doc.setFontSize(9);
-    doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
-    doc.text('No documents uploaded', margin + 10, boxY + 26);
-    state.y = boxY + boxHeight + 10;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+    doc.text('No documents uploaded', margin + 6, boxY + 20);
+    state.y = boxY + boxHeight + 6;
     return;
   }
   
-  // Document list with colored squares instead of unicode
-  let docY = boxY + 26;
-  const colWidth = (contentWidth - 20) / 2;
+  // Document grid
+  let docY = boxY + 20;
+  const colWidth = (contentWidth - 12) / 2;
   
-  doc.setFontSize(9);
+  doc.setFontSize(7);
   for (let i = 0; i < documents.length; i += 2) {
     // Left column
     const leftDoc = documents[i];
-    const leftStatus = getStatusText(leftDoc.verification_status);
+    drawStatusIndicator(doc, margin + 6, docY, leftDoc.verification_status as 'verified' | 'pending' | 'rejected' || 'pending');
     
-    // Draw colored indicator square
-    drawStatusIndicator(doc, margin + 10, docY, leftDoc.verification_status as 'verified' | 'pending' | 'rejected' || 'pending');
-    
-    doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
+    doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
     doc.setFont('helvetica', 'normal');
     const leftName = leftDoc.document_types?.name || 'Document';
-    const truncatedLeft = leftName.length > 28 ? leftName.substring(0, 25) + '...' : leftName;
-    doc.text(truncatedLeft, margin + 18, docY);
+    const truncatedLeft = leftName.length > 32 ? leftName.substring(0, 29) + '...' : leftName;
+    doc.text(truncatedLeft, margin + 14, docY);
     
     // Right column
     if (documents[i + 1]) {
       const rightDoc = documents[i + 1];
+      drawStatusIndicator(doc, margin + 6 + colWidth, docY, rightDoc.verification_status as 'verified' | 'pending' | 'rejected' || 'pending');
       
-      drawStatusIndicator(doc, margin + 10 + colWidth, docY, rightDoc.verification_status as 'verified' | 'pending' | 'rejected' || 'pending');
-      
-      doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
       const rightName = rightDoc.document_types?.name || 'Document';
-      const truncatedRight = rightName.length > 28 ? rightName.substring(0, 25) + '...' : rightName;
-      doc.text(truncatedRight, margin + 18 + colWidth, docY);
+      const truncatedRight = rightName.length > 32 ? rightName.substring(0, 29) + '...' : rightName;
+      doc.text(truncatedRight, margin + 14 + colWidth, docY);
     }
     
-    docY += 12;
+    docY += 9;
   }
   
-  state.y = boxY + boxHeight + 10;
+  state.y = boxY + boxHeight + 6;
 }
 
 /**
- * Draw status timeline as a table (much more reliable than graphical)
+ * Draw status timeline as clean table
  */
 function drawStatusTimeline(state: LayoutState, lead: LeadData): void {
-  const { doc, margin, contentWidth, pageWidth } = state;
+  const { doc, margin, contentWidth } = state;
   const history = lead.status_history;
   
   if (!history || history.length === 0) return;
   
-  const displayHistory = history.slice(-8); // Show last 8 entries
-  const rowHeight = 10;
-  const boxHeight = 22 + (displayHistory.length * rowHeight) + 5;
+  const displayHistory = history.slice(-6); // Show last 6 entries
+  const rowHeight = 8;
+  const boxHeight = 16 + (displayHistory.length * rowHeight) + 4;
   
-  checkPageBreak(state, boxHeight + 10);
+  checkPageBreak(state, boxHeight + 8);
   
   const boxY = state.y;
   
-  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.lightGray);
+  // Section card
+  drawRoundedRect(doc, margin, boxY, contentWidth, boxHeight, 4, PDF_COLORS.white, EXTENDED_COLORS.cardBorder);
   
   // Header
   doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.roundedRect(margin, boxY, contentWidth, 16, 4, 4, 'F');
-  doc.setFillColor(PDF_COLORS.primaryBlue[0], PDF_COLORS.primaryBlue[1], PDF_COLORS.primaryBlue[2]);
-  doc.rect(margin, boxY + 8, contentWidth, 8, 'F');
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text('STATUS HISTORY', margin + 10, boxY + 11);
-  
-  // Table headers
-  const col1X = margin + 10;
-  const col2X = margin + 50;
-  const col3X = margin + 130;
-  
-  let rowY = boxY + 26;
+  doc.roundedRect(margin, boxY, contentWidth, 12, 4, 4, 'F');
+  doc.rect(margin, boxY + 6, contentWidth, 6, 'F');
   
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
-  doc.text('Date', col1X, rowY);
-  doc.text('Status', col2X, rowY);
-  doc.text('Changed By', col3X, rowY);
-  
-  rowY += rowHeight;
+  doc.setTextColor(255, 255, 255);
+  doc.text('STATUS TIMELINE', margin + 6, boxY + 8);
   
   // Table rows
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(PDF_COLORS.black[0], PDF_COLORS.black[1], PDF_COLORS.black[2]);
+  let rowY = boxY + 20;
   
-  displayHistory.forEach(entry => {
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
+  
+  displayHistory.forEach((entry, idx) => {
     const dateStr = formatDateSafe(entry.created_at, 'dd MMM yyyy');
     const statusStr = entry.new_status.replace(/_/g, ' ');
     const changedBy = entry.changed_by || 'System';
     
-    doc.text(dateStr, col1X, rowY);
-    doc.text(statusStr.length > 25 ? statusStr.substring(0, 22) + '...' : statusStr, col2X, rowY);
-    doc.text(changedBy.length > 20 ? changedBy.substring(0, 17) + '...' : changedBy, col3X, rowY);
+    // Alternating row background
+    if (idx % 2 === 0) {
+      doc.setFillColor(PDF_COLORS.lightGray[0], PDF_COLORS.lightGray[1], PDF_COLORS.lightGray[2]);
+      doc.rect(margin + 2, rowY - 5, contentWidth - 4, rowHeight, 'F');
+    }
+    
+    doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+    doc.text(dateStr, margin + 6, rowY);
+    
+    doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text(statusStr.length > 28 ? statusStr.substring(0, 25) + '...' : statusStr, margin + 40, rowY);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+    doc.text(changedBy.length > 25 ? changedBy.substring(0, 22) + '...' : changedBy, margin + 110, rowY);
     
     rowY += rowHeight;
   });
   
-  state.y = boxY + boxHeight + 10;
+  state.y = boxY + boxHeight + 6;
 }
 
 /**
- * Draw partner section
+ * Draw partner attribution section
  */
 function drawPartnerSection(state: LayoutState, lead: LeadData): void {
-  const fields: PDFField[] = lead.partner 
-    ? [
-        { label: 'Partner Name', value: lead.partner.name },
-        { label: 'Partner Code', value: lead.partner.partner_code },
-      ]
-    : [
-        { label: 'Partner Assignment', value: 'Not assigned to a partner' },
-      ];
+  if (!lead.partner) return;
   
-  drawSectionBox(state, 'REFERRAL PARTNER', fields);
-}
-
-/**
- * Draw status footer bar
- */
-function drawStatusFooter(state: LayoutState, lead: LeadData): void {
-  const { doc, margin, contentWidth, pageWidth } = state;
+  const { doc, margin, contentWidth } = state;
   
-  checkPageBreak(state, 25);
+  checkPageBreak(state, 30);
   
-  const statusY = state.y;
-  const status = lead.status?.replace(/_/g, ' ').toUpperCase() || 'N/A';
-  const isPositive = ['DISBURSED', 'SANCTIONED', 'PF_PAID', 'SANCTION_LETTER'].some(s => status.includes(s));
-  const statusColor = isPositive ? PDF_COLORS.green : PDF_COLORS.amber;
+  const boxY = state.y;
+  const boxHeight = 24;
   
-  drawRoundedRect(doc, margin, statusY, contentWidth, 20, 4, statusColor);
+  // Section card with accent
+  drawModernCard(doc, margin, boxY, contentWidth, boxHeight, EXTENDED_COLORS.accent);
+  
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+  doc.text('REFERRAL PARTNER', margin + 8, boxY + 8);
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text(`Status: ${status}`, margin + 10, statusY + 13);
+  doc.setTextColor(PDF_COLORS.darkGray[0], PDF_COLORS.darkGray[1], PDF_COLORS.darkGray[2]);
+  doc.text(lead.partner.name, margin + 8, boxY + 18);
   
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  const createdText = `Created: ${formatDateSafe(lead.created_at)}`;
-  doc.text(createdText, pageWidth - margin - 10, statusY + 13, { align: 'right' });
+  doc.setTextColor(PDF_COLORS.gray[0], PDF_COLORS.gray[1], PDF_COLORS.gray[2]);
+  doc.text(`Code: ${lead.partner.partner_code}`, margin + contentWidth - 8, boxY + 18, { align: 'right' });
   
-  state.y = statusY + 25;
+  state.y = boxY + boxHeight + 6;
 }
 
 /**
  * Main PDF generation function
- * 
- * Generates a complete profile PDF with ALL Add Lead form fields.
- * Uses ASCII-safe characters only to prevent font rendering issues.
  */
 export function generateProfilePDF(
   lead: LeadData,
@@ -463,38 +596,20 @@ export function generateProfilePDF(
   const doc = new jsPDF();
   const state = createLayoutState(doc);
   
-  // Draw all sections
-  drawHeader(state, lead);
-  drawSummaryCards(state, lead);
+  // Page 1: Executive Summary
+  drawHeroHeader(state, lead);
+  drawHeroCards(state, lead, documents);
+  drawStudentSnapshot(state, lead);
+  drawAcademicSection(state, lead);
+  drawCoApplicantSection(state, lead);
   
-  // Student section - ALL fields
-  drawSectionBox(state, 'STUDENT DETAILS', getStudentFields(lead));
-  
-  // Academic scores section - always show
-  drawSectionBox(state, 'ACADEMIC SCORES', getAcademicFields(lead));
-  
-  // Co-applicant section - always show (even if placeholder)
-  drawSectionBox(state, 'CO-APPLICANT DETAILS', getCoApplicantFields(lead));
-  
-  // Loan details section
-  drawSectionBox(state, 'LOAN DETAILS', getLoanFields(lead));
-  
-  // Partner section - always show
+  // Page 2: Details (may continue from page 1)
+  drawUniversitiesSection(state, universities);
+  drawDocumentDashboard(state, documents);
+  drawStatusTimeline(state, lead);
   drawPartnerSection(state, lead);
   
-  // Universities section - always show
-  drawUniversitiesSection(state, universities);
-  
-  // Document status section - always show
-  drawDocumentStatusSection(state, documents);
-  
-  // Status timeline as table
-  drawStatusTimeline(state, lead);
-  
-  // Status footer
-  drawStatusFooter(state, lead);
-  
-  // Page numbers
+  // Add page numbers and footer
   addPageNumbers(doc, state.margin);
   
   return doc.output('blob');
