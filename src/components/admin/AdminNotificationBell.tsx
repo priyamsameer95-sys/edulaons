@@ -129,10 +129,36 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
 
       const allActivities: ActivityItem[] = [];
 
-      // Transform notifications
+      // Build a map of lead_id -> lead data for enriching notifications
+      const leadDataMap = new Map<string, { name: string; phone: string | null; case_id: string; loan_amount: number | null }>();
+      if (leadsRes.data) {
+        for (const lead of leadsRes.data) {
+          const student = lead.student as any;
+          leadDataMap.set(lead.id, {
+            name: student?.name || 'Unknown',
+            phone: student?.phone || null,
+            case_id: lead.case_id,
+            loan_amount: lead.loan_amount,
+          });
+        }
+      }
+
+      // Transform notifications - enrich with lead data
       if (notificationsRes.data) {
         for (const n of notificationsRes.data) {
-          const metadata = typeof n.metadata === 'object' && n.metadata !== null ? n.metadata as Record<string, any> : undefined;
+          const rawMeta = typeof n.metadata === 'object' && n.metadata !== null ? n.metadata as Record<string, any> : {};
+          
+          // Enrich metadata with lead data if available
+          const leadData = n.lead_id ? leadDataMap.get(n.lead_id) : null;
+          const enrichedMeta: Record<string, any> = {
+            ...rawMeta,
+            // Use lead data as primary, fall back to notification metadata
+            name: leadData?.name || rawMeta.student_name || rawMeta.name || 'Unknown',
+            phone: leadData?.phone || rawMeta.phone || null,
+            case_id: leadData?.case_id || rawMeta.case_id || rawMeta.lead_id || null,
+            loan_amount: leadData?.loan_amount || rawMeta.loan_amount || null,
+          };
+          
           allActivities.push({
             id: `notif-${n.id}`,
             type: n.notification_type as ActivityItem['type'],
@@ -142,7 +168,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
             lead_id: n.lead_id,
             is_read: n.is_read || false,
             is_notification: true,
-            metadata,
+            metadata: enrichedMeta,
           });
         }
       }
@@ -387,19 +413,21 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{time}</span>
         </div>
         
-        {/* Row 2: Name • Phone • Amount - always visible */}
+        {/* Row 2: Name • Case ID • ₹Amount - always visible */}
         <div className="flex items-center gap-1.5 ml-6 text-xs text-muted-foreground">
           {name && (
-            <span className="truncate max-w-[160px]">{name}</span>
+            <span className="truncate max-w-[140px]">{name}</span>
           )}
-          {name && phone && <span className="opacity-50">•</span>}
-          {phone && <span className="shrink-0">{phone}</span>}
-          {(name || phone) && amount && <span className="opacity-50">•</span>}
+          {name && meta?.case_id && <span className="opacity-50">•</span>}
+          {meta?.case_id && (
+            <span className="shrink-0 font-mono text-[11px]">{meta.case_id}</span>
+          )}
+          {(name || meta?.case_id) && amount && <span className="opacity-50">•</span>}
           {amount && (
             <span className="text-primary font-medium shrink-0">{amount}</span>
           )}
-          {!name && !phone && !amount && meta?.case_id && (
-            <span className="truncate">{meta.case_id}</span>
+          {!name && !meta?.case_id && !amount && (
+            <span className="truncate italic">No details available</span>
           )}
         </div>
       </div>
