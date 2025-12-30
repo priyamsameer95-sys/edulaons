@@ -79,13 +79,34 @@ const StudentDashboard = () => {
     if (!user?.email) return;
 
     try {
-      const { data: studentData, error: studentError } = await supabase
+      // Try to find student by email first
+      let studentData = null;
+      
+      const { data: byEmail, error: emailError } = await supabase
         .from('students')
         .select('id, name, email, phone')
         .eq('email', user.email)
         .maybeSingle();
 
-      if (studentError) throw studentError;
+      if (!emailError && byEmail) {
+        studentData = byEmail;
+      } else {
+        // Fallback: Extract phone from email pattern (xxx@student.loan.app or +91xxx@student.loan.app)
+        const emailMatch = user.email.match(/\+?91?(\d{10})@/);
+        if (emailMatch) {
+          const phoneDigits = emailMatch[1];
+          const { data: byPhone, error: phoneError } = await supabase
+            .from('students')
+            .select('id, name, email, phone')
+            .eq('phone', phoneDigits)
+            .maybeSingle();
+          
+          if (!phoneError && byPhone) {
+            studentData = byPhone;
+            console.log('📱 Found student by phone fallback:', byPhone.id);
+          }
+        }
+      }
 
       if (studentData) {
         setProfile(studentData);
