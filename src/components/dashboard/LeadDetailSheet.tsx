@@ -49,6 +49,7 @@ import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
 import { 
   EnhancedStudentCard, 
   EnhancedCoApplicantCard, 
+  EnhancedStudyCard,
   LeadMetadataCard,
   FieldAuditTimeline,
   DataAccessLog
@@ -73,6 +74,21 @@ interface LeadUniversity {
   country: string;
 }
 
+interface LeadCourse {
+  id: string;
+  course_id: string;
+  is_custom_course?: boolean;
+  custom_course_name?: string | null;
+  course?: {
+    id: string;
+    program_name: string;
+    degree: string;
+    stream_name: string;
+    study_level: string;
+    tuition_fees?: string;
+  };
+}
+
 export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false);
@@ -81,6 +97,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const [showCoApplicantDetails, setShowCoApplicantDetails] = useState(false);
   const [preferredLenders, setPreferredLenders] = useState<PreferredLender[]>([]);
   const [leadUniversities, setLeadUniversities] = useState<LeadUniversity[]>([]);
+  const [leadCourses, setLeadCourses] = useState<LeadCourse[]>([]);
   const [allLenders, setAllLenders] = useState<{ id: string; name: string }[]>([]);
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const { toast } = useToast();
@@ -141,6 +158,35 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
             setPreferredLenders(lenders);
           }
         }
+      }
+
+      // Fetch courses for this lead
+      const { data: courseData } = await supabase
+        .from('lead_courses')
+        .select(`
+          id,
+          course_id,
+          is_custom_course,
+          custom_course_name,
+          courses (
+            id,
+            program_name,
+            degree,
+            stream_name,
+            study_level,
+            tuition_fees
+          )
+        `)
+        .eq('lead_id', lead.id);
+
+      if (courseData) {
+        setLeadCourses(courseData.map((c: any) => ({
+          id: c.id,
+          course_id: c.course_id,
+          is_custom_course: c.is_custom_course,
+          custom_course_name: c.custom_course_name,
+          course: c.courses,
+        })));
       }
     };
 
@@ -348,69 +394,29 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                     }}
                   />
 
-                  {/* Loan & Study Info Card */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Loan Details Card */}
-                    <div className="p-3 rounded-lg border bg-card">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan</span>
-                      </div>
-                      <p className="font-semibold text-base">₹{lead.loan_amount?.toLocaleString()}</p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Badge variant="secondary" className="text-xs capitalize h-5 px-1.5">
-                          {lead.loan_type}
-                        </Badge>
-                        {lead.loan_classification && (
-                          <Badge variant="outline" className="text-xs h-5 px-1.5">
-                            {lead.loan_classification}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between mt-2 text-xs">
-                        <span className="text-muted-foreground">{lead.lender?.name || 'N/A'}</span>
-                        <button
-                          onClick={() => setLenderAssignmentModalOpen(true)}
-                          className="text-primary hover:underline"
-                        >
-                          Change
-                        </button>
-                      </div>
-                      {lead.sanction_amount && (
-                        <div className="mt-2 pt-2 border-t text-xs">
-                          <p className="text-muted-foreground">Sanctioned: <span className="text-foreground font-medium">₹{lead.sanction_amount.toLocaleString()}</span></p>
-                          {lead.sanction_date && (
-                            <p className="text-muted-foreground">Date: {format(new Date(lead.sanction_date), 'dd MMM yyyy')}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Study Destination Card */}
-                    <div className="p-3 rounded-lg border bg-card">
-                      <div className="flex items-center gap-2 mb-2">
-                        <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</span>
-                      </div>
-                      <p className="font-medium text-sm">{lead.study_destination}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Intake: {lead.intake_month}/{lead.intake_year}
-                      </p>
-                      {leadUniversities.length > 0 && (
-                        <div className="mt-2 pt-2 border-t space-y-1">
-                          {leadUniversities.map((uni) => (
-                            <div key={uni.id} className="flex items-start gap-1.5 text-xs">
-                              <Building2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                              <div>
-                                <p className="leading-tight">{uni.name}</p>
-                                <p className="text-muted-foreground">{uni.city}, {uni.country}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* Enhanced Study & Loan Card with inline editing */}
+                  <EnhancedStudyCard
+                    lead={{
+                      id: lead.id,
+                      loan_amount: lead.loan_amount,
+                      loan_type: lead.loan_type,
+                      loan_classification: lead.loan_classification,
+                      study_destination: lead.study_destination,
+                      intake_month: lead.intake_month,
+                      intake_year: lead.intake_year,
+                      lender: lead.lender,
+                      sanction_amount: lead.sanction_amount,
+                      sanction_date: lead.sanction_date,
+                    }}
+                    universities={leadUniversities}
+                    courses={leadCourses}
+                    isAdmin={true}
+                    onUpdate={() => {
+                      refetchDocuments();
+                      onLeadUpdated?.();
+                    }}
+                    onChangeLender={() => setLenderAssignmentModalOpen(true)}
+                  />
 
                   {/* Admin Metadata Card */}
                   <LeadMetadataCard
