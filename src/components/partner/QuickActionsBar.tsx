@@ -63,7 +63,7 @@ export const QuickActionsBar = ({
 
         {/* Search Section */}
         <div className="relative flex-1 min-w-[220px] max-w-md group">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
           <Input
             placeholder="Search by name, email, or case ID..."
