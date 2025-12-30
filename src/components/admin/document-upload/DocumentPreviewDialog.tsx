@@ -97,7 +97,8 @@ export function DocumentPreviewDialog({
   const currentStatus = document?.verification_status || 'pending';
   const isImage = document?.mime_type?.startsWith('image/');
   const isPdf = document?.mime_type === 'application/pdf';
-  const isPending = currentStatus === 'pending' || currentStatus === 'uploaded';
+  const isVerified = currentStatus === 'verified';
+  const canVerify = !isVerified; // Show actions for pending, rejected, uploaded - anything not verified
   const hasAISuggestion = document?.ai_validation_status && document.ai_validation_status !== 'pending';
 
   const handleVerify = async () => {
@@ -264,7 +265,7 @@ export function DocumentPreviewDialog({
         </DialogHeader>
 
         {/* AI Analysis Panel */}
-        {hasAISuggestion && showVerificationActions && isPending && (
+        {hasAISuggestion && showVerificationActions && canVerify && (
           <div className="flex-shrink-0 p-3 bg-muted/50 rounded-lg border space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -442,7 +443,7 @@ export function DocumentPreviewDialog({
           </div>
           
           <div className="flex gap-2">
-            {showVerificationActions && isPending && !showRejectForm && (
+            {showVerificationActions && canVerify && !showRejectForm && (
               <>
                 <Button
                   variant="outline"
@@ -452,7 +453,7 @@ export function DocumentPreviewDialog({
                   className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                 >
                   <XCircle className="h-4 w-4 mr-1" />
-                  Reject
+                  {currentStatus === 'rejected' ? 'Re-reject' : 'Reject'}
                 </Button>
                 <Button
                   size="sm"
@@ -461,7 +462,7 @@ export function DocumentPreviewDialog({
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  Verify
+                  {currentStatus === 'rejected' ? 'Approve' : 'Verify'}
                 </Button>
               </>
             )}
@@ -491,7 +492,7 @@ export function DocumentPreviewDialog({
               </>
             )}
             
-            {(!showVerificationActions || !isPending) && !showRejectForm && (
+            {(!showVerificationActions || isVerified) && !showRejectForm && (
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
