@@ -18,6 +18,7 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
     totalLeads: 0,
     inPipeline: 0,
     sanctioned: 0,
+    sanctionedAmount: 0,
     disbursed: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
       const { data: leadsByStatus, error: statusError } = await statusQuery;
       if (statusError) throw statusError;
 
-      let inPipeline = 0, sanctioned = 0, disbursed = 0;
+      let inPipeline = 0, sanctioned = 0, sanctionedAmount = 0, disbursed = 0;
 
       leadsByStatus?.forEach((lead) => {
         const status = lead.status;
@@ -51,12 +52,13 @@ export const usePartnerKPIs = (partnerId?: string, isAdmin = false) => {
           inPipeline++;
         } else if (SANCTIONED_STATUSES.includes(status)) {
           sanctioned++;
+          sanctionedAmount += lead.loan_amount || 0;
         } else if (status === 'disbursed') {
           disbursed++;
         }
       });
 
-      setKpis({ totalLeads: totalLeads || 0, inPipeline, sanctioned, disbursed });
+      setKpis({ totalLeads: totalLeads || 0, inPipeline, sanctioned, sanctionedAmount, disbursed });
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching KPIs:', error);

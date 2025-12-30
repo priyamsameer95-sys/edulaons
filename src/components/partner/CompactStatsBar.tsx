@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { PartnerKPIs } from "@/types/partner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, ArrowRightCircle, CheckCircle2, Banknote } from "lucide-react";
+import { formatIndianCurrency } from "@/utils/currencyFormatter";
 
 interface CompactStatsBarProps {
   kpis: PartnerKPIs;
@@ -92,12 +93,12 @@ export const CompactStatsBar = memo(({
   activeFilter,
   onFilterClick,
 }: CompactStatsBarProps) => {
-  // Memoize conversion rate calculation
-  const conversionRate = useMemo(() => {
-    return kpis.totalLeads > 0 
-      ? Math.round((kpis.sanctioned / kpis.totalLeads) * 100) 
-      : 0;
-  }, [kpis.totalLeads, kpis.sanctioned]);
+  // Memoize sanctioned amount formatting
+  const formattedSanctionedAmount = useMemo(() => {
+    return kpis.sanctionedAmount > 0 
+      ? formatIndianCurrency(kpis.sanctionedAmount, true) 
+      : "";
+  }, [kpis.sanctionedAmount]);
 
   // Memoize stats array
   const stats = useMemo(() => [
@@ -119,7 +120,7 @@ export const CompactStatsBar = memo(({
       label: "Sanctioned", 
       value: kpis.sanctioned, 
       filterKey: "sanctioned", 
-      suffix: kpis.totalLeads > 0 ? `${conversionRate}%` : "",
+      suffix: formattedSanctionedAmount,
       icon: <CheckCircle2 className="h-4 w-4" />
     },
     { 
@@ -129,7 +130,7 @@ export const CompactStatsBar = memo(({
       suffix: "",
       icon: <Banknote className="h-4 w-4" />
     },
-  ], [kpis, conversionRate]);
+  ], [kpis, formattedSanctionedAmount]);
 
   // Memoize click handlers
   const handleFilterClick = useCallback((filterKey: string | null) => {

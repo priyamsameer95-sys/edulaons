@@ -70,6 +70,28 @@ export const amountToWords = (value: string | number): string => {
   return `₹${num.toLocaleString('en-IN')}`;
 };
 
+// Format currency in compact Indian format (₹5L, ₹2Cr)
+export const formatIndianCurrency = (value: number, compact = false): string => {
+  if (!value || value === 0) return '₹0';
+  
+  if (compact) {
+    if (value >= 10000000) {
+      const crores = value / 10000000;
+      return `₹${crores % 1 === 0 ? crores.toFixed(0) : crores.toFixed(1)}Cr`;
+    }
+    if (value >= 100000) {
+      const lakhs = value / 100000;
+      return `₹${lakhs % 1 === 0 ? lakhs.toFixed(0) : lakhs.toFixed(1)}L`;
+    }
+    if (value >= 1000) {
+      const thousands = value / 1000;
+      return `₹${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}K`;
+    }
+  }
+  
+  return `₹${value.toLocaleString('en-IN')}`;
+};
+
 // Format with rupee symbol and words display
 export const formatCurrencyWithWords = (value: string | number): { formatted: string; words: string } => {
   const formatted = typeof value === 'number' 
