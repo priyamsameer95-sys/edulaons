@@ -25,6 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileQuestion, PenLine, Check } from 'lucide-react';
 import { ClarificationTemplate, Clarification } from '@/hooks/useClarifications';
 import { cn } from '@/lib/utils';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface RaiseClarificationModalProps {
   open: boolean;
@@ -176,7 +177,7 @@ export function RaiseClarificationModal({
                             variant="outline"
                             className={cn('text-xs capitalize', getCategoryColor(template.category))}
                           >
-                            {template.category.replace('_', ' ')}
+                            {formatDisplayText(template.category)}
                           </Badge>
                           {template.requires_document && (
                             <Badge variant="secondary" className="text-xs">

@@ -47,13 +47,7 @@ interface PartnerSmartUploadProps {
   uploadedDocuments?: UploadedDocument[];
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  student: 'Student KYC',
-  financial_co_applicant: 'Co-Applicant Financial',
-  non_financial_co_applicant: 'Non-Financial Co-Applicant',
-  collateral: 'Property/Collateral',
-  nri_financial: 'NRI Documents',
-};
+import { getCategoryLabel } from '@/constants/categoryLabels';
 
 export function PartnerSmartUpload({ 
   leadId, 
@@ -632,7 +626,7 @@ export function PartnerSmartUpload({
                             {Object.entries(groupedDocTypes).map(([category, types]) => (
                               <div key={category}>
                                 <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase">
-                                  {CATEGORY_LABELS[category] || category}
+                                  {getCategoryLabel(category)}
                                 </div>
                                 {types.map(dt => (
                                   <SelectItem key={dt.id} value={dt.id} className="text-xs">

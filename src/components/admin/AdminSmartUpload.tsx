@@ -51,13 +51,7 @@ interface AdminSmartUploadProps {
   uploadedDocuments?: UploadedDocument[];
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  STUDENT: 'Student KYC',
-  FINANCIAL_CO_APPLICANT: 'Co-Applicant Financial',
-  NON_FINANCIAL_CO_APPLICANT: 'Non-Financial Co-Applicant',
-  COLLATERAL: 'Property/Collateral',
-  NRI_FINANCIAL: 'NRI Documents',
-};
+import { getCategoryLabel } from '@/constants/categoryLabels';
 
 export const AdminSmartUpload = forwardRef<AdminSmartUploadRef, AdminSmartUploadProps>(({ 
   leadId, 
@@ -643,7 +637,7 @@ export const AdminSmartUpload = forwardRef<AdminSmartUploadRef, AdminSmartUpload
                             {Object.entries(groupedDocTypes).map(([category, types]) => (
                               <div key={category}>
                                 <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase">
-                                  {CATEGORY_LABELS[category] || category}
+                                  {getCategoryLabel(category)}
                                 </div>
                                 {types.map(dt => (
                                   <SelectItem key={dt.id} value={dt.id} className="text-xs">

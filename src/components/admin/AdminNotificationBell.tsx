@@ -53,11 +53,13 @@ const formatPhoneShort = (phone: string | null | undefined): string => {
   return digits.length >= 4 ? `…${digits.slice(-4)}` : '';
 };
 
-// Format status for display
-function formatStatus(status: string | null): string {
+import { formatDisplayText } from '@/utils/formatters';
+
+// Format status for display - use centralized formatter
+const formatStatus = (status: string | null): string => {
   if (!status) return 'Unknown';
-  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
+  return formatDisplayText(status);
+};
 
 export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
