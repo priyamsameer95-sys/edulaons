@@ -16,7 +16,8 @@ import {
   Sparkles,
   AlertTriangle,
   Trash2,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -684,9 +685,28 @@ export function PartnerSmartUpload({
 
                     {/* Error State */}
                     {queuedFile.status === 'error' && (
-                      <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
-                        <XCircle className="h-4 w-4" />
-                        {queuedFile.error || 'Upload failed'}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+                          <XCircle className="h-4 w-4" />
+                          {queuedFile.error || 'Upload failed'}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => {
+                            // Reset status and retry
+                            setQueue(prev => prev.map(q => 
+                              q.id === queuedFile.id 
+                                ? { ...q, status: 'classified', error: undefined } 
+                                : q
+                            ));
+                            handleApproveUpload({ ...queuedFile, status: 'classified', error: undefined });
+                          }}
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Retry
+                        </Button>
                       </div>
                     )}
                   </div>

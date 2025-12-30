@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo } from "react";
-import { Loader2, CheckCircle2, ChevronLeft, ChevronRight, User, GraduationCap, Users, ArrowRight, FileText } from "lucide-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { Loader2, CheckCircle2, ChevronLeft, ChevronRight, User, GraduationCap, Users, ArrowRight, FileText, AlertCircle } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   Dialog,
   DialogContent,
@@ -153,6 +154,39 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdCaseId, setCreatedCaseId] = useState<string | null>(null);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
+  
+  // Phone duplicate check state
+  const [phoneCheckResult, setPhoneCheckResult] = useState<{ exists: boolean; studentName?: string } | null>(null);
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const debouncedPhone = useDebounce(formData.student_phone.replace(/\D/g, ''), 500);
+
+  // Check for existing student by phone
+  useEffect(() => {
+    const checkPhone = async () => {
+      if (debouncedPhone.length !== 10) {
+        setPhoneCheckResult(null);
+        return;
+      }
+      
+      setCheckingPhone(true);
+      try {
+        const { data } = await supabase
+          .from('students')
+          .select('id, name')
+          .eq('phone', debouncedPhone)
+          .maybeSingle();
+        
+        setPhoneCheckResult(data ? { exists: true, studentName: data.name } : { exists: false });
+      } catch (err) {
+        console.error('Phone check error:', err);
+        setPhoneCheckResult(null);
+      } finally {
+        setCheckingPhone(false);
+      }
+    };
+    
+    checkPhone();
+  }, [debouncedPhone]);
 
   const handleInputChange = useCallback((field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));

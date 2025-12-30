@@ -18,6 +18,32 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Authenticate user to track who uploaded
+    const authHeader = req.headers.get('Authorization');
+    let uploaderId: string | null = null;
+    let uploaderEmail: string | null = null;
+    let uploaderRole: string = 'anonymous';
+
+    if (authHeader) {
+      const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } }
+      });
+      const { data: { user } } = await anonClient.auth.getUser();
+      if (user) {
+        uploaderId = user.id;
+        uploaderEmail = user.email || null;
+        
+        // Get role from app_users
+        const { data: appUser } = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        uploaderRole = appUser?.role || 'partner';
+      }
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const leadId = formData.get('lead_id') as string;
@@ -124,7 +150,7 @@ serve(async (req) => {
       );
     }
 
-    // Save to database
+    // Save to database with uploader info
     const { data: documentRecord, error: dbError } = await supabase
       .from('lead_documents')
       .insert({
@@ -136,7 +162,8 @@ serve(async (req) => {
         file_size: file.size,
         mime_type: file.type,
         upload_status: 'uploaded',
-        verification_status: 'uploaded' // Documents require admin verification
+        verification_status: 'pending', // Changed from 'uploaded' to 'pending' for proper review flow
+        uploaded_by: uploaderId,
       })
       .select()
       .single();
@@ -177,6 +204,64 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    }
+
+    // Create audit log for document upload
+    const { error: auditError } = await supabase
+      .from('field_audit_log')
+      .insert({
+        lead_id: leadId,
+        table_name: 'lead_documents',
+        field_name: 'document_uploaded',
+        old_value: null,
+        new_value: JSON.stringify({
+          document_type_id: documentTypeId,
+          filename: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+        }),
+        changed_by_id: uploaderId,
+        changed_by_name: uploaderEmail,
+        changed_by_type: uploaderRole,
+        change_source: 'api',
+        change_reason: 'Document uploaded',
+      });
+    
+    if (auditError) {
+      console.warn('⚠️ Document audit log failed:', auditError.message);
+    }
+
+    // Auto-update lead status if it's still "new" (first document uploaded)
+    const { data: lead } = await supabase
+      .from('leads_new')
+      .select('status, documents_status')
+      .eq('id', leadId)
+      .single();
+
+    if (lead?.status === 'new') {
+      const { error: updateError } = await supabase
+        .from('leads_new')
+        .update({ 
+          status: 'docs_pending',
+          documents_status: 'in_progress',
+          documents_status_updated_at: new Date().toISOString(),
+        })
+        .eq('id', leadId);
+
+      if (!updateError) {
+        // Log the auto status change
+        await supabase.from('field_audit_log').insert({
+          lead_id: leadId,
+          table_name: 'leads_new',
+          field_name: 'status',
+          old_value: 'new',
+          new_value: 'docs_pending',
+          changed_by_type: 'system',
+          change_source: 'system',
+          change_reason: 'Auto-updated: First document uploaded',
+        });
+        console.log('✅ Lead status auto-updated from new to docs_pending');
+      }
     }
 
     return new Response(
