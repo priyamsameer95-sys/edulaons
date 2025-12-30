@@ -1,18 +1,104 @@
 /**
  * Currency Formatter Utility
  * Provides consistent formatting for monetary values across the platform
+ * Using Indian numbering system: Thousand, Lakh, Crore
  */
 
-// Convert number to words (for Indian number system)
-export const numberToWords = (n: number): string => {
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
-    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  
-  if (n === 0) return 'Zero';
+// Word arrays for conversion
+const ones = [
+  '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+  'Seventeen', 'Eighteen', 'Nineteen'
+];
+const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+/**
+ * Convert a number less than 100 to words
+ */
+const convertTwoDigits = (n: number): string => {
+  if (n === 0) return '';
   if (n < 20) return ones[n];
-  if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-  return n.toString();
+  const ten = Math.floor(n / 10);
+  const one = n % 10;
+  return tens[ten] + (one ? ' ' + ones[one] : '');
+};
+
+/**
+ * Convert a number less than 1000 to words (handles hundreds)
+ */
+const convertHundreds = (n: number): string => {
+  if (n === 0) return '';
+  if (n < 100) return convertTwoDigits(n);
+  const hundred = Math.floor(n / 100);
+  const remainder = n % 100;
+  return ones[hundred] + ' Hundred' + (remainder ? ' ' + convertTwoDigits(remainder) : '');
+};
+
+/**
+ * Convert any positive integer to words in Indian numbering system
+ * Format: Crore, Lakh, Thousand, Hundred, remainder
+ * Example: 45,50,010 => "Forty Five Lakh Fifty Thousand Ten"
+ */
+export const numberToWords = (n: number): string => {
+  if (n === 0) return 'Zero';
+  if (n < 0) return 'Negative ' + numberToWords(Math.abs(n));
+  if (!Number.isFinite(n) || isNaN(n)) return '';
+  
+  // Round to integer - we don't handle decimals
+  n = Math.round(n);
+  
+  const parts: string[] = [];
+  
+  // Crores (1 Crore = 1,00,00,000 = 10,000,000)
+  if (n >= 10000000) {
+    const crores = Math.floor(n / 10000000);
+    parts.push(convertHundreds(crores) + ' Crore');
+    n %= 10000000;
+  }
+  
+  // Lakhs (1 Lakh = 1,00,000 = 100,000)
+  if (n >= 100000) {
+    const lakhs = Math.floor(n / 100000);
+    parts.push(convertTwoDigits(lakhs) + ' Lakh');
+    n %= 100000;
+  }
+  
+  // Thousands (1 Thousand = 1,000)
+  if (n >= 1000) {
+    const thousands = Math.floor(n / 1000);
+    parts.push(convertTwoDigits(thousands) + ' Thousand');
+    n %= 1000;
+  }
+  
+  // Hundreds and remainder
+  if (n > 0) {
+    parts.push(convertHundreds(n));
+  }
+  
+  return parts.join(' ').trim();
+};
+
+/**
+ * Convert amount to full Indian Rupee words format
+ * Example: 450000 => "Rupees Four Lakh Fifty Thousand Only"
+ * Example: 0 => "" (empty string)
+ */
+export const convertINRToWords = (value: string | number): string => {
+  const num = typeof value === 'number' ? value : parseFormattedNumber(value);
+  if (num === 0 || isNaN(num)) return '';
+  
+  const words = numberToWords(num);
+  if (!words || words === 'Zero') return '';
+  
+  return `Rupees ${words} Only`;
+};
+
+/**
+ * Legacy function - Convert amount to short words (for backward compatibility)
+ * @deprecated Use convertINRToWords instead for full format
+ */
+export const amountToWords = (value: string | number): string => {
+  return convertINRToWords(value);
 };
 
 // Format number with Indian comma separators (1,00,000)
@@ -27,47 +113,6 @@ export const formatIndianNumber = (value: string | number): string => {
 export const parseFormattedNumber = (value: string): number => {
   const num = value.replace(/,/g, '').replace(/\D/g, '');
   return parseInt(num) || 0;
-};
-
-// Convert amount to words in Indian format (Lakhs/Crores)
-export const amountToWords = (value: string | number): string => {
-  const num = typeof value === 'number' ? value : parseFormattedNumber(value);
-  if (num === 0) return '';
-  
-  // Crores (1 Crore = 10,000,000)
-  if (num >= 10000000) {
-    const crores = num / 10000000;
-    const wholeCrores = Math.floor(crores);
-    const decimalPart = Math.round((crores - wholeCrores) * 100);
-    if (decimalPart === 0) {
-      return `${numberToWords(wholeCrores)} Crore`;
-    }
-    return `${numberToWords(wholeCrores)}.${decimalPart.toString().padStart(2, '0')} Crore`;
-  }
-  
-  // Lakhs (1 Lakh = 100,000)
-  if (num >= 100000) {
-    const lakhs = num / 100000;
-    const wholeLakhs = Math.floor(lakhs);
-    const decimalPart = Math.round((lakhs - wholeLakhs) * 100);
-    if (decimalPart === 0) {
-      return `${numberToWords(wholeLakhs)} Lakh`;
-    }
-    return `${numberToWords(wholeLakhs)}.${decimalPart.toString().padStart(2, '0')} Lakh`;
-  }
-  
-  // Thousands (1 Thousand = 1,000)
-  if (num >= 1000) {
-    const thousands = num / 1000;
-    const wholeThousands = Math.floor(thousands);
-    const decimalPart = Math.round((thousands - wholeThousands) * 10);
-    if (decimalPart === 0) {
-      return `${numberToWords(wholeThousands)} Thousand`;
-    }
-    return `${wholeThousands}.${decimalPart} Thousand`;
-  }
-  
-  return `₹${num.toLocaleString('en-IN')}`;
 };
 
 // Format currency in compact Indian format (₹5L, ₹2Cr)
@@ -97,7 +142,7 @@ export const formatCurrencyWithWords = (value: string | number): { formatted: st
   const formatted = typeof value === 'number' 
     ? value.toLocaleString('en-IN') 
     : formatIndianNumber(value);
-  const words = amountToWords(value);
+  const words = convertINRToWords(value);
   
   return { formatted, words };
 };

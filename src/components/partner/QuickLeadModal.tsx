@@ -20,6 +20,7 @@ import {
 import { UniversityCombobox } from "@/components/ui/university-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { convertINRToWords, formatIndianNumber } from "@/utils/currencyFormatter";
 
 interface QuickLeadModalProps {
   open: boolean;
@@ -172,65 +173,14 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
 
   // Format currency with commas (use shared utility)
   const formatCurrencyInput = useCallback((value: string): string => {
-    const num = value.replace(/,/g, '').replace(/\D/g, '');
-    if (!num) return '';
-    return parseInt(num).toLocaleString('en-IN');
+    return formatIndianNumber(value);
   }, []);
 
-  // Number to words helper
-  const numberToWords = (n: number): string => {
-    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
-      'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-    return n.toString();
-  };
-
-  // Convert amount to words
-  const getAmountInWords = useCallback((value: string): string => {
-    const num = parseInt(value.replace(/,/g, '') || '0');
-    if (num === 0) return '';
-    
-    if (num >= 10000000) {
-      const crores = num / 10000000;
-      const wholeCrores = Math.floor(crores);
-      const decimalPart = Math.round((crores - wholeCrores) * 100);
-      if (decimalPart === 0) {
-        return `${numberToWords(wholeCrores)} Crore`;
-      }
-      return `${numberToWords(wholeCrores)}.${decimalPart.toString().padStart(2, '0')} Crore`;
-    }
-    
-    if (num >= 100000) {
-      const lakhs = num / 100000;
-      const wholeLakhs = Math.floor(lakhs);
-      const decimalPart = Math.round((lakhs - wholeLakhs) * 100);
-      if (decimalPart === 0) {
-        return `${numberToWords(wholeLakhs)} Lakh`;
-      }
-      return `${numberToWords(wholeLakhs)}.${decimalPart.toString().padStart(2, '0')} Lakh`;
-    }
-    
-    if (num >= 1000) {
-      const thousands = num / 1000;
-      const wholeThousands = Math.floor(thousands);
-      const decimalPart = Math.round((thousands - wholeThousands) * 10);
-      if (decimalPart === 0) {
-        return `${numberToWords(wholeThousands)} Thousand`;
-      }
-      return `${wholeThousands}.${decimalPart} Thousand`;
-    }
-    
-    return `₹${num.toLocaleString('en-IN')}`;
-  }, []);
-
-  // Convert loan amount to words
-  const loanAmountInWords = useMemo(() => getAmountInWords(formData.loan_amount), [formData.loan_amount, getAmountInWords]);
+  // Convert loan amount to words using centralized function
+  const loanAmountInWords = useMemo(() => convertINRToWords(formData.loan_amount), [formData.loan_amount]);
   
   // Convert salary to words
-  const salaryInWords = useMemo(() => getAmountInWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary, getAmountInWords]);
+  const salaryInWords = useMemo(() => convertINRToWords(formData.co_applicant_monthly_salary), [formData.co_applicant_monthly_salary]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
