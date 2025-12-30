@@ -276,11 +276,13 @@ export function AdminDocumentGrid({
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Document Preview Dialog */}
+        {/* Document Preview Dialog with Verification Actions */}
         <DocumentPreviewDialog 
           document={previewDoc} 
           open={previewOpen} 
-          onOpenChange={setPreviewOpen} 
+          onOpenChange={setPreviewOpen}
+          onVerificationComplete={onRefresh}
+          showVerificationActions={true}
         />
 
         {/* Summary Stats Header */}
