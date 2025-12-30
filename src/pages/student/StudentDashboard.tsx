@@ -392,7 +392,6 @@ const StudentDashboard = () => {
             <ApplicationSummaryStrip
               caseId={lead.case_id}
               currentStage={getStageName(lead.status, lead.documents_status)}
-              lenderCount={lead.target_lender ? 1 : 3}
               uploadedCount={completedDocs}
               totalCount={totalDocs}
             />
@@ -401,8 +400,6 @@ const StudentDashboard = () => {
             <HeroActionCard
               onUploadClick={handleUploadDocuments}
               pendingCount={pendingCount + rejectedCount}
-              uploadedCount={completedDocs}
-              totalCount={totalDocs}
               isComplete={isAllComplete}
             />
 
