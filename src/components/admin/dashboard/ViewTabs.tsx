@@ -8,6 +8,7 @@ export interface ViewConfig {
     status?: string | null;
     partnerId?: string | null;
     documentsStatus?: string | null;
+    isQuickLead?: boolean | null;
   };
   count?: number;
 }
@@ -22,6 +23,7 @@ interface ViewTabsProps {
 // Default views
 export const DEFAULT_VIEWS: ViewConfig[] = [
   { id: 'all', label: 'All', filters: {} },
+  { id: 'quick-leads', label: 'Quick Leads', filters: { isQuickLead: true } },
   { id: 'new', label: 'New', filters: { status: 'lead_intake' } },
   { id: 'pending-docs', label: 'Pending Docs', filters: { documentsStatus: 'pending' } },
   { id: 'docs-uploaded', label: 'Docs Uploaded', filters: { documentsStatus: 'uploaded' } },
