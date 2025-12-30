@@ -507,7 +507,7 @@ export function PartnerSmartUpload({
               </CardTitle>
               {readyCount > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  {readyCount} ready for approval
+                  {readyCount} ready to upload
                 </span>
               )}
             </div>
@@ -638,7 +638,7 @@ export function PartnerSmartUpload({
                           </SelectContent>
                         </Select>
 
-                        {/* Approve Button */}
+                        {/* Upload Button - KB: Partner can ONLY upload, NOT approve/reject status */}
                         <div className="flex gap-2 pt-1">
                           <Button
                             size="sm"
@@ -646,8 +646,8 @@ export function PartnerSmartUpload({
                             onClick={() => handleApproveUpload(queuedFile)}
                             disabled={!queuedFile.selectedDocumentTypeId}
                           >
-                            <Check className="h-3 w-3 mr-1" />
-                            Approve & Upload
+                            <Upload className="h-3 w-3 mr-1" />
+                            Upload
                           </Button>
                           <Button
                             size="sm"
