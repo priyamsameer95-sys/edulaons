@@ -197,11 +197,11 @@ export function EnhancedStudentCard({
           <p className={`text-sm font-medium ${isPlaceholder ? 'text-muted-foreground italic' : ''}`}>
             {display}
           </p>
-          {isPlaceholder && (
-            <Badge variant="outline" className="text-[10px] h-4 px-1">
-              Auto-generated
-            </Badge>
-          )}
+{isPlaceholder && (
+                    <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-amber-100 text-amber-700 border-amber-200">
+                      Email needed
+                    </Badge>
+                  )}
         </div>
       </div>
     );

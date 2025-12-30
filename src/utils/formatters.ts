@@ -101,7 +101,7 @@ export function formatDisplayEmail(email: string | null | undefined): {
   if (isPlaceholderEmail(email)) {
     const phone = email.split('@')[0];
     return {
-      display: `No email (Phone: ${phone})`,
+      display: 'Not provided',
       isPlaceholder: true,
       extractedPhone: phone,
     };
