@@ -16,6 +16,7 @@ export interface PartnerKPIs {
   totalLeads: number;
   inPipeline: number;
   sanctioned: number;
+  sanctionedAmount: number;
   disbursed: number;
 }
 
