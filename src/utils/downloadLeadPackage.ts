@@ -21,6 +21,9 @@ interface StudentData {
   bachelors_cgpa?: number;
   bachelors_percentage?: number;
   credit_score?: number;
+  gender?: string;
+  street_address?: string;
+  nationality?: string;
 }
 
 interface CoApplicantData {
@@ -33,6 +36,7 @@ interface CoApplicantData {
   occupation?: string;
   employer?: string;
   employment_type?: string;
+  employment_duration_years?: number;
   credit_score?: number;
 }
 
@@ -40,6 +44,7 @@ interface TestScore {
   test_type: string;
   score: string;
   test_date?: string;
+  expiry_date?: string;
 }
 
 interface StatusHistoryRecord {
@@ -331,8 +336,11 @@ function generateProfilePDF(
     { label: 'PIN Code', value: lead.student?.postal_code || 'N/A' },
     { label: 'City', value: lead.student?.city || 'N/A' },
     { label: 'State', value: lead.student?.state || 'N/A' },
+    { label: 'Gender', value: lead.student?.gender || 'N/A' },
+    { label: 'Nationality', value: lead.student?.nationality || 'N/A' },
     { label: 'Date of Birth', value: lead.student?.date_of_birth ? format(new Date(lead.student.date_of_birth), 'dd MMM yyyy') : 'N/A' },
     { label: 'Qualification', value: lead.student?.highest_qualification || 'N/A' },
+    ...(lead.student?.street_address ? [{ label: 'Address', value: lead.student.street_address }] : []),
   ]);
 
   // ============= ACADEMIC SCORES SECTION (NEW) =============
@@ -357,7 +365,15 @@ function generateProfilePDF(
   // Add test scores if available
   if (lead.test_scores && lead.test_scores.length > 0) {
     lead.test_scores.forEach(ts => {
-      academicFields.push({ label: ts.test_type.toUpperCase(), value: ts.score });
+      let testValue = ts.score;
+      if (ts.test_date) {
+        testValue += ` (${format(new Date(ts.test_date), 'dd MMM yyyy')}`;
+        if (ts.expiry_date) {
+          testValue += ` - ${format(new Date(ts.expiry_date), 'dd MMM yyyy')}`;
+        }
+        testValue += ')';
+      }
+      academicFields.push({ label: ts.test_type.toUpperCase(), value: testValue });
     });
   }
 
@@ -374,6 +390,8 @@ function generateProfilePDF(
     { label: 'PIN Code', value: lead.co_applicant?.pin_code || 'N/A' },
     { label: 'Occupation', value: lead.co_applicant?.occupation || 'N/A' },
     { label: 'Employer', value: lead.co_applicant?.employer || 'N/A' },
+    { label: 'Employment Type', value: lead.co_applicant?.employment_type || 'N/A' },
+    { label: 'Duration (Years)', value: lead.co_applicant?.employment_duration_years ? `${lead.co_applicant.employment_duration_years} years` : 'N/A' },
     { label: 'Annual Salary', value: lead.co_applicant?.salary ? formatCurrency(lead.co_applicant.salary) : 'N/A' },
     ...(lead.co_applicant?.credit_score ? [{ label: 'Credit Score', value: lead.co_applicant.credit_score.toString() }] : []),
   ]);
@@ -546,9 +564,12 @@ function generateProfilePDF(
         doc.line(stepX + 3, timelineY, stepX + stepWidth - 3, timelineY);
       }
       
-      // Status label
+      // Status label - use proper abbreviation for long statuses
       doc.setTextColor(black[0], black[1], black[2]);
-      const statusLabel = milestone.new_status.replace(/_/g, ' ').substring(0, 10);
+      const fullStatus = milestone.new_status.replace(/_/g, ' ');
+      const statusLabel = fullStatus.length > 12 
+        ? fullStatus.split(' ').map(w => w.charAt(0).toUpperCase()).join('')  // Acronym for long statuses
+        : fullStatus.charAt(0).toUpperCase() + fullStatus.slice(1);
       doc.text(statusLabel, stepX, timelineY + 8, { align: 'center' });
       
       // Date
@@ -637,12 +658,12 @@ export async function downloadLeadPackage(
           id, name, email, phone, postal_code, city, state, 
           date_of_birth, highest_qualification, country, nationality,
           tenth_percentage, twelfth_percentage, bachelors_cgpa, bachelors_percentage,
-          credit_score
+          credit_score, gender, street_address
         ),
         co_applicant:co_applicants!leads_new_co_applicant_id_fkey(
           id, name, relationship, salary, phone, email, 
           pin_code, occupation, employer, employment_type,
-          monthly_salary, credit_score
+          employment_duration_years, monthly_salary, credit_score
         ),
         lender:lenders!leads_new_lender_id_fkey(id, name, code),
         partner:partners!leads_new_partner_id_fkey(id, name, partner_code)
@@ -657,7 +678,7 @@ export async function downloadLeadPackage(
       if (studentId) {
         const { data: testData } = await supabase
           .from('academic_tests')
-          .select('test_type, score, test_date')
+          .select('test_type, score, test_date, expiry_date')
           .eq('student_id', studentId);
         testScores = testData || [];
       }
@@ -697,6 +718,9 @@ export async function downloadLeadPackage(
         bachelors_cgpa: studentData.bachelors_cgpa,
         bachelors_percentage: studentData.bachelors_percentage,
         credit_score: studentData.credit_score,
+        gender: studentData.gender,
+        street_address: studentData.street_address,
+        nationality: studentData.nationality,
       } : lead.student,
       co_applicant: coApplicantData ? {
         name: coApplicantData.name,
@@ -707,6 +731,8 @@ export async function downloadLeadPackage(
         pin_code: coApplicantData.pin_code,
         occupation: coApplicantData.occupation,
         employer: coApplicantData.employer,
+        employment_type: coApplicantData.employment_type,
+        employment_duration_years: coApplicantData.employment_duration_years,
         credit_score: coApplicantData.credit_score,
       } : lead.co_applicant,
       loan_amount: fullLeadData.loan_amount,
