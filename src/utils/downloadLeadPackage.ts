@@ -807,6 +807,9 @@ export async function downloadLeadPackage(
         documents: [],
       };
 
+      // Track document type counts for duplicate naming
+      const docTypeCount: Record<string, number> = {};
+
       // Download all documents and organize by category
       for (const [category, docs] of Object.entries(docsByCategory)) {
         const categoryFolder = getCategoryFolder(category);
@@ -814,21 +817,35 @@ export async function downloadLeadPackage(
 
         for (const doc of docs) {
           const docIndex = enrichedDocuments.indexOf(doc) + 1;
-          onProgress?.(`Downloading ${docIndex}/${enrichedDocuments.length}: ${doc.original_filename}`);
+          onProgress?.(`Downloading ${docIndex}/${enrichedDocuments.length}: ${doc.document_types?.name || doc.original_filename}`);
           
           const blob = await fetchDocumentFile(doc.file_path);
           
           if (blob && catFolder) {
+            // Generate clean filename using document type name only
             const docTypeName = doc.document_types?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'Document';
             const verificationStatus = getVerificationStatusLabel(doc.verification_status);
-            const fileName = `${docTypeName}_${verificationStatus}_${doc.original_filename}`;
+            
+            // Get file extension from original filename
+            const originalParts = doc.original_filename.split('.');
+            const extension = originalParts.length > 1 ? `.${originalParts[originalParts.length - 1]}` : '';
+            
+            // Handle duplicates by adding counter
+            const docKey = `${categoryFolder}_${docTypeName}`;
+            docTypeCount[docKey] = (docTypeCount[docKey] || 0) + 1;
+            
+            // Filename format: DocTypeName_Status.ext or DocTypeName_Status_2.ext for duplicates
+            const fileName = docTypeCount[docKey] > 1 
+              ? `${docTypeName}_${verificationStatus}_${docTypeCount[docKey]}${extension}`
+              : `${docTypeName}_${verificationStatus}${extension}`;
+            
             catFolder.file(fileName, blob);
             
             // Add to manifest
             manifest.documents.push({
               type: doc.document_types?.name || 'Unknown',
               category: category,
-              filename: doc.original_filename,
+              filename: fileName,
               status: verificationStatus.toLowerCase(),
               verified_by: doc.verified_by || undefined,
               verified_at: doc.verified_at || undefined,
