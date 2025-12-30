@@ -32,6 +32,7 @@ import {
   EXTENDED_COLORS,
   type LayoutState,
 } from './layout';
+import { formatDisplayText } from '@/utils/formatters';
 
 /**
  * Format intake month/year
@@ -114,7 +115,7 @@ function drawHeroHeader(state: LayoutState, lead: LeadData): void {
   doc.text(`Case ID: ${lead.case_id}`, margin, 36);
   
   // Status pill - top right
-  const status = lead.status?.replace(/_/g, ' ').toUpperCase() || 'NEW';
+  const status = formatDisplayText(lead.status)?.toUpperCase() || 'NEW';
   const isPositive = ['DISBURSED', 'SANCTIONED', 'PF_PAID', 'SANCTION_LETTER'].some(s => status.includes(s));
   const pillColor = isPositive ? PDF_COLORS.green : EXTENDED_COLORS.accent;
   
@@ -525,7 +526,7 @@ function drawStatusTimeline(state: LayoutState, lead: LeadData): void {
   
   displayHistory.forEach((entry, idx) => {
     const dateStr = formatDateSafe(entry.created_at, 'dd MMM yyyy');
-    const statusStr = entry.new_status.replace(/_/g, ' ');
+    const statusStr = formatDisplayText(entry.new_status);
     const changedBy = entry.changed_by || 'System';
     
     // Alternating row background

@@ -1,6 +1,7 @@
 import { CheckCircle, AlertTriangle, XCircle, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ValidationResult } from '@/hooks/useDocumentValidation';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface PartnerValidationFeedbackProps {
   isValidating: boolean;
@@ -147,7 +148,7 @@ export function PartnerValidationFeedback({
           <div className="flex flex-wrap gap-1 mt-2">
             {redFlags.map((flag, i) => (
               <span key={i} className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 rounded">
-                ⚠ {flag.replace(/_/g, ' ')}
+                ⚠ {formatDisplayText(flag)}
               </span>
             ))}
           </div>
@@ -209,7 +210,7 @@ export function PartnerValidationFeedback({
           <div className="flex flex-wrap gap-1 mt-2">
             {redFlags.map((flag, i) => (
               <span key={i} className="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 rounded">
-                ⚠ {flag.replace(/_/g, ' ')}
+                ⚠ {formatDisplayText(flag)}
               </span>
             ))}
           </div>

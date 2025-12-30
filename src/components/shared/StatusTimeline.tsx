@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Check, Clock, Circle, AlertCircle } from 'lucide-react';
 import { STUDENT_STATUS_LABELS } from '@/constants/studentPermissions';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface StatusHistoryEntry {
   id: string;
@@ -172,7 +173,7 @@ export function StatusTimeline({
             <p className="text-sm font-medium text-destructive leading-6">
               {isStudentView 
                 ? STUDENT_STATUS_LABELS[currentStatus] || currentStatus 
-                : currentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                : formatDisplayText(currentStatus)
               }
             </p>
             {history.find(h => h.new_status === currentStatus)?.change_reason && !isStudentView && (

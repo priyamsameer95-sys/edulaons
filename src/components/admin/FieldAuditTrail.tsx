@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFieldAuditLog } from '@/hooks/useClarifications';
 import { cn } from '@/lib/utils';
+import { formatDisplayText } from '@/utils/formatters';
 
 interface FieldAuditTrailProps {
   leadId: string | null;
@@ -67,8 +68,8 @@ export function FieldAuditTrail({ leadId }: FieldAuditTrailProps) {
       sanction_amount: 'Sanction Amount',
     };
 
-    const table = tableLabels[tableName] || tableName;
-    const field = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ');
+    const table = tableLabels[tableName] || formatDisplayText(tableName);
+    const field = fieldLabels[fieldName] || formatDisplayText(fieldName);
     return `${table} → ${field}`;
   };
 

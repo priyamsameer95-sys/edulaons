@@ -132,3 +132,15 @@ export function validateEmail(email: string | null | undefined): string | null {
   
   return null; // Valid
 }
+
+/**
+ * Format snake_case or underscore-separated text for display
+ * - Replaces underscores with spaces
+ * - Capitalizes first letter of each word
+ */
+export function formatDisplayText(text: string | null | undefined): string {
+  if (!text) return '';
+  return text
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
