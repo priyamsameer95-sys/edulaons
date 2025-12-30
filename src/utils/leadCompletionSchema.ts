@@ -590,6 +590,32 @@ export const EMPLOYMENT_TYPE_OPTIONS = [
   { value: 'freelance', label: 'Freelance' },
 ] as const;
 
+// Employer type options for conditional display based on occupation
+export const EMPLOYER_TYPE_OPTIONS = [
+  { value: 'private_company', label: 'Private Company' },
+  { value: 'government', label: 'Government' },
+  { value: 'psu', label: 'PSU' },
+  { value: 'mnc', label: 'MNC' },
+] as const;
+
+// Salary quick-select chip options (in INR)
+export const SALARY_QUICK_OPTIONS = [
+  { value: 25000, label: '₹25K' },
+  { value: 40000, label: '₹40K' },
+  { value: 50000, label: '₹50K' },
+  { value: 75000, label: '₹75K' },
+  { value: 100000, label: '₹1L+' },
+] as const;
+
+// Relationship options with icons for chip display
+export const RELATIONSHIP_OPTIONS = [
+  { value: 'parent', label: 'Parent', icon: '👨‍👩‍👦' },
+  { value: 'spouse', label: 'Spouse', icon: '💑' },
+  { value: 'sibling', label: 'Sibling', icon: '👫' },
+  { value: 'guardian', label: 'Guardian', icon: '🛡️' },
+  { value: 'other', label: 'Other', icon: '👤' },
+] as const;
+
 // Phase 3 & 7: Test types for academic tests
 export const TEST_TYPES = [
   { value: 'ielts', label: 'IELTS', maxScore: 9, minScore: 0, category: 'language' },
