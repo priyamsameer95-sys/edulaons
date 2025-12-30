@@ -188,15 +188,22 @@ serve(async (req) => {
 
     // Create minimal co-applicant (required by schema)
     console.log('📝 Creating placeholder co-applicant...');
+    
+    // Determine salary - accept income_range value or direct monthly_salary
+    const coApplicantSalary = parseFloat(body.co_applicant_monthly_salary || '50000');
+    
     const { data: coApplicant, error: coApplicantError } = await supabaseAdmin
       .from('co_applicants')
       .insert({
         name: body.co_applicant_name?.trim() || 'To be updated',
         phone: body.co_applicant_phone ? cleanPhoneNumber(body.co_applicant_phone) : cleanStudentPhone,
         relationship: body.co_applicant_relationship || 'parent',
-        salary: (parseFloat(body.co_applicant_monthly_salary || '50000') * 12),
-        monthly_salary: parseFloat(body.co_applicant_monthly_salary || '50000'),
-        pin_code: body.co_applicant_pin_code?.trim() || '000000',
+        salary: coApplicantSalary * 12, // Annual salary
+        monthly_salary: coApplicantSalary,
+        pin_code: body.co_applicant_pin_code?.trim() || body.co_applicant_state?.substring(0, 6) || '000000',
+        occupation: body.co_applicant_occupation || null,
+        employment_type: body.co_applicant_employer_type || null,
+        employer: body.co_applicant_employer?.trim() || null,
       })
       .select()
       .single();
