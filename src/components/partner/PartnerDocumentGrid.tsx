@@ -257,11 +257,12 @@ export function PartnerDocumentGrid({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {/* Document Preview Dialog */}
+        {/* Document Preview Dialog - KB: Partner is READ-ONLY, no verification actions */}
         <DocumentPreviewDialog 
           document={previewDoc} 
           open={previewOpen} 
-          onOpenChange={setPreviewOpen} 
+          onOpenChange={setPreviewOpen}
+          showVerificationActions={false}
         />
 
         {/* Filter Tabs */}
