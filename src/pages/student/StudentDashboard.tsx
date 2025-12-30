@@ -1,34 +1,38 @@
 /**
- * Student Dashboard - Redesigned for Document Upload Focus
+ * Student Dashboard - Premium Desktop-First Redesign
  * 
- * Core UX Principle: At any moment, user must understand:
- * 1) Where they are
- * 2) What is blocking them
- * 3) What single action moves them forward
+ * Core UX: User understands status in <5 seconds,
+ * sees exactly ONE obvious next action.
+ * Clean, calm, 2025-grade fintech aesthetic.
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { filterLeadForStudent } from '@/utils/rolePermissions';
 import { STUDENT_EDIT_LOCKED_STATUSES } from '@/constants/studentPermissions';
-import StudentDocumentChecklist from '@/components/student/StudentDocumentChecklist';
 import ChangeLenderModal from '@/components/student/ChangeLenderModal';
 import StudentUploadSheet from '@/components/student/StudentUploadSheet';
-import ActionRequiredBanner from '@/components/student/ActionRequiredBanner';
-import ApplicationStepper, { getStepFromStatus } from '@/components/student/ApplicationStepper';
-import LenderStatusCard from '@/components/student/LenderStatusCard';
-import StickyUploadCTA from '@/components/student/StickyUploadCTA';
-import SupportSection from '@/components/student/SupportSection';
+import { toast } from 'sonner';
+import { 
+  ApplicationSummaryStrip,
+  HeroActionCard,
+  DocumentStatusCards,
+  DocumentTable,
+  StageTimeline,
+  getTimelineStep,
+  type DocumentFilter,
+  type DocumentItem,
+} from '@/components/student/dashboard';
 import { 
   LogOut, 
   GraduationCap,
   Sparkles,
   ChevronRight,
   Globe,
-  Pencil
+  Pencil,
+  Shield
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -55,11 +59,20 @@ interface StudentProfile {
   phone: string;
 }
 
-interface DocStats {
-  pending: number;
-  uploaded: number;
-  total: number;
-  rejected: number;
+interface DocumentType {
+  id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  required: boolean;
+}
+
+interface UploadedDoc {
+  id: string;
+  document_type_id: string;
+  verification_status: string;
+  original_filename: string;
+  verification_notes: string | null;
 }
 
 const StudentDashboard = () => {
@@ -71,7 +84,12 @@ const StudentDashboard = () => {
   const [hasLead, setHasLead] = useState(false);
   const [showChangeLender, setShowChangeLender] = useState(false);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
-  const [docStats, setDocStats] = useState<DocStats>({ pending: 0, uploaded: 0, total: 0, rejected: 0 });
+
+  // Document state
+  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
+  const [filter, setFilter] = useState<DocumentFilter>('all');
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const isEditLocked = lead ? STUDENT_EDIT_LOCKED_STATUSES.includes(lead.status as any) : true;
 
@@ -91,7 +109,7 @@ const StudentDashboard = () => {
       if (!emailError && byEmail) {
         studentData = byEmail;
       } else {
-        // Fallback: Extract phone from email pattern (xxx@student.loan.app or +91xxx@student.loan.app)
+        // Fallback: Extract phone from email pattern
         const emailMatch = user.email.match(/\+?91?(\d{10})@/);
         if (emailMatch) {
           const phoneDigits = emailMatch[1];
@@ -103,7 +121,6 @@ const StudentDashboard = () => {
           
           if (!phoneError && byPhone) {
             studentData = byPhone;
-            console.log('📱 Found student by phone fallback:', byPhone.id);
           }
         }
       }
@@ -135,6 +152,9 @@ const StudentDashboard = () => {
             target_lender: leadData.target_lender,
           } as StudentLead);
           setHasLead(true);
+
+          // Fetch documents for this lead
+          await fetchDocuments(leadData.id);
         }
       }
     } catch (err) {
@@ -143,6 +163,22 @@ const StudentDashboard = () => {
       setLoading(false);
     }
   }, [user?.email]);
+
+  const fetchDocuments = async (leadId: string) => {
+    const [typesRes, docsRes] = await Promise.all([
+      supabase
+        .from('document_types')
+        .select('id, name, category, description, required')
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('lead_documents')
+        .select('id, document_type_id, verification_status, original_filename, verification_notes')
+        .eq('lead_id', leadId)
+    ]);
+
+    setDocumentTypes(typesRes.data || []);
+    setUploadedDocs(docsRes.data || []);
+  };
 
   useEffect(() => {
     fetchStudentData();
@@ -163,19 +199,107 @@ const StudentDashboard = () => {
     navigate('/student/apply');
   };
 
+  // Document helpers
+  const getDocumentStatus = (typeId: string): 'required' | 'pending' | 'verified' | 'rejected' => {
+    const doc = uploadedDocs.find(d => d.document_type_id === typeId);
+    if (!doc) return 'required';
+    if (doc.verification_status === 'verified') return 'verified';
+    if (doc.verification_status === 'rejected') return 'rejected';
+    return 'pending';
+  };
+
+  const handleFileUpload = async (typeId: string, file: File) => {
+    if (!lead || !file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadingId(typeId);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${lead.id}/${typeId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: newDoc, error: dbError } = await supabase
+        .from('lead_documents')
+        .insert({
+          lead_id: lead.id,
+          document_type_id: typeId,
+          file_path: fileName,
+          stored_filename: fileName,
+          original_filename: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          verification_status: 'pending',
+          uploaded_by: 'student'
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      setUploadedDocs(prev => [...prev, newDoc]);
+      toast.success('Document uploaded successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  // Calculate stats
+  const requiredDocs = documentTypes.filter(d => d.required);
+  const pendingCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'required').length;
+  const uploadedCount = requiredDocs.filter(d => {
+    const status = getDocumentStatus(d.id);
+    return status === 'pending';
+  }).length;
+  const rejectedCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'rejected').length;
+  const verifiedCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'verified').length;
+  const totalDocs = requiredDocs.length;
+  const completedDocs = uploadedCount + verifiedCount;
+  const isAllComplete = pendingCount === 0 && rejectedCount === 0 && totalDocs > 0;
+
+  // Build document items for table
+  const documentItems: DocumentItem[] = requiredDocs.map(doc => {
+    const uploaded = uploadedDocs.find(u => u.document_type_id === doc.id);
+    return {
+      id: doc.id,
+      name: doc.name,
+      category: doc.category,
+      description: doc.description,
+      status: getDocumentStatus(doc.id),
+      rejectionReason: uploaded?.verification_notes || undefined,
+      uploadedFilename: uploaded?.original_filename,
+    };
+  });
+
+  // Get stage name for display
+  const getStageName = (status: string, docsStatus: string): string => {
+    if (docsStatus !== 'verified') return 'Documents Pending';
+    const names: Record<string, string> = {
+      'under_review': 'Under Review',
+      'lender_review': 'Lender Review',
+      'processing': 'Processing',
+      'approved': 'Approved',
+      'disbursed': 'Disbursed',
+    };
+    return names[status] || 'In Progress';
+  };
+
   const rawName = profile?.name?.split(' ')[0] || 'there';
   const studentName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
 
   const getInitials = (name: string) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST';
-  };
-
-  // Determine banner variant based on document status
-  const getBannerVariant = () => {
-    if (docStats.rejected > 0) return 'action_needed';
-    if (lead?.documents_status === 'verified') return 'approved';
-    if (docStats.pending === 0 && docStats.uploaded > 0) return 'under_review';
-    return 'documents_required';
   };
 
   if (loading) {
@@ -187,38 +311,38 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
+    <div className="min-h-screen bg-gradient-to-b from-muted/30 via-background to-background">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-primary-foreground" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">Eduloans</span>
+              <span className="font-semibold text-lg text-foreground">Eduloans</span>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {profile && hasLead && lead && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border">
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <span className="text-[9px] font-bold text-primary-foreground">
+                <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-full bg-muted/50 border border-border">
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-primary-foreground">
                       {getInitials(profile.name)}
                     </span>
                   </div>
-                  <span className="text-xs font-medium">{studentName}</span>
-                  <span className="text-muted-foreground text-xs">•</span>
-                  <span className="text-xs text-muted-foreground">{lead.case_id}</span>
+                  <span className="text-sm font-medium">{studentName}</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-sm text-muted-foreground font-mono">{lead.case_id}</span>
                 </div>
               )}
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground h-8 text-xs"
+                className="text-muted-foreground hover:text-foreground"
               >
-                <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -226,31 +350,31 @@ const StudentDashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 lg:py-10 pb-32">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {!hasLead ? (
           /* ================== NO APPLICATION STATE ================== */
           <motion.div 
-            className="max-w-xl mx-auto text-center"
+            className="max-w-xl mx-auto text-center pt-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mb-6">
-              <Globe className="w-10 h-10 text-primary" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mb-8">
+              <Globe className="w-12 h-12 text-primary" />
             </div>
             
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+            <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
               Your Dream Abroad<br />
               <span className="text-primary">Starts Here</span>
             </h1>
             
-            <p className="text-lg text-muted-foreground mb-8">
-              Get loan offers in 5 minutes
+            <p className="text-lg text-muted-foreground mb-10">
+              Get personalized loan offers in just 5 minutes
             </p>
 
             <Button 
               onClick={handleStartApplication}
               size="lg"
-              className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/20"
+              className="h-14 px-12 text-lg font-semibold shadow-lg shadow-primary/20"
             >
               <Sparkles className="w-5 h-5 mr-2" />
               Start Application
@@ -258,66 +382,75 @@ const StudentDashboard = () => {
             </Button>
           </motion.div>
         ) : (
-          /* ================== HAS APPLICATION - DOCUMENT FOCUS ================== */
+          /* ================== HAS APPLICATION - PREMIUM DASHBOARD ================== */
           <motion.div 
-            className="space-y-5"
+            className="space-y-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            {/* 1. ACTION REQUIRED BANNER (Primary Message) */}
-            <ActionRequiredBanner
-              variant={getBannerVariant()}
-              uploadedCount={docStats.uploaded}
-              totalCount={docStats.total}
-              pendingCount={docStats.pending}
-              rejectedCount={docStats.rejected}
+            {/* 1. TOP SUMMARY STRIP */}
+            <ApplicationSummaryStrip
+              caseId={lead.case_id}
+              currentStage={getStageName(lead.status, lead.documents_status)}
+              lenderCount={lead.target_lender ? 1 : 3}
+              uploadedCount={completedDocs}
+              totalCount={totalDocs}
             />
 
-            {/* 2. APPLICATION STEPPER (Non-clickable) */}
-            <Card className="p-4">
-              <ApplicationStepper 
-                currentStep={getStepFromStatus(lead.status, lead.documents_status)} 
-              />
-            </Card>
-
-            {/* 3. LENDER STATUS (Secondary, Non-blocking) */}
-            <LenderStatusCard
-              lenderName={lead.target_lender?.name}
-              lenderCode={lead.target_lender?.code}
-              onViewLenders={() => setShowChangeLender(true)}
+            {/* 2. HERO ACTION CARD */}
+            <HeroActionCard
+              onUploadClick={handleUploadDocuments}
+              pendingCount={pendingCount + rejectedCount}
+              uploadedCount={completedDocs}
+              totalCount={totalDocs}
+              isComplete={isAllComplete}
             />
 
-            {/* 4. DOCUMENTS BLOCK (Core Interaction) */}
-            <StudentDocumentChecklist 
-              leadId={lead.id} 
-              onStatsUpdate={setDocStats}
+            {/* 3. STAGE TIMELINE */}
+            <StageTimeline 
+              currentStep={getTimelineStep(lead.status, lead.documents_status)} 
             />
 
-            {/* 5. SECONDARY ACTION - Edit Application (De-emphasized) */}
+            {/* 4. DOCUMENT STATUS CARDS */}
+            <DocumentStatusCards
+              pendingCount={pendingCount}
+              uploadedCount={uploadedCount}
+              attentionCount={rejectedCount}
+              verifiedCount={verifiedCount}
+              activeFilter={filter}
+              onFilterChange={setFilter}
+            />
+
+            {/* 5. DOCUMENT TABLE */}
+            <DocumentTable
+              documents={documentItems}
+              filter={filter}
+              onUpload={handleFileUpload}
+              uploadingId={uploadingId}
+            />
+
+            {/* 6. SECONDARY ACTION - Edit Application */}
             {!isEditLocked && (
-              <Button
-                variant="outline"
-                onClick={() => navigate('/student/apply')}
-                className="w-full h-11 text-muted-foreground"
-              >
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit Application
-              </Button>
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/student/apply')}
+                  className="text-muted-foreground"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Application
+                </Button>
+              </div>
             )}
 
-            {/* 6. SUPPORT SECTION */}
-            <SupportSection />
+            {/* 7. TRUST FOOTER */}
+            <div className="flex items-center justify-center gap-2 pt-8 pb-4 text-xs text-muted-foreground/70">
+              <Shield className="w-3.5 h-3.5" />
+              <span>Your documents are securely shared only with verified lenders</span>
+            </div>
           </motion.div>
         )}
       </main>
-
-      {/* 7. STICKY CTA (Only when has lead and docs pending) */}
-      {hasLead && lead && (docStats.pending > 0 || docStats.rejected > 0) && (
-        <StickyUploadCTA 
-          onClick={handleUploadDocuments}
-          pendingCount={docStats.pending + docStats.rejected}
-        />
-      )}
 
       {/* Change Lender Modal */}
       {lead && (
