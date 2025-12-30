@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Eye, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useDataAccessLog, DataAccessEntry } from '@/hooks/useDataAccessLog';
+import { formatDisplayEmail } from '@/utils/formatters';
 
 interface DataAccessLogProps {
   leadId: string;
@@ -60,17 +61,22 @@ export function DataAccessLog({ leadId }: DataAccessLogProps) {
         ) : (
           <ScrollArea className="h-[300px] pr-4">
             <div className="space-y-2">
-              {recentViewers.map((entry: DataAccessEntry) => (
-                <div key={entry.id} className="flex items-center justify-between border rounded-lg p-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className={getRoleBadge(entry.user_role)}>{entry.user_role}</Badge>
-                    <span className="text-sm truncate max-w-[200px]">{entry.user_email}</span>
+              {recentViewers.map((entry: DataAccessEntry) => {
+                const { display, isPlaceholder } = formatDisplayEmail(entry.user_email);
+                return (
+                  <div key={entry.id} className="flex items-center justify-between border rounded-lg p-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className={getRoleBadge(entry.user_role)}>{entry.user_role}</Badge>
+                      <span className={`text-sm truncate max-w-[200px] ${isPlaceholder ? 'text-muted-foreground italic' : ''}`}>
+                        {display}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {entry.accessed_at && formatDistanceToNow(new Date(entry.accessed_at), { addSuffix: true })}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {entry.accessed_at && formatDistanceToNow(new Date(entry.accessed_at), { addSuffix: true })}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}
