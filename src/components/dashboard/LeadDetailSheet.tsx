@@ -28,7 +28,8 @@ import {
   Building2,
   Star,
   FileArchive,
-  Loader2
+  Loader2,
+  History
 } from "lucide-react";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
@@ -45,6 +46,13 @@ import { LoanConfigurationCard } from "@/components/admin/LoanConfigurationCard"
 import { useAccessLogger } from "@/hooks/useAccessLogger";
 import { downloadLeadPackage } from "@/utils/downloadLeadPackage";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
+import { 
+  EnhancedStudentCard, 
+  EnhancedCoApplicantCard, 
+  LeadMetadataCard,
+  FieldAuditTimeline,
+  DataAccessLog
+} from "@/components/admin/lead-detail";
 
 interface LeadDetailSheetProps {
   lead: any;
@@ -305,135 +313,227 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
 
         <div className="px-6 py-4 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-9">
+            <TabsList className={`grid w-full h-9 ${isAdmin() ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
               <TabsTrigger value="documents" className="text-xs">Documents</TabsTrigger>
+              {isAdmin() && (
+                <TabsTrigger value="audit" className="text-xs">Audit</TabsTrigger>
+              )}
               <TabsTrigger value="activity" className="text-xs">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 mt-4">
-              {/* Info Cards Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Student Card */}
-                <div className="p-3 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Student</span>
-                  </div>
-                  <p className="font-medium text-sm mb-1.5">{lead.student?.name || 'N/A'}</p>
-                  <div className="space-y-1 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <Phone className="h-3 w-3" />
-                      <span>{lead.student?.phone || 'N/A'}</span>
-                      {lead.student?.phone && (
-                        <a 
-                          href={`https://wa.me/91${lead.student.phone}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-auto text-green-600 hover:text-green-700"
+              {/* Admin Enhanced View */}
+              {isAdmin() ? (
+                <div className="space-y-4">
+                  {/* Enhanced Student Card with inline editing */}
+                  <EnhancedStudentCard
+                    student={lead.student}
+                    leadId={lead.id}
+                    isAdmin={true}
+                    onUpdate={() => {
+                      refetchDocuments();
+                      onLeadUpdated?.();
+                    }}
+                  />
+
+                  {/* Enhanced Co-Applicant Card with inline editing */}
+                  <EnhancedCoApplicantCard
+                    coApplicant={lead.co_applicant}
+                    leadId={lead.id}
+                    isAdmin={true}
+                    onUpdate={() => {
+                      refetchDocuments();
+                      onLeadUpdated?.();
+                    }}
+                  />
+
+                  {/* Loan & Study Info Card */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Loan Details Card */}
+                    <div className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan</span>
+                      </div>
+                      <p className="font-semibold text-base">₹{lead.loan_amount?.toLocaleString()}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Badge variant="secondary" className="text-xs capitalize h-5 px-1.5">
+                          {lead.loan_type}
+                        </Badge>
+                        {lead.loan_classification && (
+                          <Badge variant="outline" className="text-xs h-5 px-1.5">
+                            {lead.loan_classification}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-xs">
+                        <span className="text-muted-foreground">{lead.lender?.name || 'N/A'}</span>
+                        <button
+                          onClick={() => setLenderAssignmentModalOpen(true)}
+                          className="text-primary hover:underline"
                         >
-                          <MessageSquare className="h-3 w-3" />
-                        </a>
+                          Change
+                        </button>
+                      </div>
+                      {lead.sanction_amount && (
+                        <div className="mt-2 pt-2 border-t text-xs">
+                          <p className="text-muted-foreground">Sanctioned: <span className="text-foreground font-medium">₹{lead.sanction_amount.toLocaleString()}</span></p>
+                          {lead.sanction_date && (
+                            <p className="text-muted-foreground">Date: {format(new Date(lead.sanction_date), 'dd MMM yyyy')}</p>
+                          )}
+                        </div>
                       )}
                     </div>
-                    {lead.student?.email && (
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{lead.student.email}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Co-Applicant Card */}
-                <div className="p-3 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Co-Applicant</span>
+                    {/* Study Destination Card */}
+                    <div className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center gap-2 mb-2">
+                        <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</span>
+                      </div>
+                      <p className="font-medium text-sm">{lead.study_destination}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Intake: {lead.intake_month}/{lead.intake_year}
+                      </p>
+                      {leadUniversities.length > 0 && (
+                        <div className="mt-2 pt-2 border-t space-y-1">
+                          {leadUniversities.map((uni) => (
+                            <div key={uni.id} className="flex items-start gap-1.5 text-xs">
+                              <Building2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                              <div>
+                                <p className="leading-tight">{uni.name}</p>
+                                <p className="text-muted-foreground">{uni.city}, {uni.country}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="font-medium text-sm mb-1.5">{lead.co_applicant?.name || 'N/A'}</p>
-                  <div className="space-y-1 text-xs text-muted-foreground">
-                    {lead.co_applicant?.phone && (
+
+                  {/* Admin Metadata Card */}
+                  <LeadMetadataCard
+                    lead={lead}
+                    partner={lead.partners || lead.partner}
+                  />
+                </div>
+              ) : (
+                /* Partner/Non-Admin View - Original Cards */
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Student Card */}
+                  <div className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Student</span>
+                    </div>
+                    <p className="font-medium text-sm mb-1.5">{lead.student?.name || 'N/A'}</p>
+                    <div className="space-y-1 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Phone className="h-3 w-3" />
-                        <span>{lead.co_applicant.phone}</span>
+                        <span>{lead.student?.phone || 'N/A'}</span>
+                        {lead.student?.phone && (
+                          <a 
+                            href={`https://wa.me/91${lead.student.phone}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto text-green-600 hover:text-green-700"
+                          >
+                            <MessageSquare className="h-3 w-3" />
+                          </a>
+                        )}
                       </div>
-                    )}
-                    <button 
-                      onClick={() => setShowCoApplicantDetails(!showCoApplicantDetails)}
-                      className="text-xs text-primary hover:underline flex items-center gap-0.5"
-                    >
-                      {showCoApplicantDetails ? 'Hide' : 'More'}
-                      {showCoApplicantDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    </button>
-                  </div>
-                  {showCoApplicantDetails && (
-                    <div className="text-xs text-muted-foreground space-y-0.5 pt-1.5 mt-1.5 border-t">
-                      <p>Relation: <span className="capitalize text-foreground">{lead.co_applicant?.relationship || 'N/A'}</span></p>
-                      <p>Salary: <span className="text-foreground">{lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/yr` : 'N/A'}</span></p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Loan Details Card */}
-                <div className="p-3 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan</span>
-                  </div>
-                  <p className="font-semibold text-base">₹{lead.loan_amount?.toLocaleString()}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Badge variant="secondary" className="text-xs capitalize h-5 px-1.5">
-                      {lead.loan_type}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between mt-2 text-xs">
-                    <span className="text-muted-foreground">{lead.lender?.name || 'N/A'}</span>
-                    {isAdmin() && (
-                      <button
-                        onClick={() => setLenderAssignmentModalOpen(true)}
-                        className="text-primary hover:underline"
-                      >
-                        Change
-                      </button>
-                    )}
-                  </div>
-                  {preferredLenders.length > 0 && (
-                    <div className="flex items-center gap-1 mt-2 pt-2 border-t text-xs text-muted-foreground">
-                      <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                      <span>{preferredLenders.map(l => l.name).join(', ')}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Study Destination Card */}
-                <div className="p-3 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-2">
-                    <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</span>
-                  </div>
-                  <p className="font-medium text-sm">{lead.study_destination}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Intake: {lead.intake_month}/{lead.intake_year}
-                  </p>
-                  {leadUniversities.length > 0 && (
-                    <div className="mt-2 pt-2 border-t space-y-1">
-                      {leadUniversities.slice(0, 2).map((uni) => (
-                        <div key={uni.id} className="flex items-start gap-1.5 text-xs">
-                          <Building2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                          <div>
-                            <p className="leading-tight">{uni.name}</p>
-                            <p className="text-muted-foreground">{uni.city}</p>
-                          </div>
+                      {lead.student?.email && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{lead.student.email}</span>
                         </div>
-                      ))}
-                      {leadUniversities.length > 2 && (
-                        <p className="text-xs text-muted-foreground">+{leadUniversities.length - 2} more</p>
                       )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Co-Applicant Card */}
+                  <div className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Co-Applicant</span>
+                    </div>
+                    <p className="font-medium text-sm mb-1.5">{lead.co_applicant?.name || 'N/A'}</p>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      {lead.co_applicant?.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3 w-3" />
+                          <span>{lead.co_applicant.phone}</span>
+                        </div>
+                      )}
+                      <button 
+                        onClick={() => setShowCoApplicantDetails(!showCoApplicantDetails)}
+                        className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                      >
+                        {showCoApplicantDetails ? 'Hide' : 'More'}
+                        {showCoApplicantDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </button>
+                    </div>
+                    {showCoApplicantDetails && (
+                      <div className="text-xs text-muted-foreground space-y-0.5 pt-1.5 mt-1.5 border-t">
+                        <p>Relation: <span className="capitalize text-foreground">{lead.co_applicant?.relationship || 'N/A'}</span></p>
+                        <p>Salary: <span className="text-foreground">{lead.co_applicant?.salary ? `₹${Number(lead.co_applicant.salary).toLocaleString()}/yr` : 'N/A'}</span></p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Loan Details Card */}
+                  <div className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan</span>
+                    </div>
+                    <p className="font-semibold text-base">₹{lead.loan_amount?.toLocaleString()}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Badge variant="secondary" className="text-xs capitalize h-5 px-1.5">
+                        {lead.loan_type}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 text-xs">
+                      <span className="text-muted-foreground">{lead.lender?.name || 'N/A'}</span>
+                    </div>
+                    {preferredLenders.length > 0 && (
+                      <div className="flex items-center gap-1 mt-2 pt-2 border-t text-xs text-muted-foreground">
+                        <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                        <span>{preferredLenders.map(l => l.name).join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Study Destination Card */}
+                  <div className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center gap-2 mb-2">
+                      <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</span>
+                    </div>
+                    <p className="font-medium text-sm">{lead.study_destination}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Intake: {lead.intake_month}/{lead.intake_year}
+                    </p>
+                    {leadUniversities.length > 0 && (
+                      <div className="mt-2 pt-2 border-t space-y-1">
+                        {leadUniversities.slice(0, 2).map((uni) => (
+                          <div key={uni.id} className="flex items-start gap-1.5 text-xs">
+                            <Building2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                            <div>
+                              <p className="leading-tight">{uni.name}</p>
+                              <p className="text-muted-foreground">{uni.city}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {leadUniversities.length > 2 && (
+                          <p className="text-xs text-muted-foreground">+{leadUniversities.length - 2} more</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Loan Configuration - Admin Only */}
               {isAdmin() && (
@@ -758,6 +858,41 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Audit Tab - Admin Only */}
+            {isAdmin() && (
+              <TabsContent value="audit" className="space-y-4 mt-4">
+                <div className="space-y-4">
+                  {/* Field Change History */}
+                  <div className="rounded-lg border bg-card">
+                    <div className="p-3 border-b">
+                      <div className="flex items-center gap-2">
+                        <History className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-medium">Field Change History</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Track all changes made to this lead</p>
+                    </div>
+                    <div className="p-3">
+                      <FieldAuditTimeline leadId={lead.id} />
+                    </div>
+                  </div>
+
+                  {/* Data Access Log */}
+                  <div className="rounded-lg border bg-card">
+                    <div className="p-3 border-b">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-medium">Access Log</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">See who has viewed this lead</p>
+                    </div>
+                    <div className="p-3">
+                      <DataAccessLog leadId={lead.id} />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            )}
 
             <TabsContent value="activity" className="space-y-4">
               <StatusHistory 
