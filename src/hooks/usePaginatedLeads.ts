@@ -90,6 +90,7 @@ export interface PaginationFilters {
   status: string | null;
   partnerId: string | null;
   documentsStatus: string | null;
+  isQuickLead: boolean | null;
 }
 
 export interface UsePaginatedLeadsReturn {
@@ -119,6 +120,7 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
     status: null,
     partnerId: null,
     documentsStatus: null,
+    isQuickLead: null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 300);
@@ -195,6 +197,13 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
         );
       }
 
+      // Apply client-side quick lead filter if set (incomplete quick leads only)
+      if (filters.isQuickLead === true) {
+        orderedLeads = orderedLeads.filter(
+          lead => lead.is_quick_lead === true && !lead.quick_lead_completed_at
+        );
+      }
+
       setLeads(orderedLeads);
     } catch (err) {
       console.error('Error fetching paginated leads:', err);
@@ -202,7 +211,7 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, filters.status, filters.partnerId, filters.documentsStatus, page, pageSize]);
+  }, [debouncedSearch, filters.status, filters.partnerId, filters.documentsStatus, filters.isQuickLead, page, pageSize]);
 
   useEffect(() => {
     fetchLeads();
@@ -211,7 +220,7 @@ export function usePaginatedLeads(initialPageSize = 50): UsePaginatedLeadsReturn
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, filters.status, filters.partnerId, filters.documentsStatus]);
+  }, [debouncedSearch, filters.status, filters.partnerId, filters.documentsStatus, filters.isQuickLead]);
 
   const setFilters = useCallback((newFilters: Partial<PaginationFilters>) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }));

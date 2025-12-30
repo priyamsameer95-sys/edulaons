@@ -107,6 +107,7 @@ export function useAdminDashboard(defaultPageSize = 50) {
         status: view.filters.status || null,
         partnerId: view.filters.partnerId || null,
         documentsStatus: view.filters.documentsStatus || null,
+        isQuickLead: view.filters.isQuickLead ?? null,
       });
     }
     setSelectedLeads([]);
