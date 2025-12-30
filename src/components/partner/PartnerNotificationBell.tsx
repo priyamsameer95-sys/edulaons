@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { useSearchParams } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -30,6 +31,7 @@ export function PartnerNotificationBell({ partnerId }: PartnerNotificationBellPr
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [, setSearchParams] = useSearchParams();
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
@@ -112,10 +114,24 @@ export function PartnerNotificationBell({ partnerId }: PartnerNotificationBellPr
         return "✅";
       case "document_rejected":
         return "❌";
+      case "document_uploaded":
+        return "📄";
+      case "lead_created":
+        return "🆕";
       case "lead_approved":
         return "🎉";
       default:
         return "📢";
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    
+    // Navigate to the lead if lead_id is present
+    if (notification.lead_id) {
+      setSearchParams({ lead: notification.lead_id });
+      setOpen(false);
     }
   };
 
@@ -166,7 +182,7 @@ export function PartnerNotificationBell({ partnerId }: PartnerNotificationBellPr
                   className={`px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors ${
                     !notification.is_read ? "bg-primary/5" : ""
                   }`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-base">
