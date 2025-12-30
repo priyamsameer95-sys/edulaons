@@ -14,7 +14,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type TimeFilter = '24h' | '7d' | 'all';
@@ -35,6 +34,31 @@ interface AdminNotificationBellProps {
   onOpenLead?: (leadId: string, tab?: string) => void;
 }
 
+// Format loan amount as ₹X.XL or ₹X.XCr
+const formatLoanAmount = (amount: number | undefined | null): string => {
+  if (!amount) return '';
+  if (amount >= 10000000) {
+    return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  }
+  if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  }
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
+// Format phone as last 4 digits
+const formatPhoneShort = (phone: string | null | undefined): string => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 4 ? `…${digits.slice(-4)}` : '';
+};
+
+// Format status for display
+function formatStatus(status: string | null): string {
+  if (!status) return 'Unknown';
+  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +75,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       case '7d':
         return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       case 'all':
-        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // max 30 days
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
   }, []);
 
@@ -65,7 +89,6 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      // Fetch up to 30 days for all filter options
       const last30Days = new Date();
       last30Days.setDate(last30Days.getDate() - 30);
       const last30DaysISO = last30Days.toISOString();
@@ -79,23 +102,26 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           .order("created_at", { ascending: false })
           .limit(100),
         
+        // Include loan_amount in leads query
         supabase
           .from("leads_new")
-          .select("id, case_id, created_at, student:students(name, phone)")
+          .select("id, case_id, created_at, loan_amount, student:students(name, phone)")
           .gte("created_at", last30DaysISO)
           .order("created_at", { ascending: false })
           .limit(50),
         
+        // Include loan_amount via lead join
         supabase
           .from("lead_documents")
-          .select("id, lead_id, verification_status, created_at, updated_at, document_type:document_types(name), lead:leads_new(case_id, student:students(name, phone))")
+          .select("id, lead_id, verification_status, created_at, updated_at, document_type:document_types(name), lead:leads_new(case_id, loan_amount, student:students(name, phone))")
           .gte("created_at", last30DaysISO)
           .order("created_at", { ascending: false })
           .limit(50),
         
+        // Include loan_amount via lead join
         supabase
           .from("lead_status_history")
-          .select("id, lead_id, old_status, new_status, created_at, lead:leads_new(case_id, student:students(name, phone))")
+          .select("id, lead_id, old_status, new_status, created_at, lead:leads_new(case_id, loan_amount, student:students(name, phone))")
           .gte("created_at", last30DaysISO)
           .order("created_at", { ascending: false })
           .limit(50),
@@ -141,7 +167,12 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
             lead_id: lead.id,
             is_read: true,
             is_notification: false,
-            metadata: { name: studentName, phone: studentPhone, case_id: lead.case_id },
+            metadata: { 
+              name: studentName, 
+              phone: studentPhone, 
+              case_id: lead.case_id,
+              loan_amount: lead.loan_amount 
+            },
           });
         }
       }
@@ -165,6 +196,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           const studentName = lead?.student?.name || 'Unknown';
           const studentPhone = lead?.student?.phone || null;
           const caseId = lead?.case_id || '';
+          const loanAmount = lead?.loan_amount || null;
           
           allActivities.push({
             id: `doc-${doc.id}`,
@@ -175,7 +207,12 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
             lead_id: doc.lead_id,
             is_read: true,
             is_notification: false,
-            metadata: { name: studentName, phone: studentPhone, case_id: caseId },
+            metadata: { 
+              name: studentName, 
+              phone: studentPhone, 
+              case_id: caseId,
+              loan_amount: loanAmount 
+            },
           });
         }
       }
@@ -198,6 +235,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           const studentName = lead?.student?.name || 'Unknown';
           const studentPhone = lead?.student?.phone || null;
           const caseId = lead?.case_id || '';
+          const loanAmount = lead?.loan_amount || null;
           const oldStatus = formatStatus(status.old_status);
           const newStatus = formatStatus(status.new_status);
           
@@ -210,7 +248,14 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
             lead_id: status.lead_id,
             is_read: true,
             is_notification: false,
-            metadata: { name: studentName, phone: studentPhone, case_id: caseId, old_status: status.old_status, new_status: status.new_status },
+            metadata: { 
+              name: studentName, 
+              phone: studentPhone, 
+              case_id: caseId, 
+              loan_amount: loanAmount,
+              old_status: status.old_status, 
+              new_status: status.new_status 
+            },
           });
         }
       }
@@ -287,7 +332,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
   };
 
   const getTypeIcon = (type: string) => {
-    const iconClass = "h-3.5 w-3.5 shrink-0";
+    const iconClass = "h-4 w-4 shrink-0";
     switch (type) {
       case "document_uploaded": return <FileText className={cn(iconClass, "text-blue-500")} />;
       case "lead_created": return <UserPlus className={cn(iconClass, "text-green-500")} />;
@@ -316,92 +361,96 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const getPhoneLast4 = (phone: string | null | undefined): string | null => {
-    if (!phone) return null;
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 4 ? `…${digits.slice(-4)}` : null;
-  };
-
-  const extractNameOrId = (activity: ActivityItem): string => {
-    const meta = activity.metadata;
-    if (meta?.name && meta.name !== 'Unknown') return meta.name;
-    if (meta?.case_id) return meta.case_id;
-    if (activity.lead_id) return activity.lead_id.slice(0, 8);
-    return '';
-  };
-
   const renderNotificationRow = (activity: ActivityItem) => {
-    const name = extractNameOrId(activity);
-    const phoneLast4 = getPhoneLast4(activity.metadata?.phone);
+    const meta = activity.metadata;
+    const name = meta?.name && meta.name !== 'Unknown' ? meta.name : '';
+    const phone = formatPhoneShort(meta?.phone);
+    const amount = formatLoanAmount(meta?.loan_amount);
     const time = formatCompactTime(activity.created_at);
     const isUnread = !activity.is_read && activity.is_notification;
 
     const rowContent = (
       <div
         className={cn(
-          "flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors",
+          "px-3 py-3 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/50 last:border-0",
           isUnread && "bg-primary/5"
         )}
         onClick={() => handleActivityClick(activity)}
       >
-        {getTypeIcon(activity.type)}
-        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
-          <span className={cn("text-xs truncate", isUnread && "font-medium")}>
+        {/* Row 1: Icon + Title + Unread dot + Time */}
+        <div className="flex items-center gap-2 mb-1">
+          {getTypeIcon(activity.type)}
+          <span className={cn("flex-1 text-sm truncate", isUnread && "font-medium")}>
             {activity.title}
           </span>
+          {isUnread && <div className="h-2 w-2 rounded-full bg-primary shrink-0" />}
+          <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{time}</span>
+        </div>
+        
+        {/* Row 2: Name • Phone • Amount - always visible */}
+        <div className="flex items-center gap-1.5 ml-6 text-xs text-muted-foreground">
           {name && (
-            <>
-              <span className="text-muted-foreground text-xs shrink-0">•</span>
-              <span className="text-xs text-muted-foreground truncate">{name}</span>
-            </>
+            <span className="truncate max-w-[160px]">{name}</span>
           )}
-          {phoneLast4 && (
-            <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{phoneLast4}</span>
+          {name && phone && <span className="opacity-50">•</span>}
+          {phone && <span className="shrink-0">{phone}</span>}
+          {(name || phone) && amount && <span className="opacity-50">•</span>}
+          {amount && (
+            <span className="text-primary font-medium shrink-0">{amount}</span>
+          )}
+          {!name && !phone && !amount && meta?.case_id && (
+            <span className="truncate">{meta.case_id}</span>
           )}
         </div>
-        <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{time}</span>
-        {isUnread && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
       </div>
     );
 
-    // Desktop hover card for details
+    // Desktop hover card for extended details
     return (
       <HoverCard key={activity.id} openDelay={300} closeDelay={100}>
         <HoverCardTrigger asChild>
           {rowContent}
         </HoverCardTrigger>
-        <HoverCardContent side="left" align="start" className="w-64 p-3 text-xs space-y-1.5">
+        <HoverCardContent side="left" align="start" className="w-72 p-3 text-sm space-y-2">
           {activity.lead_id && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Lead ID</span>
-              <span className="font-mono">{activity.lead_id.slice(0, 8)}…</span>
+              <span className="font-mono text-xs">{activity.lead_id.slice(0, 8)}…</span>
             </div>
           )}
-          {activity.metadata?.name && activity.metadata.name !== 'Unknown' && (
+          {meta?.name && meta.name !== 'Unknown' && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Name</span>
-              <span>{activity.metadata.name}</span>
+              <span>{meta.name}</span>
             </div>
           )}
-          {activity.metadata?.phone && (
+          {meta?.phone && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Phone</span>
-              <span>{activity.metadata.phone}</span>
+              <span>{meta.phone}</span>
             </div>
           )}
-          {activity.metadata?.case_id && (
+          {meta?.loan_amount && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Case</span>
-              <span>{activity.metadata.case_id}</span>
+              <span className="text-muted-foreground">Loan Amount</span>
+              <span className="font-medium">{formatLoanAmount(meta.loan_amount)}</span>
             </div>
           )}
-          {activity.metadata?.new_status && (
+          {meta?.case_id && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Case ID</span>
+              <span>{meta.case_id}</span>
+            </div>
+          )}
+          {meta?.new_status && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status</span>
-              <span>{formatStatus(activity.metadata.new_status)}</span>
+              <span>{formatStatus(meta.new_status)}</span>
             </div>
           )}
-          <div className="pt-1 border-t text-muted-foreground">{activity.message}</div>
+          <div className="pt-2 border-t border-border text-muted-foreground text-xs">
+            {activity.message}
+          </div>
         </HoverCardContent>
       </HoverCard>
     );
@@ -424,28 +473,32 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
+      <PopoverContent 
+        align="end" 
+        className="w-[420px] max-w-[25vw] min-w-[320px] p-0"
+        sideOffset={8}
+      >
         {/* Compact Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
           <div className="flex items-center gap-1">
             {(['24h', '7d', 'all'] as TimeFilter[]).map((f) => (
               <Button
                 key={f}
                 variant={timeFilter === f ? 'secondary' : 'ghost'}
                 size="sm"
-                className="h-6 px-2 text-[10px]"
+                className="h-7 px-2 text-xs"
                 onClick={() => setTimeFilter(f)}
               >
                 {f === 'all' ? 'All' : f}
               </Button>
             ))}
           </div>
-          <span className="text-xs text-muted-foreground tabular-nums">{filterCount}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">{filterCount} items</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
               onClick={markAllAsRead}
             >
               Mark all read
@@ -454,19 +507,19 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
         </div>
 
         {/* Notification List */}
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[400px]">
           {loading ? (
-            <div className="p-6 text-center text-xs text-muted-foreground">
-              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
               Loading...
             </div>
           ) : filteredActivities.length === 0 ? (
-            <div className="p-8 text-center text-xs text-muted-foreground">
-              <Bell className="h-8 w-8 mx-auto mb-2 opacity-20" />
-              <p>No activity</p>
+            <div className="p-10 text-center text-muted-foreground">
+              <Bell className="h-10 w-10 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">No notifications</p>
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <div>
               {filteredActivities.map(renderNotificationRow)}
             </div>
           )}
@@ -476,7 +529,4 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
   );
 }
 
-function formatStatus(status: string | null): string {
-  if (!status) return 'Unknown';
-  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
+export default AdminNotificationBell;
