@@ -175,7 +175,7 @@ const LeadRow = memo(({
         </div>
       </TableCell>
       <TableCell className="text-sm">
-        ₹{(lead.loan_amount / 100000).toFixed(1)}L
+        ₹{Math.round(lead.loan_amount / 100000)}L
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
         {format(new Date(lead.created_at), 'dd MMM')}
