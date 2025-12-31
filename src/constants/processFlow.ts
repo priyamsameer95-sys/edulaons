@@ -168,7 +168,7 @@ export const STATUS_CONFIG: Record<LeadStatusExtended, StatusConfig> = {
   },
   counselling_done: {
     value: 'counselling_done',
-    label: 'Counselling Done',
+    label: 'Counselling Completed',
     shortLabel: 'Counselled',
     description: 'Student and co-applicant prepared for lender call',
     phase: 'with_lender',
