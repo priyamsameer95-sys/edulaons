@@ -798,7 +798,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                           type="email"
                           value={formData.co_applicant_email}
                           onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
-                          placeholder="email@example.com"
+                          placeholder="Recommended for faster communication"
                           className={errors.co_applicant_email ? 'border-destructive' : ''}
                         />
                         {errors.co_applicant_email && (
@@ -815,7 +815,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                           id="co_applicant_phone"
                           value={formData.co_applicant_phone}
                           onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
-                          placeholder="10-digit phone number"
+                          placeholder="10-digit mobile number"
                           className={errors.co_applicant_phone ? 'border-destructive' : ''}
                         />
                         {errors.co_applicant_phone && (

@@ -1094,7 +1094,7 @@ export const CompleteLeadModal = ({
                     Phone <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    placeholder="10-digit phone"
+                    placeholder="10-digit mobile number"
                     value={coApplicantPhone}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '').slice(0, 10);

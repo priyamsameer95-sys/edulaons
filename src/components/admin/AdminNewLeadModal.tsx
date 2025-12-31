@@ -849,7 +849,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                       handleInputChange('student_phone', value);
                     }}
                     onBlur={() => handleBlur('student_phone')}
-                    placeholder="9876543210"
+                    placeholder="10-digit mobile number"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     maxLength={10}
@@ -869,7 +869,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                   error={errors.student_email}
                   touched={touched.student_email}
                   isValid={!!formData.student_email && !validateField('student_email', formData.student_email)}
-                  helperText="Optional"
+                  helperText="Recommended for faster communication"
                   id="student_email"
                 >
                   <Input

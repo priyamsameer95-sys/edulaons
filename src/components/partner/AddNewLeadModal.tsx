@@ -555,7 +555,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                   id="student_phone"
                   value={formData.student_phone}
                   onChange={(e) => handleInputChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  placeholder="10 digit mobile"
+                  placeholder="10-digit mobile number"
                   className={errors.student_phone ? 'border-destructive' : ''}
                 />
                 {errors.student_phone && <p className="text-xs text-destructive">{errors.student_phone}</p>}
@@ -568,7 +568,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                   type="email"
                   value={formData.student_email}
                   onChange={(e) => handleInputChange('student_email', e.target.value)}
-                  placeholder="student@email.com"
+                  placeholder="Recommended for faster communication"
                   className={errors.student_email ? 'border-destructive' : ''}
                 />
                 {errors.student_email ? (
