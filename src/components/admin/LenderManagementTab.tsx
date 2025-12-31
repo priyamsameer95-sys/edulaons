@@ -300,7 +300,7 @@ export function LenderManagementTab() {
                       </TableCell>
                       <TableCell>
                         {lender.loan_amount_min && lender.loan_amount_max
-                          ? `${formatCurrency(lender.loan_amount_min)} - ${formatCurrency(lender.loan_amount_max)}`
+                          ? `₹${lender.loan_amount_min >= 10000000 ? (lender.loan_amount_min / 10000000) + 'Cr' : (lender.loan_amount_min / 100000) + 'L'} - ₹${lender.loan_amount_max >= 10000000 ? (lender.loan_amount_max / 10000000) + 'Cr' : (lender.loan_amount_max / 100000) + 'L'}`
                           : 'N/A'}
                       </TableCell>
                       <TableCell>
