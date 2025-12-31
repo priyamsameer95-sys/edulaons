@@ -198,14 +198,14 @@ export const LeadTableRow = React.memo(function LeadTableRow({
         <Tooltip>
             <TooltipTrigger asChild>
               <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                {lead.student?.email?.includes('@quick.placeholder') || lead.student?.email?.includes('@lead.placeholder') || lead.student?.email?.includes('@student.loan.app')
+                {lead.student?.email?.includes('.placeholder') || lead.student?.email?.includes('@student.loan.app')
                   ? lead.student?.phone || lead.case_id
                   : lead.student?.email || lead.case_id}
               </p>
             </TooltipTrigger>
             <TooltipContent>
               <p className="text-xs">
-                {lead.student?.email?.includes('@quick.placeholder') || lead.student?.email?.includes('@lead.placeholder') || lead.student?.email?.includes('@student.loan.app')
+                {lead.student?.email?.includes('.placeholder') || lead.student?.email?.includes('@student.loan.app')
                   ? lead.student?.phone || lead.case_id
                   : lead.student?.email || lead.case_id}
               </p>
