@@ -6,19 +6,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  FileCheck,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Clock,
-} from 'lucide-react';
+import { FileCheck, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { LeadTableRow } from './lead-table/LeadTableRow';
-
 interface LeadQueueTableProps {
   leads: PaginatedLead[];
   loading: boolean;
@@ -35,10 +25,8 @@ interface LeadQueueTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
-
 type SortField = 'id' | 'student' | 'amount' | 'status' | 'age' | null;
 type SortDirection = 'asc' | 'desc';
-
 export function LeadQueueTable({
   leads,
   loading,
@@ -53,12 +41,11 @@ export function LeadQueueTable({
   totalCount,
   totalPages,
   onPageChange,
-  onPageSizeChange,
+  onPageSizeChange
 }: LeadQueueTableProps) {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
   const copyLeadId = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(id);
@@ -66,25 +53,21 @@ export function LeadQueueTable({
     toast.success('Lead ID copied');
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
-
   const allSelected = leads.length > 0 && selectedLeads.length === leads.length;
   const someSelected = selectedLeads.length > 0 && selectedLeads.length < leads.length;
-
   const handleSelectAll = useCallback((checked: boolean) => {
-    onSelectionChange(checked ? leads.map((l) => l.id) : []);
+    onSelectionChange(checked ? leads.map(l => l.id) : []);
   }, [leads, onSelectionChange]);
-
   const handleSelectLead = useCallback((leadId: string, checked: boolean) => {
     if (checked) {
       onSelectionChange([...selectedLeads, leadId]);
     } else {
-      onSelectionChange(selectedLeads.filter((id) => id !== leadId));
+      onSelectionChange(selectedLeads.filter(id => id !== leadId));
     }
   }, [selectedLeads, onSelectionChange]);
-
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortDirection('desc');
@@ -94,10 +77,8 @@ export function LeadQueueTable({
   // Sort leads client-side
   const sortedLeads = useMemo(() => {
     if (!sortField) return leads;
-
     return [...leads].sort((a, b) => {
       let comparison = 0;
-
       switch (sortField) {
         case 'id':
           comparison = a.id.localeCompare(b.id);
@@ -115,70 +96,46 @@ export function LeadQueueTable({
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
       }
-
       return sortDirection === 'asc' ? comparison : -comparison;
     });
   }, [leads, sortField, sortDirection]);
-
-  const SortIcon = ({ field }: { field: SortField }) => {
+  const SortIcon = ({
+    field
+  }: {
+    field: SortField;
+  }) => {
     if (sortField !== field) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
     return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
-
   const startItem = (page - 1) * pageSize + 1;
   const endItem = Math.min(page * pageSize, totalCount);
-
   if (loading) {
-    return (
-      <div className="p-4 space-y-3">
-        {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    );
+    return <div className="p-4 space-y-3">
+        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+      </div>;
   }
-
   if (leads.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+    return <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <FileCheck className="h-12 w-12 mb-3 opacity-50" />
         <p className="text-sm">No leads match your filters</p>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <TooltipProvider delayDuration={200}>
+  return <TooltipProvider delayDuration={200}>
       <div className="flex flex-col h-full">
         <div className="overflow-auto flex-1">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="w-[40px]">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="Select all"
-                    className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
-                  />
+                  <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} aria-label="Select all" className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''} />
                 </TableHead>
                 <TableHead className="w-[100px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 font-medium hover:bg-transparent"
-                    onClick={() => handleSort('id')}
-                  >
+                  <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('id')}>
                     Lead ID <SortIcon field="id" />
                   </Button>
                 </TableHead>
                 <TableHead className="w-[200px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 font-medium hover:bg-transparent"
-                    onClick={() => handleSort('student')}
-                  >
+                  <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('student')}>
                     Student <SortIcon field="student" />
                   </Button>
                 </TableHead>
@@ -186,12 +143,7 @@ export function LeadQueueTable({
                 <TableHead className="w-[110px]">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 font-medium hover:bg-transparent"
-                        onClick={() => handleSort('amount')}
-                      >
+                      <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('amount')}>
                         Amount <SortIcon field="amount" />
                       </Button>
                     </TooltipTrigger>
@@ -203,12 +155,7 @@ export function LeadQueueTable({
                 <TableHead className="w-[110px]">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 font-medium hover:bg-transparent"
-                        onClick={() => handleSort('status')}
-                      >
+                      <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('status')}>
                         Status <SortIcon field="status" />
                       </Button>
                     </TooltipTrigger>
@@ -220,7 +167,7 @@ export function LeadQueueTable({
                 <TableHead className="w-[100px]">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="font-medium cursor-help">Docs</span>
+                      <span className="font-medium cursor-help">Documents</span>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">Document verification status</p>
@@ -230,12 +177,7 @@ export function LeadQueueTable({
                 <TableHead className="w-[100px]">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 font-medium hover:bg-transparent"
-                        onClick={() => handleSort('age')}
-                      >
+                      <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('age')}>
                         <Clock className="h-3 w-3 mr-1" />
                         Created <SortIcon field="age" />
                       </Button>
@@ -249,20 +191,7 @@ export function LeadQueueTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedLeads.map((lead) => (
-                <LeadTableRow
-                  key={lead.id}
-                  lead={lead}
-                  isSelected={selectedLeads.includes(lead.id)}
-                  copiedId={copiedId}
-                  onSelect={(checked) => handleSelectLead(lead.id, checked)}
-                  onCopyId={copyLeadId}
-                  onViewLead={() => onViewLead(lead)}
-                  onUpdateStatus={() => onUpdateStatus(lead)}
-                  onCompleteLead={onCompleteLead ? () => onCompleteLead(lead) : undefined}
-                  onEditLead={onEditLead ? () => onEditLead(lead) : undefined}
-                />
-              ))}
+              {sortedLeads.map(lead => <LeadTableRow key={lead.id} lead={lead} isSelected={selectedLeads.includes(lead.id)} copiedId={copiedId} onSelect={checked => handleSelectLead(lead.id, checked)} onCopyId={copyLeadId} onViewLead={() => onViewLead(lead)} onUpdateStatus={() => onUpdateStatus(lead)} onCompleteLead={onCompleteLead ? () => onCompleteLead(lead) : undefined} onEditLead={onEditLead ? () => onEditLead(lead) : undefined} />)}
             </TableBody>
           </Table>
         </div>
@@ -278,7 +207,7 @@ export function LeadQueueTable({
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Per page:</span>
-              <Select value={pageSize.toString()} onValueChange={(v) => onPageSizeChange(parseInt(v))}>
+              <Select value={pageSize.toString()} onValueChange={v => onPageSizeChange(parseInt(v))}>
                 <SelectTrigger className="w-[70px] h-8">
                   <SelectValue />
                 </SelectTrigger>
@@ -291,31 +220,18 @@ export function LeadQueueTable({
             </div>
 
             <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(page - 1)}
-                disabled={page <= 1}
-                className="h-8 px-2"
-              >
+              <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="h-8 px-2">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm px-2 min-w-[80px] text-center">
                 Page {page} of {totalPages}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(page + 1)}
-                disabled={page >= totalPages}
-                className="h-8 px-2"
-              >
+              <Button variant="outline" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="h-8 px-2">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
       </div>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 }
