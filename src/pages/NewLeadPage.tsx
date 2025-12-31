@@ -437,7 +437,7 @@ const NewLeadPage = () => {
                 <Input
                   value={formData.co_applicant_phone}
                   onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
-                  placeholder="10-digit phone"
+                  placeholder="10-digit mobile number"
                   className={errors.co_applicant_phone ? 'border-destructive' : ''}
                 />
               </div>

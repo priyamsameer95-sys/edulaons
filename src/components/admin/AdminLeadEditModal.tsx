@@ -790,7 +790,7 @@ export function AdminLeadEditModal({
                         type="email"
                         value={formData.student_email}
                         onChange={(e) => handleInputChange('student_email', e.target.value)}
-                        placeholder="Enter email"
+                        placeholder="Recommended for faster communication"
                       />
                     </div>
                     <div className="space-y-2">
@@ -799,7 +799,7 @@ export function AdminLeadEditModal({
                         id="student_phone"
                         value={formData.student_phone}
                         onChange={(e) => handleInputChange('student_phone', e.target.value)}
-                        placeholder="Enter phone number"
+                        placeholder="10-digit mobile number"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1157,7 +1157,7 @@ export function AdminLeadEditModal({
                         id="co_applicant_phone"
                         value={formData.co_applicant_phone}
                         onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
-                        placeholder="Enter phone"
+                        placeholder="10-digit mobile number"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1186,7 +1186,7 @@ export function AdminLeadEditModal({
                         type="email"
                         value={formData.co_applicant_email}
                         onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
-                        placeholder="Enter email"
+                        placeholder="Recommended for faster communication"
                       />
                     </div>
                   </CardContent>
