@@ -4,27 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Eye, Upload, Plus, Zap, ClipboardCheck, TrendingUp, Rocket, Sparkles, Lock, Search, Clock } from "lucide-react";
 import { format, differenceInHours } from "date-fns";
 import { cn } from "@/lib/utils";
 import { RefactoredLead } from "@/types/refactored-lead";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import type { LeadStatus, DocumentStatus } from "@/utils/statusUtils";
-
 interface PartnerLeadsTableProps {
   leads: RefactoredLead[];
   loading: boolean;
@@ -46,43 +33,34 @@ const isIncompleteQuickLead = (lead: RefactoredLead): boolean => {
   }
   return false;
 };
-
 const isEligibilityCheckedLead = (lead: RefactoredLead): boolean => {
   return (lead as any).eligibility_score !== null && (lead as any).eligibility_score !== undefined;
 };
-
 const getLeadAgeUrgency = (createdAt: string): 'urgent' | 'warning' | 'normal' => {
   const hours = differenceInHours(new Date(), new Date(createdAt));
   if (hours > 48) return 'urgent';
   if (hours > 24) return 'warning';
   return 'normal';
 };
-
 const canUploadDocs = (lead: RefactoredLead, isIncomplete: boolean): boolean => {
   return !isIncomplete && (lead.documents_status === 'pending' || lead.documents_status === 'resubmission_required');
 };
 
 // Memoized eligibility badge component
-const EligibilityBadge = memo(({ lead }: { lead: RefactoredLead }) => {
+const EligibilityBadge = memo(({
+  lead
+}: {
+  lead: RefactoredLead;
+}) => {
   const score = (lead as any).eligibility_score;
   const result = (lead as any).eligibility_result;
-  
   if (!score) return null;
-  
-  const badgeClass = result === 'eligible' || score >= 70
-    ? "bg-green-50 text-green-700 border-green-200"
-    : result === 'conditional' || score >= 50
-    ? "bg-amber-50 text-amber-700 border-amber-200"
-    : "bg-orange-50 text-orange-700 border-orange-200";
-
-  return (
-    <Badge variant="outline" className={`text-xs ${badgeClass} gap-1`}>
+  const badgeClass = result === 'eligible' || score >= 70 ? "bg-green-50 text-green-700 border-green-200" : result === 'conditional' || score >= 50 ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-orange-50 text-orange-700 border-orange-200";
+  return <Badge variant="outline" className={`text-xs ${badgeClass} gap-1`}>
       <TrendingUp className="h-3 w-3" />
       {score}/100
-    </Badge>
-  );
+    </Badge>;
 });
-
 EligibilityBadge.displayName = 'EligibilityBadge';
 
 // Memoized table row component
@@ -92,55 +70,42 @@ interface LeadRowProps {
   onCompleteLead?: (lead: RefactoredLead) => void;
   onViewLead?: (lead: RefactoredLead) => void;
 }
-
-const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRowProps) => {
+const LeadRow = memo(({
+  lead,
+  onUploadDocs,
+  onCompleteLead,
+  onViewLead
+}: LeadRowProps) => {
   const isIncomplete = isIncompleteQuickLead(lead);
   const hasEligibility = isEligibilityCheckedLead(lead);
   const urgency = getLeadAgeUrgency(lead.created_at);
   const canUpload = canUploadDocs(lead, isIncomplete);
-
   const handleUploadClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onUploadDocs(lead);
   }, [lead, onUploadDocs]);
-
   const handleCompleteClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onCompleteLead?.(lead);
   }, [lead, onCompleteLead]);
-
   const handleViewClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onViewLead?.(lead);
   }, [lead, onViewLead]);
-
   const handleRowClick = useCallback(() => {
     onViewLead?.(lead);
   }, [lead, onViewLead]);
-
-  return (
-    <TableRow 
-      className={cn(
-        "hover:bg-muted/50 cursor-pointer",
-        isIncomplete && urgency === 'urgent' && "bg-red-50/30",
-        isIncomplete && urgency === 'warning' && "bg-amber-50/30"
-      )}
-      onClick={handleRowClick}
-    >
+  return <TableRow className={cn("hover:bg-muted/50 cursor-pointer", isIncomplete && urgency === 'urgent' && "bg-red-50/30", isIncomplete && urgency === 'warning' && "bg-amber-50/30")} onClick={handleRowClick}>
       <TableCell className="font-medium text-sm">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs text-muted-foreground" title={lead.id}>
               {lead.case_id}
             </span>
-            {isIncomplete && (
-              <TooltipProvider>
+            {isIncomplete && <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge 
-                      variant="outline" 
-                      className="h-5 px-2 text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1 cursor-help"
-                    >
+                    <Badge variant="outline" className="h-5 px-2 text-xs bg-amber-50 text-amber-700 border-amber-200 gap-1 cursor-help">
                       <Zap className="h-3 w-3" />
                       Quick
                     </Badge>
@@ -149,18 +114,11 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
                     <p className="text-xs">Quick applications get priority lender responses</p>
                   </TooltipContent>
                 </Tooltip>
-              </TooltipProvider>
-            )}
+              </TooltipProvider>}
           </div>
-          {isIncomplete && urgency === 'urgent' && (
-            <span className="text-[10px] text-red-600 font-medium">⚠️ Action needed now!</span>
-          )}
-          {isIncomplete && urgency === 'warning' && (
-            <span className="text-[10px] text-amber-600">⏰ Complete today</span>
-          )}
-          {isIncomplete && urgency === 'normal' && (
-            <span className="text-[10px] text-muted-foreground">Complete to unlock 2x lender matches</span>
-          )}
+          {isIncomplete && urgency === 'urgent' && <span className="text-[10px] text-red-600 font-medium">⚠️ Action needed now!</span>}
+          {isIncomplete && urgency === 'warning' && <span className="text-[10px] text-amber-600">⏰ Complete today</span>}
+          {isIncomplete && urgency === 'normal' && <span className="text-[10px] text-muted-foreground">Complete to unlock 2x lender matches</span>}
         </div>
       </TableCell>
       <TableCell>
@@ -180,8 +138,7 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
       </TableCell>
       <TableCell>
         <div className="flex flex-col gap-1">
-          {isIncomplete ? (
-            <TooltipProvider>
+          {isIncomplete ? <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge variant="outline" className="h-6 px-2.5 text-xs bg-amber-50 text-amber-700 border-amber-200 w-fit cursor-help gap-1.5">
@@ -193,17 +150,13 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
                   <p className="text-xs">Complete missing details to qualify for 2x more lenders</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <StatusBadge status={lead.status as LeadStatus} type="lead" />
-          )}
+            </TooltipProvider> : <StatusBadge status={lead.status as LeadStatus} type="lead" />}
           {hasEligibility && <EligibilityBadge lead={lead} />}
         </div>
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          {isIncomplete ? (
-            <TooltipProvider>
+          {isIncomplete ? <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge variant="outline" className="h-6 px-2.5 text-xs bg-muted/50 text-muted-foreground border-dashed cursor-help gap-1.5">
@@ -215,22 +168,10 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
                   <p className="text-xs">Complete the application to unlock document uploads</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
-          ) : (
-            canUpload ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUploadClick}
-                className="h-6 px-2.5 text-xs gap-1.5 border-dashed hover:border-primary hover:bg-primary/5 font-medium"
-              >
+            </TooltipProvider> : canUpload ? <Button variant="outline" size="sm" onClick={handleUploadClick} className="h-6 px-2.5 text-xs gap-1.5 border-dashed hover:border-primary hover:bg-primary/5 font-medium">
                 <Upload className="h-3 w-3" />
                 Upload
-              </Button>
-            ) : (
-              <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />
-            )
-          )}
+              </Button> : <StatusBadge status={lead.documents_status as DocumentStatus} type="document" />}
         </div>
       </TableCell>
       <TableCell className="text-sm">
@@ -241,40 +182,23 @@ const LeadRow = memo(({ lead, onUploadDocs, onCompleteLead, onViewLead }: LeadRo
       </TableCell>
       <TableCell>
         <div className="flex flex-col items-start gap-0.5">
-          {isIncomplete && onCompleteLead ? (
-            <>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCompleteClick}
-                className="h-8 px-3 text-xs gap-1"
-              >
+          {isIncomplete && onCompleteLead ? <>
+              <Button variant="default" size="sm" onClick={handleCompleteClick} className="h-8 px-3 text-xs gap-1">
                 <ClipboardCheck className="h-3.5 w-3.5" />
                 Resume Application
               </Button>
               <span className="text-[10px] text-muted-foreground">Takes &lt;2 mins</span>
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewClick}
-              className="h-8 px-2"
-            >
+            </> : <Button variant="ghost" size="sm" onClick={handleViewClick} className="h-8 px-2">
               <Eye className="h-4 w-4" />
-            </Button>
-          )}
+            </Button>}
         </div>
       </TableCell>
-    </TableRow>
-  );
+    </TableRow>;
 });
-
 LeadRow.displayName = 'LeadRow';
 
 // Loading skeleton component
-const TableSkeleton = memo(() => (
-  <Card className="border shadow-sm">
+const TableSkeleton = memo(() => <Card className="border shadow-sm">
     <CardContent className="p-0">
       <Table>
         <TableHeader>
@@ -289,8 +213,9 @@ const TableSkeleton = memo(() => (
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
+          {Array.from({
+          length: 5
+        }).map((_, i) => <TableRow key={i}>
               <TableCell><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-28" /></TableCell>
               <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -298,19 +223,19 @@ const TableSkeleton = memo(() => (
               <TableCell><Skeleton className="h-4 w-16" /></TableCell>
               <TableCell><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-            </TableRow>
-          ))}
+            </TableRow>)}
         </TableBody>
       </Table>
     </CardContent>
-  </Card>
-));
-
+  </Card>);
 TableSkeleton.displayName = 'TableSkeleton';
 
 // Empty state component
-const EmptyState = memo(({ onNewLead }: { onNewLead?: () => void }) => (
-  <div className="flex flex-col items-center justify-center py-16 px-4 bg-card border rounded-lg">
+const EmptyState = memo(({
+  onNewLead
+}: {
+  onNewLead?: () => void;
+}) => <div className="flex flex-col items-center justify-center py-16 px-4 bg-card border rounded-lg">
     <div className="text-center space-y-6 max-w-md">
       <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
         <Rocket className="h-8 w-8 text-primary" />
@@ -321,25 +246,20 @@ const EmptyState = memo(({ onNewLead }: { onNewLead?: () => void }) => (
           Start your first eligibility check to help students find the best education loan options
         </p>
       </div>
-      {onNewLead && (
-        <Button 
-          onClick={onNewLead} 
-          size="lg" 
-          className="h-14 px-10 text-lg font-semibold gap-3"
-        >
+      {onNewLead && <Button onClick={onNewLead} size="lg" className="h-14 px-10 text-lg font-semibold gap-3">
           <Sparkles className="h-6 w-6" />
           Start First Eligibility Check
-        </Button>
-      )}
+        </Button>}
     </div>
-  </div>
-));
-
+  </div>);
 EmptyState.displayName = 'EmptyState';
 
 // No search results component
-const NoSearchResults = memo(({ query }: { query: string }) => (
-  <div className="flex flex-col items-center justify-center py-12 px-4 bg-card border rounded-lg">
+const NoSearchResults = memo(({
+  query
+}: {
+  query: string;
+}) => <div className="flex flex-col items-center justify-center py-12 px-4 bg-card border rounded-lg">
     <div className="text-center space-y-3 max-w-md">
       <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
         <Search className="h-6 w-6 text-muted-foreground" />
@@ -354,11 +274,8 @@ const NoSearchResults = memo(({ query }: { query: string }) => (
         Try searching by name, phone number, or case ID
       </p>
     </div>
-  </div>
-));
-
+  </div>);
 NoSearchResults.displayName = 'NoSearchResults';
-
 export const PartnerLeadsTable = memo(({
   leads,
   loading,
@@ -366,28 +283,34 @@ export const PartnerLeadsTable = memo(({
   onUploadDocs,
   onCompleteLead,
   onNewLead,
-  onViewLead,
+  onViewLead
 }: PartnerLeadsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
   // Memoize pagination calculations
-  const { totalPages, startIndex, paginatedLeads } = useMemo(() => {
+  const {
+    totalPages,
+    startIndex,
+    paginatedLeads
+  } = useMemo(() => {
     const total = Math.ceil(leads.length / itemsPerPage);
     const start = (currentPage - 1) * itemsPerPage;
     const paginated = leads.slice(start, start + itemsPerPage);
-    return { totalPages: total, startIndex: start, paginatedLeads: paginated };
+    return {
+      totalPages: total,
+      startIndex: start,
+      paginatedLeads: paginated
+    };
   }, [leads, currentPage, itemsPerPage]);
 
   // Memoize page navigation handlers
   const handlePrevPage = useCallback(() => {
     setCurrentPage(prev => Math.max(1, prev - 1));
   }, []);
-
   const handleNextPage = useCallback(() => {
     setCurrentPage(prev => Math.min(totalPages, prev + 1));
   }, [totalPages]);
-
   const handlePageClick = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
@@ -398,20 +321,16 @@ export const PartnerLeadsTable = memo(({
       setCurrentPage(1);
     }
   }, [currentPage, totalPages]);
-
   if (loading) {
     return <TableSkeleton />;
   }
-
   if (leads.length === 0) {
     if (searchQuery && searchQuery.trim()) {
       return <NoSearchResults query={searchQuery} />;
     }
     return <EmptyState onNewLead={onNewLead} />;
   }
-
-  return (
-    <Card className="border shadow-sm">
+  return <Card className="border shadow-sm">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
@@ -420,66 +339,45 @@ export const PartnerLeadsTable = memo(({
                 <TableHead className="font-semibold">User ID</TableHead>
                 <TableHead className="font-semibold">Student</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
-                <TableHead className="font-semibold">Docs</TableHead>
+                <TableHead className="font-semibold">Documents</TableHead>
                 <TableHead className="font-semibold">Amount</TableHead>
                 <TableHead className="font-semibold">Date</TableHead>
                 <TableHead className="font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedLeads.map((lead) => (
-                <LeadRow
-                  key={lead.id}
-                  lead={lead}
-                  onUploadDocs={onUploadDocs}
-                  onCompleteLead={onCompleteLead}
-                  onViewLead={onViewLead}
-                />
-              ))}
+              {paginatedLeads.map(lead => <LeadRow key={lead.id} lead={lead} onUploadDocs={onUploadDocs} onCompleteLead={onCompleteLead} onViewLead={onViewLead} />)}
             </TableBody>
           </Table>
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
+        {totalPages > 1 && <div className="flex items-center justify-between px-4 py-3 border-t">
             <span className="text-sm text-muted-foreground">
               {startIndex + 1}-{Math.min(startIndex + itemsPerPage, leads.length)} of {leads.length}
             </span>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious
-                    onClick={handlePrevPage}
-                    className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
-                  />
+                  <PaginationPrevious onClick={handlePrevPage} className={cn(currentPage === 1 && "pointer-events-none opacity-50")} />
                 </PaginationItem>
-                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                  const page = i + 1;
-                  return (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => handlePageClick(page)}
-                        isActive={currentPage === page}
-                      >
+                {Array.from({
+              length: Math.min(5, totalPages)
+            }).map((_, i) => {
+              const page = i + 1;
+              return <PaginationItem key={page}>
+                      <PaginationLink onClick={() => handlePageClick(page)} isActive={currentPage === page}>
                         {page}
                       </PaginationLink>
-                    </PaginationItem>
-                  );
-                })}
+                    </PaginationItem>;
+            })}
                 <PaginationItem>
-                  <PaginationNext
-                    onClick={handleNextPage}
-                    className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
-                  />
+                  <PaginationNext onClick={handleNextPage} className={cn(currentPage === totalPages && "pointer-events-none opacity-50")} />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 });
-
 PartnerLeadsTable.displayName = 'PartnerLeadsTable';
