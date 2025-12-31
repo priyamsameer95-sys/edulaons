@@ -22,30 +22,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Status mappings for 18-step process filtering
-const IN_PIPELINE_STATUSES = [
-  'contacted', 'in_progress', 'document_review',
-  'logged_with_lender', 'counselling_done', 'pd_scheduled', 'pd_completed',
-  'additional_docs_pending', 'property_verification', 'credit_assessment'
-];
-
-const SANCTIONED_STATUSES = [
-  'approved', 'sanctioned', 'pf_pending', 'pf_paid', 'sanction_letter_issued'
-];
-
+const IN_PIPELINE_STATUSES = ['contacted', 'in_progress', 'document_review', 'logged_with_lender', 'counselling_done', 'pd_scheduled', 'pd_completed', 'additional_docs_pending', 'property_verification', 'credit_assessment'];
+const SANCTIONED_STATUSES = ['approved', 'sanctioned', 'pf_pending', 'pf_paid', 'sanction_letter_issued'];
 interface PartnerDashboardProps {
   partner?: Partner;
 }
-
-const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
+const PartnerDashboard = ({
+  partner
+}: PartnerDashboardProps) => {
   const navigate = useNavigate();
-  const { partnerCode } = useParams();
+  const {
+    partnerCode
+  } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { signOut, isAdmin } = useAuth();
-  
+  const {
+    signOut,
+    isAdmin
+  } = useAuth();
+
   // CRITICAL: On partner dashboard, ALWAYS filter by partner_id - never show global KPIs
   // This ensures partners only see their own data, even when an admin views the partner dashboard
-  const { kpis, loading: kpisLoading, refetch: refetchKPIs } = usePartnerKPIs(partner?.id, false);
-  const { leads, loading: leadsLoading, error: leadsError, refetch: refetchLeads } = useRefactoredLeads(partner?.id);
+  const {
+    kpis,
+    loading: kpisLoading,
+    refetch: refetchKPIs
+  } = usePartnerKPIs(partner?.id, false);
+  const {
+    leads,
+    loading: leadsLoading,
+    error: leadsError,
+    refetch: refetchLeads
+  } = useRefactoredLeads(partner?.id);
 
   // Handle openLead query param to auto-open lead detail sheet
   useEffect(() => {
@@ -58,7 +65,9 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
         setShowLeadDetail(true);
         // Clear the query param after opening
         searchParams.delete('openLead');
-        setSearchParams(searchParams, { replace: true });
+        setSearchParams(searchParams, {
+          replace: true
+        });
       }
     }
   }, [searchParams, leads, leadsLoading, setSearchParams]);
@@ -71,7 +80,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
   const [showNewLead, setShowNewLead] = useState(false);
   const [showEligibilityCheck, setShowEligibilityCheck] = useState(false);
   const [showCompleteLeadModal, setShowCompleteLeadModal] = useState(false);
-  
+
   // Lead detail sheet state
   const [showLeadDetail, setShowLeadDetail] = useState(false);
   const [selectedLead, setSelectedLead] = useState<RefactoredLead | null>(null);
@@ -82,7 +91,7 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
 
   // Filter leads based on status and search
   const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
+    return leads.filter(lead => {
       // Status filter from compact stats bar (updated for 18-step process)
       if (statusFilter) {
         if (statusFilter === 'in_pipeline') {
@@ -104,55 +113,41 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
         const studentEmail = lead.student?.email || '';
-        const emailMatch = !isPlaceholderEmail(studentEmail) && 
-                           studentEmail.toLowerCase().includes(query);
-        
-        const matchesSearch =
-          (lead.student?.name || '').toLowerCase().includes(query) ||
-          emailMatch ||
-          (lead.student?.phone || '').toLowerCase().includes(query) ||
-          lead.case_id.toLowerCase().includes(query);
+        const emailMatch = !isPlaceholderEmail(studentEmail) && studentEmail.toLowerCase().includes(query);
+        const matchesSearch = (lead.student?.name || '').toLowerCase().includes(query) || emailMatch || (lead.student?.phone || '').toLowerCase().includes(query) || lead.case_id.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
-
       return true;
     });
   }, [leads, statusFilter, debouncedSearch]);
-
   const handleNewLead = () => {
     setShowNewLead(true);
   };
-
   const handleEligibilityCheck = () => {
     setShowEligibilityCheck(true);
   };
-
   const handleLeadSuccess = () => {
     refetchLeads();
     refetchKPIs();
   };
-
   const handleEligibilityContinue = async (leadId: string): Promise<void> => {
     // Fetch the newly created lead and open CompleteLeadModal
     // Use explicit FK hints to avoid ambiguous relationship error
-    const { data: lead, error } = await supabase
-      .from('leads_new')
-      .select(`
+    const {
+      data: lead,
+      error
+    } = await supabase.from('leads_new').select(`
         *,
         students!leads_new_student_id_fkey(*),
         co_applicants!leads_new_co_applicant_id_fkey(*),
         lenders!leads_new_lender_id_fkey(*),
         partners!leads_new_partner_id_fkey(*)
-      `)
-      .eq('id', leadId)
-      .single();
-    
+      `).eq('id', leadId).single();
     if (error) {
       console.error('Error fetching lead for complete modal:', error);
       toast.error('Failed to load lead details');
       return;
     }
-
     if (lead) {
       const mappedLead = mapDbRefactoredLeadToLead(lead as any);
       setSelectedLead(mappedLead);
@@ -166,13 +161,11 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
     refetchLeads();
     refetchKPIs();
   };
-
   const handleCompleteLead = (lead: RefactoredLead) => {
     // Open CompleteLeadModal for incomplete quick leads
     setSelectedLead(lead);
     setShowCompleteLeadModal(true);
   };
-
   const handleUploadDocs = (lead?: RefactoredLead) => {
     if (lead) {
       setSelectedLead(lead);
@@ -180,27 +173,23 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       setShowLeadDetail(true);
     }
   };
-
   const handleUploadDocsById = async (leadId: string): Promise<void> => {
     // Fetch the lead and open document upload view
-    const { data: lead, error } = await supabase
-      .from('leads_new')
-      .select(`
+    const {
+      data: lead,
+      error
+    } = await supabase.from('leads_new').select(`
         *,
         students!leads_new_student_id_fkey(*),
         co_applicants!leads_new_co_applicant_id_fkey(*),
         lenders!leads_new_lender_id_fkey(*),
         partners!leads_new_partner_id_fkey(*)
-      `)
-      .eq('id', leadId)
-      .single();
-    
+      `).eq('id', leadId).single();
     if (error) {
       console.error('Error fetching lead for documents:', error);
       toast.error('Failed to load lead');
       return;
     }
-
     if (lead) {
       const mappedLead = mapDbRefactoredLeadToLead(lead as any);
       setSelectedLead(mappedLead);
@@ -208,20 +197,16 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       setShowLeadDetail(true);
     }
   };
-
   const handleViewLead = (lead: RefactoredLead) => {
     setSelectedLead(lead);
     setLeadDetailInitialTab("overview");
     setShowLeadDetail(true);
   };
-
   const handleLeadUpdated = () => {
     refetchLeads();
     refetchKPIs();
   };
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Compact Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -233,34 +218,21 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
               <h1 className="text-base font-semibold leading-tight">
                 {partner?.name || 'Partner Dashboard'}
               </h1>
-              {partner?.partner_code && (
-                <div className="flex items-center gap-1.5 mt-0.5">
+              {partner?.partner_code && <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-xs font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
                     {partner.partner_code}
                   </span>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {isAdmin() && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/admin')}
-              >
+            {isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
                 Admin
-              </Button>
-            )}
+              </Button>}
             <PartnerNotificationBell partnerId={partner?.id} />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="text-muted-foreground gap-2"
-            >
+            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground gap-2">
               <LogOut className="h-4 w-4" />
-              Log out
+               Sign out
             </Button>
           </div>
         </div>
@@ -269,91 +241,44 @@ const PartnerDashboard = ({ partner }: PartnerDashboardProps) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
         {/* Error Alert */}
-        {leadsError && (
-          <Alert variant="destructive">
+        {leadsError && <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Failed to load leads: {leadsError}
             </AlertDescription>
-          </Alert>
-        )}
+          </Alert>}
 
         {/* Compact Stats Bar - clickable filters */}
-        <CompactStatsBar
-          kpis={kpis}
-          loading={kpisLoading}
-          activeFilter={statusFilter}
-          onFilterClick={setStatusFilter}
-        />
+        <CompactStatsBar kpis={kpis} loading={kpisLoading} activeFilter={statusFilter} onFilterClick={setStatusFilter} />
 
         {/* Quick Actions Bar */}
-        <QuickActionsBar
-          onNewLead={handleNewLead}
-          onEligibilityCheck={handleEligibilityCheck}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <QuickActionsBar onNewLead={handleNewLead} onEligibilityCheck={handleEligibilityCheck} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
         {/* Leads Table */}
-        <PartnerLeadsTable
-          leads={filteredLeads}
-          loading={leadsLoading}
-          searchQuery={debouncedSearch}
-          onUploadDocs={handleUploadDocs}
-          onCompleteLead={handleCompleteLead}
-          onNewLead={handleNewLead}
-          onViewLead={handleViewLead}
-        />
+        <PartnerLeadsTable leads={filteredLeads} loading={leadsLoading} searchQuery={debouncedSearch} onUploadDocs={handleUploadDocs} onCompleteLead={handleCompleteLead} onNewLead={handleNewLead} onViewLead={handleViewLead} />
       </main>
 
       {/* Add New Lead Modal */}
-      <AddNewLeadModal
-        open={showNewLead}
-        onClose={() => setShowNewLead(false)}
-        onSuccess={handleLeadSuccess}
-        onContinueApplication={handleEligibilityContinue}
-        onUploadDocuments={handleUploadDocsById}
-        partnerId={partner?.id}
-      />
+      <AddNewLeadModal open={showNewLead} onClose={() => setShowNewLead(false)} onSuccess={handleLeadSuccess} onContinueApplication={handleEligibilityContinue} onUploadDocuments={handleUploadDocsById} partnerId={partner?.id} />
 
       {/* Eligibility Check Modal */}
-      <EligibilityCheckModal
-        open={showEligibilityCheck}
-        onClose={() => setShowEligibilityCheck(false)}
-        onSuccess={handleLeadSuccess}
-        onContinueApplication={handleEligibilityContinue}
-        onUploadDocuments={handleUploadDocsById}
-        partnerId={partner?.id}
-      />
+      <EligibilityCheckModal open={showEligibilityCheck} onClose={() => setShowEligibilityCheck(false)} onSuccess={handleLeadSuccess} onContinueApplication={handleEligibilityContinue} onUploadDocuments={handleUploadDocsById} partnerId={partner?.id} />
 
       {/* Complete Lead Modal - for finishing quick leads */}
-      <CompleteLeadModal
-        open={showCompleteLeadModal}
-        onClose={() => {
-          setShowCompleteLeadModal(false);
-          setSelectedLead(null);
-        }}
-        lead={selectedLead}
-        onSuccess={() => {
-          handleLeadSuccess();
-          setShowCompleteLeadModal(false);
-          setSelectedLead(null);
-        }}
-      />
+      <CompleteLeadModal open={showCompleteLeadModal} onClose={() => {
+      setShowCompleteLeadModal(false);
+      setSelectedLead(null);
+    }} lead={selectedLead} onSuccess={() => {
+      handleLeadSuccess();
+      setShowCompleteLeadModal(false);
+      setSelectedLead(null);
+    }} />
 
       {/* Partner Lead Detail Sheet */}
-      <PartnerLeadDetailSheet
-        lead={selectedLead}
-        open={showLeadDetail}
-        onOpenChange={(open) => {
-          setShowLeadDetail(open);
-          if (!open) setSelectedLead(null);
-        }}
-        onLeadUpdated={handleLeadUpdated}
-        initialTab={leadDetailInitialTab}
-      />
-    </div>
-  );
+      <PartnerLeadDetailSheet lead={selectedLead} open={showLeadDetail} onOpenChange={open => {
+      setShowLeadDetail(open);
+      if (!open) setSelectedLead(null);
+    }} onLeadUpdated={handleLeadUpdated} initialTab={leadDetailInitialTab} />
+    </div>;
 };
-
 export default PartnerDashboard;
