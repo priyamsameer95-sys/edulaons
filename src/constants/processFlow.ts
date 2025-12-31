@@ -107,7 +107,7 @@ export const STATUS_CONFIG: Record<LeadStatusExtended, StatusConfig> = {
   },
   docs_uploading: {
     value: 'docs_uploading',
-    label: 'Documents Uploading',
+    label: 'Uploading Documents',
     shortLabel: 'Uploading',
     description: 'Student is uploading required documents',
     phase: 'pre_login',
