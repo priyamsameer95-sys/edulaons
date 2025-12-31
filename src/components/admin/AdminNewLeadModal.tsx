@@ -821,7 +821,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                     value={formData.student_name}
                     onChange={(e) => handleInputChange('student_name', e.target.value)}
                     onBlur={() => handleBlur('student_name')}
-                    placeholder="Full name as per PAN"
+                    placeholder="Name as per passport"
                     aria-required="true"
                     aria-invalid={!!errors.student_name}
                     aria-describedby={errors.student_name ? 'student_name-error' : undefined}

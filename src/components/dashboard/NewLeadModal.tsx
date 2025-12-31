@@ -451,7 +451,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
                     id="student_name"
                     {...getFieldProps('student_name')}
                     onChange={(e) => handleInputChange('student_name', e.target.value)}
-                    placeholder="Full name as per PAN"
+                    placeholder="Name as per passport"
                     className={errors.student_name ? 'border-destructive focus:border-destructive' : ''}
                   />
                   {errors.student_name && (
