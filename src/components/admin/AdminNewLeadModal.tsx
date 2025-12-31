@@ -756,7 +756,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Create Lead on Behalf of Partner
+            Create Lead on Behalf of a Partner
           </DialogTitle>
         </DialogHeader>
 
