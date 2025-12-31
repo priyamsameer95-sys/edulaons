@@ -274,7 +274,7 @@ export const LeadTableRow = React.memo(function LeadTableRow({
           <TooltipTrigger asChild>
             <div className={`text-xs font-medium ${getAgeColor(lead.created_at)} flex items-center gap-1`}>
               {ageDays > 30 && <AlertTriangle className="h-3 w-3" />}
-              {formatDistanceToNow(new Date(lead.created_at), { addSuffix: false })}
+              {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
             </div>
           </TooltipTrigger>
           <TooltipContent>
