@@ -75,7 +75,7 @@ const AdminDashboard = () => {
               <TabsList className="h-10 bg-transparent">
                 <TabsTrigger value="queue" className="gap-1.5 data-[state=active]:bg-background">
                   <LayoutList className="h-4 w-4" />
-                  Lead Queue
+                  Leads
                 </TabsTrigger>
                 <TabsTrigger value="partners" className="gap-1.5 data-[state=active]:bg-background">
                   <Users className="h-4 w-4" />
