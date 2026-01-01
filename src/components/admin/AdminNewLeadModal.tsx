@@ -1379,7 +1379,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                           handleInputChange('co_applicant_phone', value);
                         }}
                         onBlur={() => handleBlur('co_applicant_phone')}
-                        placeholder="9876543210"
+                        placeholder="10-digit mobile number"
                         inputMode="numeric"
                         pattern="[0-9]*"
                         maxLength={10}
