@@ -944,6 +944,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                         value={formData.student_dob}
                         onChange={(e) => handleInputChange('student_dob', e.target.value)}
                         onBlur={() => handleBlur('student_dob')}
+                        placeholder="DD - MM - YYYY"
                         className={cn(
                           touched.student_dob && errors.student_dob && 'border-destructive'
                         )}
