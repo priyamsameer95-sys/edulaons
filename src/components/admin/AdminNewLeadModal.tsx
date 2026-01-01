@@ -1368,7 +1368,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                       error={errors.co_applicant_phone}
                       touched={touched.co_applicant_phone}
                       isValid={!!formData.co_applicant_phone && !validateField('co_applicant_phone', formData.co_applicant_phone)}
-                      helperText="10-digit mobile number"
+                      helperText="10-digit Indian mobile number"
                       id="co_applicant_phone"
                     >
                       <Input
