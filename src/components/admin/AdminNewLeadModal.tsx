@@ -1319,7 +1319,7 @@ export const AdminNewLeadModal = ({ open, onOpenChange, onSuccess, partners, def
                         value={formData.co_applicant_name}
                         onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
                         onBlur={() => handleBlur('co_applicant_name')}
-                        placeholder="Parent/Guardian name"
+                        placeholder="Name as per passport"
                         aria-required="true"
                         aria-invalid={!!errors.co_applicant_name}
                         className={cn(
