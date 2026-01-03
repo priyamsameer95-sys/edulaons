@@ -136,7 +136,17 @@ export function useAuth() {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Handle storage blocked or other errors gracefully
+        logger.warn('[useAuth] Session retrieval error:', error.message);
+        if (error.message.includes('storage') || error.message.includes('blocked') || error.message.includes('access')) {
+          logger.warn('[useAuth] Browser may be blocking storage access - user will need to re-authenticate');
+        }
+        setLoading(false);
+        return;
+      }
+      
       logger.info('Initial session check:', session?.user?.email);
       
       setSession(session);
@@ -179,6 +189,9 @@ export function useAuth() {
       } else {
         setLoading(false);
       }
+    }).catch((err) => {
+      logger.error('[useAuth] Exception during session check:', err);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

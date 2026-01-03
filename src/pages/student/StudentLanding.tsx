@@ -14,6 +14,7 @@ import { OTPInput } from "@/components/student/OTPInput";
 import GlobalPublicHeader from "@/components/layouts/GlobalPublicHeader";
 import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, BadgeCheck, ChevronLeft, Sparkles, Clock, FileCheck, TrendingUp, Building2, Users, CheckCircle2, Smartphone, RefreshCw, FileText } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
+import { useAuth } from "@/hooks/useAuth";
 
 // Country data - synced with universities master
 const COUNTRIES = [{
@@ -210,6 +211,7 @@ const initialFormData: FormData = {
 type AuthStep = 'results' | 'otp' | 'verifying' | 'success';
 const StudentLanding = () => {
   const navigate = useNavigate();
+  const { user, appUser, loading: authLoading } = useAuth();
   const formRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -224,6 +226,20 @@ const StudentLanding = () => {
   const [otpError, setOtpError] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [otpSent, setOtpSent] = useState(false);
+
+  // Redirect authenticated users to their dashboard
+  useEffect(() => {
+    if (!authLoading && user && appUser) {
+      console.log('🔄 Authenticated user on landing, redirecting to dashboard');
+      if (appUser.role === 'student') {
+        navigate('/dashboard/student', { replace: true });
+      } else if (appUser.role === 'partner') {
+        navigate('/dashboard', { replace: true });
+      } else if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+        navigate('/dashboard/admin', { replace: true });
+      }
+    }
+  }, [authLoading, user, appUser, navigate]);
 
   // Resend timer countdown
   useEffect(() => {
