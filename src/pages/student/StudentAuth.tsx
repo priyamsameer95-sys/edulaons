@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,17 @@ import { OTPInput } from "@/components/student/OTPInput";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardRouter from "@/components/DashboardRouter";
 import { GraduationCap, Phone, ArrowRight, ArrowLeft, CheckCircle2, Shield, Zap, Loader2, Smartphone, KeyRound, Sparkles, PartyPopper } from "lucide-react";
+
 type AuthStep = 'phone' | 'otp' | 'success';
+
 const StudentAuth = () => {
-  const {
-    user,
-    loading
-  } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get returnTo from URL params
+  const searchParams = new URLSearchParams(location.search);
+  const returnTo = searchParams.get('returnTo') || '/student';
   const [step, setStep] = useState<AuthStep>('phone');
   const [isLoading, setIsLoading] = useState(false);
   const [otpError, setOtpError] = useState(false);
@@ -103,11 +107,11 @@ const StudentAuth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !loading) {
-      navigate('/student', {
-        replace: true
-      });
+      // Use returnTo if valid, otherwise default to /student
+      const destination = returnTo.startsWith('/') ? returnTo : '/student';
+      navigate(destination, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, returnTo]);
   if (loading || sessionChecking) {
     return <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -245,11 +249,10 @@ const StudentAuth = () => {
         }
       }
 
-      // Wait for success animation then redirect
+      // Wait for success animation then redirect to returnTo or default
       setTimeout(() => {
-        navigate('/student', {
-          replace: true
-        });
+        const destination = returnTo.startsWith('/') ? returnTo : '/student';
+        navigate(destination, { replace: true });
       }, 2000);
     } catch (err: any) {
       console.error('Unexpected error:', err);

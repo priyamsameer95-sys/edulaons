@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, appUser, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -18,13 +19,19 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
+  // Build returnTo param from current location
+  const returnTo = encodeURIComponent(location.pathname + location.search);
+
   if (!user || !appUser) {
-    // Redirect to appropriate login based on required role
-    if (requiredRole === 'partner') {
-      return <Navigate to="/partner/login" replace />;
+    // Redirect to appropriate login based on required role with returnTo
+    if (requiredRole === 'admin' || requiredRole === 'super_admin') {
+      return <Navigate to={`/admin?returnTo=${returnTo}`} replace />;
     }
-    // Default: students and others go to home (student landing with auth)
-    return <Navigate to="/student/auth" replace />;
+    if (requiredRole === 'partner') {
+      return <Navigate to={`/partner/login?returnTo=${returnTo}`} replace />;
+    }
+    // Default: students and others go to student auth
+    return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
   }
 
   if (!appUser.is_active) {

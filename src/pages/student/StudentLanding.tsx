@@ -230,7 +230,6 @@ const StudentLanding = () => {
   // Redirect authenticated users to their dashboard
   useEffect(() => {
     if (!authLoading && user && appUser) {
-      console.log('🔄 Authenticated user on landing, redirecting to dashboard');
       if (appUser.role === 'student') {
         navigate('/dashboard/student', { replace: true });
       } else if (appUser.role === 'partner') {
