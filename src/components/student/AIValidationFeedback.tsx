@@ -147,6 +147,12 @@ const AIValidationFeedback = ({
       </div>
 
       {/* Upload guidance */}
+      {isValid && (
+        <div className="text-xs text-emerald-600 dark:text-emerald-400 pt-1 border-t border-emerald-200 dark:border-emerald-800/50 mt-2">
+          ✓ Ready to upload
+        </div>
+      )}
+      
       {hasIssues && !isRejected && (
         <div className="text-xs text-muted-foreground pt-1 border-t border-border/50 mt-2">
           💡 You can still upload - our team will verify it
@@ -154,8 +160,12 @@ const AIValidationFeedback = ({
       )}
       
       {isRejected && (
-        <div className="text-xs text-red-600 dark:text-red-400 pt-1 border-t border-red-200 dark:border-red-800/50 mt-2">
-          ⚠️ Consider re-taking this document for faster approval
+        <div className="text-xs text-red-600 dark:text-red-400 pt-1 border-t border-red-200 dark:border-red-800/50 mt-2 space-y-1">
+          <div className="font-medium">⚠️ Cannot upload this document</div>
+          {validation.notes && (
+            <div>{validation.notes}</div>
+          )}
+          <div className="text-red-500 dark:text-red-400/80">Please upload a valid document photo</div>
         </div>
       )}
     </div>
