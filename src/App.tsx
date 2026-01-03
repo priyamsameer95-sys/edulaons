@@ -21,9 +21,6 @@ import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
 import PublicPartner from "./pages/public/PublicPartner";
 
-// Import comprehensive university data import script
-import "./scripts/importData";
-
 const queryClient = new QueryClient();
 
 const App = () => (
