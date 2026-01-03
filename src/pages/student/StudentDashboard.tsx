@@ -1,9 +1,10 @@
 /**
- * Student Dashboard - Premium Desktop-First Redesign
+ * Student Dashboard - Compact Redesign
  * 
- * Core UX: User understands status in <5 seconds,
- * sees exactly ONE obvious next action.
- * Clean, calm, 2025-grade fintech aesthetic.
+ * 3-section layout:
+ * 1. CompactStatusHeader - Journey card with status
+ * 2. ApplicationDetailsCard - Basic info with edit button
+ * 3. CollapsibleDocumentSection - Documents with filter tabs
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,13 +17,9 @@ import ChangeLenderModal from '@/components/student/ChangeLenderModal';
 import StudentUploadSheet from '@/components/student/StudentUploadSheet';
 import { toast } from 'sonner';
 import { 
-  ApplicationSummaryStrip,
-  HeroActionCard,
-  DocumentStatusCards,
-  DocumentTable,
-  StageTimeline,
-  getTimelineStep,
-  type DocumentFilter,
+  CompactStatusHeader,
+  ApplicationDetailsCard,
+  CollapsibleDocumentSection,
   type DocumentItem,
 } from '@/components/student/dashboard';
 import { 
@@ -31,7 +28,6 @@ import {
   Sparkles,
   ChevronRight,
   Globe,
-  Pencil,
   Shield
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -88,7 +84,6 @@ const StudentDashboard = () => {
   // Document state
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
-  const [filter, setFilter] = useState<DocumentFilter>('all');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const isEditLocked = lead ? STUDENT_EDIT_LOCKED_STATUSES.includes(lead.status as any) : true;
@@ -199,6 +194,10 @@ const StudentDashboard = () => {
     navigate('/student/apply');
   };
 
+  const handleEditApplication = () => {
+    navigate('/student/apply');
+  };
+
   // Document helpers
   const getDocumentStatus = (typeId: string): 'required' | 'pending' | 'verified' | 'rejected' => {
     const doc = uploadedDocs.find(d => d.document_type_id === typeId);
@@ -265,8 +264,6 @@ const StudentDashboard = () => {
   const rejectedCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'rejected').length;
   const verifiedCount = requiredDocs.filter(d => getDocumentStatus(d.id) === 'verified').length;
   const totalDocs = requiredDocs.length;
-  const completedDocs = uploadedCount + verifiedCount;
-  const isAllComplete = pendingCount === 0 && rejectedCount === 0 && totalDocs > 0;
 
   // Build document items for table
   const documentItems: DocumentItem[] = requiredDocs.map(doc => {
@@ -281,19 +278,6 @@ const StudentDashboard = () => {
       uploadedFilename: uploaded?.original_filename,
     };
   });
-
-  // Get stage name for display
-  const getStageName = (status: string, docsStatus: string): string => {
-    if (docsStatus !== 'verified') return 'Documents Pending';
-    const names: Record<string, string> = {
-      'under_review': 'Under Review',
-      'lender_review': 'Lender Review',
-      'processing': 'Processing',
-      'approved': 'Approved',
-      'disbursed': 'Disbursed',
-    };
-    return names[status] || 'In Progress';
-  };
 
   const rawName = profile?.name?.split(' ')[0] || 'there';
   const studentName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
@@ -332,8 +316,6 @@ const StudentDashboard = () => {
                     </span>
                   </div>
                   <span className="text-sm font-medium">{studentName}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-sm text-muted-foreground font-mono">{lead.case_id}</span>
                 </div>
               )}
               <Button 
@@ -382,66 +364,45 @@ const StudentDashboard = () => {
             </Button>
           </motion.div>
         ) : (
-          /* ================== HAS APPLICATION - PREMIUM DASHBOARD ================== */
+          /* ================== HAS APPLICATION - COMPACT 3-SECTION DASHBOARD ================== */
           <motion.div 
-            className="space-y-6"
+            className="space-y-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            {/* 1. TOP SUMMARY STRIP */}
-            <ApplicationSummaryStrip
+            {/* Section 1: Compact Status Header (Journey Card) */}
+            <CompactStatusHeader
               caseId={lead.case_id}
-              currentStage={getStageName(lead.status, lead.documents_status)}
-              uploadedCount={completedDocs}
-              totalCount={totalDocs}
+              status={lead.status}
             />
 
-            {/* 2. HERO ACTION CARD */}
-            <HeroActionCard
-              onUploadClick={handleUploadDocuments}
-              pendingCount={pendingCount + rejectedCount}
-              isComplete={isAllComplete}
+            {/* Section 2: Application Details Card */}
+            <ApplicationDetailsCard
+              loanAmount={lead.loan_amount}
+              studyDestination={lead.study_destination}
+              intakeMonth={lead.intake_month}
+              intakeYear={lead.intake_year}
+              targetLender={lead.target_lender}
+              createdAt={lead.created_at}
+              isEditLocked={isEditLocked}
+              onEditClick={handleEditApplication}
             />
 
-            {/* 3. STAGE TIMELINE */}
-            <StageTimeline 
-              currentStep={getTimelineStep(lead.status, lead.documents_status)} 
-            />
-
-            {/* 4. DOCUMENT STATUS CARDS */}
-            <DocumentStatusCards
+            {/* Section 3: Collapsible Document Section */}
+            <CollapsibleDocumentSection
+              documents={documentItems}
               pendingCount={pendingCount}
               uploadedCount={uploadedCount}
-              attentionCount={rejectedCount}
+              rejectedCount={rejectedCount}
               verifiedCount={verifiedCount}
-              activeFilter={filter}
-              onFilterChange={setFilter}
-            />
-
-            {/* 5. DOCUMENT TABLE */}
-            <DocumentTable
-              documents={documentItems}
-              filter={filter}
-              onUpload={handleFileUpload}
+              totalCount={totalDocs}
+              onUploadClick={handleUploadDocuments}
+              onFileUpload={handleFileUpload}
               uploadingId={uploadingId}
             />
 
-            {/* 6. SECONDARY ACTION - Edit Application */}
-            {!isEditLocked && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/student/apply')}
-                  className="text-muted-foreground"
-                >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit Application
-                </Button>
-              </div>
-            )}
-
-            {/* 7. TRUST FOOTER */}
-            <div className="flex items-center justify-center gap-2 pt-8 pb-4 text-xs text-muted-foreground/70">
+            {/* Trust Footer */}
+            <div className="flex items-center justify-center gap-2 pt-6 pb-4 text-xs text-muted-foreground/70">
               <Shield className="w-3.5 h-3.5" />
               <span>Your documents are securely shared only with verified lenders</span>
             </div>
