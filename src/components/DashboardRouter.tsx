@@ -1,8 +1,9 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 interface DashboardRouterProps {
   children?: React.ReactNode;
@@ -10,6 +11,7 @@ interface DashboardRouterProps {
 
 const DashboardRouter = ({ children }: DashboardRouterProps) => {
   const { user, appUser, loading } = useAuth();
+  const location = useLocation();
   const [partnerCode, setPartnerCode] = useState<string | null>(null);
   const [fetchingPartnerCode, setFetchingPartnerCode] = useState(false);
 
@@ -17,7 +19,7 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     const fetchPartnerCode = async () => {
       if (appUser?.role === 'partner') {
         if (!appUser.partner_id) {
-          console.error('Partner user has no partner_id assigned');
+          logger.error('Partner user has no partner_id assigned');
           setFetchingPartnerCode(false);
           return;
         }
@@ -32,17 +34,17 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
               .single();
             
             if (error) {
-              console.error('Error fetching partner code:', error);
+              logger.error('Error fetching partner code:', error);
               setFetchingPartnerCode(false);
             } else if (partner) {
               setPartnerCode(partner.partner_code);
               setFetchingPartnerCode(false);
             } else {
-              console.error('No partner found with id:', appUser.partner_id);
+              logger.error('No partner found with id:', appUser.partner_id);
               setFetchingPartnerCode(false);
             }
           } catch (error) {
-            console.error('Error in fetchPartnerCode:', error);
+            logger.error('Error in fetchPartnerCode:', error);
             setFetchingPartnerCode(false);
           }
         }
@@ -52,18 +54,10 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     fetchPartnerCode();
   }, [appUser, partnerCode]);
 
-  // Debug logging to track routing issues
-  console.log('DashboardRouter Debug:', {
-    loading,
-    fetchingPartnerCode,
-    user: user ? { email: user.email, id: user.id } : null,
-    appUser: appUser ? { email: appUser.email, role: appUser.role, partner_id: appUser.partner_id, is_active: appUser.is_active } : null,
-    partnerCode,
-    currentUrl: window.location.href
-  });
+  // Debug logging - only in development
+  logger.debug('DashboardRouter:', { loading, fetchingPartnerCode, hasUser: !!user, hasAppUser: !!appUser });
 
   if (loading || fetchingPartnerCode) {
-    console.log('DashboardRouter: Showing loading state');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -71,9 +65,20 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     );
   }
 
+  // Build returnTo param from current location
+  const returnTo = encodeURIComponent(location.pathname + location.search);
+
   if (!user || !appUser) {
-    console.log('DashboardRouter: No user or appUser, redirecting to home');
-    return <Navigate to="/" replace />;
+    // Redirect to appropriate login page with returnTo
+    // Detect intended role from URL path
+    if (location.pathname.startsWith('/dashboard/admin') || location.pathname.startsWith('/admin')) {
+      return <Navigate to={`/admin?returnTo=${returnTo}`} replace />;
+    }
+    if (location.pathname.startsWith('/partner') || location.pathname.startsWith('/dashboard')) {
+      return <Navigate to={`/partner/login?returnTo=${returnTo}`} replace />;
+    }
+    // Default: student login
+    return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
   }
 
   if (!appUser.is_active) {
@@ -90,18 +95,15 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
 
   // Route based on user role
   if (appUser.role === 'admin' || appUser.role === 'super_admin') {
-    console.log('DashboardRouter: Admin/Super Admin detected, redirecting to /dashboard/admin');
     return <Navigate to="/dashboard/admin" replace />;
   }
 
   if (appUser.role === 'student' as any) {
-    console.log('DashboardRouter: Student detected, redirecting to /dashboard/student');
     return <Navigate to="/dashboard/student" replace />;
   }
 
   if (appUser.role === 'partner') {
     if (!appUser.partner_id) {
-      console.error('DashboardRouter: Partner has no partner_id');
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
@@ -113,17 +115,14 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     }
     
     if (partnerCode) {
-      console.log('DashboardRouter: Partner with code, redirecting to partner dashboard:', partnerCode);
       return <Navigate to={`/partner/${partnerCode}`} replace />;
     } else if (fetchingPartnerCode) {
-      console.log('DashboardRouter: Fetching partner code, showing loading');
       return (
         <div className="flex min-h-screen items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       );
     } else {
-      console.error('DashboardRouter: Failed to fetch partner code');
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
@@ -135,9 +134,8 @@ const DashboardRouter = ({ children }: DashboardRouterProps) => {
     }
   }
 
-  // Fallback to home if no valid route found
-  console.log('DashboardRouter: No valid route found, fallback to home');
-  return <Navigate to="/" replace />;
+  // Fallback to student auth if no valid route found
+  return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
 };
 
 export default DashboardRouter;
