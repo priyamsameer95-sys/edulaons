@@ -10,7 +10,7 @@ import { useDropzone } from 'react-dropzone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { useDocumentClassification, QueuedFile, ClassificationResult } from '@/hooks/useDocumentClassification';
 import { useDocumentValidation, ValidationResult } from '@/hooks/useDocumentValidation';
 import { supabase } from '@/integrations/supabase/client';
@@ -281,6 +281,12 @@ const StudentSmartUpload = ({
       return;
     }
 
+    // Block upload if validation explicitly rejected
+    if (queuedFile.validation?.validationStatus === 'rejected') {
+      toast.error(queuedFile.validation.notes || 'Document validation failed. Please upload a valid document.');
+      return;
+    }
+
     setQueue(prev => prev.map(q => 
       q.id === queuedFile.id ? { ...q, status: 'uploading' } : q
     ));
@@ -388,8 +394,27 @@ const StudentSmartUpload = ({
     setQueue([]);
   }, [queue]);
 
-  // Simplified confidence display for students
-  const getConfidenceDisplay = (confidence: number) => {
+  // Stricter confidence display that accounts for quality and red flags
+  const getConfidenceDisplay = (classification: ClassificationResult) => {
+    const { confidence, quality, red_flags, is_document } = classification;
+    
+    // Priority 1: Reject non-documents
+    if (!is_document || red_flags?.includes('not_a_document') || 
+        red_flags?.includes('selfie') || red_flags?.includes('random_photo')) {
+      return { icon: XCircle, text: 'Not a Document', className: 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400' };
+    }
+    
+    // Priority 2: Quality issues
+    if (quality === 'poor' || quality === 'unreadable') {
+      return { icon: AlertTriangle, text: 'Poor Quality', className: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400' };
+    }
+    
+    // Priority 3: Red flags
+    if (red_flags?.some(f => ['blurry', 'partial', 'screenshot', 'edited'].includes(f))) {
+      return { icon: AlertTriangle, text: 'Needs Attention', className: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400' };
+    }
+    
+    // Priority 4: Confidence-based
     if (confidence >= 70) {
       return { icon: CheckCircle2, text: 'AI Matched', className: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400' };
     }
@@ -531,11 +556,11 @@ const StudentSmartUpload = ({
                     {/* Classified State */}
                     {queuedFile.status === 'classified' && (
                       <>
-                        {/* Confidence Display - Simplified for students */}
+                        {/* Confidence Display - Accounts for quality and red flags */}
                         {queuedFile.classification && queuedFile.classification.confidence > 0 && (
                           <div className="flex items-center gap-2 flex-wrap">
                             {(() => {
-                              const conf = getConfidenceDisplay(queuedFile.classification.confidence);
+                              const conf = getConfidenceDisplay(queuedFile.classification);
                               const Icon = conf.icon;
                               return (
                                 <div className={cn("flex items-center gap-1 text-xs px-2 py-1 rounded-full", conf.className)}>
@@ -613,16 +638,16 @@ const StudentSmartUpload = ({
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(groupedDocTypes).map(([category, types]) => (
-                              <div key={category}>
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                              <SelectGroup key={category}>
+                                <SelectLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                   {getCategoryLabel(category)}
-                                </div>
+                                </SelectLabel>
                                 {types.map(dt => (
                                   <SelectItem key={dt.id} value={dt.id} className="text-sm">
                                     {dt.name} {dt.required && '*'}
                                   </SelectItem>
                                 ))}
-                              </div>
+                              </SelectGroup>
                             ))}
                           </SelectContent>
                         </Select>
@@ -633,7 +658,10 @@ const StudentSmartUpload = ({
                             size="sm"
                             className="h-8"
                             onClick={() => handleUpload(queuedFile)}
-                            disabled={!queuedFile.selectedDocumentTypeId}
+                            disabled={
+                              !queuedFile.selectedDocumentTypeId || 
+                              queuedFile.validation?.validationStatus === 'rejected'
+                            }
                           >
                             <Check className="h-4 w-4 mr-1" />
                             Upload
