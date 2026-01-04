@@ -90,6 +90,7 @@ export function useAuth() {
   const lastActivityRef = useRef<number>(Date.now());
   const isRefreshingRef = useRef(false);
   const mountedRef = useRef(true);
+  const initializedRef = useRef(false); // Prevent double initialization
 
   // Track user activity
   useEffect(() => {
@@ -276,18 +277,23 @@ export function useAuth() {
     }
   }, []);
 
-  // Initialize session
+  // Refs to access current state in callbacks without re-running effect
+  const appUserRef = useRef(appUser);
+  appUserRef.current = appUser;
+
+  // Initialize session - runs ONLY ONCE on mount
   useEffect(() => {
+    // Prevent double initialization (React 18 StrictMode)
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     mountedRef.current = true;
 
     // Safety timeout - force loading false after 3 seconds max
     const authTimeoutId = setTimeout(() => {
-      if (mountedRef.current && loading) {
+      if (mountedRef.current) {
         logger.warn('[useAuth] Auth initialization timed out after 3s');
         setLoading(false);
-        if (!session) {
-          setSessionState('expired');
-        }
+        setSessionState(prev => prev === 'validating' || prev === 'unknown' ? 'expired' : prev);
       }
     }, 3000);
 
@@ -393,8 +399,9 @@ export function useAuth() {
           scheduleTokenRefresh(newSession.expires_at);
         }
 
-        // Fetch app user if not already loaded or user changed
-        if (!appUser || appUser.id !== newSession.user.id) {
+        // Fetch app user if not already loaded or user changed (use ref to avoid dependency)
+        const currentAppUser = appUserRef.current;
+        if (!currentAppUser || currentAppUser.id !== newSession.user.id) {
           const appUserData = await fetchAppUser(newSession.user.id);
           if (mountedRef.current) {
             setAppUser(appUserData);
@@ -414,7 +421,8 @@ export function useAuth() {
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [fetchAppUser, refreshSession, scheduleTokenRefresh, trackFirstLogin, appUser, loading, session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - run ONLY on mount
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
