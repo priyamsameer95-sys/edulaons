@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Mail, Calendar, MapPin, Shield, Check, Loader2, Sparkles, ChevronDown } from 'lucide-react';
+import { User, Phone, Mail, Calendar, MapPin, Check, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StudentApplicationData } from '@/types/student-application';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -86,26 +86,18 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-xl mx-auto"
+      className="w-full"
     >
       {/* Header */}
-      <div className="text-center mb-8">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-medium mb-4"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Takes ~2 minutes
-        </motion.div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Let's get started
-        </h1>
-        <p className="text-muted-foreground text-sm">Your data is encrypted & secure</p>
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-2">
+          <Sparkles className="w-4 h-4" /> Step 1 of 3
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">Let's get started</h1>
       </div>
 
       {/* Form */}
-      <div className="bg-card rounded-xl border shadow-sm p-6 space-y-6">
+      <div className="bg-card rounded-xl border border-border shadow-lg p-5 sm:p-6 space-y-6">
         
         {/* Name */}
         <div className="space-y-2">
@@ -339,11 +331,6 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
         </motion.button>
       </div>
 
-      {/* Trust footer */}
-      <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Shield className="w-3.5 h-3.5" />
-        <span>256-bit encryption • Your data is never sold</span>
-      </div>
     </motion.div>
   );
 };
