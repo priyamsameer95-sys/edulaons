@@ -12,6 +12,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Format processing fee: >= 9 means flat rupees, < 9 means percentage
+const formatProcessingFee = (fee: number | null | undefined): string => {
+  if (!fee) return '~1%';
+  if (fee >= 9) {
+    return `₹${fee.toLocaleString('en-IN')}`;
+  }
+  return `${fee}%`;
+};
+
 interface LenderData {
   lender_id: string;
   lender_name: string;
@@ -25,6 +34,7 @@ interface LenderData {
   student_facing_reason?: string;
   eligible_expenses?: any[] | null;
   moratorium_period?: string | null;
+  processing_fee?: number | null;
 }
 
 interface LenderRowCardProps {
@@ -205,7 +215,7 @@ const LenderRowCard = ({
             </div>
             <div className="flex-1 p-3 rounded-lg bg-muted/30">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Processing Fee</p>
-              <p className="text-sm font-semibold text-foreground">~1% of loan</p>
+              <p className="text-sm font-semibold text-foreground">{formatProcessingFee(lender.processing_fee)}</p>
             </div>
           </div>
         </div>
