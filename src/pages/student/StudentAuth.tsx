@@ -418,22 +418,6 @@ const StudentAuthContent = () => {
                       />
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-amber-500" />
-                      Name <span className="text-muted-foreground font-normal">(optional)</span>
-                    </Label>
-                    <Input 
-                      id="name" 
-                      type="text" 
-                      placeholder="Enter your name" 
-                      value={name} 
-                      onChange={e => setName(e.target.value)} 
-                      className="h-12 text-sm bg-background" 
-                    />
-                  </div>
-
                   <LoadingButton 
                     type="submit" 
                     className="w-full h-12 font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md" 
