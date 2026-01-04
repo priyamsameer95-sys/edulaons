@@ -96,30 +96,55 @@ const StudentDashboard = () => {
     if (!user?.email) return;
 
     try {
-      // Try to find student by email first
       let studentData = null;
       
-      const { data: byEmail, error: emailError } = await supabase
-        .from('students')
-        .select('id, name, email, phone')
-        .eq('email', user.email)
-        .maybeSingle();
+      // PHONE-FIRST LOOKUP: If synthetic email, extract phone and lookup by phone first
+      // This is more reliable since phone is the student's primary identity
+      const syntheticMatch = user.email.match(/^(\d{10})@student\.loan\.app$/i);
+      
+      if (syntheticMatch) {
+        // Synthetic OTP email - lookup by phone FIRST
+        const phoneDigits = syntheticMatch[1];
+        console.log('[StudentDashboard] Synthetic email detected, looking up by phone:', phoneDigits);
+        
+        const { data: byPhone, error: phoneError } = await supabase
+          .from('students')
+          .select('id, name, email, phone')
+          .eq('phone', phoneDigits)
+          .maybeSingle();
+        
+        if (!phoneError && byPhone) {
+          studentData = byPhone;
+          console.log('[StudentDashboard] Found student by phone:', studentData.id);
+        }
+      }
+      
+      // If not found by phone (or not synthetic), try email lookup
+      if (!studentData) {
+        const { data: byEmail, error: emailError } = await supabase
+          .from('students')
+          .select('id, name, email, phone')
+          .eq('email', user.email)
+          .maybeSingle();
 
-      if (!emailError && byEmail) {
-        studentData = byEmail;
-      } else {
-        // Fallback: Extract phone from email pattern
-        const emailMatch = user.email.match(/(\d{10})@/);
-        if (emailMatch) {
-          const phoneDigits = emailMatch[1];
-          const { data: byPhone, error: phoneError } = await supabase
-            .from('students')
-            .select('id, name, email, phone')
-            .eq('phone', phoneDigits)
-            .maybeSingle();
-          
-          if (!phoneError && byPhone) {
-            studentData = byPhone;
+        if (!emailError && byEmail) {
+          studentData = byEmail;
+          console.log('[StudentDashboard] Found student by email:', studentData.id);
+        } else {
+          // Final fallback: Extract any 10 digits from email
+          const emailMatch = user.email.match(/(\d{10})/);
+          if (emailMatch) {
+            const phoneDigits = emailMatch[1];
+            const { data: byPhone, error: phoneError } = await supabase
+              .from('students')
+              .select('id, name, email, phone')
+              .eq('phone', phoneDigits)
+              .maybeSingle();
+            
+            if (!phoneError && byPhone) {
+              studentData = byPhone;
+              console.log('[StudentDashboard] Found student by extracted phone:', studentData.id);
+            }
           }
         }
       }
@@ -151,10 +176,15 @@ const StudentDashboard = () => {
             target_lender: leadData.target_lender,
           } as StudentLead);
           setHasLead(true);
+          console.log('[StudentDashboard] Found lead:', leadData.case_id);
 
           // Fetch documents for this lead
           await fetchDocuments(leadData.id);
+        } else {
+          console.log('[StudentDashboard] No lead found for student');
         }
+      } else {
+        console.log('[StudentDashboard] No student profile found');
       }
     } catch (err) {
       console.error('Error fetching student data:', err);
@@ -342,6 +372,31 @@ const StudentDashboard = () => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST';
   };
 
+  // Handle session recovery
+  const handleRefreshSession = async () => {
+    setLoading(true);
+    setLoadingTimedOut(false);
+    try {
+      const { error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('[StudentDashboard] Session refresh failed:', error);
+        toast.error('Session expired. Please login again.');
+        navigate('/login/student');
+        return;
+      }
+      // Retry fetching data
+      await fetchStudentData();
+    } catch (err) {
+      console.error('[StudentDashboard] Refresh error:', err);
+      navigate('/login/student');
+    }
+  };
+
+  const handleLogoutAndRetry = async () => {
+    await signOut();
+    navigate('/login/student');
+  };
+
   // Show loading only if auth is still loading or we're fetching data
   if (loading && !loadingTimedOut) {
     return (
@@ -351,12 +406,28 @@ const StudentDashboard = () => {
     );
   }
 
-  // If loading timed out, show error state
-  if (loadingTimedOut && !profile) {
+  // If loading timed out or no user after auth - show recovery UI
+  if ((loadingTimedOut && !profile) || (!authLoading && !user)) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-muted-foreground text-center">Something went wrong loading your data.</p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
+        <div className="text-center">
+          <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-lg font-semibold mb-2">Session Issue</h2>
+          <p className="text-muted-foreground text-center max-w-sm">
+            {!user 
+              ? "Your session may have expired. Please try refreshing or login again."
+              : "Something went wrong loading your data."
+            }
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handleRefreshSession}>
+            Refresh Session
+          </Button>
+          <Button onClick={handleLogoutAndRetry}>
+            Login Again
+          </Button>
+        </div>
       </div>
     );
   }

@@ -301,25 +301,52 @@ const StudentAuthContent = () => {
       // OTP verified successfully - show success screen
       setStep('success');
       console.log('OTP verified, signing in...');
-      if (data.auth?.actionLink) {
-        const {
-          error: signInError
-        } = await supabase.auth.verifyOtp({
+      
+      // Establish auth session
+      if (data.auth?.token) {
+        const { error: signInError } = await supabase.auth.verifyOtp({
           token_hash: data.auth.token,
           type: 'magiclink'
         });
+        
         if (signInError) {
           console.error('Sign in error:', signInError);
-          window.location.href = data.auth.actionLink;
-          return;
+          // Fallback to action link
+          if (data.auth.actionLink) {
+            window.location.href = data.auth.actionLink;
+            return;
+          }
         }
       }
 
-      // Wait for success animation then redirect to returnTo or default
-      setTimeout(() => {
-        const destination = returnTo.startsWith('/') ? returnTo : '/student';
-        navigate(destination, { replace: true });
-      }, 2000);
+      // CRITICAL: Wait for session to be established before navigating
+      // This prevents the dashboard from loading without a valid session
+      const waitForSession = async (maxAttempts = 20) => {
+        for (let i = 0; i < maxAttempts; i++) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session) {
+            console.log('✅ Session established, navigating to dashboard');
+            const destination = returnTo.startsWith('/dashboard') ? returnTo : '/dashboard/student';
+            navigate(destination, { replace: true });
+            return true;
+          }
+          await new Promise(r => setTimeout(r, 250));
+        }
+        return false;
+      };
+
+      // Wait for success animation (1s) then poll for session
+      setTimeout(async () => {
+        const sessionReady = await waitForSession();
+        if (!sessionReady) {
+          console.warn('Session not established, using fallback');
+          if (data.auth?.actionLink) {
+            window.location.href = data.auth.actionLink;
+          } else {
+            navigate('/dashboard/student', { replace: true });
+          }
+        }
+      }, 1000);
     } catch (err: any) {
       console.error('Unexpected error:', err);
       setOtpError(true);

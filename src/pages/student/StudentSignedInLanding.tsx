@@ -79,11 +79,38 @@ const StudentSignedInLanding = () => {
           }
         }
 
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('id, name')
-          .eq('email', user.email)
-          .maybeSingle();
+        let studentData = null;
+        
+        // PHONE-FIRST LOOKUP: If synthetic email, extract phone and lookup by phone first
+        const syntheticMatch = user.email.match(/^(\d{10})@student\.loan\.app$/i);
+        
+        if (syntheticMatch) {
+          const phoneDigits = syntheticMatch[1];
+          console.log('[StudentSignedInLanding] Synthetic email, looking up by phone:', phoneDigits);
+          
+          const { data: byPhone } = await supabase
+            .from('students')
+            .select('id, name')
+            .eq('phone', phoneDigits)
+            .maybeSingle();
+          
+          if (byPhone) {
+            studentData = byPhone;
+          }
+        }
+        
+        // Fallback to email lookup
+        if (!studentData) {
+          const { data: byEmail } = await supabase
+            .from('students')
+            .select('id, name')
+            .eq('email', user.email)
+            .maybeSingle();
+          
+          if (byEmail) {
+            studentData = byEmail;
+          }
+        }
 
         if (studentData) {
           if (studentData.name && !studentName) {
