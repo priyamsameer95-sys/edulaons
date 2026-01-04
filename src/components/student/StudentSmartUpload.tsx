@@ -251,22 +251,53 @@ const StudentSmartUpload = ({
     const normalizedStudent = studentName?.toLowerCase().trim() || '';
     const normalizedCoApplicant = coApplicantName?.toLowerCase().trim() || '';
     
-    const detectedParts = normalizedDetected.split(/\s+/);
-    const studentParts = normalizedStudent.split(/\s+/);
-    const coApplicantParts = normalizedCoApplicant.split(/\s+/);
+    // Skip matching if co-applicant has a placeholder name
+    const placeholderNames = ['co-applicant', 'coapplicant', 'co applicant', 'tbd', 'na', 'n/a', ''];
+    const isCoApplicantPlaceholder = placeholderNames.includes(normalizedCoApplicant);
     
-    const matchesStudent = detectedParts.some(part => 
-      studentParts.some(sp => sp.includes(part) || part.includes(sp))
-    );
-    const matchesCoApplicant = coApplicantParts.length > 0 && detectedParts.some(part => 
-      coApplicantParts.some(cp => cp.includes(part) || part.includes(cp))
-    );
+    // Minimum 3 characters to avoid false positives from short parts
+    const MIN_PART_LENGTH = 3;
     
-    if (matchesStudent) {
-      return { status: 'match', message: 'Matches your profile', matchType: 'student' };
+    const detectedParts = normalizedDetected.split(/\s+/).filter(p => p.length >= MIN_PART_LENGTH);
+    const studentParts = normalizedStudent.split(/\s+/).filter(p => p.length >= MIN_PART_LENGTH);
+    const coApplicantParts = isCoApplicantPlaceholder 
+      ? [] 
+      : normalizedCoApplicant.split(/\s+/).filter(p => p.length >= MIN_PART_LENGTH);
+    
+    // Count matching parts (not just boolean match)
+    const countMatches = (detected: string[], target: string[]) => {
+      if (target.length === 0) return 0;
+      return detected.filter(part => 
+        target.some(tp => tp.includes(part) || part.includes(tp))
+      ).length;
+    };
+    
+    const studentMatchCount = countMatches(detectedParts, studentParts);
+    const coApplicantMatchCount = countMatches(detectedParts, coApplicantParts);
+    
+    // Calculate match ratio for better comparison
+    const studentRatio = studentParts.length > 0 
+      ? studentMatchCount / Math.max(detectedParts.length, studentParts.length) 
+      : 0;
+    const coApplicantRatio = coApplicantParts.length > 0 
+      ? coApplicantMatchCount / Math.max(detectedParts.length, coApplicantParts.length) 
+      : 0;
+    
+    // Determine best match based on ratio (higher ratio = better match)
+    if (coApplicantRatio > studentRatio && coApplicantMatchCount > 0) {
+      return { 
+        status: 'match', 
+        message: 'Matches co-applicant', 
+        matchType: 'co_applicant' 
+      };
     }
-    if (matchesCoApplicant) {
-      return { status: 'match', message: 'Matches co-applicant', matchType: 'co_applicant' };
+    
+    if (studentMatchCount > 0 && studentParts.length > 0) {
+      return { 
+        status: 'match', 
+        message: 'Matches your profile', 
+        matchType: 'student' 
+      };
     }
     
     return { 
