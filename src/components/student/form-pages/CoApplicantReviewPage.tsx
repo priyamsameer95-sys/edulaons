@@ -306,11 +306,6 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
                   </Button>
                 </div>
 
-                {/* Trust Badge */}
-                <div className="flex items-center justify-center gap-4 pt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" />Secure</span>
-                  <span>📞 24/7 Support</span>
-                </div>
               </div>
             </div>
           </motion.div>
