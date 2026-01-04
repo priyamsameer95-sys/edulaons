@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Component, ReactNode } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,11 +9,49 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { OTPInput } from "@/components/student/OTPInput";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardRouter from "@/components/DashboardRouter";
-import { GraduationCap, Phone, ArrowRight, ArrowLeft, CheckCircle2, Shield, Zap, Loader2, Smartphone, KeyRound, Sparkles, PartyPopper } from "lucide-react";
+import { GraduationCap, Phone, ArrowRight, ArrowLeft, CheckCircle2, Shield, Zap, Loader2, Smartphone, KeyRound, Sparkles, PartyPopper, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type AuthStep = 'phone' | 'otp' | 'success';
 
-const StudentAuth = () => {
+// Error boundary to catch and recover from HMR/hook crashes
+class StudentAuthErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[StudentAuth] Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="text-center max-w-sm">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Please refresh the page to try again.
+            </p>
+            <Button onClick={() => window.location.reload()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const StudentAuthContent = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -467,4 +505,12 @@ const StudentAuth = () => {
     </div>
   );
 };
+
+// Wrap with error boundary to prevent white screens from HMR crashes
+const StudentAuth = () => (
+  <StudentAuthErrorBoundary>
+    <StudentAuthContent />
+  </StudentAuthErrorBoundary>
+);
+
 export default StudentAuth;

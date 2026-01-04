@@ -283,27 +283,25 @@ export function useAuth() {
 
   // Ref for auth timeout so we can clear it when init completes
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if initialization completed to prevent false timeout warnings
+  const initCompletedRef = useRef(false);
 
   // Initialize session - runs ONLY ONCE on mount
   useEffect(() => {
-    // Prevent double initialization (React 18 StrictMode)
+    // Prevent double initialization (React 18 StrictMode / HMR)
     if (initializedRef.current) return;
     initializedRef.current = true;
     mountedRef.current = true;
+    initCompletedRef.current = false;
 
-    // Safety timeout - force loading false after 3 seconds max
-    // Only set if not already set (prevents multiple timeouts)
-    if (!authTimeoutRef.current) {
-      authTimeoutRef.current = setTimeout(() => {
-        // Only warn if we're still in loading state
-        if (mountedRef.current && authTimeoutRef.current) {
-          logger.warn('[useAuth] Auth initialization timed out after 3s');
-          setLoading(false);
-          setSessionState(prev => prev === 'validating' || prev === 'unknown' ? 'expired' : prev);
-          authTimeoutRef.current = null;
-        }
-      }, 3000);
-    }
+    // Safety timeout - only warn if init truly hasn't completed
+    authTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current && !initCompletedRef.current) {
+        logger.warn('[useAuth] Auth initialization timed out after 3s');
+        setLoading(false);
+        setSessionState(prev => prev === 'validating' || prev === 'unknown' ? 'expired' : prev);
+      }
+    }, 3000);
 
     const initializeSession = async () => {
       try {
@@ -373,7 +371,8 @@ export function useAuth() {
           setLoading(false);
         }
       } finally {
-        // Clear timeout when init completes (success or failure)
+        // Mark init as completed and clear timeout
+        initCompletedRef.current = true;
         if (authTimeoutRef.current) {
           clearTimeout(authTimeoutRef.current);
           authTimeoutRef.current = null;
