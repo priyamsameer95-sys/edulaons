@@ -163,17 +163,19 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     
     if (!data.universities?.length) e.universities = 'Select at least one';
     if (!data.courseType) e.courseType = 'Required';
-    if (!data.intakeMonth || !data.intakeYear) e.intake = 'Required';
+    // Allow "Not sure yet" (0, 0) or a valid month/year
+    const hasIntake = (data.intakeMonth === 0 && data.intakeYear === 0) || (data.intakeMonth && data.intakeYear);
+    if (!hasIntake) e.intake = 'Required';
     setErrors(e);
     return !Object.keys(e).length;
   };
 
   const handleContinue = () => { if (validate()) onNext(); };
 
-  // Generate next 12 months
+  // Generate next 6 months starting from current month
   const intakeMonths = [];
   const now = new Date();
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 0; i < 6; i++) {
     const futureDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
     intakeMonths.push({
       month: futureDate.getMonth() + 1,
@@ -181,6 +183,8 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
       label: futureDate.toLocaleString('en-US', { month: 'short' }),
     });
   }
+  
+  const isPlanningLater = data.intakeMonth === 0 && data.intakeYear === 0;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full">
@@ -390,9 +394,9 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
         {/* Row 6: Intake Month */}
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" /> When do you plan to start? *
+            <Calendar className="w-3.5 h-3.5" /> Expected start date *
           </label>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex flex-wrap gap-1.5">
             {intakeMonths.map(m => {
               const isSelected = data.intakeMonth === m.month && data.intakeYear === m.year;
               return (
@@ -404,11 +408,11 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                     setErrors(p => ({ ...p, intake: '' }));
                   }}
                   className={cn(
-                    "flex-shrink-0 flex flex-col items-center px-3 py-1.5 rounded-lg border-2 transition-all min-w-[56px]",
+                    "flex flex-col items-center px-3 py-1.5 rounded-lg border-2 transition-all min-w-[52px]",
                     isSelected
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/40",
-                    errors.intake && !data.intakeMonth && "border-destructive"
+                    errors.intake && !data.intakeMonth && !isPlanningLater && "border-destructive"
                   )}
                 >
                   <span className="font-semibold text-foreground text-xs">{m.label}</span>
@@ -416,6 +420,23 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                 </button>
               );
             })}
+            {/* Planning for later option */}
+            <button
+              type="button"
+              onClick={() => {
+                onUpdate({ intakeMonth: 0, intakeYear: 0 });
+                setErrors(p => ({ ...p, intake: '' }));
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all",
+                isPlanningLater
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-primary/40",
+                errors.intake && !data.intakeMonth && !isPlanningLater && "border-destructive"
+              )}
+            >
+              <span className="text-xs font-medium text-foreground">📅 Not sure yet</span>
+            </button>
           </div>
         </div>
 
