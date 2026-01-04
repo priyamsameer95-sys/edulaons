@@ -386,12 +386,21 @@ serve(async (req) => {
         partnerNameForLead = partnerData?.name || null;
       }
 
-      // Update student record
+      // Update student record - IMPORTANT: Save real email from form
+      // Only update email if user provided a real one (not synthetic/placeholder)
+      const formEmail = body.student_email?.trim()?.toLowerCase();
+      const isRealEmail = formEmail && 
+        !formEmail.includes('@student.loan.app') && 
+        !formEmail.includes('placeholder') &&
+        !formEmail.includes('@lead.');
+      
       const { error: updateStudentError } = await supabaseAdmin
         .from('students')
         .update({
           name: body.student_name?.trim(),
           phone: cleanStudentPhone,
+          // KEY FIX: Save real email from form, or keep as-is if not provided
+          ...(isRealEmail ? { email: formEmail } : {}),
           postal_code: body.student_pin_code?.trim(),
           date_of_birth: body.date_of_birth || null,
           gender: body.gender || null,
@@ -412,7 +421,7 @@ serve(async (req) => {
       if (updateStudentError) {
         console.warn('⚠️ Failed to update student:', updateStudentError.message);
       } else {
-        console.log('✅ Updated student record');
+        console.log('✅ Updated student record', isRealEmail ? `with real email: ${formEmail}` : '(no email update)');
       }
 
       // Update co-applicant record
@@ -632,43 +641,54 @@ serve(async (req) => {
       studentId = existingStudent.id;
       console.log('✅ Using existing student:', studentId);
       
-      // IMPORTANT: If authenticated, sync student email to auth user email (if not already taken)
-      if (isAuthenticated && authenticatedUser?.email) {
-        const authEmail = authenticatedUser.email.toLowerCase();
-        
+      // PRIORITY: Save real email from form (not auth email which may be synthetic)
+      const formEmail = body.student_email?.trim()?.toLowerCase();
+      const isRealFormEmail = formEmail && 
+        !formEmail.includes('@student.loan.app') && 
+        !formEmail.includes('placeholder') &&
+        !formEmail.includes('@lead.');
+      
+      if (isRealFormEmail) {
         // Check if this email is already used by a different student
         const { data: emailCheck } = await supabaseAdmin
           .from('students')
           .select('id')
-          .eq('email', authEmail)
+          .eq('email', formEmail)
           .neq('id', studentId)
           .maybeSingle();
         
         if (emailCheck) {
-          console.log('⚠️ Email already in use by another student, skipping sync');
+          console.log('⚠️ Email already in use by another student, skipping update');
         } else {
-          console.log('🔄 Syncing student email to auth user email:', authEmail);
+          console.log('🔄 Updating student with real email from form:', formEmail);
           
           const { error: syncError } = await supabaseAdmin
             .from('students')
-            .update({ email: authEmail })
+            .update({ email: formEmail })
             .eq('id', studentId);
             
           if (syncError) {
-            console.warn('⚠️ Failed to sync student email:', syncError.message);
+            console.warn('⚠️ Failed to update student email:', syncError.message);
           } else {
-            console.log('✅ Student email synced to:', authEmail);
+            console.log('✅ Student email updated to:', formEmail);
           }
         }
+      } else {
+        console.log('ℹ️ No real email provided in form, keeping existing email');
       }
     } else {
-      // Create new student - check if email is already taken
-      let studentEmail = isAuthenticated 
-        ? authenticatedUser!.email?.toLowerCase()
-        : `${cleanStudentPhone}@student.placeholder`;
+      // Create new student - use real email from form, or NULL if not provided
+      const formEmail = body.student_email?.trim()?.toLowerCase();
+      const isRealFormEmail = formEmail && 
+        !formEmail.includes('@student.loan.app') && 
+        !formEmail.includes('placeholder') &&
+        !formEmail.includes('@lead.');
       
-      // If authenticated and email exists, check if it's already used
-      if (isAuthenticated && studentEmail) {
+      // Use real form email if provided, otherwise NULL (phone is primary ID)
+      let studentEmail: string | null = isRealFormEmail ? formEmail : null;
+      
+      // If real email provided, check if it's already used
+      if (studentEmail) {
         const { data: existingByEmail } = await supabaseAdmin
           .from('students')
           .select('id')
@@ -676,18 +696,20 @@ serve(async (req) => {
           .maybeSingle();
         
         if (existingByEmail) {
-          // Email already in use - use phone-based placeholder instead
-          console.log('⚠️ Email already in use, using phone-based placeholder');
-          studentEmail = `${cleanStudentPhone}@student.placeholder`;
+          // Email already in use - set to NULL, phone is primary ID
+          console.log('⚠️ Email already in use, setting to NULL (phone is primary ID)');
+          studentEmail = null;
         }
       }
+      
+      console.log('🆕 Creating new student with phone as primary ID, email:', studentEmail || 'NULL');
       
       // Use upsert with phone as conflict key for race condition safety
       const { data: newStudent, error: studentError } = await supabaseAdmin
         .from('students')
         .upsert({
           name: body.student_name.trim(),
-          email: studentEmail,
+          email: studentEmail,  // Real email or NULL
           phone: cleanStudentPhone,
           postal_code: body.student_pin_code?.trim() || '000000',
           country: 'India',
@@ -720,7 +742,7 @@ serve(async (req) => {
         }
       } else {
         studentId = newStudent.id;
-        console.log('✅ Created new student:', studentId);
+        console.log('✅ Created new student:', studentId, studentEmail ? `with email: ${studentEmail}` : '(email=NULL)');
       }
     }
 

@@ -86,17 +86,30 @@ Deno.serve(async (req) => {
       studentId = existingStudent.id
       studentName = existingStudent.name
       
-      // Check if email needs to be updated (placeholder emails)
-      if (existingStudent.email.includes('placeholder') || existingStudent.email.includes('@lead.')) {
-        studentEmail = `${cleanPhone}@student.loan.app`
-        console.log('🔄 Updating placeholder email to:', studentEmail)
+      // Phone is primary ID - email handling:
+      // - If email is synthetic/placeholder → set to NULL (will be updated when user provides real email in form)
+      // - If email is real → preserve it
+      const isSyntheticOrPlaceholder = 
+        !existingStudent.email ||
+        existingStudent.email.includes('placeholder') || 
+        existingStudent.email.includes('@lead.') ||
+        existingStudent.email.endsWith('@student.loan.app');
+
+      if (isSyntheticOrPlaceholder) {
+        // Clear synthetic email - real email will come from application form
+        console.log('🔄 Clearing synthetic/placeholder email, will be set from application form')
         
         await supabase
           .from('students')
-          .update({ email: studentEmail })
+          .update({ email: null })
           .eq('id', studentId)
+        
+        // For auth, we still need an email - use synthetic for Supabase Auth only
+        studentEmail = `${cleanPhone}@student.loan.app`
       } else {
+        // Preserve real email
         studentEmail = existingStudent.email
+        console.log('📧 Preserving real email:', studentEmail)
       }
 
       // KB Requirement: Check if a lead exists for this student
@@ -132,24 +145,25 @@ Deno.serve(async (req) => {
       }
     } else {
       // New student - create one (KB: Student can sign up independently)
-      // Use upsert with phone as conflict key for race condition safety
+      // Phone is primary ID - email is NULL until user provides real email in application form
       isNewUser = true
-      const generatedEmail = `${cleanPhone}@student.loan.app`
       studentName = name || `Student ${cleanPhone.slice(-4)}`
       
-      console.log('🆕 Creating new student with email:', generatedEmail)
+      // For Supabase Auth we need an email, but students table will have NULL
+      const authEmail = `${cleanPhone}@student.loan.app`
+      console.log('🆕 Creating new student with phone as primary ID (email=NULL)')
       
-      // Try to insert new student (avoid ignoreDuplicates + .single() issue)
+      // Try to insert new student with NULL email
       const { data: newStudent, error: insertError } = await supabase
         .from('students')
         .insert({
           phone: cleanPhone,
-          email: generatedEmail,
+          email: null,  // NULL - will be set when user provides real email in form
           name: studentName,
           otp_enabled: true,
           is_activated: false, // Not activated until they have a lead
         })
-        .select('id, email, name')
+        .select('id, name')
         .single()
 
       if (insertError) {
@@ -164,7 +178,10 @@ Deno.serve(async (req) => {
           
           if (existingByPhone) {
             studentId = existingByPhone.id
-            studentEmail = existingByPhone.email
+            // Use real email if exists, otherwise synthetic for auth only
+            studentEmail = existingByPhone.email && !existingByPhone.email.endsWith('@student.loan.app') 
+              ? existingByPhone.email 
+              : authEmail
             studentName = existingByPhone.name
             isNewUser = false
             console.log('✅ Found existing student:', studentId)
@@ -184,9 +201,9 @@ Deno.serve(async (req) => {
         }
       } else {
         studentId = newStudent.id
-        studentEmail = newStudent.email
+        studentEmail = authEmail  // For Supabase Auth only, students.email is NULL
         hasLead = false // New user has no lead
-        console.log('✅ Created new student:', studentId)
+        console.log('✅ Created new student:', studentId, '(email=NULL in students table)')
       }
     }
 
