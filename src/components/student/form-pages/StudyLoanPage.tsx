@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { GraduationCap, Check, Wallet, Building2, Calendar, Sparkles, BookOpen, ChevronDown, X } from 'lucide-react';
+import { GraduationCap, Sparkles, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -195,12 +195,12 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
         <h1 className="text-2xl font-bold text-foreground">Your Study Plans</h1>
       </div>
 
-      <div className="bg-card rounded-xl border border-border shadow-lg p-4 sm:p-6 space-y-5">
+      <div className="bg-card rounded-xl border border-border shadow-lg p-5 sm:p-6 space-y-6">
         
         {/* Row 1: Qualification & Destination */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Qualification *</label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Qualification *</label>
             <Select 
               value={data.highestQualification} 
               onValueChange={(v) => { 
@@ -208,7 +208,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                 setErrors(p => ({ ...p, qualification: '' }));
               }}
             >
-              <SelectTrigger className={cn("h-11", errors.qualification && "border-destructive")}>
+              <SelectTrigger className={cn("h-11 text-sm", errors.qualification && "border-destructive")}>
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
@@ -219,8 +219,8 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
             </Select>
           </div>
           
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Destination *</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Destination *</label>
             <Select 
               value={data.studyDestination} 
               onValueChange={(v) => { 
@@ -228,7 +228,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                 setErrors(p => ({ ...p, destination: '' }));
               }}
             >
-              <SelectTrigger className={cn("h-11", errors.destination && "border-destructive")}>
+              <SelectTrigger className={cn("h-11 text-sm", errors.destination && "border-destructive")}>
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
@@ -241,11 +241,9 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
         </div>
 
 
-        {/* Row 3: Loan Amount */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Wallet className="w-3.5 h-3.5" /> Loan Amount *
-          </label>
+        {/* Row 2: Loan Amount */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Loan Amount *</label>
           <div className="flex flex-wrap gap-2">
             {amountRanges.map(range => (
               <button
@@ -253,7 +251,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                 type="button"
                 onClick={() => { onUpdate({ loanAmount: range.min }); setErrors(p => ({ ...p, amount: '' })); }}
                 className={cn(
-                  "px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                  "px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all",
                   data.loanAmount === range.min
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border hover:border-primary/40 text-foreground",
@@ -265,16 +263,16 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
             ))}
           </div>
           {data.studyDestination && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <Sparkles className="w-3 h-3" /> Most {data.studyDestination} students need ₹40-60L
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
+              <Sparkles className="w-3.5 h-3.5" /> Most {data.studyDestination} students need ₹40-60L
             </p>
           )}
         </div>
 
-        {/* Row 4: Universities - Simplified Dropdown */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Building2 className="w-3.5 h-3.5" /> Universities * <span className="text-muted-foreground/60">(max 3)</span>
+        {/* Row 3: Universities */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Universities * <span className="text-muted-foreground font-normal">(max 3)</span>
           </label>
           
           {/* Selected universities as chips */}
@@ -366,11 +364,9 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           {errors.universities && <p className="text-xs text-destructive">{errors.universities}</p>}
         </div>
 
-        {/* Row 5: Course Type */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <BookOpen className="w-3.5 h-3.5" /> Course Type *
-          </label>
+        {/* Row 4: Course Type */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Course Type *</label>
           <div className="flex flex-wrap gap-2">
             {courseTypes.map(ct => (
               <button
@@ -378,7 +374,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                 type="button"
                 onClick={() => { onUpdate({ courseType: ct.value }); setErrors(p => ({ ...p, courseType: '' })); }}
                 className={cn(
-                  "px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                  "px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all",
                   data.courseType === ct.value
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border hover:border-primary/40 text-foreground",
@@ -391,12 +387,10 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           </div>
         </div>
 
-        {/* Row 6: Intake Month */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" /> Expected start date *
-          </label>
-          <div className="flex flex-wrap gap-1.5">
+        {/* Row 5: Intake Month */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Expected start date *</label>
+          <div className="flex flex-wrap gap-2">
             {intakeMonths.map(m => {
               const isSelected = data.intakeMonth === m.month && data.intakeYear === m.year;
               return (
@@ -408,15 +402,15 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                     setErrors(p => ({ ...p, intake: '' }));
                   }}
                   className={cn(
-                    "flex flex-col items-center px-3 py-1.5 rounded-lg border-2 transition-all min-w-[52px]",
+                    "flex flex-col items-center px-4 py-2 rounded-lg border-2 transition-all min-w-[60px]",
                     isSelected
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/40",
                     errors.intake && !data.intakeMonth && !isPlanningLater && "border-destructive"
                   )}
                 >
-                  <span className="font-semibold text-foreground text-xs">{m.label}</span>
-                  <span className="text-[10px] text-muted-foreground">{m.year}</span>
+                  <span className="font-medium text-foreground text-sm">{m.label}</span>
+                  <span className="text-xs text-muted-foreground">{m.year}</span>
                 </button>
               );
             })}
@@ -428,14 +422,14 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
                 setErrors(p => ({ ...p, intake: '' }));
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 transition-all",
+                "flex items-center gap-1.5 px-4 py-2.5 rounded-lg border-2 transition-all",
                 isPlanningLater
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-primary/40",
                 errors.intake && !data.intakeMonth && !isPlanningLater && "border-destructive"
               )}
             >
-              <span className="text-xs font-medium text-foreground">📅 Not sure yet</span>
+              <span className="text-sm font-medium text-foreground">📅 Not sure yet</span>
             </button>
           </div>
         </div>
