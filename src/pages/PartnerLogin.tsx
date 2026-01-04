@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEmailAuth } from '@/hooks/useEmailAuth';
 import { 
   AuthLoadingScreen, 
@@ -7,6 +8,7 @@ import {
   TestimonialCarousel,
   type Testimonial 
 } from '@/components/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
   Briefcase,
@@ -15,7 +17,7 @@ import {
   IndianRupee,
   Headphones
 } from 'lucide-react';
-import DashboardRouter from '@/components/DashboardRouter';
+import { logger } from '@/utils/logger';
 
 const partnerTestimonials: Testimonial[] = [
   {
@@ -49,8 +51,11 @@ const partnerStats = [
 ];
 
 const PartnerLogin = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     user,
+    appUser,
     loading,
     isSubmitting,
     formData,
@@ -58,9 +63,68 @@ const PartnerLogin = () => {
     handleSignIn,
   } = useEmailAuth();
 
-  if (user && !loading) {
-    return <DashboardRouter />;
-  }
+  // Get returnTo from URL params
+  const returnTo = searchParams.get('returnTo');
+
+  // Handle redirect after login
+  useEffect(() => {
+    const handlePartnerRedirect = async () => {
+      if (!user || !appUser || loading) return;
+      
+      // Check for returnTo first (for any role)
+      if (returnTo && returnTo.startsWith('/')) {
+        navigate(decodeURIComponent(returnTo), { replace: true });
+        return;
+      }
+
+      // Role-based redirect
+      if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+        navigate('/dashboard/admin', { replace: true });
+        return;
+      }
+      
+      if (appUser.role === 'student') {
+        navigate('/dashboard/student', { replace: true });
+        return;
+      }
+
+      if (appUser.role === 'partner' && appUser.partner_id) {
+        try {
+          // Check cache first
+          const cached = localStorage.getItem('auth_partner_code');
+          if (cached) {
+            navigate(`/partner/${cached}`, { replace: true });
+            return;
+          }
+
+          const { data, error } = await supabase
+            .from('partners')
+            .select('partner_code')
+            .eq('id', appUser.partner_id)
+            .single();
+
+          if (error) {
+            logger.error('[PartnerLogin] Error fetching partner code:', error);
+            return;
+          }
+
+          if (data?.partner_code) {
+            // Cache the partner code
+            try {
+              localStorage.setItem('auth_partner_code', data.partner_code);
+            } catch {
+              // Storage blocked - ignore
+            }
+            navigate(`/partner/${data.partner_code}`, { replace: true });
+          }
+        } catch (error) {
+          logger.error('[PartnerLogin] Exception fetching partner code:', error);
+        }
+      }
+    };
+
+    handlePartnerRedirect();
+  }, [user, appUser, loading, navigate, returnTo]);
 
   if (loading) {
     return <AuthLoadingScreen message="Loading..." iconClassName="text-teal-600" />;

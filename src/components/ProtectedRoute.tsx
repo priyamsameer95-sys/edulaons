@@ -1,52 +1,85 @@
+import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
+import { AlertCircle } from 'lucide-react';
+
+type AppRole = 'admin' | 'partner' | 'student' | 'super_admin';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: 'student' | 'partner' | 'admin' | 'super_admin';
+  children: ReactNode;
+  requiredRole?: AppRole;
 }
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
-  const { user, appUser, loading } = useAuth();
+export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { user, appUser, loading, hasStoredSession, sessionState } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // Determine the appropriate login path based on required role
+  const getLoginPath = () => {
+    if (requiredRole === 'admin' || requiredRole === 'super_admin') return '/admin';
+    if (requiredRole === 'partner') return '/partner/login';
+    if (requiredRole === 'student') return '/student/auth';
+    return '/login';
+  };
 
-  // Build returnTo param from current location
+  // Build returnTo param
   const returnTo = encodeURIComponent(location.pathname + location.search);
 
-  if (!user || !appUser) {
-    // Redirect to appropriate login based on required role with returnTo
-    if (requiredRole === 'admin' || requiredRole === 'super_admin') {
-      return <Navigate to={`/admin?returnTo=${returnTo}`} replace />;
-    }
-    if (requiredRole === 'partner') {
-      return <Navigate to={`/partner/login?returnTo=${returnTo}`} replace />;
-    }
-    // Default: students and others go to student auth
-    return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
+  // Optimistic rendering: if we have a stored session, render children immediately
+  // while validation happens in the background
+  const shouldShowLoadingSpinner = loading && !hasStoredSession;
+
+  // If loading with no stored session hint, show loading screen
+  if (shouldShowLoadingSpinner) {
+    return <AuthLoadingScreen />;
   }
 
-  if (!appUser.is_active) {
+  // If session is definitely expired and no user, redirect immediately
+  if (sessionState === 'expired' && !user) {
+    const loginPath = getLoginPath();
+    return <Navigate to={`${loginPath}?returnTo=${returnTo}`} replace />;
+  }
+
+  // If still validating but we have a stored session, render children optimistically
+  // The auth hook will handle session refresh in the background
+  if (sessionState === 'validating' && hasStoredSession) {
+    return <>{children}</>;
+  }
+
+  // If we have a user but still loading app user data, render children
+  if (user && !appUser && loading) {
+    return <>{children}</>;
+  }
+
+  // No user after loading complete - redirect
+  if (!user) {
+    const loginPath = getLoginPath();
+    return <Navigate to={`${loginPath}?returnTo=${returnTo}`} replace />;
+  }
+
+  // Check if account is active
+  if (appUser && !appUser.is_active) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive">Account Inactive</h1>
-          <p className="text-muted-foreground">Your account has been deactivated. Please contact support.</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="bg-card p-8 rounded-lg shadow-lg text-center max-w-md border border-border">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Account Inactive</h2>
+          <p className="text-muted-foreground mb-4">
+            Your account has been deactivated. Please contact support.
+          </p>
+          <a href="/" className="text-primary hover:underline">
+            Return to Home
+          </a>
         </div>
       </div>
     );
   }
 
-  // Check role requirements
-  if (requiredRole) {
+  // Role check
+  if (requiredRole && appUser) {
     const hasRequiredRole = () => {
       switch (requiredRole) {
         case 'super_admin':
@@ -56,28 +89,26 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         case 'partner':
           return appUser.role === 'partner' || appUser.role === 'admin' || appUser.role === 'super_admin';
         case 'student':
-          return (appUser.role as any) === 'student';
+          return appUser.role === 'student';
         default:
           return false;
       }
     };
 
     if (!hasRequiredRole()) {
-      // Instead of unauthorized, redirect to correct dashboard based on their actual role
+      // Redirect to correct dashboard based on actual role
       if (appUser.role === 'admin' || appUser.role === 'super_admin') {
-        return <Navigate to="/admin" replace />;
+        return <Navigate to="/dashboard/admin" replace />;
       }
       if (appUser.role === 'partner') {
         return <Navigate to="/dashboard" replace />;
       }
-      if ((appUser.role as any) === 'student') {
-        return <Navigate to="/student" replace />;
+      if (appUser.role === 'student') {
+        return <Navigate to="/dashboard/student" replace />;
       }
-      return <Navigate to="/unauthorized" replace />;
+      return <Navigate to="/" replace />;
     }
   }
 
   return <>{children}</>;
-};
-
-export default ProtectedRoute;
+}
