@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Shield, Clock, CheckCircle2, LogOut } from 'lucide-react';
+import { ArrowLeft, Shield, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StudentApplicationData } from '@/types/student-application';
 import PersonalDetailsPage from '../form-pages/PersonalDetailsPage';
@@ -27,11 +27,7 @@ interface ConversationalFormProps {
   isSubmitting: boolean;
 }
 
-const STEPS = [
-  { id: 1, title: 'Personal', icon: '👤' },
-  { id: 2, title: 'Study & Loan', icon: '🎓' },
-  { id: 3, title: 'Submit', icon: '✨' },
-];
+const TOTAL_STEPS = 3;
 
 const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: ConversationalFormProps) => {
   const navigate = useNavigate();
@@ -54,7 +50,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
     }
   }, []);
 
-  const totalSteps = STEPS.length;
+  const totalSteps = TOTAL_STEPS;
   const progress = (currentStep / totalSteps) * 100;
 
   const goNext = () => {
@@ -156,50 +152,19 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
             </div>
           </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {STEPS.map((step, index) => (
-              <div key={step.id} className="flex items-center flex-1">
-                <button
-                  type="button"
-                  onClick={() => goToStep(step.id)}
-                  disabled={step.id >= currentStep}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
-                    step.id === currentStep
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                      : step.id < currentStep
-                      ? "bg-green-500/15 text-green-600 hover:bg-green-500/25 cursor-pointer"
-                      : "bg-muted/50 text-muted-foreground/60 cursor-not-allowed"
-                  )}
-                >
-                  {step.id < currentStep ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  ) : (
-                    <span>{step.icon}</span>
-                  )}
-                  <span className="hidden sm:inline">{step.title}</span>
-                </button>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={cn(
-                      "flex-1 h-0.5 mx-1 sm:mx-2 rounded-full transition-all duration-500",
-                      step.id < currentStep ? "bg-green-500" : "bg-border"
-                    )}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mt-3 h-1 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            />
+          {/* Simple Step Indicator */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Step {currentStep} of {totalSteps}
+            </span>
+            <div className="flex-1 mx-4 h-1 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-primary rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              />
+            </div>
           </div>
         </div>
       </motion.header>
@@ -221,16 +186,6 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
         </AnimatePresence>
       </main>
 
-      {/* Footer Trust Signals */}
-      <footer className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pointer-events-none pb-4 pt-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">🔒 Bank-grade encryption</span>
-            <span className="hidden sm:flex items-center gap-1.5">✨ 1000+ students funded</span>
-            <span className="flex items-center gap-1.5">📞 24/7 support</span>
-          </div>
-        </div>
-      </footer>
 
       {/* Exit Confirmation Dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
