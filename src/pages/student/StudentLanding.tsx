@@ -591,10 +591,10 @@ const StudentLanding = () => {
       {/* Main Content - Single Scroll Design */}
       <main className="pt-14">
         {/* Hero + Form Section */}
-        <section className="min-h-[calc(100vh-56px)] flex flex-col lg:flex-row">
+        <section className="min-h-[calc(100vh-56px)] flex items-center justify-center">
+          <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row lg:gap-8 xl:gap-12">
           {/* Left - Hero Content */}
-          <div className="flex-1 flex flex-col justify-center items-center lg:items-start px-4 sm:px-6 lg:px-12 py-8 lg:py-0">
-            <div className="max-w-lg mx-auto lg:mx-0 text-center lg:text-left">
+          <div className="flex-1 flex flex-col justify-center items-center lg:items-start px-4 sm:px-6 lg:px-8 py-8 lg:py-0 lg:max-w-xl xl:max-w-2xl">
               {/* Trust Badge - Enhanced */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium mb-5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -663,12 +663,10 @@ const StudentLanding = () => {
               </div>
 
               {/* Trust Indicators - Enhanced */}
-              
-            </div>
           </div>
 
           {/* Right - Form with Enhanced Styling */}
-          <div ref={formRef} className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 lg:py-0 bg-gradient-to-b from-muted/30 to-muted/10">
+          <div ref={formRef} className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 lg:py-0 lg:max-w-md xl:max-w-lg bg-gradient-to-b from-muted/30 to-muted/10 lg:bg-transparent">
             <div className="w-full max-w-md">
               <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-xl shadow-primary/5">
                 {!result ? (/* Form State */
@@ -948,6 +946,7 @@ const StudentLanding = () => {
                   </div>)}
               </div>
             </div>
+          </div>
           </div>
         </section>
 
