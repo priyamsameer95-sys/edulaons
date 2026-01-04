@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
-const LOADING_TIMEOUT_MS = 5000; // 5 second max loading time
+const LOADING_TIMEOUT_MS = 15000; // 15 second max loading time (auth can be slow)
 import { supabase } from '@/integrations/supabase/client';
 import { filterLeadForStudent } from '@/utils/rolePermissions';
 import { STUDENT_EDIT_LOCKED_STATUSES } from '@/constants/studentPermissions';
@@ -75,7 +75,7 @@ interface UploadedDoc {
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut, loading: authLoading, sessionState, hasStoredSession } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [lead, setLead] = useState<StudentLead | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -180,47 +180,60 @@ const StudentDashboard = () => {
   };
 
   // Wait for auth to finish before fetching student data
+  // Key fix: Don't give up too early on slow auth, retry when user becomes available
   useEffect(() => {
+    let isMounted = true;
+    
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // If auth is still loading AND no stored session hint, wait
-    if (authLoading && !hasStoredSession) {
-      return;
-    }
+    const attemptFetch = async () => {
+      // If we have a user email, try to fetch student data
+      if (user?.email) {
+        console.log('[StudentDashboard] User available, fetching student data:', user.email);
+        await fetchStudentData();
+        return true;
+      }
+      return false;
+    };
 
-    // If session expired or no user after auth finished, stop loading
-    if (sessionState === 'expired' || (!user && !authLoading)) {
-      setLoading(false);
-      return;
-    }
-
-    // If we have a user (or auth still loading but stored session exists), try to fetch
-    if (user?.email) {
-      // Set a timeout to prevent infinite loading
+    // If auth is still loading, wait for it - but set a max timeout
+    if (authLoading) {
+      console.log('[StudentDashboard] Auth still loading, waiting...');
+      
+      // Set a safety timeout - if auth takes too long, we'll check again
       timeoutRef.current = setTimeout(() => {
-        setLoadingTimedOut(true);
-        setLoading(false);
-      }, LOADING_TIMEOUT_MS);
-
-      fetchStudentData().finally(() => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
+        if (isMounted && !user) {
+          console.log('[StudentDashboard] Auth timeout, checking one more time...');
+          setLoadingTimedOut(true);
+          setLoading(false);
         }
-      });
-    } else if (!authLoading) {
-      // Auth finished but no user - stop loading (redirect handled by ProtectedRoute)
-      setLoading(false);
+      }, LOADING_TIMEOUT_MS);
+      
+      return () => {
+        isMounted = false;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
     }
+
+    // Auth finished - now we can make decisions
+    if (!user) {
+      // No user after auth complete - stop loading
+      console.log('[StudentDashboard] No user after auth complete, stopping load');
+      setLoading(false);
+      return;
+    }
+
+    // We have a user - fetch their data
+    attemptFetch();
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      isMounted = false;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [authLoading, sessionState, user?.email, fetchStudentData, hasStoredSession]);
+  }, [authLoading, user?.email, fetchStudentData]);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
