@@ -42,8 +42,12 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   }
 
   // If still validating but we have a stored session, render children optimistically
-  // The auth hook will handle session refresh in the background
+  // EXCEPT for student routes - they need a confirmed user to fetch data correctly
   if (sessionState === 'validating' && hasStoredSession) {
+    if (requiredRole === 'student' && !user) {
+      // For student routes, wait until user is confirmed to prevent empty dashboard
+      return <AuthLoadingScreen />;
+    }
     return <>{children}</>;
   }
 

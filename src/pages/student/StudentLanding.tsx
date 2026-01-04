@@ -331,27 +331,35 @@ const StudentLanding = () => {
               window.location.href = data.auth.actionLink;
               return;
             }
-          } else {
-            console.log('✅ Auth session established successfully');
-            // Session is established, wait for success animation then navigate
-            setTimeout(() => {
-              navigate('/student', { replace: true });
-            }, 1200);
-            return;
           }
         }
         
-        // Fallback if no token - use action link
-        if (data.auth?.actionLink) {
-          console.log('🔗 Using action link for auth');
-          window.location.href = data.auth.actionLink;
-          return;
-        }
-        
-        // Last resort - just navigate (user may need to re-auth)
-        setTimeout(() => {
-          navigate('/student', { replace: true });
-        }, 1200);
+        // CRITICAL: Wait for session to be fully established before navigating
+        const waitForSession = async (maxAttempts = 20) => {
+          for (let i = 0; i < maxAttempts; i++) {
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session) {
+              console.log('✅ Session established, navigating to dashboard');
+              navigate('/dashboard/student', { replace: true });
+              return true;
+            }
+            await new Promise(r => setTimeout(r, 250));
+          }
+          return false;
+        };
+
+        // Wait for success animation then poll for session
+        setTimeout(async () => {
+          const sessionReady = await waitForSession();
+          if (!sessionReady) {
+            console.warn('Session not established after polling');
+            if (data.auth?.actionLink) {
+              window.location.href = data.auth.actionLink;
+            } else {
+              navigate('/dashboard/student', { replace: true });
+            }
+          }
+        }, 800);
       } else {
         setAuthStep('otp');
         setOtpError(data?.error || 'Invalid OTP');
