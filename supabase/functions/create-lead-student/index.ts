@@ -360,10 +360,10 @@ serve(async (req) => {
         throw new Error('Could not verify lead for update');
       }
 
-      // Verify ownership using auth email ↔ student.email
+      // Verify ownership using phone for OTP auth, email for regular auth
       const { data: leadStudent, error: leadStudentError } = await supabaseAdmin
         .from('students')
-        .select('email')
+        .select('email, phone')
         .eq('id', verifyLead.student_id)
         .maybeSingle();
 
@@ -371,8 +371,26 @@ serve(async (req) => {
         throw new Error('Could not verify lead ownership');
       }
 
-      if (authenticatedUser?.email && leadStudent?.email?.toLowerCase() !== authenticatedUser.email.toLowerCase()) {
-        throw new Error('You can only update your own application');
+      // Check if this is an OTP-authenticated user (synthetic email pattern)
+      const isOtpAuth = authenticatedUser?.email?.endsWith('@student.loan.app');
+
+      if (isOtpAuth && authenticatedUser?.email) {
+        // For OTP auth: extract phone from synthetic email and compare with student phone
+        const authPhone = authenticatedUser.email.replace('@student.loan.app', '');
+        const cleanAuthPhone = authPhone.replace(/\D/g, '').slice(-10);
+        const cleanStudentPhone = leadStudent.phone?.replace(/\D/g, '').slice(-10);
+        
+        if (cleanAuthPhone !== cleanStudentPhone) {
+          console.error('❌ Phone mismatch:', { authPhone: cleanAuthPhone, studentPhone: cleanStudentPhone });
+          throw new Error('You can only update your own application');
+        }
+        console.log('✅ Ownership verified via phone number match');
+      } else if (authenticatedUser?.email) {
+        // For email auth: compare emails
+        if (leadStudent?.email?.toLowerCase() !== authenticatedUser.email.toLowerCase()) {
+          throw new Error('You can only update your own application');
+        }
+        console.log('✅ Ownership verified via email match');
       }
 
       // Partner name if mapped
