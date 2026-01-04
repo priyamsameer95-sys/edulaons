@@ -75,62 +75,78 @@ const StudentAuthContent = () => {
   const [sessionChecking, setSessionChecking] = useState(false);
   
   useEffect(() => {
+    // If user already exists, skip session checking entirely
+    if (user) return;
+    
     const checkEligibilityFlowSession = async () => {
       try {
         const savedData = sessionStorage.getItem('eligibility_form');
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
+        if (!savedData) return;
+        
+        const parsed = JSON.parse(savedData);
+        
+        // Pre-fill phone/name if available
+        if (parsed.student_phone && !phone) {
+          setPhone(parsed.student_phone.toString().replace(/\D/g, '').slice(-10));
+        }
+        if (parsed.student_name && !name) {
+          setName(parsed.student_name);
+        }
+        
+        // Only check for establishing session if verified recently and no user yet
+        if (!parsed.verified || loading) return;
+        
+        const timeSinceVerified = Date.now() - new Date(parsed.timestamp).getTime();
+        if (timeSinceVerified >= 30000) return; // Too old, skip
+        
+        console.log('[StudentAuth] User came from eligibility flow, checking for session...');
+        setSessionChecking(true);
+        
+        try {
+          // Wait a moment for session to propagate
+          await new Promise(r => setTimeout(r, 1000));
           
-          // Pre-fill phone/name if available
-          if (parsed.student_phone && !phone) {
-            setPhone(parsed.student_phone.toString().replace(/\D/g, '').slice(-10));
-          }
-          if (parsed.student_name && !name) {
-            setName(parsed.student_name);
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            console.log('[StudentAuth] Session found, redirecting to dashboard');
+            navigate('/dashboard/student', { replace: true });
+            return;
           }
           
-          // If user just verified via eligibility flow, check if session is establishing
-          if (parsed.verified && !user && !loading) {
-            const timeSinceVerified = Date.now() - new Date(parsed.timestamp).getTime();
-            
-            // Only check if verified recently (within 30 seconds)
-            if (timeSinceVerified < 30000) {
-              console.log('🔍 User came from eligibility flow, checking for session...');
-              setSessionChecking(true);
-              
-              // Wait a moment for session to propagate
-              await new Promise(r => setTimeout(r, 1000));
-              
-              // Check for session
-              const { data } = await supabase.auth.getSession();
-              if (data.session) {
-                console.log('✅ Session found, redirecting to dashboard');
-                navigate('/student', { replace: true });
-                return;
-              }
-              
-              // Try once more after another delay
-              await new Promise(r => setTimeout(r, 1500));
-              const { data: retryData } = await supabase.auth.getSession();
-              if (retryData.session) {
-                console.log('✅ Session found on retry, redirecting to dashboard');
-                navigate('/student', { replace: true });
-                return;
-              }
-              
-              console.log('ℹ️ No session found, showing login form');
-              setSessionChecking(false);
-            }
+          // Try once more after another delay
+          await new Promise(r => setTimeout(r, 1500));
+          const { data: retryData } = await supabase.auth.getSession();
+          if (retryData.session) {
+            console.log('[StudentAuth] Session found on retry, redirecting to dashboard');
+            navigate('/dashboard/student', { replace: true });
+            return;
           }
+          
+          console.log('[StudentAuth] No session found, showing login form');
+        } finally {
+          // ALWAYS reset sessionChecking
+          setSessionChecking(false);
         }
       } catch (e) {
-        console.log('No saved eligibility data');
+        console.log('[StudentAuth] Error checking eligibility data:', e);
         setSessionChecking(false);
       }
     };
     
     checkEligibilityFlowSession();
   }, [user, loading, navigate]);
+
+  // Safety: force reset sessionChecking after 5 seconds if stuck
+  useEffect(() => {
+    if (!sessionChecking) return;
+    
+    const safety = setTimeout(() => {
+      console.warn('[StudentAuth] sessionChecking safety timeout - forcing reset');
+      setSessionChecking(false);
+    }, 5000);
+    
+    return () => clearTimeout(safety);
+  }, [sessionChecking]);
 
   // Resend timer countdown
   useEffect(() => {
