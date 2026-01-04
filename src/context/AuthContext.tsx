@@ -149,43 +149,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       logger.info(`[AuthProvider] Fetching app user for ID: ${userId}`);
       
-      const { data: appUserData, error: appUserError } = await supabase
-        .from('app_users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (appUserError) {
-        logger.error('[AuthProvider] Error fetching app user:', appUserError);
-        return null;
-      }
-
-      if (!appUserData) {
-        logger.error('[AuthProvider] No app_users record found for user:', userId);
-        return null;
-      }
-
-      // Fetch user's primary role from user_roles table
-      const { data: roleData, error: roleError } = await supabase
-        .rpc('get_user_role', { _user_id: userId });
-
-      if (roleError) {
-        logger.error('[AuthProvider] Error fetching user role:', roleError);
-      }
-
-      const data = {
-        ...appUserData,
-        role: roleData || appUserData.role || 'student'
-      };
-
-      logger.info('[AuthProvider] Successfully fetched app user:', {
-        id: data.id,
-        role: data.role,
-        partner_id: data.partner_id,
-        is_active: data.is_active
+      // Add timeout to prevent hanging - 5 second max
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          logger.warn('[AuthProvider] fetchAppUser timed out after 5s');
+          resolve(null);
+        }, 5000);
       });
       
-      return data as AppUser;
+      const fetchPromise = (async () => {
+        const { data: appUserData, error: appUserError } = await supabase
+          .from('app_users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (appUserError) {
+          logger.error('[AuthProvider] Error fetching app user:', appUserError);
+          return null;
+        }
+
+        if (!appUserData) {
+          logger.error('[AuthProvider] No app_users record found for user:', userId);
+          return null;
+        }
+
+        // Fetch user's primary role - use try/catch to prevent blocking
+        let roleData = null;
+        try {
+          const roleResult = await Promise.race([
+            supabase.rpc('get_user_role', { _user_id: userId }),
+            new Promise<{ data: null; error: null }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: null }), 2000)
+            )
+          ]);
+          roleData = roleResult.data;
+          if (roleResult.error) {
+            logger.warn('[AuthProvider] Error fetching user role:', roleResult.error);
+          }
+        } catch (roleErr) {
+          logger.warn('[AuthProvider] Exception fetching role, using fallback:', roleErr);
+        }
+
+        const data = {
+          ...appUserData,
+          role: roleData || appUserData.role || 'student'
+        };
+
+        logger.info('[AuthProvider] Successfully fetched app user:', {
+          id: data.id,
+          role: data.role,
+          partner_id: data.partner_id,
+          is_active: data.is_active
+        });
+        
+        return data as AppUser;
+      })();
+      
+      return await Promise.race([fetchPromise, timeoutPromise]);
     } catch (error) {
       logger.error('[AuthProvider] Exception fetching app user:', error);
       return null;
