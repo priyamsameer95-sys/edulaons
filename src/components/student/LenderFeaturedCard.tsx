@@ -128,21 +128,17 @@ const LenderFeaturedCard = ({
               {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
             </div>
             
-            <div className="flex items-center gap-1.5 mt-1">
-              <div className={cn(
-                "flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold",
-                lender.compatibility_score >= 85 ? "bg-success/10 text-success" :
-                lender.compatibility_score >= 70 ? "bg-primary/10 text-primary" :
-                "bg-muted text-muted-foreground"
-              )}>
-                <FileCheck className="h-3 w-3" />
-                {lender.compatibility_score >= 85 ? "High Approval Odds" :
-                 lender.compatibility_score >= 70 ? "Good Fit" : "Available"}
+            {!isTopMatch && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <div className={cn(
+                  "flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold",
+                  rank === 2 ? "bg-primary/10 text-primary" : "bg-info/10 text-info"
+                )}>
+                  <FileCheck className="h-3 w-3" />
+                  {rank === 2 ? "Strong Alternative" : "Great Option"}
+                </div>
               </div>
-              {!isTopMatch && (
-                <span className="text-[10px] text-muted-foreground">#{rank}</span>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
