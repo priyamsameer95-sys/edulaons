@@ -35,91 +35,78 @@ interface AIResponse {
   ai_notes: string;
 }
 
-// Generate personalized student-facing reason from actual BRE evaluation
-function generatePersonalizedReason(
-  lender: any,
-  applicantProfile: any,
-  score: number,
-  factors: string[],
-  riskFlags: string[]
-): string {
-  const positives: string[] = []
-  const concerns: string[] = []
+/**
+ * Generate student-friendly lender reason
+ * CRITICAL: Never expose internal scoring details (income, credit, qualification status)
+ * Focus ONLY on lender's offerings and student experience
+ */
+function generateStudentFriendlyReason(lender: any, score: number): string {
+  const lenderName = lender.name || 'This lender';
   
-  // Format loan amount
-  const loanAmount = applicantProfile.loan_amount
-  const formattedAmount = loanAmount >= 10000000 
-    ? `₹${(loanAmount / 10000000).toFixed(1)}Cr` 
-    : `₹${Math.round(loanAmount / 100000)}L`
-  
-  // Format co-applicant salary
-  const coAppSalary = applicantProfile.co_applicant?.monthly_salary
-  const formattedSalary = coAppSalary 
-    ? (coAppSalary >= 100000 
-        ? `₹${(coAppSalary / 100000).toFixed(1)}L` 
-        : `₹${Math.round(coAppSalary / 1000)}K`)
-    : null
-  
-  // Interest rate - use actual lender data
-  if (factors.includes('Competitive interest rate') && lender.interest_rate_min) {
-    positives.push(`${lender.interest_rate_min}% rate – among lowest`)
+  if (score >= 85) {
+    // Excellent match - highlight lender strengths
+    const excellentReasons = [
+      `${lenderName} offers quick approvals & competitive rates`,
+      `Top-rated for student experience`,
+      `Fast processing & flexible repayment options`,
+      `Highly recommended for education loans`,
+      `Excellent support & transparent process`,
+    ];
+    return excellentReasons[Math.floor(Math.random() * excellentReasons.length)];
   }
   
-  // Loan amount coverage
-  if (factors.includes('Loan amount within range')) {
-    positives.push(`covers your ${formattedAmount}`)
-  } else if (riskFlags.includes('Loan amount exceeds maximum')) {
-    concerns.push('may need collateral for full amount')
+  if (score >= 70) {
+    // Good match - positive but less emphatic
+    const goodReasons = [
+      `${lenderName} offers reliable education loan options`,
+      `Trusted lender with straightforward process`,
+      `Good terms for study abroad loans`,
+      `Well-suited option with transparent fees`,
+      `Solid choice with good student support`,
+    ];
+    return goodReasons[Math.floor(Math.random() * goodReasons.length)];
   }
   
-  // Income qualification
-  if (factors.includes('Income meets expectations') && formattedSalary) {
-    positives.push(`${formattedSalary}/mo income qualifies`)
-  } else if (factors.includes('Strong income profile') && formattedSalary) {
-    positives.push(`strong income at ${formattedSalary}/mo`)
-  } else if (riskFlags.includes('Income below expectations')) {
-    concerns.push('income docs may need support')
+  if (score >= 50) {
+    // Moderate match - neutral/exploratory
+    const moderateReasons = [
+      `${lenderName} may have suitable options`,
+      `Worth exploring - flexible terms available`,
+      `${lenderName} accepts diverse profiles`,
+      `Consider for additional options`,
+    ];
+    return moderateReasons[Math.floor(Math.random() * moderateReasons.length)];
   }
   
-  // Destination preference
-  const destination = applicantProfile.study_destination
-  if (factors.includes('Preferred destination') && destination) {
-    positives.push(`specializes in ${destination} loans`)
+  // Lower match - redirect without negativity
+  return `Other lenders may offer better-suited terms`;
+}
+
+/**
+ * Sanitize AI-generated student reasons to remove any internal scoring details
+ */
+function sanitizeStudentReason(reason: string | undefined, lenderName: string, score: number): string {
+  if (!reason || reason.trim() === '') {
+    return generateStudentFriendlyReason({ name: lenderName }, score);
   }
   
-  // Processing speed
-  if (factors.includes('Fast processing time') && lender.processing_time_days) {
-    positives.push(`quick ${lender.processing_time_days}-day processing`)
+  // Block any internal-sounding phrases
+  const blockedPhrases = [
+    'income', 'salary', 'credit', 'cibil', 'qualification', 'employment',
+    'docs needed', 'below', 'exceeds', 'insufficient', 'required', 'meets',
+    'qualifies', 'eligible', 'ineligible', 'risk', 'concern', 'issue'
+  ];
+  
+  const lowerReason = reason.toLowerCase();
+  
+  for (const phrase of blockedPhrases) {
+    if (lowerReason.includes(phrase)) {
+      // Replace with safe fallback
+      return generateStudentFriendlyReason({ name: lenderName }, score);
+    }
   }
   
-  // Education specialist
-  if (factors.includes('Education loan specialist')) {
-    positives.push('education loan expert')
-  }
-  
-  // Employment type bonus
-  if (factors.includes('Government employment')) {
-    positives.push('favorable terms for govt employees')
-  } else if (factors.includes('Salaried employment')) {
-    positives.push('standard salaried terms apply')
-  }
-  
-  // Build the final personalized reason
-  if (positives.length >= 2 && concerns.length === 0) {
-    return `${positives[0]}, ${positives[1]}.`
-  } else if (positives.length >= 1 && concerns.length >= 1) {
-    return `${positives[0]}, but ${concerns[0]}.`
-  } else if (positives.length >= 1) {
-    return `${positives[0]}.`
-  } else if (concerns.length >= 1) {
-    return `Possible option, but ${concerns[0]}.`
-  } else if (score >= 70) {
-    return `Good overall fit for your ${formattedAmount} loan requirement.`
-  } else if (score >= 50) {
-    return `Standard terms available for your profile.`
-  } else {
-    return `Limited match – consider higher-ranked options.`
-  }
+  return reason;
 }
 
 Deno.serve(async (req) => {
@@ -208,7 +195,7 @@ Deno.serve(async (req) => {
       student: {
         name: student?.name,
         qualification: student?.highest_qualification,
-        credit_score: student?.credit_score,
+        // NOTE: credit_score intentionally excluded - not shared with AI for student-facing reasons
         academic_scores: {
           tenth: student?.tenth_percentage,
           twelfth: student?.twelfth_percentage,
@@ -225,7 +212,7 @@ Deno.serve(async (req) => {
         employment_type: coApplicant.employment_type,
         employer: coApplicant.employer,
         occupation: coApplicant.occupation,
-        credit_score: coApplicant.credit_score,
+        // NOTE: credit_score intentionally excluded - not shared with AI for student-facing reasons
       } : null,
       universities: universities.map(u => ({
         name: u?.name,
@@ -286,11 +273,19 @@ For EACH lender, you must:
 1. Evaluate how well the applicant matches the lender's BRE (Business Rules Engine) criteria
 2. Assign a fit_score from 0-100
 3. Determine probability_band: "high" (score >= 80), "medium" (60-79), "low" (< 60)
-4. Provide a clear justification explaining the match
-5. Flag any risk factors
+4. Provide a clear justification explaining the match (internal use only)
+5. Flag any risk factors (internal use only)
 6. List which BRE rules were matched
 7. Assign to a group: best_fit (>=80), also_consider (60-79), possible_but_risky (40-59), not_suitable (<40)
-8. Generate a SHORT student-friendly reason (MAX 15 words, e.g. "Great fit for your income level and loan amount")
+8. Generate a SHORT student-friendly reason (see CRITICAL RULES below)
+
+CRITICAL RULES FOR student_facing_reason:
+- MAX 12 words, simple and friendly language
+- NEVER mention: income, salary, CIBIL, credit score, employment type, qualification status, risk flags
+- FOCUS ONLY on: lender's reputation, processing speed, student experience, loan features, flexibility
+- POSITIVE TONE always: Even for lower-scored lenders, say "Other options may suit better" not "You don't qualify"
+- Good examples: "Fast approvals with competitive rates", "Excellent student support & flexible terms"
+- BAD examples (never use): "Your income qualifies you easily", "May need additional income documentation"
 
 IMPORTANT:
 - NEVER eliminate any lender - evaluate ALL of them
@@ -389,7 +384,18 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
               evaluations = parsed.lender_evaluations || []
               overallConfidence = parsed.overall_confidence || 50
               aiNotes = parsed.ai_notes || ''
-              console.log(`📊 AI evaluated ${evaluations.length} lenders`)
+              
+              // Sanitize all AI-generated student-facing reasons
+              evaluations = evaluations.map(evalItem => ({
+                ...evalItem,
+                student_facing_reason: sanitizeStudentReason(
+                  evalItem.student_facing_reason, 
+                  evalItem.lender_name, 
+                  evalItem.fit_score
+                )
+              }))
+              
+              console.log(`📊 AI evaluated ${evaluations.length} lenders (reasons sanitized)`)
             } catch (parseErr) {
               console.error('Failed to parse AI response:', parseErr)
               aiNotes = 'AI response parsing failed - using rule-based evaluation'
@@ -571,14 +577,8 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
         if (score >= 80) probability_band = 'high'
         else if (score >= 60) probability_band = 'medium'
 
-        // Generate PERSONALIZED student-facing reason using actual data
-        const studentReason = generatePersonalizedReason(
-          lender, 
-          applicantProfile, 
-          score, 
-          factors, 
-          riskFlags
-        )
+        // Generate student-friendly reason (no internal scoring details exposed)
+        const studentReason = generateStudentFriendlyReason(lender, score)
 
         // Generate justification
         let justification = ''
