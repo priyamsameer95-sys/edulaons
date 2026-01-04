@@ -2059,7 +2059,7 @@ export type Database = {
           created_at: string
           credit_score: number | null
           date_of_birth: string | null
-          email: string
+          email: string | null
           email_invite_sent: boolean | null
           gender: string | null
           highest_qualification: string | null
@@ -2088,7 +2088,7 @@ export type Database = {
           created_at?: string
           credit_score?: number | null
           date_of_birth?: string | null
-          email: string
+          email?: string | null
           email_invite_sent?: boolean | null
           gender?: string | null
           highest_qualification?: string | null
@@ -2117,7 +2117,7 @@ export type Database = {
           created_at?: string
           credit_score?: number | null
           date_of_birth?: string | null
-          email?: string
+          email?: string | null
           email_invite_sent?: boolean | null
           gender?: string | null
           highest_qualification?: string | null
