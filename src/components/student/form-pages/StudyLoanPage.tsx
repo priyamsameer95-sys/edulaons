@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { GraduationCap, Check, Wallet, Building2, Calendar, Sparkles, ShieldCheck, Home, BookOpen, ChevronDown, X } from 'lucide-react';
+import { GraduationCap, Check, Wallet, Building2, Calendar, Sparkles, BookOpen, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { StudentApplicationData, HighestQualification, LoanType, CourseType } from '@/types/student-application';
+import type { StudentApplicationData, HighestQualification, CourseType } from '@/types/student-application';
 
 interface StudyLoanPageProps {
   data: Partial<StudentApplicationData>;
@@ -49,10 +49,6 @@ const amountRanges = [
   { value: '1Cr+', label: '₹1Cr+', min: 10000000 },
 ];
 
-const loanTypes: { value: LoanType; label: string; icon: React.ReactNode; desc: string }[] = [
-  { value: 'unsecured', label: 'Unsecured', icon: <ShieldCheck className="w-4 h-4" />, desc: 'No collateral' },
-  { value: 'secured', label: 'Secured', icon: <Home className="w-4 h-4" />, desc: 'Lower rates' },
-];
 
 const courseTypes: { value: CourseType; label: string }[] = [
   { value: 'masters_stem', label: 'Masters STEM' },
@@ -164,7 +160,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
     if (!data.highestQualification) e.qualification = 'Required';
     if (!data.studyDestination) e.destination = 'Required';
     if (!data.loanAmount) e.amount = 'Required';
-    if (!data.loanType) e.loanType = 'Required';
+    
     if (!data.universities?.length) e.universities = 'Select at least one';
     if (!data.courseType) e.courseType = 'Required';
     if (!data.intakeMonth || !data.intakeYear) e.intake = 'Required';
@@ -240,38 +236,6 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           </div>
         </div>
 
-        {/* Row 2: Loan Type */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Loan Type *</label>
-          <div className="grid grid-cols-2 gap-2">
-            {loanTypes.map(lt => (
-              <button
-                key={lt.value}
-                type="button"
-                onClick={() => { onUpdate({ loanType: lt.value }); setErrors(p => ({ ...p, loanType: '' })); }}
-                className={cn(
-                  "flex items-center gap-2 p-3 rounded-lg border-2 transition-all",
-                  data.loanType === lt.value
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/40",
-                  errors.loanType && !data.loanType && "border-destructive"
-                )}
-              >
-                <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center",
-                  data.loanType === lt.value ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                )}>
-                  {lt.icon}
-                </div>
-                <div className="text-left">
-                  <div className="font-medium text-sm text-foreground">{lt.label}</div>
-                  <div className="text-xs text-muted-foreground">{lt.desc}</div>
-                </div>
-                {data.loanType === lt.value && <Check className="w-4 h-4 text-primary ml-auto" />}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Row 3: Loan Amount */}
         <div className="space-y-1.5">
