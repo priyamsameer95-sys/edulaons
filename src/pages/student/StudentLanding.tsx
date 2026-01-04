@@ -622,43 +622,43 @@ const StudentLanding = () => {
                 Don't let finances stop your dreams — get matched with verified lenders in minutes.
               </p>
 
-              {/* How It Works - With Time Anchors & Animations */}
-              <div className="mb-4">
+              {/* How It Works - Contained in a card */}
+              <div className="w-full bg-card rounded-xl border border-border p-4 shadow-sm">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">4 Simple Steps</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-3">
                   {STEPS.map((step, i) => <div key={i} className="text-center group cursor-default" onMouseEnter={() => setHoveredStep(i)} onMouseLeave={() => setHoveredStep(null)}>
-                      <div className={cn("w-11 h-11 mx-auto rounded-xl bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent", hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10")}>
-                        <step.icon className={cn("h-5 w-5 transition-colors duration-300", hoveredStep === i ? "text-primary" : "text-muted-foreground")} />
+                      <div className={cn("w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent", hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10")}>
+                        <step.icon className={cn("h-4 w-4 transition-colors duration-300", hoveredStep === i ? "text-primary" : "text-muted-foreground")} />
                       </div>
-                      <p className="text-xs font-medium text-foreground leading-tight">{step.title}</p>
+                      <p className="text-[11px] font-medium text-foreground leading-tight">{step.title}</p>
                       <p className={cn("text-[10px] font-semibold transition-colors mt-0.5", hoveredStep === i ? "text-primary" : "text-emerald-600")}>{step.time}</p>
                     </div>)}
                 </div>
                 
-                {/* Lenders - Auto-scrolling Carousel - Directly under steps */}
-                <div className="mt-4 pt-4 border-t border-border/50">
+                {/* Lenders - Auto-scrolling Carousel - Inside same card */}
+                <div className="mt-3 pt-3 border-t border-border/50">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Our Top Lenders</p>
-                  <div className="relative overflow-hidden rounded-lg">
+                  <div className="relative overflow-hidden rounded-lg -mx-1">
                     {/* Gradient fades */}
-                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-10" />
-                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent z-10" />
+                    <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-card to-transparent z-10" />
+                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-card to-transparent z-10" />
                     
                     {/* Scrolling container */}
                     <div className="flex animate-[scroll_20s_linear_infinite] hover:pause">
-                      {[...LENDERS, ...LENDERS].map((lender, idx) => <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex items-center gap-2 px-3 py-2 mx-1.5 bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
-                          <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold shadow-sm text-primary-foreground" style={{
+                      {[...LENDERS, ...LENDERS].map((lender, idx) => <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex items-center gap-2 px-2.5 py-1.5 mx-1 bg-muted/50 rounded-md border border-border/50">
+                          <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold text-primary-foreground" style={{
                         backgroundColor: `hsl(var(${lender.brandVar}))`
                       }}>
                             {lender.shortName.slice(0, 2)}
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-foreground whitespace-nowrap">{lender.name}</span>
-                            <span className="text-[10px] text-emerald-600 font-medium">From {lender.rate}</span>
+                            <span className="text-[11px] font-medium text-foreground whitespace-nowrap">{lender.name}</span>
+                            <span className="text-[9px] text-emerald-600 font-medium">From {lender.rate}</span>
                           </div>
                         </div>)}
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-2 text-center">All lenders are RBI-approved</p>
+                  <p className="text-[9px] text-muted-foreground mt-2 text-center">All lenders are RBI-approved</p>
                 </div>
               </div>
 
