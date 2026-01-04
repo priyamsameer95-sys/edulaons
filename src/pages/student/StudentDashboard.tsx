@@ -75,7 +75,7 @@ interface UploadedDoc {
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut, loading: authLoading, sessionState } = useAuth();
+  const { user, signOut, loading: authLoading, sessionState, hasStoredSession } = useAuth();
   const [loading, setLoading] = useState(true);
   const [lead, setLead] = useState<StudentLead | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -186,8 +186,8 @@ const StudentDashboard = () => {
       clearTimeout(timeoutRef.current);
     }
 
-    // If auth is still loading, wait
-    if (authLoading) {
+    // If auth is still loading AND no stored session hint, wait
+    if (authLoading && !hasStoredSession) {
       return;
     }
 
@@ -197,7 +197,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    // If we have a user, fetch their data
+    // If we have a user (or auth still loading but stored session exists), try to fetch
     if (user?.email) {
       // Set a timeout to prevent infinite loading
       timeoutRef.current = setTimeout(() => {
@@ -210,8 +210,8 @@ const StudentDashboard = () => {
           clearTimeout(timeoutRef.current);
         }
       });
-    } else {
-      // No user email, stop loading
+    } else if (!authLoading) {
+      // Auth finished but no user - stop loading (redirect handled by ProtectedRoute)
       setLoading(false);
     }
 
@@ -220,7 +220,7 @@ const StudentDashboard = () => {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [authLoading, sessionState, user?.email, fetchStudentData]);
+  }, [authLoading, sessionState, user?.email, fetchStudentData, hasStoredSession]);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {

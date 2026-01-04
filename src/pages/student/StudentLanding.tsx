@@ -227,15 +227,22 @@ const StudentLanding = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [otpSent, setOtpSent] = useState(false);
 
-  // Redirect authenticated users to their dashboard
+  // Redirect authenticated users to their dashboard - don't wait for appUser
   useEffect(() => {
-    if (!authLoading && user && appUser) {
-      if (appUser.role === 'student') {
-        navigate('/dashboard/student', { replace: true });
-      } else if (appUser.role === 'partner') {
+    if (!authLoading && user) {
+      // If we have appUser, use role for precise routing
+      if (appUser) {
+        if (appUser.role === 'student') {
+          navigate('/dashboard/student', { replace: true });
+        } else if (appUser.role === 'partner') {
+          navigate('/dashboard', { replace: true });
+        } else if (appUser.role === 'admin' || appUser.role === 'super_admin') {
+          navigate('/dashboard/admin', { replace: true });
+        }
+      } else {
+        // User exists but no appUser yet - redirect to generic dashboard
+        // DashboardRouter will handle proper routing when appUser loads
         navigate('/dashboard', { replace: true });
-      } else if (appUser.role === 'admin' || appUser.role === 'super_admin') {
-        navigate('/dashboard/admin', { replace: true });
       }
     }
   }, [authLoading, user, appUser, navigate]);

@@ -25,8 +25,19 @@ const IDLE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 // Sync check if session likely exists in storage (0ms latency)
 function hasStoredSessionSync(): boolean {
   try {
+    // Check our custom flag first
     const exists = localStorage.getItem(STORAGE_KEY_SESSION_EXISTS);
-    return exists === 'true';
+    if (exists === 'true') return true;
+    
+    // Also check for Supabase's own session storage as fallback
+    const supabaseKey = Object.keys(localStorage).find(k => 
+      k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (supabaseKey && localStorage.getItem(supabaseKey)) {
+      return true;
+    }
+    
+    return false;
   } catch {
     return false;
   }
@@ -269,6 +280,17 @@ export function useAuth() {
   useEffect(() => {
     mountedRef.current = true;
 
+    // Safety timeout - force loading false after 3 seconds max
+    const authTimeoutId = setTimeout(() => {
+      if (mountedRef.current && loading) {
+        logger.warn('[useAuth] Auth initialization timed out after 3s');
+        setLoading(false);
+        if (!session) {
+          setSessionState('expired');
+        }
+      }
+    }, 3000);
+
     const initializeSession = async () => {
       try {
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -293,37 +315,41 @@ export function useAuth() {
           // refreshSession updates session/user state, get fresh session
           const { data: freshData } = await supabase.auth.getSession();
           if (freshData.session) {
-            const appUserData = await fetchAppUser(freshData.session.user.id);
+            // Set loading false IMMEDIATELY, fetch appUser in background
             if (mountedRef.current) {
-              setAppUser(appUserData);
-              if (appUserData) {
-                trackFirstLogin(freshData.session.user.id, appUserData);
-              }
+              setLoading(false);
             }
+            fetchAppUser(freshData.session.user.id).then(appUserData => {
+              if (mountedRef.current) {
+                setAppUser(appUserData);
+                if (appUserData) {
+                  trackFirstLogin(freshData.session.user.id, appUserData);
+                }
+              }
+            });
           }
         } else {
+          // Set session state IMMEDIATELY (don't wait for appUser)
           setSession(sessionData.session);
           setUser(sessionData.session.user);
           setSessionState('active');
           setStoredSessionFlag(true);
+          setLoading(false); // <-- CRITICAL: Set loading false HERE, not after fetchAppUser
 
           // Schedule proactive refresh
           if (sessionData.session.expires_at) {
             scheduleTokenRefresh(sessionData.session.expires_at);
           }
 
-          // Fetch app user
-          const appUserData = await fetchAppUser(sessionData.session.user.id);
-          if (mountedRef.current) {
-            setAppUser(appUserData);
-            if (appUserData) {
-              trackFirstLogin(sessionData.session.user.id, appUserData);
+          // Fetch app user in BACKGROUND (non-blocking)
+          fetchAppUser(sessionData.session.user.id).then(appUserData => {
+            if (mountedRef.current) {
+              setAppUser(appUserData);
+              if (appUserData) {
+                trackFirstLogin(sessionData.session.user.id, appUserData);
+              }
             }
-          }
-        }
-
-        if (mountedRef.current) {
-          setLoading(false);
+          });
         }
       } catch (error) {
         logger.error('[useAuth] Exception during initialization:', error);
@@ -382,12 +408,13 @@ export function useAuth() {
 
     return () => {
       mountedRef.current = false;
+      clearTimeout(authTimeoutId);
       subscription.unsubscribe();
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [fetchAppUser, refreshSession, scheduleTokenRefresh, trackFirstLogin, appUser]);
+  }, [fetchAppUser, refreshSession, scheduleTokenRefresh, trackFirstLogin, appUser, loading, session]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
