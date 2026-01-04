@@ -1174,6 +1174,7 @@ export type Database = {
             | null
           case_id: string
           co_applicant_id: string
+          course_type: string | null
           created_at: string
           created_by_role: string | null
           created_by_user_id: string | null
@@ -1220,6 +1221,7 @@ export type Database = {
             | null
           case_id: string
           co_applicant_id: string
+          course_type?: string | null
           created_at?: string
           created_by_role?: string | null
           created_by_user_id?: string | null
@@ -1266,6 +1268,7 @@ export type Database = {
             | null
           case_id?: string
           co_applicant_id?: string
+          course_type?: string | null
           created_at?: string
           created_by_role?: string | null
           created_by_user_id?: string | null
@@ -2067,6 +2070,8 @@ export type Database = {
           invite_sent_at: string | null
           invite_token: string | null
           is_activated: boolean | null
+          masters_cgpa: number | null
+          masters_percentage: number | null
           name: string
           nationality: string | null
           otp_enabled: boolean | null
@@ -2096,6 +2101,8 @@ export type Database = {
           invite_sent_at?: string | null
           invite_token?: string | null
           is_activated?: boolean | null
+          masters_cgpa?: number | null
+          masters_percentage?: number | null
           name: string
           nationality?: string | null
           otp_enabled?: boolean | null
@@ -2125,6 +2132,8 @@ export type Database = {
           invite_sent_at?: string | null
           invite_token?: string | null
           is_activated?: boolean | null
+          masters_cgpa?: number | null
+          masters_percentage?: number | null
           name?: string
           nationality?: string | null
           otp_enabled?: boolean | null
