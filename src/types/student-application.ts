@@ -103,6 +103,8 @@ export interface EdgeFunctionPayload {
   twelfth_percentage?: number;
   bachelors_percentage?: number;
   bachelors_cgpa?: number;
+  masters_percentage?: number;
+  masters_cgpa?: number;
   tests?: TestScore[];
   
   // Study fields

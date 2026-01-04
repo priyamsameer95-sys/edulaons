@@ -464,6 +464,7 @@ serve(async (req) => {
           study_destination: studyDestination,
           intake_month: intakeMonth,
           intake_year: intakeYear,
+          course_type: body.course_type || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', leadIdForUpdate);
@@ -678,6 +679,8 @@ serve(async (req) => {
               twelfth_percentage: body.twelfth_percentage || null,
               bachelors_percentage: body.bachelors_percentage || null,
               bachelors_cgpa: body.bachelors_cgpa || null,
+              masters_percentage: body.masters_percentage || null,
+              masters_cgpa: body.masters_cgpa || null,
               updated_at: new Date().toISOString(),
             })
             .eq('id', studentId);
@@ -707,6 +710,8 @@ serve(async (req) => {
             twelfth_percentage: body.twelfth_percentage || null,
             bachelors_percentage: body.bachelors_percentage || null,
             bachelors_cgpa: body.bachelors_cgpa || null,
+            masters_percentage: body.masters_percentage || null,
+            masters_cgpa: body.masters_cgpa || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', studentId);
@@ -764,6 +769,8 @@ serve(async (req) => {
           twelfth_percentage: body.twelfth_percentage || null,
           bachelors_percentage: body.bachelors_percentage || null,
           bachelors_cgpa: body.bachelors_cgpa || null,
+          masters_percentage: body.masters_percentage || null,
+          masters_cgpa: body.masters_cgpa || null,
         }, {
           onConflict: 'phone',
           ignoreDuplicates: true // Don't update existing, just return
@@ -854,6 +861,7 @@ serve(async (req) => {
         study_destination: studyDestination,
         intake_month: intakeMonth,
         intake_year: intakeYear,
+        course_type: body.course_type || null,
         status: 'new',
         documents_status: 'pending',
         is_quick_lead: isQuickLead,

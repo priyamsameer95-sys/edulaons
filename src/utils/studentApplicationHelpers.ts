@@ -87,6 +87,8 @@ export const transformToEdgeFunctionPayload = (
     twelfth_percentage: data.twelfthPercentage,
     bachelors_percentage: data.bachelorsPercentage,
     bachelors_cgpa: data.bachelorsCgpa,
+    masters_percentage: data.mastersPercentage,
+    masters_cgpa: data.mastersCgpa,
     tests: cleanTestScores(data.tests),
     
     // Study fields
