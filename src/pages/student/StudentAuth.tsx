@@ -142,26 +142,38 @@ const StudentAuthContent = () => {
     }
   }, [resendTimer, step]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in - use navigate instead of rendering DashboardRouter
   useEffect(() => {
     if (user && !loading) {
-      // Use returnTo if valid, otherwise default to /student
-      const destination = returnTo.startsWith('/') ? returnTo : '/student';
+      // Navigate directly to student dashboard - don't render DashboardRouter here
+      const destination = returnTo.startsWith('/dashboard') ? returnTo : '/dashboard/student';
       navigate(destination, { replace: true });
     }
   }, [user, loading, navigate, returnTo]);
+  
   if (loading || sessionChecking) {
-    return <div className="flex h-screen items-center justify-center bg-background">
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
           {sessionChecking && (
             <p className="text-sm text-muted-foreground">Setting up your account...</p>
           )}
         </div>
-      </div>;
+      </div>
+    );
   }
+  
+  // If user exists but effect hasn't navigated yet, show loading
   if (user) {
-    return <DashboardRouter />;
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
   }
   const formatPhoneDisplay = (value: string) => {
     const digits = value.replace(/\D/g, '');

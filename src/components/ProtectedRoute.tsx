@@ -17,10 +17,10 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   // Determine the appropriate login path based on required role
   const getLoginPath = () => {
-    if (requiredRole === 'admin' || requiredRole === 'super_admin') return '/admin';
-    if (requiredRole === 'partner') return '/partner/login';
-    if (requiredRole === 'student') return '/student/auth';
-    return '/login';
+    if (requiredRole === 'admin' || requiredRole === 'super_admin') return '/login/admin';
+    if (requiredRole === 'partner') return '/login/partner';
+    if (requiredRole === 'student') return '/login/student';
+    return '/login/student';
   };
 
   // Build returnTo param

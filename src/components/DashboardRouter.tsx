@@ -78,12 +78,12 @@ export default function DashboardRouter({ children }: DashboardRouterProps) {
     const path = location.pathname;
     
     if (path.includes('/admin') || path.includes('/dashboard/admin')) {
-      return <Navigate to={`/admin?returnTo=${returnTo}`} replace />;
+      return <Navigate to={`/login/admin?returnTo=${returnTo}`} replace />;
     }
     if (path.includes('/partner')) {
-      return <Navigate to={`/partner/login?returnTo=${returnTo}`} replace />;
+      return <Navigate to={`/login/partner?returnTo=${returnTo}`} replace />;
     }
-    return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
+    return <Navigate to={`/login/student?returnTo=${returnTo}`} replace />;
   }
 
   // If validating with stored session, render optimistically
@@ -98,7 +98,7 @@ export default function DashboardRouter({ children }: DashboardRouterProps) {
 
   // No user after loading complete
   if (!user) {
-    return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
+    return <Navigate to={`/login/student?returnTo=${returnTo}`} replace />;
   }
 
   // Check if account is active
@@ -160,7 +160,7 @@ export default function DashboardRouter({ children }: DashboardRouterProps) {
         break;
         
       default:
-        return <Navigate to={`/student/auth?returnTo=${returnTo}`} replace />;
+        return <Navigate to={`/login/student?returnTo=${returnTo}`} replace />;
     }
   }
 

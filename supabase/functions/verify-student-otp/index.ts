@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
       type: 'magiclink',
       email: studentEmail,
       options: {
-        redirectTo: `${req.headers.get('origin') || 'http://localhost:5173'}/student/dashboard`
+        redirectTo: `${req.headers.get('origin') || 'http://localhost:5173'}/dashboard/student`
       }
     })
 
