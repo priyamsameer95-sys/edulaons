@@ -660,21 +660,62 @@ serve(async (req) => {
         if (emailCheck) {
           console.log('⚠️ Email already in use by another student, skipping update');
         } else {
-          console.log('🔄 Updating student with real email from form:', formEmail);
+          console.log('🔄 Updating student with personal details and email:', formEmail);
           
           const { error: syncError } = await supabaseAdmin
             .from('students')
-            .update({ email: formEmail })
+            .update({ 
+              name: body.student_name?.trim(),
+              email: formEmail,
+              postal_code: body.student_pin_code?.trim(),
+              date_of_birth: body.date_of_birth || null,
+              gender: body.gender || null,
+              state: body.state || null,
+              city: body.city || null,
+              nationality: body.nationality || 'Indian',
+              highest_qualification: body.highest_qualification || null,
+              tenth_percentage: body.tenth_percentage || null,
+              twelfth_percentage: body.twelfth_percentage || null,
+              bachelors_percentage: body.bachelors_percentage || null,
+              bachelors_cgpa: body.bachelors_cgpa || null,
+              updated_at: new Date().toISOString(),
+            })
             .eq('id', studentId);
             
           if (syncError) {
-            console.warn('⚠️ Failed to update student email:', syncError.message);
+            console.warn('⚠️ Failed to update student details:', syncError.message);
           } else {
-            console.log('✅ Student email updated to:', formEmail);
+            console.log('✅ Student details updated including email:', formEmail);
           }
         }
       } else {
-        console.log('ℹ️ No real email provided in form, keeping existing email');
+        // Still update other personal details even if no real email provided
+        console.log('ℹ️ No real email provided, but updating other personal details');
+        
+        const { error: syncError } = await supabaseAdmin
+          .from('students')
+          .update({ 
+            name: body.student_name?.trim(),
+            postal_code: body.student_pin_code?.trim(),
+            date_of_birth: body.date_of_birth || null,
+            gender: body.gender || null,
+            state: body.state || null,
+            city: body.city || null,
+            nationality: body.nationality || 'Indian',
+            highest_qualification: body.highest_qualification || null,
+            tenth_percentage: body.tenth_percentage || null,
+            twelfth_percentage: body.twelfth_percentage || null,
+            bachelors_percentage: body.bachelors_percentage || null,
+            bachelors_cgpa: body.bachelors_cgpa || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', studentId);
+          
+        if (syncError) {
+          console.warn('⚠️ Failed to update student details:', syncError.message);
+        } else {
+          console.log('✅ Student personal details updated (email unchanged)');
+        }
       }
     } else {
       // Create new student - use real email from form, or NULL if not provided
@@ -712,8 +753,17 @@ serve(async (req) => {
           email: studentEmail,  // Real email or NULL
           phone: cleanStudentPhone,
           postal_code: body.student_pin_code?.trim() || '000000',
+          date_of_birth: body.date_of_birth || null,
+          gender: body.gender || null,
+          state: body.state || null,
+          city: body.city || null,
           country: 'India',
-          nationality: 'Indian',
+          nationality: body.nationality || 'Indian',
+          highest_qualification: body.highest_qualification || null,
+          tenth_percentage: body.tenth_percentage || null,
+          twelfth_percentage: body.twelfth_percentage || null,
+          bachelors_percentage: body.bachelors_percentage || null,
+          bachelors_cgpa: body.bachelors_cgpa || null,
         }, {
           onConflict: 'phone',
           ignoreDuplicates: true // Don't update existing, just return
