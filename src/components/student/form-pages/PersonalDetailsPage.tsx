@@ -319,42 +319,6 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
           {errors.state && touched.state && <p className="text-xs text-destructive">{errors.state}</p>}
         </div>
 
-        {/* PIN Code */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground" /> PIN Code <span className="text-destructive">*</span>
-          </label>
-          <div
-            className={cn(
-              "flex items-center h-12 px-4 rounded-lg border bg-background transition-colors",
-              errors.postalCode && touched.postalCode 
-                ? "border-destructive" 
-                : isValid('postalCode') 
-                ? "border-emerald-500" 
-                : "border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
-            )}
-          >
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="6-digit PIN code"
-              maxLength={6}
-              value={data.postalCode || ''}
-              onChange={e => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                onUpdate({ postalCode: value });
-              }}
-              onBlur={e => handleBlur('postalCode', e.target.value)}
-              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-            />
-            {isValid('postalCode') && (
-              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-white" />
-              </div>
-            )}
-          </div>
-          {errors.postalCode && touched.postalCode && <p className="text-xs text-destructive">{errors.postalCode}</p>}
-        </div>
 
         {/* Continue Button */}
         <motion.button
