@@ -623,8 +623,8 @@ const StudentLanding = () => {
               </p>
 
               {/* How It Works - With Time Anchors & Animations */}
-              <div className="mb-6">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">How it works</p>
+              <div className="mb-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">4 Simple Steps</p>
                 <div className="grid grid-cols-4 gap-2">
                   {STEPS.map((step, i) => <div key={i} className="text-center group cursor-default" onMouseEnter={() => setHoveredStep(i)} onMouseLeave={() => setHoveredStep(null)}>
                       <div className={cn("w-11 h-11 mx-auto rounded-xl bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent", hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10")}>
@@ -634,32 +634,32 @@ const StudentLanding = () => {
                       <p className={cn("text-[10px] font-semibold transition-colors mt-0.5", hoveredStep === i ? "text-primary" : "text-emerald-600")}>{step.time}</p>
                     </div>)}
                 </div>
-              </div>
-
-              {/* Lenders - Auto-scrolling Carousel */}
-              <div className="mb-6">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Our Top Lenders</p>
-                <div className="relative overflow-hidden">
-                  {/* Gradient fades */}
-                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
-                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
-                  
-                  {/* Scrolling container */}
-                  <div className="flex animate-[scroll_20s_linear_infinite] hover:pause">
-                    {[...LENDERS, ...LENDERS].map((lender, idx) => <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex items-center gap-3 px-4 py-3 mx-2 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm text-primary-foreground" style={{
-                      backgroundColor: `hsl(var(${lender.brandVar}))`
-                    }}>
-                          {lender.shortName.slice(0, 3)}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-foreground whitespace-nowrap">{lender.name}</span>
-                          <span className="text-xs text-emerald-600 font-medium">From {lender.rate}</span>
-                        </div>
-                      </div>)}
+                
+                {/* Lenders - Auto-scrolling Carousel - Directly under steps */}
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Our Top Lenders</p>
+                  <div className="relative overflow-hidden rounded-lg">
+                    {/* Gradient fades */}
+                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-background to-transparent z-10" />
+                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent z-10" />
+                    
+                    {/* Scrolling container */}
+                    <div className="flex animate-[scroll_20s_linear_infinite] hover:pause">
+                      {[...LENDERS, ...LENDERS].map((lender, idx) => <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex items-center gap-2 px-3 py-2 mx-1.5 bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
+                          <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold shadow-sm text-primary-foreground" style={{
+                        backgroundColor: `hsl(var(${lender.brandVar}))`
+                      }}>
+                            {lender.shortName.slice(0, 2)}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-foreground whitespace-nowrap">{lender.name}</span>
+                            <span className="text-[10px] text-emerald-600 font-medium">From {lender.rate}</span>
+                          </div>
+                        </div>)}
+                    </div>
                   </div>
+                  <p className="text-[10px] text-muted-foreground mt-2 text-center">All lenders are RBI-approved</p>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-3 text-center">All lenders are RBI-approved and offer education-focused loans only.</p>
               </div>
 
               {/* Trust Indicators - Enhanced */}
