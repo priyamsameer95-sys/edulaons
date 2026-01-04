@@ -292,13 +292,18 @@ export function useAuth() {
     mountedRef.current = true;
 
     // Safety timeout - force loading false after 3 seconds max
-    authTimeoutRef.current = setTimeout(() => {
-      if (mountedRef.current) {
-        logger.warn('[useAuth] Auth initialization timed out after 3s');
-        setLoading(false);
-        setSessionState(prev => prev === 'validating' || prev === 'unknown' ? 'expired' : prev);
-      }
-    }, 3000);
+    // Only set if not already set (prevents multiple timeouts)
+    if (!authTimeoutRef.current) {
+      authTimeoutRef.current = setTimeout(() => {
+        // Only warn if we're still in loading state
+        if (mountedRef.current && authTimeoutRef.current) {
+          logger.warn('[useAuth] Auth initialization timed out after 3s');
+          setLoading(false);
+          setSessionState(prev => prev === 'validating' || prev === 'unknown' ? 'expired' : prev);
+          authTimeoutRef.current = null;
+        }
+      }, 3000);
+    }
 
     const initializeSession = async () => {
       try {
