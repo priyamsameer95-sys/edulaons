@@ -6,10 +6,12 @@
  * 2. ApplicationDetailsCard - Basic info with edit button
  * 3. CollapsibleDocumentSection - Documents with filter tabs
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+
+const LOADING_TIMEOUT_MS = 5000; // 5 second max loading time
 import { supabase } from '@/integrations/supabase/client';
 import { filterLeadForStudent } from '@/utils/rolePermissions';
 import { STUDENT_EDIT_LOCKED_STATUSES } from '@/constants/studentPermissions';
@@ -73,13 +75,15 @@ interface UploadedDoc {
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading, sessionState } = useAuth();
   const [loading, setLoading] = useState(true);
   const [lead, setLead] = useState<StudentLead | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [hasLead, setHasLead] = useState(false);
   const [showChangeLender, setShowChangeLender] = useState(false);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Document state
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
@@ -175,9 +179,48 @@ const StudentDashboard = () => {
     setUploadedDocs(docsRes.data || []);
   };
 
+  // Wait for auth to finish before fetching student data
   useEffect(() => {
-    fetchStudentData();
-  }, [fetchStudentData]);
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // If auth is still loading, wait
+    if (authLoading) {
+      return;
+    }
+
+    // If session expired or no user after auth finished, stop loading
+    if (sessionState === 'expired' || (!user && !authLoading)) {
+      setLoading(false);
+      return;
+    }
+
+    // If we have a user, fetch their data
+    if (user?.email) {
+      // Set a timeout to prevent infinite loading
+      timeoutRef.current = setTimeout(() => {
+        setLoadingTimedOut(true);
+        setLoading(false);
+      }, LOADING_TIMEOUT_MS);
+
+      fetchStudentData().finally(() => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      });
+    } else {
+      // No user email, stop loading
+      setLoading(false);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [authLoading, sessionState, user?.email, fetchStudentData]);
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -286,10 +329,21 @@ const StudentDashboard = () => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST';
   };
 
-  if (loading) {
+  // Show loading only if auth is still loading or we're fetching data
+  if (loading && !loadingTimedOut) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // If loading timed out, show error state
+  if (loadingTimedOut && !profile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
+        <p className="text-muted-foreground text-center">Something went wrong loading your data.</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
     );
   }
