@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEmailAuth } from '@/hooks/useEmailAuth';
 import { AuthLoadingScreen, EmailLoginForm, AuthCard } from '@/components/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -7,6 +7,7 @@ import { Shield, AlertTriangle } from 'lucide-react';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const {
     user,
@@ -18,11 +19,19 @@ const AdminLogin = () => {
     handleSignIn,
   } = useEmailAuth();
 
+  // Get returnTo from URL params
+  const returnTo = searchParams.get('returnTo');
+
   // Redirect if already logged in as admin
   useEffect(() => {
     if (user && appUser && !loading) {
       if (appUser.role === 'admin' || appUser.role === 'super_admin') {
-        navigate('/dashboard/admin', { replace: true });
+        // Validate returnTo is a safe path (starts with /)
+        if (returnTo && returnTo.startsWith('/')) {
+          navigate(decodeURIComponent(returnTo), { replace: true });
+        } else {
+          navigate('/dashboard/admin', { replace: true });
+        }
       } else {
         // Non-admin user trying to access admin login
         toast({
@@ -33,7 +42,7 @@ const AdminLogin = () => {
         navigate('/', { replace: true });
       }
     }
-  }, [user, appUser, loading, navigate, toast]);
+  }, [user, appUser, loading, navigate, toast, returnTo]);
 
   if (loading) {
     return <AuthLoadingScreen message="Loading..." />;
