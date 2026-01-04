@@ -281,6 +281,9 @@ export function useAuth() {
   const appUserRef = useRef(appUser);
   appUserRef.current = appUser;
 
+  // Ref for auth timeout so we can clear it when init completes
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Initialize session - runs ONLY ONCE on mount
   useEffect(() => {
     // Prevent double initialization (React 18 StrictMode)
@@ -289,7 +292,7 @@ export function useAuth() {
     mountedRef.current = true;
 
     // Safety timeout - force loading false after 3 seconds max
-    const authTimeoutId = setTimeout(() => {
+    authTimeoutRef.current = setTimeout(() => {
       if (mountedRef.current) {
         logger.warn('[useAuth] Auth initialization timed out after 3s');
         setLoading(false);
@@ -364,6 +367,12 @@ export function useAuth() {
           setStoredSessionFlag(false);
           setLoading(false);
         }
+      } finally {
+        // Clear timeout when init completes (success or failure)
+        if (authTimeoutRef.current) {
+          clearTimeout(authTimeoutRef.current);
+          authTimeoutRef.current = null;
+        }
       }
     };
 
@@ -374,6 +383,12 @@ export function useAuth() {
       logger.debug('[useAuth] Auth state change:', event);
 
       if (!mountedRef.current) return;
+
+      // Skip INITIAL_SESSION - already handled by initializeSession() above
+      if (event === 'INITIAL_SESSION') {
+        logger.debug('[useAuth] Skipping INITIAL_SESSION (handled by initializeSession)');
+        return;
+      }
 
       if (event === 'SIGNED_OUT') {
         setSession(null);
@@ -415,7 +430,9 @@ export function useAuth() {
 
     return () => {
       mountedRef.current = false;
-      clearTimeout(authTimeoutId);
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+      }
       subscription.unsubscribe();
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
