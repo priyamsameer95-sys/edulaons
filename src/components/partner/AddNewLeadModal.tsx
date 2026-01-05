@@ -757,7 +757,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                   id="co_applicant_name"
                   value={formData.co_applicant_name}
                   onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
-                  placeholder="Full name"
+                  placeholder="Name as per passport"
                   className={errors.co_applicant_name ? 'border-destructive' : ''}
                 />
                 {errors.co_applicant_name && <p className="text-xs text-destructive">{errors.co_applicant_name}</p>}
