@@ -106,7 +106,7 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
                   type="text" 
                   value={data.coApplicantName || ''} 
                   onChange={e => { onUpdate({ coApplicantName: e.target.value }); setErrors(p => ({ ...p, name: '' })); }}
-                  placeholder="Co-applicant's full name"
+                  placeholder="Co-applicant's full name as per passport"
                   className={cn(
                     "w-full h-11 px-4 rounded-lg border-2 bg-background text-sm outline-none transition-all",
                     errors.name ? "border-destructive" : "border-border focus:border-primary"
