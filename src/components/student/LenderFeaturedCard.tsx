@@ -27,6 +27,12 @@ const formatProcessingFee = (fee: number | null | undefined): string => {
   return `${fee}%`;
 };
 
+interface StudentFacingReason {
+  greeting: string;
+  confidence: string;
+  cta: string;
+}
+
 interface LenderData {
   lender_id: string;
   lender_name: string;
@@ -37,43 +43,13 @@ interface LenderData {
   processing_time_days: number | null;
   compatibility_score: number;
   eligible_loan_max?: number | null;
-  student_facing_reason?: string;
+  student_facing_reason?: StudentFacingReason | string | null;
   lender_description?: string | null;
   eligible_expenses?: any[] | null;
   moratorium_period?: string | null;
   processing_fee?: number | null;
   collateral_preference?: string[] | null;
 }
-
-// Generate comparison-focused badges from lender data
-const getComparisonBadges = (lender: LenderData): string[] => {
-  const badges: string[] = [];
-  
-  // Rate comparison (market avg ~9-10%)
-  if (lender.interest_rate_min && lender.interest_rate_min < 9) {
-    badges.push(`${lender.interest_rate_min}% - Below avg rate`);
-  }
-  
-  // Speed comparison
-  if (lender.processing_time_days && lender.processing_time_days <= 10) {
-    badges.push(`~${lender.processing_time_days} days - Fast approval`);
-  } else if (lender.processing_time_days && lender.processing_time_days <= 15) {
-    badges.push(`~${lender.processing_time_days} days processing`);
-  }
-  
-  // High loan capacity
-  const displayAmount = lender.eligible_loan_max || lender.loan_amount_max;
-  if (displayAmount && displayAmount >= 15000000) {
-    badges.push(`Up to ₹${(displayAmount / 10000000).toFixed(1)}Cr available`);
-  }
-  
-  // Moratorium benefit
-  if (lender.moratorium_period) {
-    badges.push(`${lender.moratorium_period} moratorium`);
-  }
-  
-  return badges.slice(0, 3);
-};
 
 interface LenderFeaturedCardProps {
   lender: LenderData;
@@ -198,29 +174,40 @@ const LenderFeaturedCard = ({
         </div>
       </div>
 
-      {/* Why This Lender - Enhanced with comparison badges */}
+      {/* Why This Lender - Counselor-style 3-line format */}
       <div className="px-4 pb-3">
         <div className="bg-gradient-to-br from-primary/5 via-primary/8 to-info/5 rounded-lg p-3 border border-primary/10">
           <div className="flex gap-2.5">
             <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Zap className="h-3.5 w-3.5 text-primary" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1">Why This Lender?</p>
-              <p className="text-xs text-foreground leading-relaxed mb-2">
-                {lender.student_facing_reason || 'Matched based on your loan requirements and financial profile.'}
-              </p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1.5">Why This Lender?</p>
               
-              {/* Comparison Badges */}
-              {getComparisonBadges(lender).length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {getComparisonBadges(lender).map((badge, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
-                      <CheckCircle2 className="h-2.5 w-2.5" />
-                      {badge}
-                    </span>
-                  ))}
+              {typeof lender.student_facing_reason === 'object' && lender.student_facing_reason ? (
+                <div className="space-y-1.5">
+                  {/* Line 1: Personal Greeting */}
+                  <p className="text-sm font-medium text-foreground">
+                    {lender.student_facing_reason.greeting}
+                  </p>
+                  
+                  {/* Line 2: Confidence/Approval Message */}
+                  <p className="text-xs text-success flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                    {lender.student_facing_reason.confidence}
+                  </p>
+                  
+                  {/* Line 3: CTA */}
+                  <p className="text-xs text-muted-foreground italic">
+                    {lender.student_facing_reason.cta}
+                  </p>
                 </div>
+              ) : (
+                <p className="text-xs text-foreground leading-relaxed">
+                  {typeof lender.student_facing_reason === 'string' 
+                    ? lender.student_facing_reason 
+                    : 'Matched based on your loan requirements and profile.'}
+                </p>
               )}
             </div>
           </div>

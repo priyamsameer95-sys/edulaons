@@ -16,6 +16,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface StudentFacingReason {
+  greeting: string;      // Personalized to student's journey
+  confidence: string;    // Approval likelihood based on BRE match
+  cta: string;           // Encourage exploration
+}
+
 interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
@@ -26,7 +32,7 @@ interface LenderEvaluation {
   risk_flags: string[];
   bre_rules_matched: string[];
   group: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
-  student_facing_reason?: string;
+  student_facing_reason?: StudentFacingReason | string;
 }
 
 interface AIResponse {
@@ -90,67 +96,61 @@ function buildStudentContext(lead: any, student: any, universities: any[]): Stud
 }
 
 /**
- * Generate student-friendly lender reason based ONLY on student's academic journey
+ * Generate structured 3-line student-friendly reason based on student's academic journey
  * CRITICAL: Never expose income, credit, employment, co-applicant details
  */
-function generateStudentFriendlyReason(lender: any, score: number, context: StudentContext): string {
-  const { destination, university, courseType, academicStrength, studentLocation } = context;
+function generateStudentFriendlyReason(lender: any, score: number, context: StudentContext): StudentFacingReason {
+  const { destination, university, courseType, academicStrength } = context;
   
-  // Tier 1: Excellent match (85+) - Personalize based on student journey
+  // Line 1: Greeting - personalized to student's journey
+  let greeting = '';
+  if (destination) {
+    greeting = `A great fit for your ${destination} study journey.`;
+  } else if (university?.name) {
+    greeting = `Well-suited for ${university.name} students.`;
+  } else if (courseType === 'mba_management') {
+    greeting = `A strong choice for MBA aspirants.`;
+  } else if (courseType === 'masters_stem') {
+    greeting = `Ideal for your STEM program abroad.`;
+  } else {
+    greeting = `A solid option for your study abroad plans.`;
+  }
+  
+  // Line 2: Confidence - based on fit score
+  let confidence = '';
   if (score >= 85) {
-    if (destination) {
-      return `Excellent for ${destination}-bound students`;
-    }
-    if (university?.globalRank && university.globalRank <= 100) {
-      return `Top choice for elite university admits`;
-    }
-    if (academicStrength === 'excellent') {
-      return `Great fit for strong academic profiles`;
-    }
-    if (courseType === 'mba_management') {
-      return `Highly recommended for MBA aspirants`;
-    }
-    if (courseType === 'masters_stem') {
-      return `Excellent terms for STEM programs`;
-    }
-    return `Highly recommended for your profile`;
+    confidence = 'High approval likelihood with stable, competitive rates.';
+  } else if (score >= 70) {
+    confidence = 'Strong match based on your profile. Reliable terms.';
+  } else if (score >= 50) {
+    confidence = 'Good option to consider. Established lender.';
+  } else {
+    confidence = 'Worth exploring. See if terms work for you.';
   }
   
-  // Tier 2: Good match (70-84) - Positive, context-aware
-  if (score >= 70) {
-    if (destination) {
-      return `Good ${destination} education loan options`;
-    }
-    if (studentLocation) {
-      return `Strong presence in ${studentLocation}`;
-    }
-    if (university?.name) {
-      return `Popular with top university students`;
-    }
-    if (courseType === 'mba_management') {
-      return `Good option for MBA programs`;
-    }
-    return `Solid choice with good student support`;
-  }
+  // Line 3: CTA
+  const cta = 'Check the loan terms below to compare.';
   
-  // Tier 3: Moderate match (50-69) - Neutral/exploratory
-  if (score >= 50) {
-    if (destination) {
-      return `${destination} options available - worth exploring`;
-    }
-    return `May have suitable options for you`;
-  }
-  
-  // Tier 4: Lower match (<50) - Redirect without negativity
-  return `Other lenders may better match your profile`;
+  return { greeting, confidence, cta };
 }
 
 /**
  * Sanitize AI-generated student reasons to remove ANY internal/financial details
- * Expanded blocklist covers: income, employment, credit, co-applicant, loan types
+ * Now handles structured 3-line object format
  */
-function sanitizeStudentReason(reason: string | undefined, lenderName: string, score: number, context: StudentContext): string {
-  if (!reason || reason.trim() === '') {
+function sanitizeStudentReason(
+  reason: StudentFacingReason | string | undefined, 
+  lenderName: string, 
+  score: number, 
+  context: StudentContext
+): StudentFacingReason {
+  // If no reason provided, generate fallback
+  if (!reason) {
+    return generateStudentFriendlyReason({ name: lenderName }, score, context);
+  }
+  
+  // Handle legacy string format
+  if (typeof reason === 'string') {
     return generateStudentFriendlyReason({ name: lenderName }, score, context);
   }
   
@@ -173,16 +173,28 @@ function sanitizeStudentReason(reason: string | undefined, lenderName: string, s
     'risk', 'concern', 'issue', 'flag', 'reject', 'denied', 'problem'
   ];
   
-  const lowerReason = reason.toLowerCase();
+  // Check each line for blocked phrases
+  const checkAndSanitize = (text: string): boolean => {
+    if (!text) return false;
+    const lowerText = text.toLowerCase();
+    return blockedPhrases.some(phrase => lowerText.includes(phrase));
+  };
   
-  for (const phrase of blockedPhrases) {
-    if (lowerReason.includes(phrase)) {
-      // Replace with safe student-journey-based fallback
-      return generateStudentFriendlyReason({ name: lenderName }, score, context);
-    }
+  // If any line contains blocked content, regenerate entire reason
+  if (
+    checkAndSanitize(reason.greeting) || 
+    checkAndSanitize(reason.confidence) || 
+    checkAndSanitize(reason.cta)
+  ) {
+    return generateStudentFriendlyReason({ name: lenderName }, score, context);
   }
   
-  return reason;
+  // Ensure all fields exist with fallbacks
+  return {
+    greeting: reason.greeting || generateStudentFriendlyReason({ name: lenderName }, score, context).greeting,
+    confidence: reason.confidence || generateStudentFriendlyReason({ name: lenderName }, score, context).confidence,
+    cta: reason.cta || 'Check the loan terms below to compare.'
+  };
 }
 
 Deno.serve(async (req) => {
@@ -356,42 +368,43 @@ For EACH lender, you must:
 5. Flag any risk factors (internal use only)
 6. List which BRE rules were matched
 7. Assign to a group: best_fit (>=80), also_consider (60-79), possible_but_risky (40-59), not_suitable (<40)
-8. Generate a SHORT student-friendly reason (see CRITICAL RULES below)
+8. Generate a STRUCTURED 3-line student-friendly reason (see CRITICAL RULES below)
 
-CRITICAL RULES FOR student_facing_reason:
-- MAX 12 words, simple and encouraging
-- ONLY USE these student-journey factors:
-  * Study destination (USA, UK, Canada, Australia, etc.)
-  * University name or ranking tier (elite, top-ranked, etc.)
-  * Course type (STEM, MBA, Masters, etc.)
-  * Student's state/region
-  * Academic strength (positive framing only like "strong academics")
+CRITICAL RULES FOR student_facing_reason (MUST be an object with 3 fields):
+Write as a FRIENDLY LOAN COUNSELOR speaking directly to the student:
 
-- STRICTLY FORBIDDEN in student_facing_reason:
-  * Income, salary, earnings (student OR co-applicant) - NEVER
-  * Employment type, occupation, employer - NEVER
-  * Credit score, CIBIL - NEVER
-  * Loan type (secured/unsecured/collateral) - NEVER
-  * Co-applicant details of ANY kind - NEVER
-  * Qualification status ("you qualify", "eligible", "meets requirements") - NEVER
-  * Risk flags or concerns - NEVER
-  * Documentation requirements - NEVER
+{
+  "greeting": "Personal connection to student's journey (max 12 words)",
+  "confidence": "Approval likelihood + stability message (max 15 words)", 
+  "cta": "Encourage exploration (max 10 words)"
+}
 
-- GOOD examples (use these patterns):
-  * "Excellent for UK-bound students"
-  * "Top choice for IIT/NIT admits"
-  * "Great fit for STEM programs"
-  * "Strong presence in Maharashtra"
-  * "Popular with top university applicants"
-  * "Good Canada education loan options"
-  
-- BAD examples (NEVER use these):
-  * "Your co-applicant's income qualifies you" ❌
-  * "Good for salaried family background" ❌
-  * "May need income documentation" ❌
-  * "Strong co-applicant profile" ❌
-  * "Suitable for unsecured loans" ❌
-  * "Your credit profile is strong" ❌
+GREETING RULES:
+- Personalize to student's destination + course + university tier
+- Reference what THIS LENDER is good at based on their BRE
+- GOOD: "A great fit for your UK Masters journey."
+- GOOD: "Ideal for your STEM program at a top-ranked university."
+- GOOD: "Perfect match for your study abroad plans."
+
+CONFIDENCE RULES (based on fit_score):
+- Score 85+: "High approval likelihood with stable, competitive rates."
+- Score 70-84: "Strong match based on your profile. Reliable terms."
+- Score 50-69: "Good option to consider. Established lender."
+- Score <50: "Worth exploring. See if terms work for you."
+
+CTA RULES:
+- Always encourage action: "Check the loan terms below to compare."
+- OR: "See the details below to decide."
+
+STRICTLY FORBIDDEN in ALL fields:
+* Income, salary, earnings (student OR co-applicant) - NEVER
+* Employment type, occupation, employer - NEVER
+* Credit score, CIBIL - NEVER
+* Loan type (secured/unsecured/collateral) - NEVER
+* Co-applicant details of ANY kind - NEVER
+* Qualification status ("you qualify", "eligible", "meets requirements") - NEVER
+* Risk flags or concerns - NEVER
+* Documentation requirements - NEVER
 
 IMPORTANT:
 - NEVER eliminate any lender - evaluate ALL of them
@@ -445,7 +458,16 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
                             risk_flags: { type: 'array', items: { type: 'string' } },
                             bre_rules_matched: { type: 'array', items: { type: 'string' } },
                             group: { type: 'string', enum: ['best_fit', 'also_consider', 'possible_but_risky', 'not_suitable'] },
-                            student_facing_reason: { type: 'string', description: 'Max 15 words, simple and friendly' },
+                            student_facing_reason: { 
+                              type: 'object',
+                              properties: {
+                                greeting: { type: 'string', description: 'Personalized journey greeting, max 12 words' },
+                                confidence: { type: 'string', description: 'Approval likelihood + stability message based on fit_score, max 15 words' },
+                                cta: { type: 'string', description: 'Call-to-action to explore terms, max 10 words' }
+                              },
+                              required: ['greeting', 'confidence', 'cta'],
+                              description: 'Structured 3-line counselor-style reason for this lender'
+                            },
                           },
                           required: ['lender_id', 'lender_name', 'fit_score', 'probability_band', 'justification', 'group'],
                         },
