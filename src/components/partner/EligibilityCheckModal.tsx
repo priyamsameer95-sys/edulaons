@@ -675,7 +675,7 @@ export const EligibilityCheckModal = ({
                 <Input
                   value={quickForm.student_name}
                   onChange={(e) => handleQuickChange('student_name', e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="Name as per passport"
                   className={cn("pl-10 h-12 bg-muted/50 border-border/50 focus:bg-background transition-colors", quickErrors.student_name && 'border-destructive')}
                 />
               </div>
