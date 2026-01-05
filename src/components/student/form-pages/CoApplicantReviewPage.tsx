@@ -278,7 +278,7 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
                     className="mt-0.5 w-4 h-4 rounded border-border accent-primary" 
                   />
                   <span className="text-sm text-muted-foreground">
-                    I confirm all information is accurate and agree to the{' '}
+                    I confirm that all the information is accurate and agree to the{' '}
                     <a href="#" className="text-primary hover:underline">Terms</a> &{' '}
                     <a href="#" className="text-primary hover:underline">Privacy Policy</a>
                   </span>
