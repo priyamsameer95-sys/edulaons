@@ -61,8 +61,8 @@ interface StudentSmartUploadProps {
   
 }
 
-// Student-uploadable categories only
-const STUDENT_CATEGORIES = ['KYC', 'Academic', 'Financial', 'Co-Applicant'];
+// Student-uploadable categories only (must match database category values)
+const STUDENT_CATEGORIES = ['student', 'financial_co_applicant', 'non_financial_co_applicant'];
 
 import { getCategoryLabel } from '@/constants/categoryLabels';
 
