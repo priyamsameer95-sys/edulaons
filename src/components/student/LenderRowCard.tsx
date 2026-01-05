@@ -8,7 +8,8 @@ import {
   Zap,
   Percent,
   Clock,
-  Wallet
+  Wallet,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +36,38 @@ interface LenderData {
   eligible_expenses?: any[] | null;
   moratorium_period?: string | null;
   processing_fee?: number | null;
+  collateral_preference?: string[] | null;
 }
+
+// Generate comparison-focused badges from lender data
+const getComparisonBadges = (lender: LenderData): string[] => {
+  const badges: string[] = [];
+  
+  // Rate comparison (market avg ~9-10%)
+  if (lender.interest_rate_min && lender.interest_rate_min < 9) {
+    badges.push(`${lender.interest_rate_min}% - Below avg rate`);
+  }
+  
+  // Speed comparison
+  if (lender.processing_time_days && lender.processing_time_days <= 10) {
+    badges.push(`~${lender.processing_time_days} days - Fast approval`);
+  } else if (lender.processing_time_days && lender.processing_time_days <= 15) {
+    badges.push(`~${lender.processing_time_days} days processing`);
+  }
+  
+  // High loan capacity
+  const displayAmount = lender.eligible_loan_max || lender.loan_amount_max;
+  if (displayAmount && displayAmount >= 15000000) {
+    badges.push(`Up to ₹${(displayAmount / 10000000).toFixed(1)}Cr available`);
+  }
+  
+  // Moratorium benefit
+  if (lender.moratorium_period) {
+    badges.push(`${lender.moratorium_period} moratorium`);
+  }
+  
+  return badges.slice(0, 3);
+};
 
 interface LenderRowCardProps {
   lender: LenderData;
@@ -81,9 +113,26 @@ const LenderRowCard = ({
           )}
         </div>
 
-        {/* Name + Match Score */}
+        {/* Name + Match Score + Secured Badge */}
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-foreground text-base truncate">{lender.lender_name}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-bold text-foreground text-base truncate">{lender.lender_name}</p>
+            
+            {/* Secured Loan Indicator */}
+            {lender.collateral_preference?.includes('required') && (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                <Shield className="h-3 w-3" />
+                Secured Loan
+              </div>
+            )}
+            {lender.collateral_preference?.includes('preferred') && 
+             !lender.collateral_preference?.includes('required') && (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-500 dark:border-amber-800">
+                <Shield className="h-3 w-3" />
+                Collateral Preferred
+              </div>
+            )}
+          </div>
           <div className={cn(
             "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mt-1",
             lender.compatibility_score >= 70 ? "bg-success/10 text-success" : 
@@ -177,20 +226,32 @@ const LenderRowCard = ({
       {/* Expanded Details */}
       {showDetails && (
         <div className="px-4 pb-4 pt-2 border-t border-border/50 animate-fade-in">
-          {/* AI Insight */}
-          {lender.student_facing_reason && (
-            <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-info/5 border border-primary/15">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Zap className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Why This Lender?</p>
-                  <p className="text-sm text-foreground leading-relaxed">{lender.student_facing_reason}</p>
-                </div>
+          {/* AI Insight - Enhanced with comparison badges */}
+          <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-info/5 border border-primary/15">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Zap className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Why This Lender?</p>
+                <p className="text-sm text-foreground leading-relaxed mb-2">
+                  {lender.student_facing_reason || 'Matched based on your loan requirements and financial profile.'}
+                </p>
+                
+                {/* Comparison Badges */}
+                {getComparisonBadges(lender).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {getComparisonBadges(lender).map((badge, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           {/* Expenses Covered */}
           <div className="mb-3">
