@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Collapsible, 
   CollapsibleContent, 
@@ -67,6 +68,7 @@ const CollapsibleDocumentSection = ({
   className,
 }: CollapsibleDocumentSectionProps) => {
   const [filter, setFilter] = useState<DocumentFilter>('all');
+  const [consentChecked, setConsentChecked] = useState(true);
   
   // Auto-expand if there are pending or rejected docs
   const [isOpen, setIsOpen] = useState(pendingCount > 0 || rejectedCount > 0);
@@ -142,6 +144,24 @@ const CollapsibleDocumentSection = ({
           <Upload className="w-3.5 h-3.5 mr-1.5" />
           Upload
         </Button>
+      </div>
+
+      {/* DPDP Consent - Always visible */}
+      <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <Checkbox 
+            checked={consentChecked} 
+            onCheckedChange={(checked) => setConsentChecked(checked === true)}
+            className="mt-0.5"
+          />
+          <span className="text-[11px] leading-relaxed text-muted-foreground">
+            I hereby consent to the collection, use, storage, and sharing of my personal data, 
+            including PAN and Aadhaar (masked/offline verification only), by cashakro.com for 
+            the purpose of education/financial loan processing, verification, and sharing with 
+            its partner lenders, in accordance with applicable laws including the Digital 
+            Personal Data Protection Act, 2023.
+          </span>
+        </label>
       </div>
 
       <CollapsibleContent>
