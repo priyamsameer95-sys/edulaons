@@ -48,7 +48,6 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
         return age < 16 || age > 50 ? 'Age must be 16-50' : '';
       }
       case 'state': return !value ? 'Please select your state' : '';
-      case 'postalCode': return !value || !/^\d{6}$/.test(value) ? 'Enter valid 6-digit PIN code' : '';
       default: return '';
     }
   };
@@ -66,10 +65,9 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
       dateOfBirth: validateField('dateOfBirth', data.dateOfBirth || ''),
       gender: !data.gender ? 'Select gender' : '',
       state: validateField('state', data.state || ''),
-      postalCode: validateField('postalCode', data.postalCode || ''),
     };
     setErrors(newErrors);
-    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, state: true, postalCode: true });
+    setTouched({ name: true, phone: true, email: true, dateOfBirth: true, gender: true, state: true });
     return !Object.values(newErrors).some(e => e);
   };
 

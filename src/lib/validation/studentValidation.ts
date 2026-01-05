@@ -36,8 +36,10 @@ export const personalDetailsSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   postalCode: z.string()
-    .length(VALIDATION_RULES.POSTAL_CODE.LENGTH, 'Please enter your 6-digit PIN code')
-    .regex(VALIDATION_RULES.POSTAL_CODE.PATTERN, 'Please enter your 6-digit PIN code'),
+    .length(6, 'PIN code must be 6 digits')
+    .regex(/^\d{6}$/, 'PIN code must be 6 digits')
+    .optional()
+    .or(z.literal('')),
   nationality: z.string().min(1, ERROR_MESSAGES.REQUIRED),
 });
 

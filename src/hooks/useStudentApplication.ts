@@ -115,24 +115,28 @@ export const useStudentApplication = () => {
     intakeYear: defaultIntake.year,
   });
 
-  // Get current user's phone from auth metadata
+  // Get current user's phone from auth metadata and pre-fill into form
   useEffect(() => {
     const getAuthPhone = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      let phone = '';
+      
       if (user?.user_metadata?.phone) {
-        const phone = user.user_metadata.phone.replace(/\D/g, '').slice(-10);
+        phone = user.user_metadata.phone.replace(/\D/g, '').slice(-10);
+      } else if (user?.email?.includes('@student.loan.app')) {
+        phone = user.email.split('@')[0].replace(/\D/g, '').slice(-10);
+      }
+      
+      if (phone.length === 10) {
         setUserPhone(phone);
-        return phone;
+        // Pre-fill phone into application data if not already set
+        setApplicationData(prev => {
+          if (!prev.phone) {
+            return { ...prev, phone };
+          }
+          return prev;
+        });
       }
-      // Fallback: extract from email if it's phone-based
-      if (user?.email?.includes('@student.loan.app')) {
-        const phone = user.email.split('@')[0].replace(/\D/g, '').slice(-10);
-        if (phone.length === 10) {
-          setUserPhone(phone);
-          return phone;
-        }
-      }
-      return null;
     };
     
     getAuthPhone();
