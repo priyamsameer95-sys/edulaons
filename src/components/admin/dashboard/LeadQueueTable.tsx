@@ -179,7 +179,7 @@ export function LeadQueueTable({
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('age')}>
                         <Clock className="h-3 w-3 mr-1" />
-                        Created On  <SortIcon field="age" />
+                        Created   <SortIcon field="age" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
