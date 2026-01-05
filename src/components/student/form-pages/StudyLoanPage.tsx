@@ -389,7 +389,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
 
         {/* Row 5: Intake Month */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Expected start date *</label>
+          <label className="text-sm font-medium text-foreground">Expected Start Date</label>
           <div className="flex flex-wrap gap-2">
             {intakeMonths.map(m => {
               const isSelected = data.intakeMonth === m.month && data.intakeYear === m.year;
