@@ -113,7 +113,7 @@ const ApplicationDetailsCard = ({
               <Building2 className="w-3 h-3" />
               <span>{targetLender ? 'Lender' : 'Applied'}</span>
             </div>
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium capitalize">
               {targetLender?.name || formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
             </p>
           </div>
