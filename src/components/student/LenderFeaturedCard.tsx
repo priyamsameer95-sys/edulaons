@@ -42,7 +42,38 @@ interface LenderData {
   eligible_expenses?: any[] | null;
   moratorium_period?: string | null;
   processing_fee?: number | null;
+  collateral_preference?: string[] | null;
 }
+
+// Generate comparison-focused badges from lender data
+const getComparisonBadges = (lender: LenderData): string[] => {
+  const badges: string[] = [];
+  
+  // Rate comparison (market avg ~9-10%)
+  if (lender.interest_rate_min && lender.interest_rate_min < 9) {
+    badges.push(`${lender.interest_rate_min}% - Below avg rate`);
+  }
+  
+  // Speed comparison
+  if (lender.processing_time_days && lender.processing_time_days <= 10) {
+    badges.push(`~${lender.processing_time_days} days - Fast approval`);
+  } else if (lender.processing_time_days && lender.processing_time_days <= 15) {
+    badges.push(`~${lender.processing_time_days} days processing`);
+  }
+  
+  // High loan capacity
+  const displayAmount = lender.eligible_loan_max || lender.loan_amount_max;
+  if (displayAmount && displayAmount >= 15000000) {
+    badges.push(`Up to ₹${(displayAmount / 10000000).toFixed(1)}Cr available`);
+  }
+  
+  // Moratorium benefit
+  if (lender.moratorium_period) {
+    badges.push(`${lender.moratorium_period} moratorium`);
+  }
+  
+  return badges.slice(0, 3);
+};
 
 interface LenderFeaturedCardProps {
   lender: LenderData;
@@ -130,11 +161,26 @@ const LenderFeaturedCard = ({
           
           {/* Name & Match Badge */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h4 className="font-bold text-foreground text-base leading-tight truncate">
                 {lender.lender_name}
               </h4>
               {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
+              
+              {/* Secured Loan Indicator */}
+              {lender.collateral_preference?.includes('required') && (
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
+                  <Shield className="h-3 w-3" />
+                  Secured Loan
+                </div>
+              )}
+              {lender.collateral_preference?.includes('preferred') && 
+               !lender.collateral_preference?.includes('required') && (
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-500 dark:border-amber-800">
+                  <Shield className="h-3 w-3" />
+                  Collateral Preferred
+                </div>
+              )}
             </div>
             
             {!isTopMatch && (
@@ -152,7 +198,7 @@ const LenderFeaturedCard = ({
         </div>
       </div>
 
-      {/* Why This Lender - Proper height with full text visibility */}
+      {/* Why This Lender - Enhanced with comparison badges */}
       <div className="px-4 pb-3">
         <div className="bg-gradient-to-br from-primary/5 via-primary/8 to-info/5 rounded-lg p-3 border border-primary/10">
           <div className="flex gap-2.5">
@@ -160,10 +206,22 @@ const LenderFeaturedCard = ({
               <Zap className="h-3.5 w-3.5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-0.5">Why This Lender?</p>
-              <p className="text-xs text-foreground leading-relaxed">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1">Why This Lender?</p>
+              <p className="text-xs text-foreground leading-relaxed mb-2">
                 {lender.student_facing_reason || 'Matched based on your loan requirements and financial profile.'}
               </p>
+              
+              {/* Comparison Badges */}
+              {getComparisonBadges(lender).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {getComparisonBadges(lender).map((badge, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
