@@ -300,6 +300,14 @@ const StudentSmartUpload = ({
       };
     }
     
+    // If we have both student name and detected name but no match - show warning
+    if (normalizedStudent && detectedParts.length > 0) {
+      return { 
+        status: 'warning', 
+        message: `Name mismatch: Document shows "${detectedName}" but your name is "${studentName}"`,
+      };
+    }
+    
     return { 
       status: 'info', 
       message: `Document shows: ${detectedName}`,
@@ -615,7 +623,7 @@ const StudentSmartUpload = ({
                             validation={queuedFile.validation}
                           />
                         )}
-                        {/* Name match indicator - Simplified */}
+                        {/* Name match indicator - Shows match, warning, or info */}
                         {queuedFile.classification?.detected_name && (() => {
                           const nameMatch = getNameMatchStatus(queuedFile.classification.detected_name);
                           if (nameMatch.status === 'match') {
@@ -623,6 +631,14 @@ const StudentSmartUpload = ({
                               <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="h-3 w-3" />
                                 {nameMatch.message}
+                              </div>
+                            );
+                          }
+                          if (nameMatch.status === 'warning') {
+                            return (
+                              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
+                                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span>{nameMatch.message}</span>
                               </div>
                             );
                           }
