@@ -4,7 +4,7 @@
  * Desktop-first right-side sheet for AI-powered document upload.
  * Includes progress tracking, smart upload, and document status lists.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -56,6 +56,7 @@ const StudentUploadSheet = ({
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [loading, setLoading] = useState(true);
+  const selectPortalRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     if (!leadId) return;
@@ -159,6 +160,9 @@ const StudentUploadSheet = ({
           </SheetTitle>
         </SheetHeader>
 
+        {/* Portal container for dropdowns inside the sheet (avoids ScrollArea clipping & modal pointer-events issues) */}
+        <div ref={selectPortalRef} className="relative z-50" />
+
         <ScrollArea className="flex-1">
           <div className="px-6 py-6 space-y-6">
             {/* Progress Card */}
@@ -179,9 +183,9 @@ const StudentUploadSheet = ({
               studentName={studentName}
               coApplicantName={coApplicantName}
               uploadedDocuments={uploadedDocs}
+              selectPortalContainer={selectPortalRef.current}
             />
 
-            {/* Document Status Lists */}
             {!loading && (
               <div className="space-y-4">
                 {uploadedDocsList.length > 0 && (
