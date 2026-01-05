@@ -25,6 +25,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface StudentFacingReason {
+  greeting: string;
+  confidence: string;
+  cta: string;
+}
+
 interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
@@ -35,7 +41,15 @@ interface LenderEvaluation {
   risk_flags: string[];
   bre_rules_matched: string[];
   group: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
-  student_facing_reason?: string;
+  student_facing_reason?: StudentFacingReason | string | null;
+}
+
+// Helper to safely format student_facing_reason for inline display
+function formatStudentFacingReason(reason: StudentFacingReason | string | null | undefined): string | null {
+  if (!reason) return null;
+  if (typeof reason === 'string') return reason;
+  if (typeof reason === 'object' && reason.greeting) return reason.greeting;
+  return null;
 }
 
 interface InputsSnapshot {
@@ -412,7 +426,7 @@ export function AILenderRecommendation({
                   {verdict.label}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  — {evaluation.student_facing_reason || evaluation.justification.slice(0, 60)}
+                  — {formatStudentFacingReason(evaluation.student_facing_reason) || evaluation.justification?.slice(0, 60) || ''}
                 </span>
               </div>
             </div>
