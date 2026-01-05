@@ -10,7 +10,7 @@ import { useDropzone } from 'react-dropzone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
+import InlineDocTypePicker from './InlineDocTypePicker';
 import { useDocumentClassification, QueuedFile, ClassificationResult } from '@/hooks/useDocumentClassification';
 import { useDocumentValidation, ValidationResult } from '@/hooks/useDocumentValidation';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +58,7 @@ interface StudentSmartUploadProps {
   studentName?: string;
   coApplicantName?: string;
   uploadedDocuments?: UploadedDocument[];
-  selectPortalContainer?: HTMLElement | null;
+  
 }
 
 // Student-uploadable categories only
@@ -90,7 +90,6 @@ const StudentSmartUpload = ({
   studentName,
   coApplicantName,
   uploadedDocuments = [],
-  selectPortalContainer,
 }: StudentSmartUploadProps) => {
   const [queue, setQueue] = useState<ExtendedQueuedFile[]>([]);
   const { classifyDocument } = useDocumentClassification();
@@ -677,29 +676,14 @@ const StudentSmartUpload = ({
                           </div>
                         )}
 
-                        {/* Document Type Selector */}
-                        <Select
-                          value={queuedFile.selectedDocumentTypeId || ''}
-                          onValueChange={(value) => handleTypeChange(queuedFile.id, value)}
-                        >
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                          <SelectContent portalContainer={selectPortalContainer}>
-                            {Object.entries(groupedDocTypes).map(([category, types]) => (
-                              <SelectGroup key={category}>
-                                <SelectLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                  {getCategoryLabel(category)}
-                                </SelectLabel>
-                                {types.map(dt => (
-                                  <SelectItem key={dt.id} value={dt.id} className="text-sm">
-                                    {dt.name} {dt.required && '*'}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {/* Document Type Selector - Inline picker avoids portal issues */}
+                        <InlineDocTypePicker
+                          documentTypes={studentDocTypes}
+                          value={queuedFile.selectedDocumentTypeId}
+                          onChange={(value) => handleTypeChange(queuedFile.id, value)}
+                          groupedDocTypes={groupedDocTypes}
+                          getCategoryLabel={getCategoryLabel}
+                        />
 
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-1">
