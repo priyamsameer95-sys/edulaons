@@ -43,7 +43,7 @@ interface StudentUploadSheetProps {
 }
 
 // Student-uploadable categories
-const STUDENT_CATEGORIES = ['KYC', 'Academic', 'Financial', 'Co-Applicant'];
+const STUDENT_CATEGORIES = ['student', 'financial_co_applicant', 'non_financial_co_applicant'];
 
 const StudentUploadSheet = ({
   open,
