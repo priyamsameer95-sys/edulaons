@@ -115,7 +115,7 @@ const PersonalDetailsPage = ({ data, onUpdate, onNext }: PersonalDetailsPageProp
             <input
               ref={nameRef}
               type="text"
-              placeholder="Enter your full name"
+              placeholder="Name as per passport"
               value={data.name || ''}
               onChange={e => onUpdate({ name: e.target.value })}
               onBlur={e => handleBlur('name', e.target.value)}
