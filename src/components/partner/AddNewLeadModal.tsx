@@ -543,7 +543,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                   id="student_name"
                   value={formData.student_name}
                   onChange={(e) => handleInputChange('student_name', e.target.value)}
-                  placeholder="Full name"
+                  placeholder="Name as per passport"
                   className={errors.student_name ? 'border-destructive' : ''}
                 />
                 {errors.student_name && <p className="text-xs text-destructive">{errors.student_name}</p>}
