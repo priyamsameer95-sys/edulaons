@@ -442,7 +442,10 @@ const StudentDashboard = () => {
               <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-lg text-foreground">Eduloans</span>
+              <div className="flex flex-col">
+                <span className="font-semibold text-lg text-foreground leading-tight">Eduloans</span>
+                <span className="text-[10px] text-muted-foreground">by cashakro</span>
+              </div>
             </div>
             
             <div className="flex items-center gap-4">
