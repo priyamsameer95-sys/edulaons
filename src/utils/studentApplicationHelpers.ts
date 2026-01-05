@@ -6,7 +6,8 @@ import type { StudentApplicationData, EdgeFunctionPayload } from '@/types/studen
 /**
  * Clean phone number - remove +91 prefix and non-digits
  */
-export const cleanPhoneNumber = (phone: string): string => {
+export const cleanPhoneNumber = (phone?: string): string => {
+  if (!phone) return '';
   return phone.trim().replace(/^\+91/, '').replace(/\D/g, '');
 };
 
@@ -71,10 +72,10 @@ export const transformToEdgeFunctionPayload = (
 ): EdgeFunctionPayload => {
   return {
     // Student fields - prefer form email over auth email
-    student_name: data.name.trim(),
+    student_name: data.name?.trim() || '',
     student_email: data.email?.trim() || userEmail,
     student_phone: cleanPhoneNumber(data.phone),
-    student_pin_code: data.postalCode.trim(),
+    student_pin_code: data.postalCode?.trim() || '',
     date_of_birth: data.dateOfBirth,
     gender: data.gender,
     city: data.city,
@@ -93,25 +94,25 @@ export const transformToEdgeFunctionPayload = (
     
     // Study fields
     universities: cleanUniversities(data.universities),
-    country: data.studyDestination, // Send country code directly (UK, USA, etc.)
+    country: data.studyDestination,
     course_name: data.courseName,
-    course_type: data.courseType, // Added missing courseType field
+    course_type: data.courseType,
     loan_type: data.loanType,
     intake_month: data.intakeMonth,
     intake_year: data.intakeYear,
     amount_requested: data.loanAmount,
     
-    // Co-applicant fields
-    co_applicant_name: data.coApplicantName.trim(),
+    // Co-applicant fields - all with null safety
+    co_applicant_name: data.coApplicantName?.trim() || '',
     co_applicant_relationship: data.coApplicantRelationship,
     co_applicant_phone: cleanPhoneNumber(data.coApplicantPhone),
-    co_applicant_email: data.coApplicantEmail.trim(),
+    co_applicant_email: data.coApplicantEmail?.trim() || '',
     co_applicant_monthly_salary: data.coApplicantMonthlySalary,
     co_applicant_employment_type: data.coApplicantEmploymentType,
     co_applicant_occupation: data.coApplicantOccupation,
     co_applicant_employer: data.coApplicantEmployer,
     co_applicant_employment_duration: data.coApplicantEmploymentDuration,
-    co_applicant_pin_code: data.coApplicantPinCode.trim(),
+    co_applicant_pin_code: data.coApplicantPinCode?.trim() || '',
     
     // Optional credit scores
     student_credit_score: data.creditScore,
