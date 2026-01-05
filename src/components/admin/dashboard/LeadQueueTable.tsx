@@ -131,7 +131,7 @@ export function LeadQueueTable({
                 </TableHead>
                 <TableHead className="w-[100px]">
                   <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('id')}>
-                    Lead ID <SortIcon field="id" />
+                    User ID <SortIcon field="id" />
                   </Button>
                 </TableHead>
                 <TableHead className="w-[200px]">
