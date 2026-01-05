@@ -58,6 +58,7 @@ interface StudentSmartUploadProps {
   studentName?: string;
   coApplicantName?: string;
   uploadedDocuments?: UploadedDocument[];
+  selectPortalContainer?: HTMLElement | null;
 }
 
 // Student-uploadable categories only
@@ -88,7 +89,8 @@ const StudentSmartUpload = ({
   onUploadSuccess,
   studentName,
   coApplicantName,
-  uploadedDocuments = []
+  uploadedDocuments = [],
+  selectPortalContainer,
 }: StudentSmartUploadProps) => {
   const [queue, setQueue] = useState<ExtendedQueuedFile[]>([]);
   const { classifyDocument } = useDocumentClassification();
@@ -683,7 +685,7 @@ const StudentSmartUpload = ({
                           <SelectTrigger className="h-9 text-sm">
                             <SelectValue placeholder="Select document type" />
                           </SelectTrigger>
-                          <SelectContent portaled={false}>
+                          <SelectContent portalContainer={selectPortalContainer}>
                             {Object.entries(groupedDocTypes).map(([category, types]) => (
                               <SelectGroup key={category}>
                                 <SelectLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
