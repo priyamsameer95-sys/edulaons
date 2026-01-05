@@ -104,8 +104,10 @@ export const coApplicantDetailsSchema = z.object({
   coApplicantEmployer: z.string().optional(),
   coApplicantEmploymentDuration: z.number().optional(),
   coApplicantPinCode: z.string()
-    .length(VALIDATION_RULES.POSTAL_CODE.LENGTH, ERROR_MESSAGES.POSTAL_CODE_INVALID)
-    .regex(VALIDATION_RULES.POSTAL_CODE.PATTERN, ERROR_MESSAGES.POSTAL_CODE_INVALID),
+    .length(6, 'PIN code must be 6 digits')
+    .regex(/^\d{6}$/, 'PIN code must be 6 digits')
+    .optional()
+    .or(z.literal('')),
 });
 
 // Complete Application Schema - merge first, then apply refinements
