@@ -207,7 +207,7 @@ export function EditLenderModal({
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
-            <TabsTrigger value="bre">BRE Config</TabsTrigger>
+            <TabsTrigger value="bre">BRE Configuration</TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="space-y-4">
