@@ -4,7 +4,7 @@
  * Desktop-first right-side sheet for AI-powered document upload.
  * Includes progress tracking, smart upload, and document status lists.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -12,7 +12,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
 import { Shield } from 'lucide-react';
 import StudentSmartUpload from './StudentSmartUpload';
 import UploadProgressCard from './UploadProgressCard';
@@ -33,6 +32,9 @@ interface UploadedDoc {
   original_filename: string;
 }
 
+// Student-uploadable categories
+const STUDENT_CATEGORIES = ['student', 'financial_co_applicant', 'non_financial_co_applicant'];
+
 interface StudentUploadSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,10 +42,10 @@ interface StudentUploadSheetProps {
   studentName?: string;
   coApplicantName?: string;
   onUploadComplete?: () => void;
+  // Props from parent - eliminates duplicate fetching
+  documentTypes: DocumentType[];
+  uploadedDocs: UploadedDoc[];
 }
-
-// Student-uploadable categories
-const STUDENT_CATEGORIES = ['student', 'financial_co_applicant', 'non_financial_co_applicant'];
 
 const StudentUploadSheet = ({
   open,
@@ -52,52 +54,15 @@ const StudentUploadSheet = ({
   studentName,
   coApplicantName,
   onUploadComplete,
+  documentTypes: allDocTypes,
+  uploadedDocs,
 }: StudentUploadSheetProps) => {
-  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
-  const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-
-  const fetchData = useCallback(async () => {
-    if (!leadId) return;
-
-    try {
-      const [typesRes, docsRes] = await Promise.all([
-        supabase
-          .from('document_types')
-          .select('id, name, category, required, description')
-          .order('display_order', { ascending: true }),
-        supabase
-          .from('lead_documents')
-          .select('id, document_type_id, verification_status, original_filename')
-          .eq('lead_id', leadId)
-      ]);
-
-      if (typesRes.data) {
-        // Filter to student-uploadable categories
-        const filtered = typesRes.data.filter(dt => STUDENT_CATEGORIES.includes(dt.category));
-        setDocumentTypes(filtered);
-      }
-      if (docsRes.data) {
-        setUploadedDocs(docsRes.data);
-      }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [leadId]);
-
-  useEffect(() => {
-    if (open) {
-      fetchData();
-    }
-  }, [open, fetchData]);
+  // Filter to student-uploadable categories
+  const documentTypes = allDocTypes.filter(dt => STUDENT_CATEGORIES.includes(dt.category));
 
   const handleUploadSuccess = useCallback(() => {
-    fetchData();
     onUploadComplete?.();
-  }, [fetchData, onUploadComplete]);
+  }, [onUploadComplete]);
 
   // Calculate stats
   const requiredDocs = documentTypes.filter(d => d.required);
@@ -164,14 +129,12 @@ const StudentUploadSheet = ({
         <ScrollArea className="flex-1">
           <div className="px-6 py-6 space-y-6">
             {/* Progress Card */}
-            {!loading && (
-              <UploadProgressCard
+            <UploadProgressCard
                 uploadedCount={uploadedCount}
                 totalCount={requiredDocs.length}
                 verifiedCount={verifiedCount}
                 rejectedCount={rejectedCount}
-              />
-            )}
+            />
 
             {/* Smart Upload */}
             <StudentSmartUpload
@@ -183,27 +146,25 @@ const StudentUploadSheet = ({
               uploadedDocuments={uploadedDocs}
             />
 
-            {!loading && (
-              <div className="space-y-4">
-                {uploadedDocsList.length > 0 && (
-                  <DocumentStatusList
-                    title="Already Uploaded"
-                    documents={uploadedDocsList}
-                    variant="uploaded"
-                    defaultExpanded={false}
-                  />
-                )}
+            <div className="space-y-4">
+              {uploadedDocsList.length > 0 && (
+                <DocumentStatusList
+                  title="Already Uploaded"
+                  documents={uploadedDocsList}
+                  variant="uploaded"
+                  defaultExpanded={false}
+                />
+              )}
 
-                {pendingDocsList.length > 0 && (
-                  <DocumentStatusList
-                    title="Still Needed"
-                    documents={pendingDocsList}
-                    variant="pending"
-                    defaultExpanded={true}
-                  />
-                )}
-              </div>
-            )}
+              {pendingDocsList.length > 0 && (
+                <DocumentStatusList
+                  title="Still Needed"
+                  documents={pendingDocsList}
+                  variant="pending"
+                  defaultExpanded={true}
+                />
+              )}
+            </div>
           </div>
         </ScrollArea>
 

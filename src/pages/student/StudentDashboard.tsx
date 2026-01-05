@@ -566,7 +566,11 @@ const StudentDashboard = () => {
           onOpenChange={setShowUploadSheet}
           leadId={lead.id}
           studentName={profile?.name}
-          onUploadComplete={fetchStudentData}
+          onUploadComplete={async () => {
+            await fetchDocuments(lead.id);
+          }}
+          documentTypes={documentTypes}
+          uploadedDocs={uploadedDocs}
         />
       )}
     </div>
