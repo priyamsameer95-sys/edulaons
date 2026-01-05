@@ -204,7 +204,7 @@ export function EditLenderModal({
 
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="basic">Basic Information</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="bre">BRE Configuration</TabsTrigger>
