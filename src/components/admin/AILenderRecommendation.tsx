@@ -26,9 +26,11 @@ import {
   Bot, Check, Clock, Sparkles, Building2, AlertCircle, 
   ChevronDown, ChevronRight, AlertTriangle, XCircle,
   Zap, CheckCircle2, RefreshCw, Star, Lock, TrendingUp,
-  GraduationCap, Wallet, History, Target, Brain, Settings
+  GraduationCap, Wallet, History, Target, Brain, Settings,
+  Percent, ArrowUpDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { HumanizedFactorCard, ScoreInsight, ProTipBanner } from './lender-recommendation';
 import { groupAndHumanizeFactors, generateProTip } from '@/constants/breHumanizer';
 import { UrgencyZoneBadge } from '@/components/shared/UrgencyZoneBadge';
@@ -89,6 +91,11 @@ interface LenderEvaluation {
   knockout_penalty?: number;
   is_locked?: boolean;
   unlock_hint?: string;
+  // Display fields from new engine
+  interest_rate_display?: string;
+  loan_range_display?: string;
+  badges?: string[];
+  rank?: number;
 }
 
 // Normalize evaluation data from new/old engine format
@@ -655,6 +662,109 @@ export function AILenderRecommendation({
     );
   };
 
+  // Render comparison table for quick side-by-side view
+  const renderComparisonTable = () => {
+    const allLenders = recommendation?.all_lenders_output as LenderEvaluation[] | undefined;
+    if (!allLenders || allLenders.length === 0) return null;
+
+    const comparableLenders = allLenders
+      .filter(l => !l.is_locked)
+      .sort((a, b) => (a.rank || 99) - (b.rank || 99))
+      .slice(0, 5);
+
+    if (comparableLenders.length === 0) return null;
+
+    return (
+      <div className="mb-4 border rounded-lg overflow-hidden">
+        <div className="px-3 py-2 bg-muted/50 border-b flex items-center gap-2">
+          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold">Quick Comparison</span>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-xs w-[140px]">Lender</TableHead>
+              <TableHead className="text-xs text-center">Score</TableHead>
+              <TableHead className="text-xs">Interest Rate</TableHead>
+              <TableHead className="text-xs">Loan Range</TableHead>
+              <TableHead className="text-xs text-center">Processing</TableHead>
+              <TableHead className="text-xs">Key Benefit</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {comparableLenders.map((lender, idx) => {
+              const normalized = normalizeEvaluation(lender);
+              const isTopPick = idx === 0;
+              
+              return (
+                <TableRow 
+                  key={lender.lender_id}
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50",
+                    isTopPick && "bg-emerald-50/50 dark:bg-emerald-950/20"
+                  )}
+                  onClick={() => acceptLender(lender.lender_id, isTopPick)}
+                >
+                  <TableCell className="text-xs font-medium">
+                    <div className="flex items-center gap-1.5">
+                      {isTopPick && <Star className="h-3 w-3 text-emerald-600" />}
+                      {lender.lender_name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "text-[10px]",
+                        normalized.effectiveScore >= 80 
+                          ? "border-emerald-500 text-emerald-700" 
+                          : "border-amber-500 text-amber-700"
+                      )}
+                    >
+                      {normalized.effectiveScore}%
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Percent className="h-3 w-3" />
+                      {lender.interest_rate_display || '—'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Wallet className="h-3 w-3" />
+                      {lender.loan_range_display || '—'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-center text-muted-foreground">
+                    <div className="flex items-center justify-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      {lender.processing_time_estimate || '—'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {lender.badges && lender.badges[0] ? (
+                      <Badge variant="secondary" className="text-[10px] h-4">
+                        {lender.badges[0]}
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <div className="px-3 py-1.5 bg-muted/30 border-t">
+          <p className="text-[10px] text-muted-foreground">
+            Click any row to accept that lender. Scroll down for detailed analysis.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   // Render a single lender card with 4-layer breakdown
   const renderLenderCard = (evaluation: LenderEvaluation, isTopPick: boolean = false) => {
     // Normalize evaluation data for backwards compatibility
@@ -1049,6 +1159,9 @@ export function AILenderRecommendation({
         </CardHeader>
 
         <CardContent className="space-y-3">
+          {/* Quick Comparison Table */}
+          {renderComparisonTable()}
+
           {/* Grouped Sections */}
           {renderGroupSection(
             'best_fit',
