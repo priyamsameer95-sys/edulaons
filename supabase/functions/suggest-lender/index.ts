@@ -700,12 +700,12 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
         const factors: string[] = []
         const riskFlags: string[] = []
 
-        // === Interest Rate Score (up to 20 points) ===
-        // Lower rate = higher score
+        // === Interest Rate Score (up to 25 points) - INCREASED priority ===
+        // Lower rate = higher score. This is the most important factor for students.
         if (lender.interest_rate_min && minRate && maxRate && maxRate > minRate) {
           const rateRange = maxRate - minRate
           const normalizedRate = (maxRate - lender.interest_rate_min) / rateRange // 1 = lowest rate, 0 = highest
-          const rateBonus = Math.round(normalizedRate * 20)
+          const rateBonus = Math.round(normalizedRate * 25) // Increased from 20 to 25
           score += rateBonus
           if (normalizedRate >= 0.7) {
             factors.push('Competitive interest rate')
@@ -738,13 +738,13 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
           factors.push('Sufficient loan capacity')
         }
 
-        // === Processing Time Score (up to 10 points) ===
-        // Faster processing = higher score
+        // === Processing Time Score (up to 5 points) - DECREASED priority ===
+        // Faster processing = higher score. But this shouldn't outweigh interest rates.
         const processingTime = lender.processing_time_days || lender.processing_time_range_min
         if (processingTime && minTime && maxTime && maxTime > minTime) {
           const timeRange = maxTime - minTime
           const normalizedTime = (maxTime - processingTime) / timeRange // 1 = fastest, 0 = slowest
-          const timeBonus = Math.round(normalizedTime * 10)
+          const timeBonus = Math.round(normalizedTime * 5) // Decreased from 10 to 5
           score += timeBonus
           if (normalizedTime >= 0.7) {
             factors.push('Fast processing time')
@@ -818,15 +818,9 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
           }
         }
 
-        // === Education Loan Specialization ===
-        const lenderCode = lender.code?.toUpperCase() || ''
-        const isEducationFocused = ['CREDILA', 'AVANSE', 'INCRED', 'AUXILO', 'HDFC_CREDILA'].some(
-          code => lenderCode.includes(code)
-        )
-        if (isEducationFocused) {
-          score += 5
-          factors.push('Education loan specialist')
-        }
+        // === Education Loan Specialization (removed hardcoded bias) ===
+        // All lenders in this system are education-focused, so no unfair bonus.
+        // If needed, use database field lender.is_education_specialist in future.
 
         // Cap score at 100, floor at 0
         score = Math.min(100, Math.max(0, score))
