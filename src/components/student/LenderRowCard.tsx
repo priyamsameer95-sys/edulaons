@@ -28,6 +28,12 @@ interface StudentFacingReason {
   cta: string;
 }
 
+interface PillarBreakdown {
+  future: number;
+  financial: number;
+  past: number;
+}
+
 interface LenderData {
   lender_id: string;
   lender_name: string;
@@ -43,6 +49,13 @@ interface LenderData {
   moratorium_period?: string | null;
   processing_fee?: number | null;
   collateral_preference?: string[] | null;
+  // New fields from AI recommendation
+  pillar_breakdown?: PillarBreakdown | null;
+  badges?: string[] | null;
+  trade_off?: string | null;
+  status?: 'BEST_FIT' | 'GOOD_FIT' | 'BACKUP' | 'LOCKED' | null;
+  knockout_reason?: string | null;
+  unlock_hint?: string | null;
 }
 
 interface LenderRowCardProps {
@@ -109,14 +122,31 @@ const LenderRowCard = ({
               </div>
             )}
           </div>
-          <div className={cn(
-            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mt-1",
-            lender.compatibility_score >= 70 ? "bg-success/10 text-success" : 
-            lender.compatibility_score >= 50 ? "bg-primary/10 text-primary" : 
-            "bg-muted text-muted-foreground"
-          )}>
-            {lender.compatibility_score}% Match
-          </div>
+          
+          {/* AI Badges */}
+          {lender.badges && lender.badges.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              {lender.badges.slice(0, 2).map((badge, idx) => (
+                <div 
+                  key={idx}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20"
+                >
+                  {badge}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {!lender.badges?.length && (
+            <div className={cn(
+              "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mt-1",
+              lender.compatibility_score >= 70 ? "bg-success/10 text-success" : 
+              lender.compatibility_score >= 50 ? "bg-primary/10 text-primary" : 
+              "bg-muted text-muted-foreground"
+            )}>
+              {lender.compatibility_score}% Match
+            </div>
+          )}
         </div>
 
         {/* Metrics - Desktop */}

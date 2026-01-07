@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.suggest-lender]
 verify_jwt = true
+
+[functions.batch-rerun-recommendations]
+verify_jwt = false

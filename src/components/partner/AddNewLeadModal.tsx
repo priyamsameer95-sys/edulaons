@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { convertINRToWords, formatIndianNumber } from "@/utils/currencyFormatter";
 import { ALL_STATES_AND_UTS } from "@/constants/indianStates";
 import { OCCUPATION_OPTIONS, EMPLOYER_TYPE_OPTIONS, INCOME_RANGE_OPTIONS } from "@/utils/leadCompletionSchema";
+import { useLenderRecommendationTrigger } from "@/hooks/useLenderRecommendationTrigger";
 
 interface AddNewLeadModalProps {
   open: boolean;
@@ -159,6 +160,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdCaseId, setCreatedCaseId] = useState<string | null>(null);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
+  const { triggerRecommendation } = useLenderRecommendationTrigger();
   
   // Phone duplicate check state
   const [phoneCheckResult, setPhoneCheckResult] = useState<{ exists: boolean; studentName?: string } | null>(null);
@@ -366,6 +368,17 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
       setCreatedLeadId(data.lead.id);
       setShowSuccess(true);
       toast.success('Lead created successfully!');
+      
+      // Trigger AI lender recommendation in background
+      if (data.lead?.id) {
+        triggerRecommendation({
+          leadId: data.lead.id,
+          studyDestination: formData.study_destination,
+          loanAmount: parseInt(formData.loan_amount.replace(/,/g, '')),
+          silent: true,
+        });
+      }
+      
       onSuccess?.();
 
     } catch (error: any) {

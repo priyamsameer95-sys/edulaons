@@ -36,6 +36,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { useLenderRecommendationTrigger, shouldTriggerRecommendation, RECOMMENDATION_TRIGGER_FIELDS } from "@/hooks/useLenderRecommendationTrigger";
 import { 
   getLeadCompleteness, 
   getCompletenessColor, 
@@ -204,6 +205,7 @@ export function AdminLeadEditModal({
   
   const { toast } = useToast();
   const { logFieldChanges } = useAuditLog();
+  const { triggerRecommendation } = useLenderRecommendationTrigger();
 
   // Fetch full lead details when modal opens
   useEffect(() => {
@@ -681,6 +683,27 @@ export function AdminLeadEditModal({
         title: 'Lead updated',
         description: `Successfully updated ${totalChanges} field(s)`,
       });
+
+      // Check if any trigger field changed and trigger AI recommendation
+      const triggerFieldChanges = changes.filter(c => 
+        RECOMMENDATION_TRIGGER_FIELDS.includes(c.field as any)
+      );
+      
+      if (triggerFieldChanges.length > 0 && lead?.id) {
+        // Find if any key fields actually changed enough to warrant re-run
+        const shouldTrigger = triggerFieldChanges.some(c => 
+          shouldTriggerRecommendation(c.field, c.oldValue, c.newValue)
+        );
+        
+        if (shouldTrigger) {
+          triggerRecommendation({
+            leadId: lead.id,
+            studyDestination: formData.study_destination,
+            loanAmount: parseInt(formData.loan_amount) || undefined,
+            silent: false,
+          });
+        }
+      }
 
       onSuccess?.();
       onOpenChange(false);
