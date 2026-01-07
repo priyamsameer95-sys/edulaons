@@ -191,6 +191,20 @@ export const BRE_TRANSLATIONS: Record<string, HumanizedBREFactor> = {
     category: 'consideration',
     icon: 'alert',
   },
+  'LOAN_AMOUNT_EXCEEDS_MAX': {
+    label: 'Loan Amount Exceeds Limit',
+    description: 'Your requested amount exceeds this lender\'s maximum limit. Consider splitting between lenders or adding collateral.',
+    impact: 'high',
+    category: 'consideration',
+    icon: 'alert',
+  },
+  'LOAN_AMOUNT_BELOW_MIN': {
+    label: 'Below Minimum Amount',
+    description: 'Your loan amount is below this lender\'s minimum threshold.',
+    impact: 'high',
+    category: 'consideration',
+    icon: 'alert',
+  },
 
   // ==================== PROCESSING & SERVICE FACTORS ====================
   'Competitive interest rate': {
@@ -459,11 +473,16 @@ export function humanizeFactor(rawFactor: string): HumanizedBREFactor {
 
 function createGenericFactor(rawFactor: string): HumanizedBREFactor {
   // Clean up the raw factor for display
+  // Handle SCREAMING_SNAKE_CASE, camelCase, and mixed formats
   const cleanedLabel = rawFactor
+    // Replace underscores with spaces
     .replace(/_/g, ' ')
-    .replace(/([A-Z])/g, ' $1')
+    // Only add space before uppercase if preceded by lowercase (for camelCase)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    // Clean up multiple spaces
     .replace(/\s+/g, ' ')
     .trim()
+    // Title case each word
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
