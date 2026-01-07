@@ -1,12 +1,16 @@
 /**
- * AI Lender Suggestion Edge Function with Lovable AI Integration
+ * Smart Lender 4-Layer Decision Engine
  * 
- * Per Knowledge Base:
- * - AI evaluates ALL lenders against applicant profile
- * - Uses BRE text/JSON for each lender
- * - Groups: Best Fit, Also Consider, Possible but Risky, Not Suitable
- * - Stores complete snapshot for audit
- * - Never auto-rejects; flags low confidence for human review
+ * Layer 1: TRANSLATOR - Normalizes data (University Tier, Urgency Zone)
+ * Layer 2: BOUNCER - Hard knockouts (but locked lenders still shown, ranked lower)
+ * Layer 3: STRATEGIST - Time-weighted scoring based on urgency
+ * Layer 4: SCORER - 3-Pillar evaluation (Future, Financial, Past)
+ * 
+ * Key Features:
+ * - Locked lenders are NOT hidden, just ranked lower with unlock hints
+ * - AI generates persuasive justifications
+ * - Admin override feedback stored for learning
+ * - Version tracking for recommendation history
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -16,949 +20,927 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface StudentFacingReason {
-  greeting: string;      // Personalized to student's journey
-  confidence: string;    // Approval likelihood based on BRE match
-  cta: string;           // Encourage exploration
+// ============================================================================
+// TYPES
+// ============================================================================
+
+type UniversityTier = 'S' | 'A' | 'B' | 'C';
+type UrgencyZone = 'GREEN' | 'YELLOW' | 'RED';
+type Strategy = 'COST_OPTIMIZATION' | 'BALANCED' | 'SPEED_PRIORITY';
+type LenderStatus = 'BEST_FIT' | 'GOOD_FIT' | 'BACKUP' | 'LOCKED';
+
+interface RecommendationContext {
+  student_tier: UniversityTier;
+  urgency_zone: UrgencyZone;
+  days_until_deadline: number;
+  strategy: Strategy;
+  missing_data_warnings: string[];
+  intake_date: string | null;
+  loan_amount: number;
+  loan_type: string;
+  has_collateral: boolean;
 }
 
-interface LenderEvaluation {
+interface PillarBreakdown {
+  future: { score: number; label: string; strong: boolean; details: string };
+  financial: { score: number; label: string; strong: boolean; details: string };
+  past: { score: number; label: string; strong: boolean; details: string };
+  two_of_three_bonus: number;
+}
+
+interface LenderResult {
+  rank: number;
   lender_id: string;
   lender_name: string;
-  fit_score: number;
-  probability_band: 'high' | 'medium' | 'low';
+  lender_code: string;
+  status: LenderStatus;
+  score: number;
+  raw_score: number;
+  strategic_adjustment: number;
+  reason: string;
+  trade_off: string;
+  badges: string[];
+  pillar_breakdown: PillarBreakdown;
+  knockout_reason?: string;
+  unlock_hint?: string;
   processing_time_estimate: string;
-  justification: string;
+  interest_rate_display: string;
+  loan_range_display: string;
+  fit_factors: string[];
   risk_flags: string[];
-  bre_rules_matched: string[];
+  probability_band: 'high' | 'medium' | 'low';
   group: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
-  student_facing_reason?: StudentFacingReason | string;
+  student_facing_reason: {
+    greeting: string;
+    confidence: string;
+    cta: string;
+  };
 }
 
-interface AIResponse {
-  lender_evaluations: LenderEvaluation[];
+interface SmartLenderOutput {
+  recommendation_context: RecommendationContext;
+  results: LenderResult[];
+  top_recommendation: LenderResult | null;
   overall_confidence: number;
+  needs_human_review: boolean;
   ai_notes: string;
+  model_version: string;
 }
 
-/**
- * Student Context - ONLY data from student's academic journey
- * NEVER includes: income, salary, credit, employment, co-applicant financial data
- */
-interface StudentContext {
-  destination?: string;           // USA, UK, Canada, etc.
-  university?: {
-    name: string;
-    globalRank?: number;
-  };
-  courseType?: string;            // masters_stem, mba_management, etc.
-  academicStrength?: 'excellent' | 'good' | 'average';
-  studentLocation?: string;       // State/region
-  loanAmountTier?: 'high' | 'medium' | 'standard';
+// ============================================================================
+// LAYER 1: TRANSLATOR - Normalize Data
+// ============================================================================
+
+function calculateUniversityTier(globalRank: number | null | undefined): UniversityTier {
+  if (!globalRank || globalRank <= 0) return 'C';
+  if (globalRank <= 100) return 'S';
+  if (globalRank <= 300) return 'A';
+  if (globalRank <= 500) return 'B';
+  return 'C';
 }
 
-/**
- * Build student context from ONLY student-journey data
- * EXCLUDES: co-applicant income/employment, credit scores, qualification status
- */
-function buildStudentContext(lead: any, student: any, universities: any[]): StudentContext {
-  // Calculate academic strength from percentages only
-  const scores = [
-    student?.tenth_percentage,
-    student?.twelfth_percentage,
-    student?.bachelors_percentage,
-    student?.bachelors_cgpa ? student.bachelors_cgpa * 10 : null
-  ].filter(s => s !== null && s !== undefined) as number[];
+function calculateUrgencyZone(intakeMonth: number | null, intakeYear: number | null): { zone: UrgencyZone; daysUntil: number } {
+  if (!intakeMonth || !intakeYear) {
+    return { zone: 'YELLOW', daysUntil: 60 }; // Default to balanced
+  }
   
-  const avgScore = scores.length > 0 
-    ? scores.reduce((a, b) => a + b, 0) / scores.length 
-    : 0;
+  const now = new Date();
+  const intakeDate = new Date(intakeYear, intakeMonth - 1, 1);
+  const diffTime = intakeDate.getTime() - now.getTime();
+  const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  const academicStrength: StudentContext['academicStrength'] = 
-    avgScore >= 80 ? 'excellent' : avgScore >= 60 ? 'good' : 'average';
+  if (daysUntil <= 30) return { zone: 'RED', daysUntil };
+  if (daysUntil <= 60) return { zone: 'YELLOW', daysUntil };
+  return { zone: 'GREEN', daysUntil };
+}
+
+function determineStrategy(zone: UrgencyZone): Strategy {
+  switch (zone) {
+    case 'RED': return 'SPEED_PRIORITY';
+    case 'GREEN': return 'COST_OPTIMIZATION';
+    default: return 'BALANCED';
+  }
+}
+
+function calculateWeightedAcademicScore(
+  tenth: number | null,
+  twelfth: number | null,
+  bachelors: number | null,
+  cgpa: number | null
+): number {
+  // Convert CGPA to percentage if needed
+  const bachPercent = bachelors || (cgpa ? cgpa * 10 : null);
   
-  // Loan amount tier (generic, not exposing exact amounts)
-  const amount = lead?.loan_amount || 0;
-  const loanAmountTier: StudentContext['loanAmountTier'] = 
-    amount >= 7500000 ? 'high' : amount >= 2500000 ? 'medium' : 'standard';
+  const scores: { value: number; weight: number }[] = [];
+  if (tenth) scores.push({ value: tenth, weight: 0.2 });
+  if (twelfth) scores.push({ value: twelfth, weight: 0.3 });
+  if (bachPercent) scores.push({ value: bachPercent, weight: 0.5 });
+  
+  if (scores.length === 0) return 50; // Default
+  
+  // Normalize weights if not all present
+  const totalWeight = scores.reduce((sum, s) => sum + s.weight, 0);
+  const weightedSum = scores.reduce((sum, s) => sum + (s.value * s.weight / totalWeight), 0);
+  
+  return Math.round(weightedSum);
+}
+
+// ============================================================================
+// LAYER 2: BOUNCER - Check Knockouts (but don't hide, just flag)
+// ============================================================================
+
+interface KnockoutResult {
+  isLocked: boolean;
+  reason: string | null;
+  unlockHint: string | null;
+  penaltyScore: number;
+}
+
+function checkLenderKnockouts(
+  lender: any,
+  loanAmount: number,
+  loanType: string,
+  coApplicantSalary: number | null,
+  hasCollateral: boolean,
+  tier: UniversityTier
+): KnockoutResult {
+  const breJson = lender.bre_json || {};
+  
+  // 1. Check Tier-Specific Loan Limits (from bre_json)
+  const tierLimitKey = `tier_${tier.toLowerCase()}_limit`;
+  const tierLimit = breJson[tierLimitKey];
+  
+  if (tierLimit && loanAmount > tierLimit) {
+    return {
+      isLocked: true,
+      reason: 'LOAN_EXCEEDS_TIER_LIMIT',
+      unlockHint: `Move to a higher-ranked university (currently Tier ${tier}) or reduce loan to ₹${(tierLimit / 100000).toFixed(0)}L`,
+      penaltyScore: 40,
+    };
+  }
+  
+  // 2. Check overall loan amount limits
+  const maxAmount = lender.loan_amount_max || 0;
+  const minAmount = lender.loan_amount_min || 0;
+  
+  if (maxAmount > 0 && loanAmount > maxAmount) {
+    return {
+      isLocked: true,
+      reason: 'LOAN_EXCEEDS_MAX',
+      unlockHint: `Add collateral or split between lenders. Max: ₹${(maxAmount / 100000).toFixed(0)}L`,
+      penaltyScore: 35,
+    };
+  }
+  
+  if (minAmount > 0 && loanAmount < minAmount) {
+    return {
+      isLocked: true,
+      reason: 'LOAN_BELOW_MIN',
+      unlockHint: `Minimum requirement: ₹${(minAmount / 100000).toFixed(0)}L`,
+      penaltyScore: 30,
+    };
+  }
+  
+  // 3. Check income requirements (collateral can override)
+  const incomeMin = lender.income_expectations_min || 0;
+  if (incomeMin > 0 && coApplicantSalary && coApplicantSalary < incomeMin && !hasCollateral) {
+    return {
+      isLocked: true,
+      reason: 'INCOME_BELOW_MIN',
+      unlockHint: `Add co-applicant with ₹${(incomeMin / 1000).toFixed(0)}K+ monthly income, or provide collateral`,
+      penaltyScore: 25,
+    };
+  }
+  
+  return { isLocked: false, reason: null, unlockHint: null, penaltyScore: 0 };
+}
+
+// ============================================================================
+// LAYER 3: STRATEGIST - Apply Time-Based Adjustments
+// ============================================================================
+
+function applyStrategicAdjustments(
+  baseScore: number,
+  lender: any,
+  zone: UrgencyZone,
+  strategy: Strategy
+): { adjustedScore: number; adjustment: number; badges: string[] } {
+  let adjustment = 0;
+  const badges: string[] = [];
+  
+  const processingDays = lender.processing_time_days || lender.processing_time_range_min || 20;
+  const interestRate = lender.interest_rate_min || 10;
+  
+  const isFast = processingDays <= 15;
+  const isSlow = processingDays >= 31;
+  const isLowRate = interestRate < 9.5;
+  const isHighRate = interestRate > 11;
+  
+  switch (strategy) {
+    case 'SPEED_PRIORITY': // RED zone
+      if (isFast) {
+        adjustment += 40;
+        badges.push('⚡ Fast Approval');
+      }
+      if (isSlow) {
+        adjustment -= 50;
+        badges.push('🐢 Slow Processing');
+      }
+      break;
+      
+    case 'COST_OPTIMIZATION': // GREEN zone
+      if (isLowRate) {
+        adjustment += 30;
+        badges.push('💰 Lowest Rate');
+      }
+      if (isHighRate) {
+        adjustment -= 15;
+      }
+      // Small speed bonus even in green zone
+      if (isFast) {
+        adjustment += 10;
+        badges.push('Quick Turnaround');
+      }
+      break;
+      
+    case 'BALANCED': // YELLOW zone
+      if (isFast) {
+        adjustment += 15;
+        badges.push('Fast Processing');
+      }
+      if (isLowRate) {
+        adjustment += 15;
+        badges.push('Competitive Rate');
+      }
+      if (isSlow) {
+        adjustment -= 20;
+      }
+      break;
+  }
   
   return {
-    destination: lead?.study_destination,
-    university: universities[0] ? {
-      name: universities[0].name,
-      globalRank: universities[0].global_rank
-    } : undefined,
-    courseType: lead?.loan_classification || 'general',
-    academicStrength,
-    studentLocation: student?.state,
-    loanAmountTier
+    adjustedScore: Math.min(100, Math.max(0, baseScore + adjustment)),
+    adjustment,
+    badges,
   };
 }
 
-/**
- * Generate structured 3-line student-friendly reason based on student's academic journey
- * CRITICAL: Never expose income, credit, employment, co-applicant details
- */
-function generateStudentFriendlyReason(lender: any, score: number, context: StudentContext): StudentFacingReason {
-  const { destination, university, courseType, academicStrength } = context;
+// ============================================================================
+// LAYER 4: SCORER - 3-Pillar Evaluation
+// ============================================================================
+
+function calculate3PillarScore(
+  lender: any,
+  tier: UniversityTier,
+  academicScore: number,
+  coApplicantSalary: number | null,
+  hasCollateral: boolean,
+  loanAmount: number
+): PillarBreakdown {
+  // ===== FUTURE PILLAR (University/Course) - Max 100 =====
+  let futureScore = 0;
+  let futureLabel = '';
+  let futureDetails = '';
   
-  // Line 1: Greeting - personalized to student's journey
+  const tierScores: Record<UniversityTier, number> = { S: 100, A: 80, B: 60, C: 40 };
+  futureScore = tierScores[tier];
+  
+  switch (tier) {
+    case 'S': 
+      futureLabel = 'Top 100 University';
+      futureDetails = 'Premium institution recognition';
+      break;
+    case 'A':
+      futureLabel = 'Top 300 University';
+      futureDetails = 'Strong global ranking';
+      break;
+    case 'B':
+      futureLabel = 'Top 500 University';
+      futureDetails = 'Good university standing';
+      break;
+    default:
+      futureLabel = 'Standard University';
+      futureDetails = 'May need additional documentation';
+  }
+  
+  // ===== FINANCIAL PILLAR (Income/Collateral) - Max 100 =====
+  let financialScore = 0;
+  let financialLabel = '';
+  let financialDetails = '';
+  
+  const incomeExpected = lender.income_expectations_min || 50000;
+  const incomeRatio = coApplicantSalary ? coApplicantSalary / incomeExpected : 0;
+  
+  if (hasCollateral) {
+    financialScore = 90; // Collateral provides strong backing
+    financialLabel = 'Collateral Secured';
+    financialDetails = 'Property backing strengthens application';
+  } else if (incomeRatio >= 1.5) {
+    financialScore = 100;
+    financialLabel = 'Excellent Income';
+    financialDetails = `Income exceeds expectations by ${Math.round((incomeRatio - 1) * 100)}%`;
+  } else if (incomeRatio >= 1.0) {
+    financialScore = 75;
+    financialLabel = 'Strong Income';
+    financialDetails = 'Income meets lender expectations';
+  } else if (incomeRatio >= 0.7) {
+    financialScore = 50;
+    financialLabel = 'Adequate Income';
+    financialDetails = 'Income slightly below preference';
+  } else {
+    financialScore = 30;
+    financialLabel = 'Income Gap';
+    financialDetails = 'Consider adding co-applicant or collateral';
+  }
+  
+  // ===== PAST PILLAR (Academics) - Max 100 =====
+  let pastScore = academicScore;
+  let pastLabel = '';
+  let pastDetails = '';
+  
+  if (academicScore >= 80) {
+    pastLabel = 'Excellent Academics';
+    pastDetails = 'Strong academic profile';
+  } else if (academicScore >= 65) {
+    pastLabel = 'Good Academics';
+    pastDetails = 'Solid academic background';
+  } else if (academicScore >= 50) {
+    pastLabel = 'Average Academics';
+    pastDetails = 'Standard academic profile';
+  } else {
+    pastLabel = 'Needs Support';
+    pastDetails = 'Academic profile may need explanation';
+  }
+  
+  // ===== 2-OUT-OF-3 COMPENSATION BONUS =====
+  const strongPillars = [
+    futureScore >= 70,
+    financialScore >= 70,
+    pastScore >= 70,
+  ].filter(Boolean).length;
+  
+  const twoOfThreeBonus = strongPillars >= 2 ? 10 : 0;
+  
+  return {
+    future: { score: futureScore, label: futureLabel, strong: futureScore >= 70, details: futureDetails },
+    financial: { score: financialScore, label: financialLabel, strong: financialScore >= 70, details: financialDetails },
+    past: { score: pastScore, label: pastLabel, strong: pastScore >= 70, details: pastDetails },
+    two_of_three_bonus: twoOfThreeBonus,
+  };
+}
+
+// ============================================================================
+// STUDENT-FRIENDLY REASON GENERATOR
+// ============================================================================
+
+function generateStudentReason(
+  lender: any,
+  score: number,
+  zone: UrgencyZone,
+  daysUntil: number,
+  isLocked: boolean
+): { greeting: string; confidence: string; cta: string } {
+  if (isLocked) {
+    return {
+      greeting: 'This lender has specific requirements.',
+      confidence: 'Check the unlock hint to see how to qualify.',
+      cta: 'View other options below.',
+    };
+  }
+  
   let greeting = '';
-  if (destination) {
-    greeting = `A great fit for your ${destination} study journey.`;
-  } else if (university?.name) {
-    greeting = `Well-suited for ${university.name} students.`;
-  } else if (courseType === 'mba_management') {
-    greeting = `A strong choice for MBA aspirants.`;
-  } else if (courseType === 'masters_stem') {
-    greeting = `Ideal for your STEM program abroad.`;
-  } else {
-    greeting = `A solid option for your study abroad plans.`;
-  }
-  
-  // Line 2: Confidence - based on fit score
   let confidence = '';
+  
   if (score >= 85) {
-    confidence = 'High approval likelihood with stable, competitive rates.';
+    greeting = 'An excellent match for your profile.';
+    confidence = 'High approval likelihood with competitive rates.';
   } else if (score >= 70) {
-    confidence = 'Strong match based on your profile. Reliable terms.';
-  } else if (score >= 50) {
-    confidence = 'Good option to consider. Established lender.';
+    greeting = 'A strong option for your study plans.';
+    confidence = 'Good match based on your profile.';
+  } else if (score >= 55) {
+    greeting = 'Worth considering as a backup.';
+    confidence = 'Moderate fit - review the terms carefully.';
   } else {
-    confidence = 'Worth exploring. See if terms work for you.';
+    greeting = 'An alternative to explore.';
+    confidence = 'Some conditions may apply.';
   }
   
-  // Line 3: CTA
-  const cta = 'Check the loan terms below to compare.';
+  // Add zone-specific context
+  if (zone === 'RED' && daysUntil <= 30) {
+    confidence = `Fast processing prioritized for your ${daysUntil}-day timeline.`;
+  } else if (zone === 'GREEN' && daysUntil > 60) {
+    confidence = 'Cost-optimized for your relaxed timeline.';
+  }
   
-  return { greeting, confidence, cta };
+  return {
+    greeting,
+    confidence,
+    cta: 'Compare terms below to decide.',
+  };
 }
 
-/**
- * Sanitize AI-generated student reasons to remove ANY internal/financial details
- * Now handles structured 3-line object format
- */
-function sanitizeStudentReason(
-  reason: StudentFacingReason | string | undefined, 
-  lenderName: string, 
-  score: number, 
-  context: StudentContext
-): StudentFacingReason {
-  // If no reason provided, generate fallback
-  if (!reason) {
-    return generateStudentFriendlyReason({ name: lenderName }, score, context);
+// ============================================================================
+// AI JUSTIFICATION LAYER
+// ============================================================================
+
+async function generateAIJustifications(
+  results: LenderResult[],
+  context: RecommendationContext,
+  lovableApiKey: string | undefined
+): Promise<LenderResult[]> {
+  if (!lovableApiKey || results.length === 0) {
+    return results;
   }
   
-  // Handle legacy string format
-  if (typeof reason === 'string') {
-    return generateStudentFriendlyReason({ name: lenderName }, score, context);
+  try {
+    const prompt = `You are a friendly loan counselor. Generate persuasive reasons and trade-offs for these lender rankings.
+
+Context:
+- Student Tier: ${context.student_tier} (${context.student_tier === 'S' ? 'Top 100' : context.student_tier === 'A' ? 'Top 300' : 'Standard'} university)
+- Timeline: ${context.days_until_deadline} days until intake (${context.urgency_zone} zone)
+- Strategy: ${context.strategy.replace('_', ' ')}
+- Loan Amount: ₹${(context.loan_amount / 100000).toFixed(0)} Lakhs
+- Has Collateral: ${context.has_collateral ? 'Yes' : 'No'}
+
+Top 5 Lenders (already ranked by our algorithm):
+${results.slice(0, 5).map((r, i) => `
+${i + 1}. ${r.lender_name} (Score: ${r.score}, Status: ${r.status})
+   - Interest: ${r.interest_rate_display}
+   - Processing: ${r.processing_time_estimate}
+   - Strengths: ${r.fit_factors.slice(0, 3).join(', ')}
+   ${r.status === 'LOCKED' ? `- LOCKED: ${r.knockout_reason}` : ''}
+`).join('')}
+
+For each lender, generate:
+1. reason (2 sentences): Why this lender is recommended at this rank. Be specific to the student's situation.
+2. trade_off (1 sentence): What the student gives up by choosing this lender vs #1.
+
+For LOCKED lenders, explain sympathetically why they don't qualify and encourage the unlock path.
+
+Respond in JSON format:
+{
+  "lender_justifications": [
+    { "lender_id": "...", "reason": "...", "trade_off": "..." }
+  ]
+}`;
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('AI justification request failed:', response.status);
+      return results;
+    }
+
+    const aiResult = await response.json();
+    const content = aiResult.choices?.[0]?.message?.content;
+    
+    if (content) {
+      const parsed = JSON.parse(content);
+      const justifications = parsed.lender_justifications || [];
+      
+      return results.map(r => {
+        const aiJust = justifications.find((j: any) => j.lender_id === r.lender_id);
+        if (aiJust) {
+          return {
+            ...r,
+            reason: aiJust.reason || r.reason,
+            trade_off: aiJust.trade_off || r.trade_off,
+          };
+        }
+        return r;
+      });
+    }
+  } catch (err) {
+    console.error('AI justification error:', err);
   }
   
-  // Comprehensive blocklist - NO internal details exposed
-  const blockedPhrases = [
-    // Financial terms - NEVER expose
-    'income', 'salary', 'earning', 'monthly', 'annual', 'lakhs', '₹', 'rupee',
-    // Credit terms - NEVER expose  
-    'credit', 'cibil', 'bureau', 'score',
-    // Employment terms - NEVER expose
-    'employment', 'salaried', 'self-employed', 'business', 'employer', 'occupation', 'job',
-    // Co-applicant references - NEVER expose
-    'co-applicant', 'coapplicant', 'guarantor', 'parent income', 'family income', 'cosigner',
-    // Qualification/eligibility - NEVER expose
-    'qualification', 'qualifies', 'eligible', 'ineligible', 'meets', 'exceeds',
-    'below', 'insufficient', 'required', 'docs needed', 'documentation',
-    // Loan type - NEVER expose (per user request)
-    'secured', 'unsecured', 'collateral', 'guarantee', 'mortgage', 'property',
-    // Risk language - NEVER expose
-    'risk', 'concern', 'issue', 'flag', 'reject', 'denied', 'problem'
-  ];
-  
-  // Check each line for blocked phrases
-  const checkAndSanitize = (text: string): boolean => {
-    if (!text) return false;
-    const lowerText = text.toLowerCase();
-    return blockedPhrases.some(phrase => lowerText.includes(phrase));
-  };
-  
-  // If any line contains blocked content, regenerate entire reason
-  if (
-    checkAndSanitize(reason.greeting) || 
-    checkAndSanitize(reason.confidence) || 
-    checkAndSanitize(reason.cta)
-  ) {
-    return generateStudentFriendlyReason({ name: lenderName }, score, context);
-  }
-  
-  // Ensure all fields exist with fallbacks
-  return {
-    greeting: reason.greeting || generateStudentFriendlyReason({ name: lenderName }, score, context).greeting,
-    confidence: reason.confidence || generateStudentFriendlyReason({ name: lenderName }, score, context).confidence,
-    cta: reason.cta || 'Check the loan terms below to compare.'
-  };
+  return results;
 }
+
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    const { leadId, studyDestination, loanAmount } = await req.json()
+    const { leadId, studyDestination, loanAmount } = await req.json();
     
-    console.log('🤖 [suggest-lender] Processing lead:', leadId)
+    console.log('🧠 [Smart Lender Engine] Processing lead:', leadId);
 
-    // Fetch complete lead profile with all related data
+    // =========================================================================
+    // FETCH DATA
+    // =========================================================================
+    
     const { data: lead, error: leadError } = await supabase
       .from('leads_new')
       .select(`
         id, loan_amount, loan_type, study_destination, loan_classification,
         intake_month, intake_year,
         student:students(
-          id, name, email, phone, highest_qualification, credit_score,
+          id, name, email, phone, highest_qualification,
           tenth_percentage, twelfth_percentage, bachelors_percentage, bachelors_cgpa,
-          city, state, postal_code, pin_code_tier
+          city, state, pin_code_tier
         ),
         co_applicant:co_applicants(
           id, name, relationship, monthly_salary, employment_type, employer,
-          occupation, credit_score, pin_code
+          occupation, pin_code
         ),
         lead_universities!fk_lead_universities_lead(
-          university:universities!fk_lead_universities_university(id, name, country, city, global_rank, score)
+          university:universities!fk_lead_universities_university(id, name, country, city, global_rank)
         )
       `)
       .eq('id', leadId)
-      .single()
+      .single();
 
     if (leadError || !lead) {
-      console.error('Lead fetch error:', leadError)
-      throw new Error('Lead not found')
+      throw new Error('Lead not found: ' + leadError?.message);
     }
 
-    // Fetch ALL active lenders with BRE data
     const { data: lenders, error: lendersError } = await supabase
       .from('lenders')
-      .select(`
-        id, name, code, description, is_active,
-        interest_rate_min, interest_rate_max,
-        loan_amount_min, loan_amount_max,
-        processing_fee, foreclosure_charges,
-        processing_time_days, disbursement_time_days,
-        approval_rate, moratorium_period,
-        preferred_rank,
-        bre_text, bre_json,
-        processing_time_range_min, processing_time_range_max,
-        collateral_preference, country_restrictions,
-        university_restrictions,
-        income_expectations_min, income_expectations_max,
-        credit_expectations, experience_score, admin_remarks
-      `)
+      .select('*')
       .eq('is_active', true)
-      .order('preferred_rank', { ascending: true, nullsFirst: false })
+      .order('preferred_rank', { ascending: true, nullsFirst: false });
 
     if (lendersError || !lenders?.length) {
-      console.error('Lenders fetch error:', lendersError)
-      throw new Error('No active lenders found')
+      throw new Error('No active lenders found');
     }
 
-    console.log(`📊 Found ${lenders.length} active lenders`)
+    console.log(`📊 Processing ${lenders.length} active lenders`);
 
-    // Build applicant profile for AI
-    const student = lead.student as any
-    const coApplicant = lead.co_applicant as any
-    const universities = (lead.lead_universities as any[])?.map(lu => lu.university) || []
-
-    // Build student context for personalized reasons (ONLY student-journey data)
-    const studentContext = buildStudentContext(lead, student, universities)
-
-    const applicantProfile = {
-      loan_amount: loanAmount || lead.loan_amount,
-      loan_type: lead.loan_type,
-      loan_classification: lead.loan_classification,
-      study_destination: studyDestination || lead.study_destination,
-      intake: lead.intake_month && lead.intake_year 
-        ? `${lead.intake_month}/${lead.intake_year}` 
-        : 'Not specified',
-      student: {
-        name: student?.name,
-        qualification: student?.highest_qualification,
-        // NOTE: credit_score intentionally excluded - not shared with AI for student-facing reasons
-        academic_scores: {
-          tenth: student?.tenth_percentage,
-          twelfth: student?.twelfth_percentage,
-          bachelors: student?.bachelors_percentage || student?.bachelors_cgpa,
-        },
-        location: student?.city && student?.state 
-          ? `${student.city}, ${student.state}` 
-          : 'Not specified',
-        pin_code_tier: student?.pin_code_tier,
-      },
-      co_applicant: coApplicant ? {
-        relationship: coApplicant.relationship,
-        monthly_salary: coApplicant.monthly_salary,
-        employment_type: coApplicant.employment_type,
-        employer: coApplicant.employer,
-        occupation: coApplicant.occupation,
-        // NOTE: credit_score intentionally excluded - not shared with AI for student-facing reasons
-      } : null,
-      universities: universities.map(u => ({
-        name: u?.name,
-        country: u?.country,
-        global_rank: u?.global_rank,
-      })),
-    }
-
-    // Calculate applicant loan amount in ABSOLUTE NUMBERS
-    const applicantLoanAmount = loanAmount || lead.loan_amount;
+    // Extract data
+    const student = lead.student as any;
+    const coApplicant = lead.co_applicant as any;
+    const universities = (lead.lead_universities as any[])?.map(lu => lu.university) || [];
+    const primaryUniversity = universities[0];
     
-    // Build lender profiles for AI with raw numeric values
-    const lenderProfiles = lenders.map(l => {
-      // Pre-compute loan status using ABSOLUTE NUMBERS (no formatting)
-      const minRaw = l.loan_amount_min || 0;
-      const maxRaw = l.loan_amount_max || 0;
+    const effectiveLoanAmount = loanAmount || lead.loan_amount;
+    const effectiveLoanType = lead.loan_type || 'secured';
+    const hasCollateral = effectiveLoanType === 'secured';
+
+    // =========================================================================
+    // LAYER 1: TRANSLATOR
+    // =========================================================================
+    
+    const tier = calculateUniversityTier(primaryUniversity?.global_rank);
+    const { zone, daysUntil } = calculateUrgencyZone(lead.intake_month, lead.intake_year);
+    const strategy = determineStrategy(zone);
+    
+    const academicScore = calculateWeightedAcademicScore(
+      student?.tenth_percentage,
+      student?.twelfth_percentage,
+      student?.bachelors_percentage,
+      student?.bachelors_cgpa
+    );
+
+    console.log(`📐 Layer 1 - Tier: ${tier}, Zone: ${zone} (${daysUntil} days), Strategy: ${strategy}, Academic: ${academicScore}`);
+
+    // Build missing data warnings
+    const missingWarnings: string[] = [];
+    if (!primaryUniversity) missingWarnings.push('University not specified');
+    if (!lead.intake_month || !lead.intake_year) missingWarnings.push('Intake date not specified');
+    if (!coApplicant?.monthly_salary) missingWarnings.push('Co-applicant income missing');
+
+    // =========================================================================
+    // LAYERS 2-4: BOUNCER + STRATEGIST + SCORER
+    // =========================================================================
+    
+    const coApplicantSalary = coApplicant?.monthly_salary || null;
+    
+    const scoredLenders = lenders.map(lender => {
+      // Layer 2: Bouncer
+      const knockout = checkLenderKnockouts(
+        lender,
+        effectiveLoanAmount,
+        effectiveLoanType,
+        coApplicantSalary,
+        hasCollateral,
+        tier
+      );
       
-      let loanAmountStatus = 'UNKNOWN';
-      if (minRaw > 0 && maxRaw > 0) {
-        if (applicantLoanAmount < minRaw) {
-          loanAmountStatus = 'BELOW_MIN';
-        } else if (applicantLoanAmount > maxRaw) {
-          loanAmountStatus = 'EXCEEDS_MAX';
-        } else if (applicantLoanAmount === maxRaw) {
-          loanAmountStatus = 'AT_MAX_LIMIT';
-        } else {
-          loanAmountStatus = 'WITHIN_RANGE';
-        }
+      // Layer 4: 3-Pillar Score
+      const pillars = calculate3PillarScore(
+        lender,
+        tier,
+        academicScore,
+        coApplicantSalary,
+        hasCollateral,
+        effectiveLoanAmount
+      );
+      
+      // Base score from pillars (weighted average)
+      const pillarWeights = { future: 0.35, financial: 0.4, past: 0.25 };
+      const rawScore = Math.round(
+        pillars.future.score * pillarWeights.future +
+        pillars.financial.score * pillarWeights.financial +
+        pillars.past.score * pillarWeights.past +
+        pillars.two_of_three_bonus
+      );
+      
+      // Layer 3: Strategic Adjustments
+      const { adjustedScore, adjustment, badges } = applyStrategicAdjustments(
+        rawScore,
+        lender,
+        zone,
+        strategy
+      );
+      
+      // Apply knockout penalty (but don't zero out)
+      const finalScore = knockout.isLocked 
+        ? Math.max(0, adjustedScore - knockout.penaltyScore)
+        : adjustedScore;
+      
+      // Determine status
+      let status: LenderStatus = 'BACKUP';
+      if (knockout.isLocked) {
+        status = 'LOCKED';
+      } else if (finalScore >= 80) {
+        status = 'BEST_FIT';
+      } else if (finalScore >= 60) {
+        status = 'GOOD_FIT';
       }
       
-      console.log(`📊 ${l.name}: Loan ${applicantLoanAmount} vs range ${minRaw}-${maxRaw} = ${loanAmountStatus}`);
+      // Build fit factors
+      const fitFactors: string[] = [];
+      if (pillars.future.strong) fitFactors.push(pillars.future.label);
+      if (pillars.financial.strong) fitFactors.push(pillars.financial.label);
+      if (pillars.past.strong) fitFactors.push(pillars.past.label);
+      
+      // Check loan coverage
+      const min = lender.loan_amount_min || 0;
+      const max = lender.loan_amount_max || 0;
+      if (min > 0 && max > 0 && effectiveLoanAmount >= min && effectiveLoanAmount <= max) {
+        fitFactors.push('Loan Amount Covered');
+      }
+      
+      // Add income match if applicable
+      if (coApplicantSalary && lender.income_expectations_min && coApplicantSalary >= lender.income_expectations_min) {
+        fitFactors.push('Income Meets Expectations');
+      }
+      
+      // Risk flags
+      const riskFlags: string[] = [];
+      if (knockout.isLocked && knockout.reason) {
+        riskFlags.push(knockout.reason);
+      }
       
       return {
-        id: l.id,
-        name: l.name,
-        code: l.code,
-        loan_range: `₹${(l.loan_amount_min || 0).toLocaleString()} - ₹${(l.loan_amount_max || 0).toLocaleString()}`,
-        // NEW: Raw absolute numbers for accurate comparison
-        loan_amount_min_raw: minRaw,
-        loan_amount_max_raw: maxRaw,
-        applicant_loan_amount_raw: applicantLoanAmount,
-        // NEW: Pre-computed status - AI should USE THIS, not recalculate
-        loan_amount_status: loanAmountStatus,
-        interest_range: `${l.interest_rate_min || 0}% - ${l.interest_rate_max || 0}%`,
-        processing_time: l.processing_time_days || l.processing_time_range_min || 'Not specified',
-        preferred_rank: l.preferred_rank,
-        bre_text: l.bre_text,
-        bre_json: l.bre_json,
-        collateral_preference: l.collateral_preference,
-        country_restrictions: l.country_restrictions,
-        university_restrictions: l.university_restrictions,
-        income_expectations: {
-          min: l.income_expectations_min,
-          max: l.income_expectations_max,
-        },
-        credit_expectations: l.credit_expectations,
-        experience_score: l.experience_score,
+        lender,
+        knockout,
+        pillars,
+        rawScore,
+        adjustment,
+        finalScore,
+        status,
+        badges,
+        fitFactors,
+        riskFlags,
+      };
+    });
+    
+    // Sort by final score (locked lenders will naturally be lower due to penalty)
+    scoredLenders.sort((a, b) => b.finalScore - a.finalScore);
+
+    // =========================================================================
+    // BUILD RESULTS
+    // =========================================================================
+    
+    const results: LenderResult[] = scoredLenders.map((sl, index) => {
+      const { lender, knockout, pillars, rawScore, adjustment, finalScore, status, badges, fitFactors, riskFlags } = sl;
+      
+      // Determine group
+      let group: LenderResult['group'] = 'not_suitable';
+      if (status === 'BEST_FIT') group = 'best_fit';
+      else if (status === 'GOOD_FIT') group = 'also_consider';
+      else if (status === 'BACKUP') group = 'possible_but_risky';
+      else if (status === 'LOCKED') group = 'not_suitable';
+      
+      // Probability band
+      let probabilityBand: LenderResult['probability_band'] = 'low';
+      if (finalScore >= 80) probabilityBand = 'high';
+      else if (finalScore >= 60) probabilityBand = 'medium';
+      
+      // Generate basic reason and trade-off (AI will enhance these)
+      let reason = '';
+      let tradeOff = '';
+      
+      if (knockout.isLocked) {
+        reason = `Currently doesn't match due to ${knockout.reason?.toLowerCase().replace(/_/g, ' ')}. ${knockout.unlockHint}`;
+        tradeOff = 'Unlock by following the hint above.';
+      } else if (index === 0) {
+        reason = `Top recommendation for your ${zone === 'RED' ? 'urgent' : zone === 'GREEN' ? 'relaxed' : 'moderate'} timeline.`;
+        tradeOff = 'Best overall match for your profile.';
+      } else {
+        const topLender = scoredLenders[0];
+        reason = `Solid alternative with ${badges.length > 0 ? badges[0] : 'good overall fit'}.`;
+        tradeOff = `${topLender.finalScore - finalScore} points behind ${topLender.lender.name}.`;
+      }
+      
+      const studentReason = generateStudentReason(lender, finalScore, zone, daysUntil, knockout.isLocked);
+      
+      return {
+        rank: index + 1,
+        lender_id: lender.id,
+        lender_name: lender.name,
+        lender_code: lender.code,
+        status,
+        score: finalScore,
+        raw_score: rawScore,
+        strategic_adjustment: adjustment,
+        reason,
+        trade_off: tradeOff,
+        badges,
+        pillar_breakdown: pillars,
+        knockout_reason: knockout.reason || undefined,
+        unlock_hint: knockout.unlockHint || undefined,
+        processing_time_estimate: lender.processing_time_range_min && lender.processing_time_range_max
+          ? `${lender.processing_time_range_min}-${lender.processing_time_range_max} days`
+          : lender.processing_time_days 
+            ? `~${lender.processing_time_days} days`
+            : 'Not specified',
+        interest_rate_display: lender.interest_rate_min && lender.interest_rate_max
+          ? `${lender.interest_rate_min}% - ${lender.interest_rate_max}%`
+          : 'Contact for rates',
+        loan_range_display: lender.loan_amount_min && lender.loan_amount_max
+          ? `₹${(lender.loan_amount_min / 100000).toFixed(0)}L - ₹${(lender.loan_amount_max / 100000).toFixed(0)}L`
+          : 'Flexible',
+        fit_factors: fitFactors,
+        risk_flags: riskFlags,
+        probability_band: probabilityBand,
+        group,
+        student_facing_reason: studentReason,
       };
     });
 
-    // Create lender snapshots for audit
-    const lenderSnapshots: Record<string, any> = {}
-    lenders.forEach(l => {
-      lenderSnapshots[l.id] = {
-        name: l.name,
-        bre_text: l.bre_text,
-        bre_json: l.bre_json,
-        collateral_preference: l.collateral_preference,
-        country_restrictions: l.country_restrictions,
-        income_expectations_min: l.income_expectations_min,
-        income_expectations_max: l.income_expectations_max,
-      }
-    })
+    // =========================================================================
+    // AI ENHANCEMENT (optional)
+    // =========================================================================
+    
+    const enhancedResults = await generateAIJustifications(
+      results,
+      {
+        student_tier: tier,
+        urgency_zone: zone,
+        days_until_deadline: daysUntil,
+        strategy,
+        missing_data_warnings: missingWarnings,
+        intake_date: lead.intake_month && lead.intake_year 
+          ? `${lead.intake_month}/${lead.intake_year}`
+          : null,
+        loan_amount: effectiveLoanAmount,
+        loan_type: effectiveLoanType,
+        has_collateral: hasCollateral,
+      },
+      lovableApiKey
+    );
 
-    let evaluations: LenderEvaluation[] = []
-    let overallConfidence = 50
-    let aiNotes = ''
-    let aiUnavailable = false
+    // =========================================================================
+    // BUILD OUTPUT
+    // =========================================================================
+    
+    const topResult = enhancedResults.find(r => r.status !== 'LOCKED') || enhancedResults[0];
+    const topScores = enhancedResults.slice(0, 3).map(r => r.score);
+    const overallConfidence = Math.round(topScores.reduce((a, b) => a + b, 0) / topScores.length);
 
-    // Try AI evaluation first
-    if (lovableApiKey) {
-      try {
-        console.log('🧠 Calling Lovable AI for lender evaluation...')
-        
-        const systemPrompt = `You are a SENIOR LOAN CONSULTANT with 15 years of experience helping students get education loans. Your task is to evaluate EVERY lender against an applicant's profile and provide a comprehensive, human-friendly assessment.
+    const output: SmartLenderOutput = {
+      recommendation_context: {
+        student_tier: tier,
+        urgency_zone: zone,
+        days_until_deadline: daysUntil,
+        strategy,
+        missing_data_warnings: missingWarnings,
+        intake_date: lead.intake_month && lead.intake_year 
+          ? `${lead.intake_month}/${lead.intake_year}`
+          : null,
+        loan_amount: effectiveLoanAmount,
+        loan_type: effectiveLoanType,
+        has_collateral: hasCollateral,
+      },
+      results: enhancedResults,
+      top_recommendation: topResult,
+      overall_confidence: overallConfidence,
+      needs_human_review: overallConfidence < 70 || missingWarnings.length > 0,
+      ai_notes: lovableApiKey ? 'AI-enhanced justifications' : 'Rule-based scoring',
+      model_version: '3.0-smart-lender-4layer',
+    };
 
-## CRITICAL: LOAN AMOUNT VALIDATION (ABSOLUTE NUMBERS ONLY)
+    console.log(`✅ Smart Lender: Top=${topResult?.lender_name} (${topResult?.score}), Confidence=${overallConfidence}%`);
 
-### PRE-COMPUTED LOAN STATUS
-Each lender includes a "loan_amount_status" field. USE THIS DIRECTLY - DO NOT RECALCULATE:
-- WITHIN_RANGE → Add to bre_rules_matched: "Loan Amount Covered"
-- AT_MAX_LIMIT → Add to bre_rules_matched: "At Maximum Limit"  
-- EXCEEDS_MAX → Add to risk_flags: "LOAN_AMOUNT_EXCEEDS_MAX"
-- BELOW_MIN → Add to risk_flags: "LOAN_AMOUNT_BELOW_MIN"
+    // =========================================================================
+    // GET NEXT VERSION NUMBER
+    // =========================================================================
+    
+    const { data: existingRec } = await supabase
+      .from('ai_lender_recommendations')
+      .select('version')
+      .eq('lead_id', leadId)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    const nextVersion = (existingRec?.version || 0) + 1;
 
-### INDIAN CURRENCY REFERENCE (ABSOLUTE NUMBERS)
-Always convert to absolute numbers before ANY comparison:
-- 1 lakh = 100,000 (one hundred thousand)
-- 10 lakhs = 1,000,000 (one million)
-- 1 crore = 10,000,000 (ten million)
-- 10 crores = 100,000,000 (one hundred million)
-
-EXAMPLES:
-- 25 lakhs = 2,500,000
-- 1 crore = 10,000,000
-- Therefore: 25 lakhs (2,500,000) < 1 crore (10,000,000) ✓
-- 75 lakhs = 7,500,000 which is LESS than 1 crore (10,000,000) ✓
-
-### SOURCE OF TRUTH PRIORITY
-1. Use loan_amount_status (pre-computed) - HIGHEST PRIORITY
-2. Use loan_amount_min_raw and loan_amount_max_raw (absolute numbers from database)
-3. BRE text is supplementary context only - NEVER override numeric fields
-
-### BRE TEXT vs DATABASE CONFLICTS
-If BRE text shows different limits than database fields:
-- Database fields (loan_amount_min_raw/max_raw) are the PRIMARY source of truth
-- BRE text provides context for secured vs unsecured distinctions only
-- When in doubt, ALWAYS use the database numeric values
-
-## Your Role
-Think like a friendly advisor, not a database auditor. When evaluating lenders, focus on INTERPRETATION (what does this mean for the student?) rather than just VALIDATION (is this rule met?).
-
-## For EACH lender, you must:
-1. Evaluate how well the applicant matches the lender's BRE criteria
-2. Assign a fit_score from 0-100 (be conservative - reserve 85+ for truly excellent matches)
-3. Determine probability_band: "high" (score >= 80), "medium" (60-79), "low" (< 60)
-4. Provide a HUMAN-FRIENDLY justification (internal use) - explain the WHY, not just the WHAT
-5. Flag any risk factors (internal use only) - phrase as considerations, not blockers
-6. List BRE rules matched - use human-readable labels when possible:
-   - Instead of "DESTINATION_PREFERENCES_NONE" → "Global Destination Support"
-   - Instead of "COURSES_ALLOWED_POSTGRADUATE" → "Masters-Ready Lender"
-   - Instead of raw income thresholds → "Strong Financial Backing"
-7. Assign to a group: best_fit (>=80), also_consider (60-79), possible_but_risky (40-59), not_suitable (<40)
-8. Generate a STRUCTURED 3-line student-friendly reason
-
-## HUMANIZING BRE RULES
-When listing bre_rules_matched, translate technical tags into human-friendly labels:
-- DESTINATION_PREFERENCES_NONE → "Global Destination Support"
-- COURSES_ALLOWED_POSTGRADUATE → "Masters-Ready Lender"
-- CO_APPLICANT_SALARIED_MIN_MONTHLY → "Strong Financial Backing"
-- LOAN_AMOUNT_SECURED_RANGE → "Loan Amount Covered"
-- Fast processing → "Quick Processing Time"
-- High approval rate → "Excellent Service Record"
-
-## JUSTIFICATION GUIDELINES
-Write justifications like a consultant speaking to an admin:
-- GOOD: "ICICI is an excellent choice because the co-applicant's income exceeds their threshold by 50%, and they specialize in UK universities."
-- BAD: "Income meets expectations. Destination match."
-
-For lower scores, explain the gap clearly:
-- GOOD: "While they accept UK destinations, their processing time is 2 weeks longer than HDFC Credila, which affects the overall score."
-- BAD: "Lower score due to processing time."
-
-## CRITICAL RULES FOR student_facing_reason
-Write as a FRIENDLY LOAN COUNSELOR speaking directly to the student:
-
-{
-  "greeting": "Personal connection to student's journey (max 12 words)",
-  "confidence": "Approval likelihood + stability message based on fit_score (max 15 words)", 
-  "cta": "Call-to-action to explore terms (max 10 words)"
-}
-
-GREETING EXAMPLES by fit_score:
-- 85+: "A perfect match for your UK Masters journey."
-- 70-84: "A strong option for your study abroad plans."
-- 50-69: "Worth exploring for your destination."
-- <50: "An alternative to consider."
-
-CONFIDENCE RULES (based on fit_score):
-- Score 85+: "High approval likelihood with stable, competitive rates."
-- Score 70-84: "Strong match based on your profile. Reliable terms."
-- Score 50-69: "Good option to consider. Established lender."
-- Score <50: "Worth exploring. See if terms work for you."
-
-CTA: Always "Check the loan terms below to compare." or similar.
-
-## STRICTLY FORBIDDEN in ALL student-facing fields:
-* Income, salary, earnings (student OR co-applicant) - NEVER
-* Employment type, occupation, employer - NEVER
-* Credit score, CIBIL - NEVER
-* Loan type (secured/unsecured/collateral) - NEVER
-* Co-applicant details of ANY kind - NEVER
-* Qualification status ("you qualify", "eligible", "meets requirements") - NEVER
-* Risk flags or concerns - NEVER
-* Documentation requirements - NEVER
-
-## IMPORTANT:
-- NEVER eliminate any lender - evaluate ALL of them
-- Be conservative with high scores - reserve 85+ for truly excellent matches
-- When multiple lenders score similarly, differentiate by explaining their unique strengths
-- Processing time estimates should be realistic ranges
-- If BRE data is missing, use structured fields and be more conservative with scoring`
-
-        const userPrompt = `Evaluate the following applicant against ALL lenders:
-
-## Applicant Profile:
-${JSON.stringify(applicantProfile, null, 2)}
-
-## Lenders to Evaluate:
-${JSON.stringify(lenderProfiles, null, 2)}
-
-Evaluate EACH lender and return structured results using the evaluate_lenders function.`
-
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-            tools: [
-              {
-                type: 'function',
-                function: {
-                  name: 'evaluate_lenders',
-                  description: 'Evaluate all lenders against the applicant profile',
-                  parameters: {
-                    type: 'object',
-                    properties: {
-                      lender_evaluations: {
-                        type: 'array',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            lender_id: { type: 'string' },
-                            lender_name: { type: 'string' },
-                            fit_score: { type: 'number', minimum: 0, maximum: 100 },
-                            probability_band: { type: 'string', enum: ['high', 'medium', 'low'] },
-                            processing_time_estimate: { type: 'string' },
-                            justification: { type: 'string' },
-                            risk_flags: { type: 'array', items: { type: 'string' } },
-                            bre_rules_matched: { type: 'array', items: { type: 'string' } },
-                            group: { type: 'string', enum: ['best_fit', 'also_consider', 'possible_but_risky', 'not_suitable'] },
-                            student_facing_reason: { 
-                              type: 'object',
-                              properties: {
-                                greeting: { type: 'string', description: 'Personalized journey greeting, max 12 words' },
-                                confidence: { type: 'string', description: 'Approval likelihood + stability message based on fit_score, max 15 words' },
-                                cta: { type: 'string', description: 'Call-to-action to explore terms, max 10 words' }
-                              },
-                              required: ['greeting', 'confidence', 'cta'],
-                              description: 'Structured 3-line counselor-style reason for this lender'
-                            },
-                          },
-                          required: ['lender_id', 'lender_name', 'fit_score', 'probability_band', 'justification', 'group'],
-                        },
-                      },
-                      overall_confidence: { type: 'number', minimum: 0, maximum: 100 },
-                      ai_notes: { type: 'string' },
-                    },
-                    required: ['lender_evaluations', 'overall_confidence'],
-                  },
-                },
-              },
-            ],
-            tool_choice: { type: 'function', function: { name: 'evaluate_lenders' } },
-          }),
-        })
-
-        if (!aiResponse.ok) {
-          const status = aiResponse.status
-          if (status === 429) {
-            console.warn('⚠️ AI rate limited, falling back to rule-based')
-            aiNotes = 'AI rate limited - using rule-based evaluation'
-            aiUnavailable = true
-          } else if (status === 402) {
-            console.warn('⚠️ AI credits exhausted, falling back to rule-based')
-            aiNotes = 'AI credits required - using rule-based evaluation'
-            aiUnavailable = true
-          } else {
-            const errorText = await aiResponse.text()
-            console.error('AI error:', status, errorText)
-            aiNotes = `AI error (${status}) - using rule-based evaluation`
-            aiUnavailable = true
-          }
-        } else {
-          const result = await aiResponse.json()
-          console.log('✅ AI response received')
-
-          // Extract tool call result
-          const toolCall = result.choices?.[0]?.message?.tool_calls?.[0]
-          if (toolCall?.function?.arguments) {
-            try {
-              const parsed: AIResponse = JSON.parse(toolCall.function.arguments)
-              evaluations = parsed.lender_evaluations || []
-              overallConfidence = parsed.overall_confidence || 50
-              aiNotes = parsed.ai_notes || ''
-              
-              // Sanitize all AI-generated student-facing reasons
-              evaluations = evaluations.map(evalItem => ({
-                ...evalItem,
-                student_facing_reason: sanitizeStudentReason(
-                  evalItem.student_facing_reason, 
-                  evalItem.lender_name, 
-                  evalItem.fit_score,
-                  studentContext
-                )
-              }))
-              
-              // POST-PROCESSING: Validate loan amount logic with ABSOLUTE NUMBERS
-              evaluations = evaluations.map(evalItem => {
-                const lender = lenders.find(l => l.id === evalItem.lender_id);
-                if (!lender) return evalItem;
-                
-                // Use absolute numbers - no formatting, no currency symbols
-                const amount = loanAmount || lead.loan_amount; // e.g., 2500000
-                const min = lender.loan_amount_min || 0;       // e.g., 750000
-                const max = lender.loan_amount_max || 0;       // e.g., 10000000
-                
-                console.log(`🔢 Validating ${lender.name}: ${amount} against ${min}-${max}`);
-                
-                // Validate loan amount logic with absolute numbers
-                if (min > 0 && max > 0 && amount >= min && amount <= max) {
-                  // Amount is WITHIN range - remove any incorrect "exceeds" flags
-                  const hasIncorrectFlag = evalItem.risk_flags?.some(f => 
-                    f.toUpperCase().includes('EXCEEDS') || f.toUpperCase().includes('EXCEED')
-                  );
-                  
-                  if (hasIncorrectFlag) {
-                    console.warn(`⚠️ AI math error for ${lender.name}: ${amount} is within ${min}-${max}, removing incorrect flags`);
-                    
-                    // Remove incorrect flags
-                    evalItem.risk_flags = (evalItem.risk_flags || []).filter(f => 
-                      !f.toUpperCase().includes('EXCEEDS') && !f.toUpperCase().includes('EXCEED')
-                    );
-                    
-                    // Add correct factor if not present
-                    const hasCorrectFactor = evalItem.bre_rules_matched?.some(r => 
-                      r.toLowerCase().includes('range') || 
-                      r.toLowerCase().includes('covered') ||
-                      r.toLowerCase().includes('within')
-                    );
-                    
-                    if (!hasCorrectFactor) {
-                      evalItem.bre_rules_matched = [...(evalItem.bre_rules_matched || []), 'Loan Amount Covered'];
-                    }
-                  }
-                } else if (max > 0 && amount > max) {
-                  // Amount genuinely exceeds max - ensure flag is present
-                  const hasFlag = evalItem.risk_flags?.some(f => 
-                    f.toUpperCase().includes('EXCEEDS') || f.toUpperCase().includes('EXCEED')
-                  );
-                  if (!hasFlag) {
-                    console.log(`📌 Adding missing EXCEEDS_MAX flag for ${lender.name}: ${amount} > ${max}`);
-                    evalItem.risk_flags = [...(evalItem.risk_flags || []), 'LOAN_AMOUNT_EXCEEDS_MAX'];
-                  }
-                }
-                
-                return evalItem;
-              });
-              
-              console.log(`📊 AI evaluated ${evaluations.length} lenders (reasons sanitized, loan amounts validated)`)
-            } catch (parseErr) {
-              console.error('Failed to parse AI response:', parseErr)
-              aiNotes = 'AI response parsing failed - using rule-based evaluation'
-              aiUnavailable = true
-            }
-          }
-        }
-      } catch (aiErr) {
-        console.error('AI call failed:', aiErr)
-        aiNotes = 'AI unavailable - using rule-based evaluation'
-        aiUnavailable = true
-      }
-    } else {
-      console.log('⚠️ LOVABLE_API_KEY not configured, using rule-based scoring')
-      aiNotes = 'AI not configured - using rule-based evaluation'
-      aiUnavailable = true
-    }
-
-    // Fallback to rule-based scoring if AI didn't work
-    if (evaluations.length === 0) {
-      console.log('📋 Using enhanced rule-based scoring')
-      
-      // Find min/max values for normalization
-      const allRates = lenders.map(l => l.interest_rate_min).filter(r => r !== null) as number[]
-      const minRate = Math.min(...allRates)
-      const maxRate = Math.max(...allRates)
-      
-      const allAmounts = lenders.map(l => l.loan_amount_max).filter(a => a !== null) as number[]
-      const maxLoanAmount = Math.max(...allAmounts)
-      
-      const allTimes = lenders.map(l => l.processing_time_days || l.processing_time_range_min).filter(t => t !== null) as number[]
-      const minTime = Math.min(...allTimes)
-      const maxTime = Math.max(...allTimes)
-      
-      evaluations = lenders.map(lender => {
-        let score = 50
-        const factors: string[] = []
-        const riskFlags: string[] = []
-
-        // === Interest Rate Score (up to 25 points) - INCREASED priority ===
-        // Lower rate = higher score. This is the most important factor for students.
-        if (lender.interest_rate_min && minRate && maxRate && maxRate > minRate) {
-          const rateRange = maxRate - minRate
-          const normalizedRate = (maxRate - lender.interest_rate_min) / rateRange // 1 = lowest rate, 0 = highest
-          const rateBonus = Math.round(normalizedRate * 25) // Increased from 20 to 25
-          score += rateBonus
-          if (normalizedRate >= 0.7) {
-            factors.push('Competitive interest rate')
-          } else if (normalizedRate <= 0.3) {
-            riskFlags.push('Higher interest rate')
-          }
-        }
-
-        // === Loan Amount Coverage (up to 15 points) ===
-        const amount = loanAmount || lead.loan_amount
-        if (lender.loan_amount_min && lender.loan_amount_max) {
-          if (amount >= lender.loan_amount_min && amount <= lender.loan_amount_max) {
-            score += 15
-            factors.push('Loan amount within range')
-            
-            // Bonus if lender can offer more headroom
-            if (lender.loan_amount_max > amount * 1.2) {
-              score += 3
-              factors.push('Good loan headroom available')
-            }
-          } else if (amount < lender.loan_amount_min) {
-            score -= 10
-            riskFlags.push('Loan amount below minimum')
-          } else {
-            score -= 5
-            riskFlags.push('Loan amount exceeds maximum')
-          }
-        } else if (lender.loan_amount_max && lender.loan_amount_max >= amount) {
-          score += 10
-          factors.push('Sufficient loan capacity')
-        }
-
-        // === Processing Time Score (up to 5 points) - DECREASED priority ===
-        // Faster processing = higher score. But this shouldn't outweigh interest rates.
-        const processingTime = lender.processing_time_days || lender.processing_time_range_min
-        if (processingTime && minTime && maxTime && maxTime > minTime) {
-          const timeRange = maxTime - minTime
-          const normalizedTime = (maxTime - processingTime) / timeRange // 1 = fastest, 0 = slowest
-          const timeBonus = Math.round(normalizedTime * 5) // Decreased from 10 to 5
-          score += timeBonus
-          if (normalizedTime >= 0.7) {
-            factors.push('Fast processing time')
-          }
-        }
-
-        // === Country/Destination Match (up to 10 points) ===
-        const destination = studyDestination || lead.study_destination
-        if (lender.country_restrictions?.length) {
-          if (lender.country_restrictions.includes(destination?.toUpperCase())) {
-            score += 10
-            factors.push('Preferred destination')
-          } else {
-            score -= 5
-            riskFlags.push('Non-preferred destination')
-          }
-        } else {
-          // No restrictions = universal coverage (small bonus)
-          score += 3
-        }
-
-        // === Income Expectations (up to 15 points) ===
-        const coAppSalary = coApplicant?.monthly_salary
-        if (coAppSalary) {
-          if (lender.income_expectations_min && coAppSalary >= lender.income_expectations_min) {
-            score += 15
-            factors.push('Income meets expectations')
-            
-            // Extra bonus for significantly exceeding
-            if (lender.income_expectations_min && coAppSalary >= lender.income_expectations_min * 1.5) {
-              score += 5
-              factors.push('Strong income profile')
-            }
-          } else if (lender.income_expectations_min && coAppSalary < lender.income_expectations_min) {
-            score -= 10
-            riskFlags.push('Income below expectations')
-          } else {
-            // No income expectations defined
-            score += 5
-          }
-        }
-
-        // === Employment Type (up to 8 points) ===
-        const empType = coApplicant?.employment_type
-        if (empType === 'salaried') {
-          score += 8
-          factors.push('Salaried employment')
-        } else if (empType === 'government') {
-          score += 10
-          factors.push('Government employment')
-        } else if (empType === 'self-employed') {
-          score += 3
-          factors.push('Self-employed')
-        }
-
-        // === Preferred Rank Bonus (up to 9 points) ===
-        if (lender.preferred_rank && lender.preferred_rank <= 3) {
-          const rankBonus = (4 - lender.preferred_rank) * 3
-          score += rankBonus
-          factors.push(`Priority lender (rank ${lender.preferred_rank})`)
-        }
-
-        // === Experience Score (up to 5 points) ===
-        if (lender.experience_score) {
-          if (lender.experience_score >= 8) {
-            score += 5
-            factors.push('Excellent service record')
-          } else if (lender.experience_score >= 6) {
-            score += 3
-            factors.push('Good service record')
-          }
-        }
-
-        // === Education Loan Specialization (removed hardcoded bias) ===
-        // All lenders in this system are education-focused, so no unfair bonus.
-        // If needed, use database field lender.is_education_specialist in future.
-
-        // Cap score at 100, floor at 0
-        score = Math.min(100, Math.max(0, score))
-
-        // Determine group
-        let group: LenderEvaluation['group'] = 'not_suitable'
-        if (score >= 80) group = 'best_fit'
-        else if (score >= 60) group = 'also_consider'
-        else if (score >= 40) group = 'possible_but_risky'
-
-        // Determine probability band
-        let probability_band: LenderEvaluation['probability_band'] = 'low'
-        if (score >= 80) probability_band = 'high'
-        else if (score >= 60) probability_band = 'medium'
-
-        // Generate student-friendly reason (no internal scoring details exposed)
-        const studentReason = generateStudentFriendlyReason(lender, score, studentContext)
-
-        // Generate justification
-        let justification = ''
-        if (score >= 80) {
-          justification = `${lender.name} is an excellent match. ${factors.slice(0, 3).join(', ')}.`
-        } else if (score >= 60) {
-          justification = `${lender.name} is a solid option. ${factors.slice(0, 2).join(', ')}.`
-        } else if (score >= 40) {
-          justification = `${lender.name} may work but has concerns: ${riskFlags.slice(0, 2).join(', ') || 'Limited match'}.`
-        } else {
-          justification = `${lender.name} is not recommended: ${riskFlags.join(', ') || 'Poor overall fit'}.`
-        }
-
-        return {
-          lender_id: lender.id,
-          lender_name: lender.name,
-          fit_score: score,
-          probability_band,
-          processing_time_estimate: lender.processing_time_range_min && lender.processing_time_range_max
-            ? `${lender.processing_time_range_min}-${lender.processing_time_range_max} days`
-            : processingTime 
-              ? `~${processingTime} days` 
-              : 'Not specified',
-          justification,
-          risk_flags: riskFlags,
-          bre_rules_matched: factors,
-          group,
-          student_facing_reason: studentReason,
-        }
-      })
-
-      // Calculate overall confidence from average top scores
-      const topScores = evaluations
-        .sort((a, b) => b.fit_score - a.fit_score)
-        .slice(0, 3)
-        .map(e => e.fit_score)
-      overallConfidence = Math.round(topScores.reduce((a, b) => a + b, 0) / topScores.length)
-    }
-
-    // Sort evaluations by fit_score
-    evaluations.sort((a, b) => b.fit_score - a.fit_score)
-
-    // Group evaluations
-    const groupedEvaluations = {
-      best_fit: evaluations.filter(e => e.group === 'best_fit'),
-      also_consider: evaluations.filter(e => e.group === 'also_consider'),
-      possible_but_risky: evaluations.filter(e => e.group === 'possible_but_risky'),
-      not_suitable: evaluations.filter(e => e.group === 'not_suitable'),
-    }
-
-    // Create input snapshot
-    const inputsSnapshot = {
-      lead_id: leadId,
-      loan_amount: loanAmount || lead.loan_amount,
-      study_destination: studyDestination || lead.study_destination,
-      loan_type: lead.loan_type,
-      loan_classification: lead.loan_classification,
-      student_qualification: student?.highest_qualification,
-      co_applicant_salary: coApplicant?.monthly_salary,
-      co_applicant_employment: coApplicant?.employment_type,
-      universities: universities.map(u => u?.name),
-      timestamp: new Date().toISOString(),
-    }
-
-    // Get top recommendations (for backward compatibility)
-    const topRecommendations = evaluations.slice(0, 3).map(e => ({
-      lender_id: e.lender_id,
-      lender_name: e.lender_name,
-      confidence_score: e.fit_score,
-      rationale: e.justification,
-      match_factors: e.bre_rules_matched,
-    }))
-
-    // Save to database
+    // =========================================================================
+    // SAVE TO DATABASE
+    // =========================================================================
+    
     const { data: savedRec, error: saveError } = await supabase
       .from('ai_lender_recommendations')
       .insert({
         lead_id: leadId,
-        recommended_lender_ids: evaluations.slice(0, 5).map(e => e.lender_id),
-        recommended_lenders_data: topRecommendations,
-        all_lenders_output: evaluations,
-        lender_snapshots: lenderSnapshots,
-        rationale: overallConfidence >= 70 
-          ? `AI recommends ${evaluations[0]?.lender_name} with ${overallConfidence}% confidence`
-          : 'Low confidence - human review recommended',
+        recommended_lender_ids: enhancedResults.filter(r => r.status !== 'LOCKED').slice(0, 5).map(r => r.lender_id),
+        recommended_lenders_data: enhancedResults.slice(0, 5).map(r => ({
+          lender_id: r.lender_id,
+          lender_name: r.lender_name,
+          confidence_score: r.score,
+          rationale: r.reason,
+          match_factors: r.fit_factors,
+        })),
+        all_lenders_output: enhancedResults,
+        rationale: topResult 
+          ? `Smart Lender recommends ${topResult.lender_name} with ${topResult.score}% fit`
+          : 'No clear recommendation - human review needed',
         confidence_score: overallConfidence,
-        model_version: aiUnavailable ? '2.1-rule-based-enhanced' : '2.0-gemini-flash',
-        inputs_snapshot: inputsSnapshot,
-        ai_unavailable: aiUnavailable,
-        student_facing_reason: evaluations[0]?.student_facing_reason || null,
+        model_version: output.model_version,
+        inputs_snapshot: {
+          lead_id: leadId,
+          loan_amount: effectiveLoanAmount,
+          study_destination: studyDestination || lead.study_destination,
+          loan_type: effectiveLoanType,
+          co_applicant_salary: coApplicantSalary,
+          university: primaryUniversity?.name,
+          intake: lead.intake_month && lead.intake_year 
+            ? `${lead.intake_month}/${lead.intake_year}`
+            : null,
+        },
+        recommendation_context: output.recommendation_context,
+        version: nextVersion,
+        urgency_zone: zone,
+        student_tier: tier,
+        strategy,
+        pillar_scores: topResult?.pillar_breakdown,
+        all_lender_scores: enhancedResults.map(r => ({
+          id: r.lender_id,
+          name: r.lender_name,
+          score: r.score,
+          status: r.status,
+        })),
+        student_facing_reason: topResult?.student_facing_reason,
+        ai_unavailable: !lovableApiKey,
       })
       .select()
-      .single()
+      .single();
 
     if (saveError) {
-      console.error('Failed to save recommendation:', saveError)
+      console.error('Failed to save recommendation:', saveError);
     }
 
-    console.log(`✅ [suggest-lender] Generated ${evaluations.length} evaluations, confidence: ${overallConfidence}%`)
-
+    // =========================================================================
+    // RESPONSE
+    // =========================================================================
+    
     return new Response(
       JSON.stringify({
         success: true,
-        recommendation: savedRec || {
-          recommended_lenders_data: topRecommendations,
-          all_lenders_output: evaluations,
-          confidence_score: overallConfidence,
-          rationale: overallConfidence >= 70 
-            ? `AI recommends ${evaluations[0]?.lender_name}`
-            : 'Low confidence - human review recommended',
+        recommendation: savedRec || output,
+        recommendation_context: output.recommendation_context,
+        results: output.results,
+        top_recommendation: output.top_recommendation,
+        grouped_evaluations: {
+          best_fit: enhancedResults.filter(r => r.group === 'best_fit'),
+          also_consider: enhancedResults.filter(r => r.group === 'also_consider'),
+          possible_but_risky: enhancedResults.filter(r => r.group === 'possible_but_risky'),
+          not_suitable: enhancedResults.filter(r => r.group === 'not_suitable'),
         },
-        grouped_evaluations: groupedEvaluations,
-        needs_human_review: overallConfidence < 70,
-        ai_unavailable: aiUnavailable,
-        ai_notes: aiNotes,
+        needs_human_review: output.needs_human_review,
+        ai_notes: output.ai_notes,
+        version: nextVersion,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
 
   } catch (error: any) {
-    console.error('💥 [suggest-lender] Error:', error.message)
+    console.error('💥 [Smart Lender] Error:', error.message);
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -966,6 +948,6 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
         ai_unavailable: true,
       }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
+});
