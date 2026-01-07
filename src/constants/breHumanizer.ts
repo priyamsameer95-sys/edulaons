@@ -205,6 +205,27 @@ export const BRE_TRANSLATIONS: Record<string, HumanizedBREFactor> = {
     category: 'consideration',
     icon: 'alert',
   },
+  'Loan Amount Covered': {
+    label: 'Loan Amount Within Range',
+    description: 'Your requested loan amount falls within this lender\'s offering range.',
+    impact: 'medium',
+    category: 'eligibility',
+    icon: 'check',
+  },
+  'LOAN_AMOUNT_WITHIN_RANGE': {
+    label: 'Loan Amount Covered',
+    description: 'Your requested amount is well within this lender\'s range.',
+    impact: 'medium',
+    category: 'eligibility',
+    icon: 'check',
+  },
+  'At Maximum Limit': {
+    label: 'At Maximum Limit',
+    description: 'Your loan amount matches this lender\'s maximum. Approved, but no room for increases.',
+    impact: 'low',
+    category: 'eligibility',
+    icon: 'info',
+  },
 
   // ==================== PROCESSING & SERVICE FACTORS ====================
   'Competitive interest rate': {

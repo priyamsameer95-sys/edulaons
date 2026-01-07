@@ -312,27 +312,57 @@ Deno.serve(async (req) => {
       })),
     }
 
-    // Build lender profiles for AI
-    const lenderProfiles = lenders.map(l => ({
-      id: l.id,
-      name: l.name,
-      code: l.code,
-      loan_range: `₹${(l.loan_amount_min || 0).toLocaleString()} - ₹${(l.loan_amount_max || 0).toLocaleString()}`,
-      interest_range: `${l.interest_rate_min || 0}% - ${l.interest_rate_max || 0}%`,
-      processing_time: l.processing_time_days || l.processing_time_range_min || 'Not specified',
-      preferred_rank: l.preferred_rank,
-      bre_text: l.bre_text,
-      bre_json: l.bre_json,
-      collateral_preference: l.collateral_preference,
-      country_restrictions: l.country_restrictions,
-      university_restrictions: l.university_restrictions,
-      income_expectations: {
-        min: l.income_expectations_min,
-        max: l.income_expectations_max,
-      },
-      credit_expectations: l.credit_expectations,
-      experience_score: l.experience_score,
-    }))
+    // Calculate applicant loan amount in ABSOLUTE NUMBERS
+    const applicantLoanAmount = loanAmount || lead.loan_amount;
+    
+    // Build lender profiles for AI with raw numeric values
+    const lenderProfiles = lenders.map(l => {
+      // Pre-compute loan status using ABSOLUTE NUMBERS (no formatting)
+      const minRaw = l.loan_amount_min || 0;
+      const maxRaw = l.loan_amount_max || 0;
+      
+      let loanAmountStatus = 'UNKNOWN';
+      if (minRaw > 0 && maxRaw > 0) {
+        if (applicantLoanAmount < minRaw) {
+          loanAmountStatus = 'BELOW_MIN';
+        } else if (applicantLoanAmount > maxRaw) {
+          loanAmountStatus = 'EXCEEDS_MAX';
+        } else if (applicantLoanAmount === maxRaw) {
+          loanAmountStatus = 'AT_MAX_LIMIT';
+        } else {
+          loanAmountStatus = 'WITHIN_RANGE';
+        }
+      }
+      
+      console.log(`📊 ${l.name}: Loan ${applicantLoanAmount} vs range ${minRaw}-${maxRaw} = ${loanAmountStatus}`);
+      
+      return {
+        id: l.id,
+        name: l.name,
+        code: l.code,
+        loan_range: `₹${(l.loan_amount_min || 0).toLocaleString()} - ₹${(l.loan_amount_max || 0).toLocaleString()}`,
+        // NEW: Raw absolute numbers for accurate comparison
+        loan_amount_min_raw: minRaw,
+        loan_amount_max_raw: maxRaw,
+        applicant_loan_amount_raw: applicantLoanAmount,
+        // NEW: Pre-computed status - AI should USE THIS, not recalculate
+        loan_amount_status: loanAmountStatus,
+        interest_range: `${l.interest_rate_min || 0}% - ${l.interest_rate_max || 0}%`,
+        processing_time: l.processing_time_days || l.processing_time_range_min || 'Not specified',
+        preferred_rank: l.preferred_rank,
+        bre_text: l.bre_text,
+        bre_json: l.bre_json,
+        collateral_preference: l.collateral_preference,
+        country_restrictions: l.country_restrictions,
+        university_restrictions: l.university_restrictions,
+        income_expectations: {
+          min: l.income_expectations_min,
+          max: l.income_expectations_max,
+        },
+        credit_expectations: l.credit_expectations,
+        experience_score: l.experience_score,
+      };
+    });
 
     // Create lender snapshots for audit
     const lenderSnapshots: Record<string, any> = {}
@@ -359,6 +389,39 @@ Deno.serve(async (req) => {
         console.log('🧠 Calling Lovable AI for lender evaluation...')
         
         const systemPrompt = `You are a SENIOR LOAN CONSULTANT with 15 years of experience helping students get education loans. Your task is to evaluate EVERY lender against an applicant's profile and provide a comprehensive, human-friendly assessment.
+
+## CRITICAL: LOAN AMOUNT VALIDATION (ABSOLUTE NUMBERS ONLY)
+
+### PRE-COMPUTED LOAN STATUS
+Each lender includes a "loan_amount_status" field. USE THIS DIRECTLY - DO NOT RECALCULATE:
+- WITHIN_RANGE → Add to bre_rules_matched: "Loan Amount Covered"
+- AT_MAX_LIMIT → Add to bre_rules_matched: "At Maximum Limit"  
+- EXCEEDS_MAX → Add to risk_flags: "LOAN_AMOUNT_EXCEEDS_MAX"
+- BELOW_MIN → Add to risk_flags: "LOAN_AMOUNT_BELOW_MIN"
+
+### INDIAN CURRENCY REFERENCE (ABSOLUTE NUMBERS)
+Always convert to absolute numbers before ANY comparison:
+- 1 lakh = 100,000 (one hundred thousand)
+- 10 lakhs = 1,000,000 (one million)
+- 1 crore = 10,000,000 (ten million)
+- 10 crores = 100,000,000 (one hundred million)
+
+EXAMPLES:
+- 25 lakhs = 2,500,000
+- 1 crore = 10,000,000
+- Therefore: 25 lakhs (2,500,000) < 1 crore (10,000,000) ✓
+- 75 lakhs = 7,500,000 which is LESS than 1 crore (10,000,000) ✓
+
+### SOURCE OF TRUTH PRIORITY
+1. Use loan_amount_status (pre-computed) - HIGHEST PRIORITY
+2. Use loan_amount_min_raw and loan_amount_max_raw (absolute numbers from database)
+3. BRE text is supplementary context only - NEVER override numeric fields
+
+### BRE TEXT vs DATABASE CONFLICTS
+If BRE text shows different limits than database fields:
+- Database fields (loan_amount_min_raw/max_raw) are the PRIMARY source of truth
+- BRE text provides context for secured vs unsecured distinctions only
+- When in doubt, ALWAYS use the database numeric values
 
 ## Your Role
 Think like a friendly advisor, not a database auditor. When evaluating lenders, focus on INTERPRETATION (what does this mean for the student?) rather than just VALIDATION (is this rule met?).
@@ -545,7 +608,59 @@ Evaluate EACH lender and return structured results using the evaluate_lenders fu
                 )
               }))
               
-              console.log(`📊 AI evaluated ${evaluations.length} lenders (reasons sanitized)`)
+              // POST-PROCESSING: Validate loan amount logic with ABSOLUTE NUMBERS
+              evaluations = evaluations.map(evalItem => {
+                const lender = lenders.find(l => l.id === evalItem.lender_id);
+                if (!lender) return evalItem;
+                
+                // Use absolute numbers - no formatting, no currency symbols
+                const amount = loanAmount || lead.loan_amount; // e.g., 2500000
+                const min = lender.loan_amount_min || 0;       // e.g., 750000
+                const max = lender.loan_amount_max || 0;       // e.g., 10000000
+                
+                console.log(`🔢 Validating ${lender.name}: ${amount} against ${min}-${max}`);
+                
+                // Validate loan amount logic with absolute numbers
+                if (min > 0 && max > 0 && amount >= min && amount <= max) {
+                  // Amount is WITHIN range - remove any incorrect "exceeds" flags
+                  const hasIncorrectFlag = evalItem.risk_flags?.some(f => 
+                    f.toUpperCase().includes('EXCEEDS') || f.toUpperCase().includes('EXCEED')
+                  );
+                  
+                  if (hasIncorrectFlag) {
+                    console.warn(`⚠️ AI math error for ${lender.name}: ${amount} is within ${min}-${max}, removing incorrect flags`);
+                    
+                    // Remove incorrect flags
+                    evalItem.risk_flags = (evalItem.risk_flags || []).filter(f => 
+                      !f.toUpperCase().includes('EXCEEDS') && !f.toUpperCase().includes('EXCEED')
+                    );
+                    
+                    // Add correct factor if not present
+                    const hasCorrectFactor = evalItem.bre_rules_matched?.some(r => 
+                      r.toLowerCase().includes('range') || 
+                      r.toLowerCase().includes('covered') ||
+                      r.toLowerCase().includes('within')
+                    );
+                    
+                    if (!hasCorrectFactor) {
+                      evalItem.bre_rules_matched = [...(evalItem.bre_rules_matched || []), 'Loan Amount Covered'];
+                    }
+                  }
+                } else if (max > 0 && amount > max) {
+                  // Amount genuinely exceeds max - ensure flag is present
+                  const hasFlag = evalItem.risk_flags?.some(f => 
+                    f.toUpperCase().includes('EXCEEDS') || f.toUpperCase().includes('EXCEED')
+                  );
+                  if (!hasFlag) {
+                    console.log(`📌 Adding missing EXCEEDS_MAX flag for ${lender.name}: ${amount} > ${max}`);
+                    evalItem.risk_flags = [...(evalItem.risk_flags || []), 'LOAN_AMOUNT_EXCEEDS_MAX'];
+                  }
+                }
+                
+                return evalItem;
+              });
+              
+              console.log(`📊 AI evaluated ${evaluations.length} lenders (reasons sanitized, loan amounts validated)`)
             } catch (parseErr) {
               console.error('Failed to parse AI response:', parseErr)
               aiNotes = 'AI response parsing failed - using rule-based evaluation'
