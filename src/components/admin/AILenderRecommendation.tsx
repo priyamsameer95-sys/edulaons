@@ -65,28 +65,79 @@ interface StudentFacingReason {
 interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
-  fit_score: number;
-  probability_band: 'high' | 'medium' | 'low';
-  processing_time_estimate: string;
-  justification: string;
-  risk_flags: string[];
-  bre_rules_matched: string[];
-  group: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
+  // New engine uses "score", old used "fit_score" - support both
+  score?: number;
+  fit_score?: number;
+  probability_band?: 'high' | 'medium' | 'low';
+  processing_time_estimate?: string;
+  // New engine uses "reason", old used "justification" - support both
+  reason?: string;
+  justification?: string;
+  risk_flags?: string[];
+  // New engine uses "fit_factors", old used "bre_rules_matched" - support both
+  fit_factors?: string[];
+  bre_rules_matched?: string[];
+  group?: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
+  // New engine uses "status" for grouping
+  status?: 'BEST_FIT' | 'GOOD_FIT' | 'WORTH_EXPLORING' | 'LOCKED';
   student_facing_reason?: StudentFacingReason | string | null;
   trade_offs?: string[];
+  trade_off?: string; // New engine uses singular
   pillar_scores?: PillarScores;
+  pillar_breakdown?: { future?: { score: number }; financial?: { score: number }; past?: { score: number } };
   strategic_adjustment?: number;
   knockout_penalty?: number;
   is_locked?: boolean;
   unlock_hint?: string;
 }
 
-// Helper to safely format student_facing_reason for inline display
-function formatStudentFacingReason(reason: StudentFacingReason | string | null | undefined): string | null {
-  if (!reason) return null;
-  if (typeof reason === 'string') return reason;
-  if (typeof reason === 'object' && reason.greeting) return reason.greeting;
-  return null;
+// Normalize evaluation data from new/old engine format
+function normalizeEvaluation(evaluation: LenderEvaluation) {
+  const effectiveScore = evaluation.score ?? evaluation.fit_score ?? 0;
+  const effectiveReason = evaluation.reason ?? evaluation.justification ?? '';
+  const effectiveFactors = evaluation.fit_factors ?? evaluation.bre_rules_matched ?? [];
+  const effectiveTradeOffs = evaluation.trade_offs ?? (evaluation.trade_off ? [evaluation.trade_off] : []);
+  
+  // Normalize group from status if needed
+  let effectiveGroup = evaluation.group;
+  if (!effectiveGroup && evaluation.status) {
+    const statusToGroup: Record<string, 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable'> = {
+      'BEST_FIT': 'best_fit',
+      'GOOD_FIT': 'also_consider',
+      'WORTH_EXPLORING': 'possible_but_risky',
+      'LOCKED': 'not_suitable',
+    };
+    effectiveGroup = statusToGroup[evaluation.status] ?? 'not_suitable';
+  }
+  
+  // Normalize pillar_scores from pillar_breakdown
+  let effectivePillarScores = evaluation.pillar_scores;
+  if (!effectivePillarScores && evaluation.pillar_breakdown) {
+    effectivePillarScores = {
+      future_earnings: evaluation.pillar_breakdown.future?.score ?? 0,
+      financial_security: evaluation.pillar_breakdown.financial?.score ?? 0,
+      past_record: evaluation.pillar_breakdown.past?.score ?? 0,
+    };
+  }
+  
+  // Determine probability band from score if not provided
+  let effectiveProbabilityBand = evaluation.probability_band;
+  if (!effectiveProbabilityBand) {
+    if (effectiveScore >= 80) effectiveProbabilityBand = 'high';
+    else if (effectiveScore >= 50) effectiveProbabilityBand = 'medium';
+    else effectiveProbabilityBand = 'low';
+  }
+  
+  return {
+    ...evaluation,
+    effectiveScore,
+    effectiveReason,
+    effectiveFactors,
+    effectiveTradeOffs,
+    effectiveGroup,
+    effectivePillarScores,
+    effectiveProbabilityBand,
+  };
 }
 
 interface InputsSnapshot {
@@ -145,19 +196,18 @@ const strategyLabels: Record<string, { label: string; icon: typeof Target; color
   'balanced': { label: 'Balanced Approach', icon: Target, color: 'text-blue-600' },
 };
 
-// Helper to compute verdict label
-function getVerdict(evaluation: LenderEvaluation): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger' } {
-  const { fit_score, risk_flags = [] } = evaluation;
-  const hasRisks = risk_flags && risk_flags.length > 0;
+// Helper to compute verdict label - uses normalized score
+function getVerdict(score: number, riskFlags: string[] = []): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger'; description: string } {
+  const hasRisks = riskFlags && riskFlags.length > 0;
   
-  if (fit_score >= 80 && !hasRisks) {
-    return { label: 'Excellent Match', variant: 'success' };
-  } else if (fit_score >= 70) {
-    return { label: 'Strong Option', variant: 'warning' };
-  } else if (fit_score >= 50) {
-    return { label: 'Worth Exploring', variant: 'caution' };
+  if (score >= 80 && !hasRisks) {
+    return { label: 'Excellent Match', variant: 'success', description: 'An excellent match for this profile.' };
+  } else if (score >= 70) {
+    return { label: 'Strong Option', variant: 'warning', description: 'A solid option worth considering.' };
+  } else if (score >= 50) {
+    return { label: 'Worth Exploring', variant: 'caution', description: 'Some conditions may apply. Review details.' };
   } else {
-    return { label: 'Not Recommended', variant: 'danger' };
+    return { label: 'Not Recommended', variant: 'danger', description: 'Does not meet key eligibility criteria.' };
   }
 }
 
@@ -374,8 +424,14 @@ export function AILenderRecommendation({
 
     setOverrideSubmitting(true);
     try {
-      // Store override feedback
-      const topLender = recommendation?.all_lenders_output.find(l => l.group === 'best_fit');
+      // Store override feedback - use normalized scores
+      const topLender = recommendation?.all_lenders_output.find(l => 
+        l.group === 'best_fit' || l.status === 'BEST_FIT'
+      );
+      const chosenLender = recommendation?.all_lenders_output.find(l => l.lender_id === overrideModal.lenderId);
+      
+      const getScore = (lender: LenderEvaluation | undefined) => lender?.score ?? lender?.fit_score ?? 0;
+      
       await supabase.from('ai_override_feedback').insert({
         lead_id: leadId,
         recommendation_id: recommendation?.id,
@@ -386,8 +442,8 @@ export function AILenderRecommendation({
         overridden_by_role: userRole,
         context_snapshot: {
           confidence_score: recommendation?.confidence_score,
-          top_lender_score: topLender?.fit_score,
-          chosen_lender_score: recommendation?.all_lenders_output.find(l => l.lender_id === overrideModal.lenderId)?.fit_score,
+          top_lender_score: getScore(topLender),
+          chosen_lender_score: getScore(chosenLender),
         },
       });
 
@@ -452,14 +508,19 @@ export function AILenderRecommendation({
     setExpandedCards(prev => ({ ...prev, [lenderId]: !prev[lenderId] }));
   };
 
-  // Group lenders
+  // Group lenders - handle both old 'group' field and new 'status' field
   const getGroupedLenders = () => {
     const all = recommendation?.all_lenders_output || [];
+    
+    // Helper to check group membership (supports both old and new format)
+    const isInGroup = (e: LenderEvaluation, group: string, status: string) => 
+      e.group === group || e.status === status;
+    
     return {
-      best_fit: all.filter(e => e.group === 'best_fit'),
-      also_consider: all.filter(e => e.group === 'also_consider'),
-      possible_but_risky: all.filter(e => e.group === 'possible_but_risky'),
-      not_suitable: all.filter(e => e.group === 'not_suitable'),
+      best_fit: all.filter(e => isInGroup(e, 'best_fit', 'BEST_FIT')),
+      also_consider: all.filter(e => isInGroup(e, 'also_consider', 'GOOD_FIT')),
+      possible_but_risky: all.filter(e => isInGroup(e, 'possible_but_risky', 'WORTH_EXPLORING')),
+      not_suitable: all.filter(e => isInGroup(e, 'not_suitable', 'LOCKED') || e.is_locked),
     };
   };
 
@@ -596,17 +657,21 @@ export function AILenderRecommendation({
 
   // Render a single lender card with 4-layer breakdown
   const renderLenderCard = (evaluation: LenderEvaluation, isTopPick: boolean = false) => {
-    const verdict = getVerdict(evaluation);
+    // Normalize evaluation data for backwards compatibility
+    const normalized = normalizeEvaluation(evaluation);
+    const { effectiveScore, effectiveReason, effectiveFactors, effectivePillarScores, effectiveProbabilityBand } = normalized;
+    
+    const verdict = getVerdict(effectiveScore, evaluation.risk_flags);
     const isExpanded = expandedCards[evaluation.lender_id];
     const { bigWins, eligibilityMet, considerations } = groupAndHumanizeFactors(
-      evaluation.bre_rules_matched || [],
+      effectiveFactors,
       evaluation.risk_flags || []
     );
     
     const proTip = generateProTip({
       loanAmount: inputs?.loan_amount,
-      factors: evaluation.bre_rules_matched || [],
-      processingTimeAdvantage: evaluation.bre_rules_matched?.includes('Fast processing time'),
+      factors: effectiveFactors,
+      processingTimeAdvantage: effectiveFactors.includes('Fast processing time'),
     });
 
     const isLocked = evaluation.is_locked;
@@ -661,34 +726,31 @@ export function AILenderRecommendation({
                 </div>
               )}
 
-              {/* Fit Score Progress */}
+              {/* Fit Score Progress - now with labeled score */}
               {!isLocked && (
                 <div className="mt-2 flex items-center gap-2">
                   <Progress 
-                    value={evaluation.fit_score} 
+                    value={effectiveScore} 
                     className={cn(
                       "h-2 flex-1",
-                      evaluation.fit_score >= 80 ? "[&>div]:bg-emerald-500" :
-                      evaluation.fit_score >= 60 ? "[&>div]:bg-amber-500" :
+                      effectiveScore >= 80 ? "[&>div]:bg-emerald-500" :
+                      effectiveScore >= 60 ? "[&>div]:bg-amber-500" :
                       "[&>div]:bg-orange-500"
                     )}
                   />
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "text-[10px] h-5 font-semibold shrink-0",
-                      evaluation.probability_band === 'high' && "border-emerald-500 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50",
-                      evaluation.probability_band === 'medium' && "border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/50",
-                      evaluation.probability_band === 'low' && "border-orange-500 text-orange-700 bg-orange-50 dark:bg-orange-950/50"
-                    )}
-                  >
-                    {evaluation.fit_score}%
-                  </Badge>
+                  <span className={cn(
+                    "text-xs font-semibold shrink-0 tabular-nums",
+                    effectiveProbabilityBand === 'high' && "text-emerald-700",
+                    effectiveProbabilityBand === 'medium' && "text-amber-700",
+                    effectiveProbabilityBand === 'low' && "text-orange-700"
+                  )}>
+                    Score: {effectiveScore}%
+                  </span>
                 </div>
               )}
 
               {/* 3-Pillar Mini Visualization */}
-              {!isLocked && evaluation.pillar_scores && renderPillarScores(evaluation.pillar_scores)}
+              {!isLocked && effectivePillarScores && renderPillarScores(effectivePillarScores)}
 
               {/* Strategic Adjustment Indicator */}
               {!isLocked && evaluation.strategic_adjustment !== undefined && evaluation.strategic_adjustment !== 0 && (
@@ -700,7 +762,7 @@ export function AILenderRecommendation({
                 </div>
               )}
 
-              {/* Humanized Verdict */}
+              {/* Humanized Verdict - uses verdict.description for consistency */}
               {!isLocked && (
                 <div className="mt-2 flex items-center gap-1.5">
                   {verdict.variant === 'success' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
@@ -717,7 +779,7 @@ export function AILenderRecommendation({
                     {verdict.label}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    — {formatStudentFacingReason(evaluation.student_facing_reason) || evaluation.justification?.slice(0, 60) || ''}
+                    — {verdict.description}
                   </span>
                 </div>
               )}
@@ -770,14 +832,14 @@ export function AILenderRecommendation({
         {isExpanded && (
           <div className="px-3 pb-3 pt-0 border-t bg-muted/30 space-y-3">
             {/* Trade-offs for non-top picks */}
-            {evaluation.trade_offs && evaluation.trade_offs.length > 0 && (
+            {normalized.effectiveTradeOffs.length > 0 && (
               <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
                 <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1 mb-1">
                   <AlertTriangle className="h-3 w-3" />
                   Trade-offs vs Top Pick
                 </h4>
                 <ul className="text-xs text-amber-600 dark:text-amber-400 space-y-0.5">
-                  {evaluation.trade_offs.map((tradeoff, i) => (
+                  {normalized.effectiveTradeOffs.map((tradeoff, i) => (
                     <li key={i}>• {tradeoff}</li>
                   ))}
                 </ul>
@@ -787,7 +849,7 @@ export function AILenderRecommendation({
             {/* Score Insight */}
             <div className="mt-3">
               <ScoreInsight 
-                score={evaluation.fit_score}
+                score={effectiveScore}
                 lenderName={evaluation.lender_name}
                 topLenderName={topLender?.lender_name}
                 gapReason={considerations[0]?.description}
@@ -841,11 +903,11 @@ export function AILenderRecommendation({
             {/* Pro-Tip */}
             {proTip && <ProTipBanner tip={proTip} />}
 
-            {/* Full Justification */}
-            {evaluation.justification && (
+            {/* Full Justification/Reason */}
+            {effectiveReason && (
               <div className="p-2 bg-background rounded text-xs text-muted-foreground italic border">
                 <span className="font-medium not-italic">AI Analysis: </span>
-                "{evaluation.justification}"
+                "{effectiveReason}"
               </div>
             )}
           </div>
