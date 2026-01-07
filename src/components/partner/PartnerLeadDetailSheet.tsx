@@ -25,6 +25,7 @@ import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import type { LeadStatus } from "@/utils/statusUtils";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
+import { LenderRecommendationCard } from "./LenderRecommendationCard";
 
 interface PartnerLeadDetailSheetProps {
   lead: RefactoredLead | null;
@@ -242,6 +243,9 @@ export const PartnerLeadDetailSheet = ({
                 )}
               </CardContent>
             </Card>
+
+            {/* Lender Recommendation Card - Read Only */}
+            <LenderRecommendationCard leadId={lead.id} />
 
             {/* Trust Reassurance */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">

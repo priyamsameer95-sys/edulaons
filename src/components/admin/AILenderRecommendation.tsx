@@ -123,6 +123,7 @@ interface AIRecommendationData {
   urgency_zone: string | null;
   student_tier: string | null;
   strategy: string | null;
+  override_reason: string | null;
   pillar_scores: Record<string, PillarScores> | null;
   all_lender_scores: LenderScore[] | null;
 }
@@ -202,7 +203,8 @@ export function AILenderRecommendation({
   
   const { toast } = useToast();
   const { logLenderAssignment } = useAuditLog();
-  const { user, role } = useAuth();
+  const { user, appUser } = useAuth();
+  const userRole = appUser?.role;
 
   // Fetch existing recommendation
   useEffect(() => {
@@ -222,10 +224,11 @@ export function AILenderRecommendation({
           setRecommendation({
             ...data,
             all_lenders_output: (data.all_lenders_output as unknown as LenderEvaluation[]) || [],
-            inputs_snapshot: data.inputs_snapshot as InputsSnapshot | null,
-            recommendation_context: data.recommendation_context as RecommendationContext | null,
-            pillar_scores: data.pillar_scores as Record<string, PillarScores> | null,
-            all_lender_scores: data.all_lender_scores as LenderScore[] | null,
+            inputs_snapshot: data.inputs_snapshot as unknown as InputsSnapshot | null,
+            recommendation_context: data.recommendation_context as unknown as RecommendationContext | null,
+            pillar_scores: data.pillar_scores as unknown as Record<string, PillarScores> | null,
+            all_lender_scores: data.all_lender_scores as unknown as LenderScore[] | null,
+            override_reason: (data as any).override_reason || null,
           });
         }
       } catch (err) {
@@ -253,10 +256,11 @@ export function AILenderRecommendation({
       setHistoryVersions((data || []).map(d => ({
         ...d,
         all_lenders_output: (d.all_lenders_output as unknown as LenderEvaluation[]) || [],
-        inputs_snapshot: d.inputs_snapshot as InputsSnapshot | null,
-        recommendation_context: d.recommendation_context as RecommendationContext | null,
-        pillar_scores: d.pillar_scores as Record<string, PillarScores> | null,
-        all_lender_scores: d.all_lender_scores as LenderScore[] | null,
+        inputs_snapshot: d.inputs_snapshot as unknown as InputsSnapshot | null,
+        recommendation_context: d.recommendation_context as unknown as RecommendationContext | null,
+        pillar_scores: d.pillar_scores as unknown as Record<string, PillarScores> | null,
+        all_lender_scores: d.all_lender_scores as unknown as LenderScore[] | null,
+        override_reason: (d as any).override_reason || null,
       })));
     } catch (err) {
       console.error('Error fetching history:', err);
@@ -277,10 +281,11 @@ export function AILenderRecommendation({
         setRecommendation({
           ...data.recommendation,
           all_lenders_output: data.recommendation.all_lenders_output || [],
-          inputs_snapshot: data.recommendation.inputs_snapshot || null,
-          recommendation_context: data.recommendation.recommendation_context || null,
-          pillar_scores: data.recommendation.pillar_scores || null,
-          all_lender_scores: data.recommendation.all_lender_scores || null,
+          inputs_snapshot: data.recommendation.inputs_snapshot as unknown as InputsSnapshot | null,
+          recommendation_context: data.recommendation.recommendation_context as unknown as RecommendationContext | null,
+          pillar_scores: data.recommendation.pillar_scores as unknown as Record<string, PillarScores> | null,
+          all_lender_scores: data.recommendation.all_lender_scores as unknown as LenderScore[] | null,
+          override_reason: data.recommendation.override_reason || null,
         });
         setExpandedGroups(prev => ({ ...prev, best_fit: true }));
         toast({
@@ -332,7 +337,7 @@ export function AILenderRecommendation({
             assignment_mode: 'ai',
             reviewed_at: new Date().toISOString(),
             reviewed_by: user?.id,
-            reviewed_by_role: role,
+            reviewed_by_role: userRole,
             decision: 'accepted',
           })
           .eq('id', recommendation.id);
@@ -378,7 +383,7 @@ export function AILenderRecommendation({
         overridden_to_lender_id: overrideModal.lenderId,
         override_reason: overrideReason,
         overridden_by: user?.id,
-        overridden_by_role: role,
+        overridden_by_role: userRole,
         context_snapshot: {
           confidence_score: recommendation?.confidence_score,
           top_lender_score: topLender?.fit_score,
@@ -404,7 +409,7 @@ export function AILenderRecommendation({
             override_reason: overrideReason,
             reviewed_at: new Date().toISOString(),
             reviewed_by: user?.id,
-            reviewed_by_role: role,
+            reviewed_by_role: userRole,
             decision: 'overridden',
           })
           .eq('id', recommendation.id);
@@ -883,7 +888,7 @@ export function AILenderRecommendation({
               {recommendation.urgency_zone && (
                 <UrgencyZoneBadge 
                   zone={recommendation.urgency_zone as 'GREEN' | 'YELLOW' | 'RED'} 
-                  daysUntilIntake={context?.days_until_intake}
+                  daysUntil={context?.days_until_intake}
                   size="sm"
                 />
               )}
