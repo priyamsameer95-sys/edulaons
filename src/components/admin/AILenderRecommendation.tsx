@@ -26,7 +26,7 @@ import {
   Bot, Check, Clock, Sparkles, Building2, AlertCircle, 
   ChevronDown, ChevronRight, AlertTriangle, XCircle,
   Zap, CheckCircle2, RefreshCw, Star, Lock, TrendingUp,
-  GraduationCap, Wallet, History, Target, Brain
+  GraduationCap, Wallet, History, Target, Brain, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HumanizedFactorCard, ScoreInsight, ProTipBanner } from './lender-recommendation';
@@ -488,7 +488,7 @@ export function AILenderRecommendation({
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p className="text-xs text-emerald-600 dark:text-emerald-400">
             Lender assigned via {recommendation.assignment_mode === 'ai' ? 'AI recommendation' : 'AI override'}
             {recommendation.assignment_mode === 'ai_override' && recommendation.override_reason && (
@@ -497,6 +497,28 @@ export function AILenderRecommendation({
               </span>
             )}
           </p>
+          
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={generateRecommendation}
+              disabled={generating}
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-1", generating && "animate-spin")} />
+              Re-evaluate
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={onDefer}
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Change Manually
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
