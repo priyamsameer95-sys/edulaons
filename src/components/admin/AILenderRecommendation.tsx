@@ -1,9 +1,9 @@
 /**
- * AI Lender Recommendation Component - Smart Design
+ * AI Lender Recommendation Component - Humanized Design
  * 
  * Per Knowledge Base:
  * - AI suggests lender(s) + rationale + confidence score
- * - Shows BRE factors matched, risk flags, processing time
+ * - Shows humanized BRE factors (strengths, eligibility, considerations)
  * - Grouped sections: Best Fit, Also Consider, Possible but Risky
  * - Admin can accept / override / defer
  * - Never auto-reject or auto-finalize solely by AI
@@ -21,9 +21,11 @@ import { useAuditLog } from '@/hooks/useAuditLog';
 import { 
   Bot, Check, Clock, Sparkles, Building2, AlertCircle, 
   ChevronDown, ChevronRight, AlertTriangle, XCircle,
-  Zap, CheckCircle2, RefreshCw, Eye
+  Zap, CheckCircle2, RefreshCw, Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { HumanizedFactorCard, ScoreInsight, ProTipBanner } from './lender-recommendation';
+import { groupAndHumanizeFactors, generateProTip } from '@/constants/breHumanizer';
 
 interface StudentFacingReason {
   greeting: string;
@@ -91,13 +93,13 @@ function getVerdict(evaluation: LenderEvaluation): { label: string; variant: 'su
   const hasRisks = risk_flags && risk_flags.length > 0;
   
   if (fit_score >= 80 && !hasRisks) {
-    return { label: 'Doable', variant: 'success' };
+    return { label: 'Excellent Match', variant: 'success' };
   } else if (fit_score >= 70) {
-    return { label: 'Doable with conditions', variant: 'warning' };
+    return { label: 'Strong Option', variant: 'warning' };
   } else if (fit_score >= 50) {
-    return { label: 'Possible but risky', variant: 'caution' };
+    return { label: 'Worth Exploring', variant: 'caution' };
   } else {
-    return { label: 'Not suitable', variant: 'danger' };
+    return { label: 'Not Recommended', variant: 'danger' };
   }
 }
 
@@ -348,10 +350,21 @@ export function AILenderRecommendation({
   const inputs = recommendation.inputs_snapshot;
   const needsHumanReview = (recommendation.confidence_score || 0) < 70;
 
-  // Render a single lender card
+  // Render a single lender card with humanized output
   const renderLenderCard = (evaluation: LenderEvaluation, isTopPick: boolean = false) => {
     const verdict = getVerdict(evaluation);
     const isExpanded = expandedCards[evaluation.lender_id];
+    const { bigWins, eligibilityMet, considerations } = groupAndHumanizeFactors(
+      evaluation.bre_rules_matched || [],
+      evaluation.risk_flags || []
+    );
+    
+    // Generate pro-tip for this lender
+    const proTip = generateProTip({
+      loanAmount: inputs?.loan_amount,
+      factors: evaluation.bre_rules_matched || [],
+      processingTimeAdvantage: evaluation.bre_rules_matched?.includes('Fast processing time'),
+    });
     
     return (
       <div 
@@ -375,6 +388,7 @@ export function AILenderRecommendation({
                 </div>
                 {isTopPick && (
                   <Badge className="bg-emerald-500 text-white text-[10px] h-4">
+                    <Star className="h-2.5 w-2.5 mr-0.5" />
                     Top Pick
                   </Badge>
                 )}
@@ -410,7 +424,7 @@ export function AILenderRecommendation({
                 </Badge>
               </div>
 
-              {/* One-Line Verdict */}
+              {/* Humanized Verdict */}
               <div className="mt-2 flex items-center gap-1.5">
                 {verdict.variant === 'success' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
                 {verdict.variant === 'warning' && <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />}
@@ -429,6 +443,20 @@ export function AILenderRecommendation({
                   — {formatStudentFacingReason(evaluation.student_facing_reason) || evaluation.justification?.slice(0, 60) || ''}
                 </span>
               </div>
+
+              {/* Key Strengths Preview (Big Wins) */}
+              {bigWins.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {bigWins.slice(0, 2).map((factor, i) => (
+                    <HumanizedFactorCard key={i} factor={factor} compact />
+                  ))}
+                  {bigWins.length > 2 && (
+                    <span className="text-[10px] text-muted-foreground self-center">
+                      +{bigWins.length - 2} more
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Accept Button */}
@@ -448,44 +476,85 @@ export function AILenderRecommendation({
             </Button>
           </div>
 
-          {/* Toggle BRE Details */}
+          {/* Toggle Details */}
           <button 
             onClick={() => toggleCard(evaluation.lender_id)}
             className="mt-2 text-xs text-primary flex items-center gap-1 hover:underline"
           >
-            <Eye className="h-3 w-3" />
-            {isExpanded ? 'Hide' : 'Show'} BRE Factors
+            {isExpanded ? 'Hide' : 'Show'} Details
             {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           </button>
         </div>
 
-        {/* Expanded BRE Details */}
+        {/* Expanded Humanized Details */}
         {isExpanded && (
-          <div className="px-3 pb-3 pt-0 border-t bg-muted/30">
-            <div className="mt-2 space-y-1.5">
-              {/* Matched Rules */}
-              {evaluation.bre_rules_matched?.map((rule, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-xs">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5 shrink-0" />
-                  <span className="text-muted-foreground">{rule}</span>
-                </div>
-              ))}
-              
-              {/* Risk Flags */}
-              {evaluation.risk_flags?.map((flag, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-xs">
-                  <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />
-                  <span className="text-amber-700 dark:text-amber-400">{flag}</span>
-                </div>
-              ))}
-
-              {/* Full Justification */}
-              {evaluation.justification && (
-                <div className="mt-2 p-2 bg-background rounded text-xs text-muted-foreground italic">
-                  "{evaluation.justification}"
-                </div>
-              )}
+          <div className="px-3 pb-3 pt-0 border-t bg-muted/30 space-y-3">
+            {/* Score Insight */}
+            <div className="mt-3">
+              <ScoreInsight 
+                score={evaluation.fit_score}
+                lenderName={evaluation.lender_name}
+                topLenderName={topLender?.lender_name}
+                gapReason={considerations[0]?.description}
+              />
             </div>
+
+            {/* Key Strengths */}
+            {bigWins.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                  <Star className="h-3 w-3" />
+                  Key Strengths
+                </h4>
+                <div className="space-y-1.5">
+                  {bigWins.map((factor, i) => (
+                    <HumanizedFactorCard key={i} factor={factor} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Eligibility Met */}
+            {eligibilityMet.length > 0 && (
+              <div className="space-y-1.5">
+                <h4 className="text-xs text-muted-foreground font-medium">
+                  Eligibility Criteria Met
+                </h4>
+                <div className="flex flex-wrap gap-1">
+                  {eligibilityMet.map((factor, i) => (
+                    <HumanizedFactorCard key={i} factor={factor} compact />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Considerations */}
+            {considerations.length > 0 && (
+              <div className="space-y-1.5">
+                <h4 className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Considerations
+                </h4>
+                <div className="space-y-1">
+                  {considerations.map((factor, i) => (
+                    <HumanizedFactorCard key={i} factor={factor} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pro-Tip */}
+            {proTip && (
+              <ProTipBanner tip={proTip} />
+            )}
+
+            {/* Full Justification (collapsed by default) */}
+            {evaluation.justification && (
+              <div className="p-2 bg-background rounded text-xs text-muted-foreground italic border">
+                <span className="font-medium not-italic">AI Analysis: </span>
+                "{evaluation.justification}"
+              </div>
+            )}
           </div>
         )}
       </div>
