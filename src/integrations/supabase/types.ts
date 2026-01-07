@@ -134,6 +134,7 @@ export type Database = {
         Row: {
           accepted_lender_id: string | null
           ai_unavailable: boolean | null
+          all_lender_scores: Json | null
           all_lenders_output: Json | null
           assignment_mode: string | null
           confidence_score: number | null
@@ -145,17 +146,24 @@ export type Database = {
           lender_snapshots: Json | null
           model_version: string | null
           override_reason: string | null
+          pillar_scores: Json | null
           rationale: string | null
+          recommendation_context: Json | null
           recommended_lender_ids: string[]
           recommended_lenders_data: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
           reviewed_by_role: string | null
+          strategy: string | null
           student_facing_reason: string | null
+          student_tier: string | null
+          urgency_zone: string | null
+          version: number | null
         }
         Insert: {
           accepted_lender_id?: string | null
           ai_unavailable?: boolean | null
+          all_lender_scores?: Json | null
           all_lenders_output?: Json | null
           assignment_mode?: string | null
           confidence_score?: number | null
@@ -167,17 +175,24 @@ export type Database = {
           lender_snapshots?: Json | null
           model_version?: string | null
           override_reason?: string | null
+          pillar_scores?: Json | null
           rationale?: string | null
+          recommendation_context?: Json | null
           recommended_lender_ids: string[]
           recommended_lenders_data?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reviewed_by_role?: string | null
+          strategy?: string | null
           student_facing_reason?: string | null
+          student_tier?: string | null
+          urgency_zone?: string | null
+          version?: number | null
         }
         Update: {
           accepted_lender_id?: string | null
           ai_unavailable?: boolean | null
+          all_lender_scores?: Json | null
           all_lenders_output?: Json | null
           assignment_mode?: string | null
           confidence_score?: number | null
@@ -189,13 +204,19 @@ export type Database = {
           lender_snapshots?: Json | null
           model_version?: string | null
           override_reason?: string | null
+          pillar_scores?: Json | null
           rationale?: string | null
+          recommendation_context?: Json | null
           recommended_lender_ids?: string[]
           recommended_lenders_data?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reviewed_by_role?: string | null
+          strategy?: string | null
           student_facing_reason?: string | null
+          student_tier?: string | null
+          urgency_zone?: string | null
+          version?: number | null
         }
         Relationships: [
           {
@@ -210,6 +231,83 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_override_feedback: {
+        Row: {
+          context_snapshot: Json | null
+          created_at: string
+          feedback_processed: boolean | null
+          id: string
+          lead_id: string
+          original_lender_id: string | null
+          overridden_by: string | null
+          overridden_by_role: string | null
+          overridden_to_lender_id: string
+          override_category: string | null
+          override_reason: string
+          processed_at: string | null
+          recommendation_id: string | null
+        }
+        Insert: {
+          context_snapshot?: Json | null
+          created_at?: string
+          feedback_processed?: boolean | null
+          id?: string
+          lead_id: string
+          original_lender_id?: string | null
+          overridden_by?: string | null
+          overridden_by_role?: string | null
+          overridden_to_lender_id: string
+          override_category?: string | null
+          override_reason: string
+          processed_at?: string | null
+          recommendation_id?: string | null
+        }
+        Update: {
+          context_snapshot?: Json | null
+          created_at?: string
+          feedback_processed?: boolean | null
+          id?: string
+          lead_id?: string
+          original_lender_id?: string | null
+          overridden_by?: string | null
+          overridden_by_role?: string | null
+          overridden_to_lender_id?: string
+          override_category?: string | null
+          override_reason?: string
+          processed_at?: string | null
+          recommendation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_override_feedback_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_override_feedback_original_lender_id_fkey"
+            columns: ["original_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_override_feedback_overridden_to_lender_id_fkey"
+            columns: ["overridden_to_lender_id"]
+            isOneToOne: false
+            referencedRelation: "lenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_override_feedback_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_lender_recommendations"
             referencedColumns: ["id"]
           },
         ]
