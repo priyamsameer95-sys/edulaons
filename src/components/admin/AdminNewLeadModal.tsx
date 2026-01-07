@@ -21,6 +21,7 @@ import { VALIDATION_RULES, ERROR_MESSAGES } from '@/constants/validationRules';
 import { parseApiError, normalizeEmail, SUCCESS_COPY, getToastVariant } from '@/utils/apiErrors';
 import { ALL_STATES_AND_UTS } from '@/constants/indianStates';
 import { GENDER_OPTIONS, OCCUPATION_OPTIONS, EMPLOYMENT_TYPE_OPTIONS, QUALIFICATION_OPTIONS, TEST_TYPES } from '@/utils/leadCompletionSchema';
+import { useLenderRecommendationTrigger } from '@/hooks/useLenderRecommendationTrigger';
 interface AdminNewLeadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -146,6 +147,7 @@ export const AdminNewLeadModal = ({
   const {
     toast
   } = useToast();
+  const { triggerRecommendation } = useLenderRecommendationTrigger();
   const [loading, setLoading] = useState(false);
   const [coApplicantOpen, setCoApplicantOpen] = useState(true);
   const [studentDetailsOpen, setStudentDetailsOpen] = useState(false);
@@ -694,6 +696,17 @@ export const AdminNewLeadModal = ({
         title: 'Success',
         description: SUCCESS_COPY.LEAD_CREATED
       });
+      
+      // Trigger AI lender recommendation in background
+      if (data.lead?.id) {
+        triggerRecommendation({
+          leadId: data.lead.id,
+          studyDestination: formData.country,
+          loanAmount: parseInt(formData.amount_requested.replace(/,/g, '')),
+          silent: true,
+        });
+      }
+      
       resetForm();
       onSuccess();
       onOpenChange(false);

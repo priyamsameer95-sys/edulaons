@@ -33,6 +33,12 @@ interface StudentFacingReason {
   cta: string;
 }
 
+interface PillarBreakdown {
+  future: number;
+  financial: number;
+  past: number;
+}
+
 interface LenderData {
   lender_id: string;
   lender_name: string;
@@ -49,6 +55,13 @@ interface LenderData {
   moratorium_period?: string | null;
   processing_fee?: number | null;
   collateral_preference?: string[] | null;
+  // New fields from AI recommendation
+  pillar_breakdown?: PillarBreakdown | null;
+  badges?: string[] | null;
+  trade_off?: string | null;
+  status?: 'BEST_FIT' | 'GOOD_FIT' | 'BACKUP' | 'LOCKED' | null;
+  knockout_reason?: string | null;
+  unlock_hint?: string | null;
 }
 
 interface LenderFeaturedCardProps {
@@ -159,7 +172,23 @@ const LenderFeaturedCard = ({
               )}
             </div>
             
-            {!isTopMatch && (
+            {/* AI Badges */}
+            {lender.badges && lender.badges.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                {lender.badges.slice(0, 3).map((badge, idx) => (
+                  <div 
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {badge === 'Fast Approval' && <Zap className="h-3 w-3" />}
+                    {badge === 'Lowest Rate' && <TrendingUp className="h-3 w-3" />}
+                    {badge}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {!isTopMatch && !lender.badges?.length && (
               <div className="flex items-center gap-1.5 mt-1">
                 <div className={cn(
                   "flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold",

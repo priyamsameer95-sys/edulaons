@@ -1,8 +1,22 @@
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Lock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LenderFeaturedCard from './LenderFeaturedCard';
 import LenderRowCard from './LenderRowCard';
+import { UrgencyZoneBadge } from '@/components/shared/UrgencyZoneBadge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+interface StudentFacingReason {
+  greeting: string;
+  confidence: string;
+  cta: string;
+}
+
+interface PillarBreakdown {
+  future: number;
+  financial: number;
+  past: number;
+}
 
 interface LenderData {
   lender_id: string;
@@ -18,9 +32,16 @@ interface LenderData {
   compatibility_score: number;
   is_preferred?: boolean;
   eligible_loan_max?: number | null;
-  student_facing_reason?: string;
+  student_facing_reason?: StudentFacingReason | string | null;
   lender_description?: string | null;
   eligible_expenses?: any[] | null;
+  // New fields from AI recommendation
+  pillar_breakdown?: PillarBreakdown | null;
+  badges?: string[] | null;
+  trade_off?: string | null;
+  status?: 'BEST_FIT' | 'GOOD_FIT' | 'BACKUP' | 'LOCKED' | null;
+  knockout_reason?: string | null;
+  unlock_hint?: string | null;
 }
 
 interface LenderComparisonGridProps {
@@ -28,28 +49,38 @@ interface LenderComparisonGridProps {
   selectedLenderId: string | null;
   onSelect: (lenderId: string) => void;
   isUpdating: boolean;
+  urgencyZone?: 'GREEN' | 'YELLOW' | 'RED' | null;
 }
 
 const LenderComparisonGrid = ({
   lenders,
   selectedLenderId,
   onSelect,
-  isUpdating
+  isUpdating,
+  urgencyZone
 }: LenderComparisonGridProps) => {
   const [showAllOthers, setShowAllOthers] = useState(false);
+  const [showLockedLenders, setShowLockedLenders] = useState(false);
   
   if (lenders.length === 0) return null;
 
-  // Split lenders: top 3 featured, rest as "other qualified"
-  const featuredLenders = lenders.slice(0, 3);
-  const otherLenders = lenders.slice(3);
+  // Group lenders by status
+  const qualifiedLenders = lenders.filter(l => l.status !== 'LOCKED');
+  const lockedLenders = lenders.filter(l => l.status === 'LOCKED');
+
+  // Split qualified lenders: top 3 featured, rest as "other qualified"
+  const featuredLenders = qualifiedLenders.slice(0, 3);
+  const otherLenders = qualifiedLenders.slice(3);
   const visibleOtherLenders = showAllOthers ? otherLenders : otherLenders.slice(0, 3);
 
   return (
     <div className="space-y-8">
-      {/* Section Header */}
+      {/* Section Header with Urgency Zone Badge */}
       <div className="text-center space-y-2">
-        <h3 className="text-xl font-bold text-foreground">Top 3 Lender Recommendations</h3>
+        <div className="flex items-center justify-center gap-3">
+          <h3 className="text-xl font-bold text-foreground">Top Lender Recommendations</h3>
+          {urgencyZone && <UrgencyZoneBadge zone={urgencyZone} />}
+        </div>
         <p className="text-sm text-muted-foreground">
           Personalized based on your financial profile and AI-driven insights.
         </p>
@@ -108,6 +139,53 @@ const LenderComparisonGrid = ({
             </button>
           )}
         </div>
+      )}
+
+      {/* Locked Lenders Section (Collapsible) */}
+      {lockedLenders.length > 0 && (
+        <Collapsible open={showLockedLenders} onOpenChange={setShowLockedLenders}>
+          <div className="space-y-3">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-2 mx-auto text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+                <Lock className="h-4 w-4" />
+                {lockedLenders.length} lender{lockedLenders.length > 1 ? 's' : ''} not currently available
+                <ChevronDown className={cn(
+                  "h-4 w-4 transition-transform duration-200",
+                  showLockedLenders && "rotate-180"
+                )} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3">
+              <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                <p className="text-xs text-muted-foreground text-center mb-3">
+                  These lenders don't match your current profile. See what's needed to unlock them.
+                </p>
+                {lockedLenders.map((lender) => (
+                  <div 
+                    key={lender.lender_id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/40 mb-2 last:mb-0"
+                  >
+                    <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground/70 text-sm">{lender.lender_name}</p>
+                      {lender.unlock_hint && (
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                          {lender.unlock_hint}
+                        </p>
+                      )}
+                      {lender.knockout_reason && !lender.unlock_hint && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {lender.knockout_reason}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
       )}
     </div>
   );
