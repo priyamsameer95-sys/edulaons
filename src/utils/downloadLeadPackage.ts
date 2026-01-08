@@ -151,10 +151,10 @@ async function fetchCompleteLeadData(leadId: string, fallbackLead: LeadData): Pr
     .limit(10);
   const statusHistory: StatusHistoryRecord[] = historyData || [];
 
-  // Fetch universities
+  // Fetch universities - using explicit FK to avoid PGRST201 ambiguity
   const { data: univData } = await supabase
     .from('lead_universities')
-    .select('university_id, universities(name, city, country)')
+    .select('university_id, universities!fk_lead_universities_university(name, city, country)')
     .eq('lead_id', leadId);
 
   const universities: LeadUniversity[] = (univData || [])
