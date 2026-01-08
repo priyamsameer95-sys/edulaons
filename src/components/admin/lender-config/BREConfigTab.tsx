@@ -5,6 +5,7 @@
  * - Preferences, restrictions, scoring hints, blacklists
  * - Used by AI for matching and recommendations
  * - Last updated info
+ * - Premium universities list with CSV upload
  */
 
 import { useState, useEffect } from 'react';
@@ -13,11 +14,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { PremiumUniversitiesSection, type PremiumUniversity } from './PremiumUniversitiesSection';
 
 export interface SimplifiedBREData {
   bre_text: string;
   bre_updated_at?: string | null;
   bre_updated_by?: string | null;
+  premium_universities?: PremiumUniversity[];
 }
 
 interface BREConfigTabProps {
@@ -67,6 +70,10 @@ export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
     onChange({ ...data, bre_text: value });
   };
 
+  const handleUniversitiesChange = (universities: PremiumUniversity[]) => {
+    onChange({ ...data, premium_universities: universities });
+  };
+
   const formatLastUpdated = () => {
     if (!data.bre_updated_at) return null;
     
@@ -81,7 +88,7 @@ export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
   const lastUpdatedDisplay = formatLastUpdated();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Section Header */}
       <div className="flex items-center gap-2 pb-2 border-b">
         <FileText className="h-5 w-5 text-primary" />
@@ -120,6 +127,12 @@ export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
           </span>
         </div>
       )}
+
+      {/* Premium Universities Section */}
+      <PremiumUniversitiesSection
+        universities={data.premium_universities || []}
+        onChange={handleUniversitiesChange}
+      />
     </div>
   );
 }

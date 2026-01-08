@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { BREConfigTab, type SimplifiedBREData } from './lender-config/BREConfigTab';
 import { useAuth } from '@/hooks/useAuth';
+import type { PremiumUniversity } from './lender-config/PremiumUniversitiesSection';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Lender {
   id: string;
@@ -41,6 +43,7 @@ interface Lender {
   bre_text?: string | null;
   bre_updated_at?: string | null;
   bre_updated_by?: string | null;
+  university_restrictions?: Json | null;
 }
 
 interface EditLenderModalProps {
@@ -84,9 +87,11 @@ export function EditLenderModal({
     bre_text: '',
     bre_updated_at: null,
     bre_updated_by: null,
+    premium_universities: [],
   });
 
   const [originalBreText, setOriginalBreText] = useState<string>('');
+  const [originalPremiumUniversities, setOriginalPremiumUniversities] = useState<PremiumUniversity[]>([]);
 
   useEffect(() => {
     if (lender) {
@@ -110,13 +115,19 @@ export function EditLenderModal({
         logo_url: lender.logo_url || '',
       });
 
+      // Parse premium universities from university_restrictions
+      const restrictions = lender.university_restrictions as { premium?: PremiumUniversity[]; updated_at?: string } | null;
+      const premiumUniversities = restrictions?.premium || [];
+
       // Set BRE data from lender
       setBreData({
         bre_text: lender.bre_text || '',
         bre_updated_at: lender.bre_updated_at || null,
         bre_updated_by: lender.bre_updated_by || null,
+        premium_universities: premiumUniversities,
       });
       setOriginalBreText(lender.bre_text || '');
+      setOriginalPremiumUniversities(premiumUniversities);
     }
   }, [lender]);
 
@@ -136,8 +147,9 @@ export function EditLenderModal({
 
     setLoading(true);
     try {
-      // Check if BRE text was modified
+      // Check if BRE text or premium universities were modified
       const breTextChanged = breData.bre_text !== originalBreText;
+      const universitiesChanged = JSON.stringify(breData.premium_universities || []) !== JSON.stringify(originalPremiumUniversities);
 
       const updateData: Record<string, unknown> = {
         name: formData.name,
@@ -159,6 +171,11 @@ export function EditLenderModal({
         logo_url: formData.logo_url || null,
         // Always update bre_text
         bre_text: breData.bre_text || null,
+        // Save premium universities to university_restrictions JSONB
+        university_restrictions: {
+          premium: breData.premium_universities || [],
+          updated_at: universitiesChanged ? new Date().toISOString() : undefined,
+        },
       };
 
       // Only update bre_updated_at and bre_updated_by if BRE text was changed
