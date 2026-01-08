@@ -11,6 +11,8 @@ import { CreateLenderModal } from './CreateLenderModal';
 import { EditLenderModal } from './EditLenderModal';
 import { LenderDetailsSheet } from './LenderDetailsSheet';
 import { formatCurrency } from '@/utils/formatters';
+import type { Json } from '@/integrations/supabase/types';
+
 interface Lender {
   id: string;
   name: string;
@@ -36,6 +38,10 @@ interface Lender {
   eligible_expenses: any;
   display_order: number | null;
   preferred_rank: number | null;
+  bre_text?: string | null;
+  bre_updated_at?: string | null;
+  bre_updated_by?: string | null;
+  university_restrictions?: Json | null;
 }
 export function LenderManagementTab() {
   const [lenders, setLenders] = useState<Lender[]>([]);
