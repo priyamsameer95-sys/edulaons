@@ -117,11 +117,15 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
   const fetchAdditionalData = useCallback(async () => {
     if (!lead?.id) return;
     
+    console.log('[LeadDetailSheet] Fetching universities for lead:', lead.id);
+    
     // Fetch universities for this lead
-    const { data: univData } = await supabase
+    const { data: univData, error: univError } = await supabase
       .from('lead_universities')
       .select('university_id, universities(id, name, city, country)')
       .eq('lead_id', lead.id);
+
+    console.log('[LeadDetailSheet] Universities query result:', { univData, univError });
 
     if (univData) {
       const universities = univData
@@ -132,6 +136,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
           city: u.universities.city,
           country: u.universities.country
         }));
+      console.log('[LeadDetailSheet] Parsed universities:', universities);
       setLeadUniversities(universities);
 
       // Fetch preferred lenders based on university preferences
