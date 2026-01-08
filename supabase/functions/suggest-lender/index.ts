@@ -75,6 +75,13 @@ interface LenderResult {
     confidence: string;
     cta: string;
   };
+  university_boost?: {
+    type: 'premium' | 'ranked' | 'none';
+    amount: number;
+    details: string;
+    duplicate_detected: boolean;
+    ranked_tier: number | null;
+  };
 }
 
 interface SmartLenderOutput {
@@ -295,9 +302,45 @@ interface RankedUniversity {
   rank: number;
 }
 
+interface PremiumUniversity {
+  name: string;
+  country: string;
+}
+
+/**
+ * Premium University Boost - Flat +25 points for premium partnerships
+ * Uses fuzzy matching for flexibility (partial name matches)
+ */
+function calculatePremiumUniversityBoost(
+  universityName: string | null | undefined,
+  premiumUniversities: PremiumUniversity[]
+): { boost: number; matched: boolean; matchedName?: string } {
+  if (!universityName || !premiumUniversities || premiumUniversities.length === 0) {
+    return { boost: 0, matched: false };
+  }
+
+  const normalizedInput = universityName.toLowerCase().trim();
+  
+  // Fuzzy matching: check if input contains premium name or vice versa
+  const matchedPremium = premiumUniversities.find((u) => {
+    const premiumName = u.name.toLowerCase().trim();
+    return (
+      normalizedInput === premiumName ||
+      normalizedInput.includes(premiumName) ||
+      premiumName.includes(normalizedInput)
+    );
+  });
+
+  if (matchedPremium) {
+    return { boost: 25, matched: true, matchedName: matchedPremium.name };
+  }
+  
+  return { boost: 0, matched: false };
+}
+
 /**
  * Calculates the tier boost for a university based on its rank in the lender's ranked list.
- * Uses percentage-based tiers that scale with list size:
+ * Uses fuzzy matching and percentage-based tiers that scale with list size:
  * - Top 10%: +15 points
  * - 10-50%: +10 points
  * - 50-80%: +5 points
@@ -306,18 +349,26 @@ interface RankedUniversity {
 function calculateRankedUniversityBoost(
   universityName: string | null | undefined,
   rankedUniversities: RankedUniversity[]
-): { boost: number; tier: number | null; matched: boolean } {
+): { boost: number; tier: number | null; matched: boolean; matchedName?: string } {
   if (!universityName || !rankedUniversities || rankedUniversities.length === 0) {
     return { boost: 0, tier: null, matched: false };
   }
 
-  const normalizedName = universityName.toLowerCase().trim();
+  const normalizedInput = universityName.toLowerCase().trim();
   const totalCount = rankedUniversities.length;
 
-  // Find the university in the ranked list
-  const rankedEntry = rankedUniversities.find(
-    (u) => u.name.toLowerCase().trim() === normalizedName
+  // Exact match first
+  let rankedEntry = rankedUniversities.find(
+    (u) => u.name.toLowerCase().trim() === normalizedInput
   );
+  
+  // If no exact match, try fuzzy matching (partial name match)
+  if (!rankedEntry) {
+    rankedEntry = rankedUniversities.find((u) => {
+      const rankedName = u.name.toLowerCase().trim();
+      return normalizedInput.includes(rankedName) || rankedName.includes(normalizedInput);
+    });
+  }
 
   if (!rankedEntry) {
     return { boost: 0, tier: null, matched: false };
@@ -326,13 +377,87 @@ function calculateRankedUniversityBoost(
   const percentile = (rankedEntry.rank / totalCount) * 100;
 
   if (percentile <= 10) {
-    return { boost: 15, tier: 1, matched: true };
+    return { boost: 15, tier: 1, matched: true, matchedName: rankedEntry.name };
   } else if (percentile <= 50) {
-    return { boost: 10, tier: 2, matched: true };
+    return { boost: 10, tier: 2, matched: true, matchedName: rankedEntry.name };
   } else if (percentile <= 80) {
-    return { boost: 5, tier: 3, matched: true };
+    return { boost: 5, tier: 3, matched: true, matchedName: rankedEntry.name };
   }
-  return { boost: 2, tier: 4, matched: true };
+  return { boost: 2, tier: 4, matched: true, matchedName: rankedEntry.name };
+}
+
+interface UniversityBoostResult {
+  boost: number;
+  type: 'premium' | 'ranked' | 'none';
+  details: string;
+  duplicateDetected: boolean;
+  premiumMatched: boolean;
+  rankedMatched: boolean;
+  rankedTier: number | null;
+}
+
+/**
+ * Calculate combined university boost with duplicate prevention.
+ * If university appears in both premium and ranked lists, take the higher boost only.
+ */
+function calculateCombinedUniversityBoost(
+  universityName: string | null | undefined,
+  premiumUniversities: PremiumUniversity[],
+  rankedUniversities: RankedUniversity[]
+): UniversityBoostResult {
+  const premiumResult = calculatePremiumUniversityBoost(universityName, premiumUniversities);
+  const rankedResult = calculateRankedUniversityBoost(universityName, rankedUniversities);
+  
+  // Both matched - take higher boost (duplicate prevention)
+  if (premiumResult.matched && rankedResult.matched) {
+    const usePremium = premiumResult.boost >= rankedResult.boost;
+    return {
+      boost: Math.max(premiumResult.boost, rankedResult.boost),
+      type: usePremium ? 'premium' : 'ranked',
+      details: `Found in both lists (Premium: +${premiumResult.boost}, Ranked Tier ${rankedResult.tier}: +${rankedResult.boost}) — using ${usePremium ? 'Premium' : 'Ranked'} (+${Math.max(premiumResult.boost, rankedResult.boost)})`,
+      duplicateDetected: true,
+      premiumMatched: true,
+      rankedMatched: true,
+      rankedTier: rankedResult.tier,
+    };
+  }
+  
+  // Premium only
+  if (premiumResult.matched) {
+    return {
+      boost: premiumResult.boost,
+      type: 'premium',
+      details: `Premium Partner University (+${premiumResult.boost})`,
+      duplicateDetected: false,
+      premiumMatched: true,
+      rankedMatched: false,
+      rankedTier: null,
+    };
+  }
+  
+  // Ranked only
+  if (rankedResult.matched) {
+    return {
+      boost: rankedResult.boost,
+      type: 'ranked',
+      details: `Ranked Tier ${rankedResult.tier} (+${rankedResult.boost})`,
+      duplicateDetected: false,
+      premiumMatched: false,
+      rankedMatched: true,
+      rankedTier: rankedResult.tier,
+    };
+  }
+  
+  // No match
+  return {
+    boost: 0,
+    type: 'none',
+    details: '',
+    duplicateDetected: false,
+    premiumMatched: false,
+    rankedMatched: false,
+    rankedTier: null,
+  };
 }
 
 // ============================================================================
@@ -715,30 +840,35 @@ Deno.serve(async (req) => {
         strategy
       );
       
-      // Calculate ranked university boost
+      // Calculate combined university boost (premium + ranked with duplicate prevention)
       const universityRestrictions = lender.university_restrictions as {
-        premium?: { name: string; country: string }[];
+        premium?: PremiumUniversity[];
         ranked?: RankedUniversity[];
       } | null;
+      const premiumUniversities = universityRestrictions?.premium || [];
       const rankedUniversities = universityRestrictions?.ranked || [];
-      const rankedBoost = calculateRankedUniversityBoost(
+      
+      const universityBoost = calculateCombinedUniversityBoost(
         primaryUniversity?.name,
+        premiumUniversities,
         rankedUniversities
       );
       
-      // Apply ranked university boost to adjusted score
-      const scoreWithRankedBoost = Math.min(100, adjustedScore + rankedBoost.boost);
+      // Apply university boost to adjusted score
+      const scoreWithUniversityBoost = Math.min(100, adjustedScore + universityBoost.boost);
       
-      // Add badge if matched
+      // Add badge if matched (with boost type indicator)
       const finalBadges = [...badges];
-      if (rankedBoost.matched) {
-        finalBadges.push(`🎓 Ranked Tier ${rankedBoost.tier} (+${rankedBoost.boost}%)`);
+      if (universityBoost.type === 'premium') {
+        finalBadges.push(`⭐ Premium University (+${universityBoost.boost})`);
+      } else if (universityBoost.type === 'ranked') {
+        finalBadges.push(`🎓 Ranked Tier ${universityBoost.rankedTier} (+${universityBoost.boost})`);
       }
       
       // Apply knockout penalty (but don't zero out)
       const finalScore = knockout.isLocked 
-        ? Math.max(0, scoreWithRankedBoost - knockout.penaltyScore)
-        : scoreWithRankedBoost;
+        ? Math.max(0, scoreWithUniversityBoost - knockout.penaltyScore)
+        : scoreWithUniversityBoost;
       
       // Determine status
       let status: LenderStatus = 'BACKUP';
@@ -785,6 +915,7 @@ Deno.serve(async (req) => {
         badges: finalBadges,
         fitFactors,
         riskFlags,
+        universityBoost,
       };
     });
     
@@ -796,7 +927,7 @@ Deno.serve(async (req) => {
     // =========================================================================
     
     const results: LenderResult[] = scoredLenders.map((sl, index) => {
-      const { lender, knockout, pillars, rawScore, adjustment, finalScore, status, badges, fitFactors, riskFlags } = sl;
+      const { lender, knockout, pillars, rawScore, adjustment, finalScore, status, badges, fitFactors, riskFlags, universityBoost } = sl;
       
       // Determine group
       let group: LenderResult['group'] = 'not_suitable';
@@ -859,6 +990,13 @@ Deno.serve(async (req) => {
         probability_band: probabilityBand,
         group,
         student_facing_reason: studentReason,
+        university_boost: universityBoost.type !== 'none' ? {
+          type: universityBoost.type,
+          amount: universityBoost.boost,
+          details: universityBoost.details,
+          duplicate_detected: universityBoost.duplicateDetected,
+          ranked_tier: universityBoost.rankedTier,
+        } : undefined,
       };
     });
 
