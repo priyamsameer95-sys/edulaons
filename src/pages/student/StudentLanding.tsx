@@ -17,6 +17,13 @@ import { formatIndianNumber } from "@/utils/currencyFormatter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 
+// Lender logo imports
+import sbiLogo from "@/assets/lenders/sbi-logo.jpg";
+import pnbLogo from "@/assets/lenders/pnb-logo.jpg";
+import credilaLogo from "@/assets/lenders/credila-logo.jpg";
+import avanseLogo from "@/assets/lenders/avanse-logo.jpg";
+import boiLogo from "@/assets/lenders/boi-logo.jpg";
+
 // Country data - synced with universities master
 const COUNTRIES = [
   { code: "US", name: "US", value: "United States" },
@@ -33,7 +40,16 @@ const COUNTRIES = [
   { code: "Other", name: "Other", value: "Other" }
 ];
 
-// Lender color mapping by code
+// Lender logo mapping by code
+const LENDER_LOGOS: Record<string, string> = {
+  'SBI': sbiLogo,
+  'PNB': pnbLogo,
+  'CREDILA': credilaLogo,
+  'AVANSE': avanseLogo,
+  'BOI': boiLogo,
+};
+
+// Lender color mapping by code (fallback)
 const LENDER_COLORS: Record<string, string> = {
   'SBI': '#1a4f9c',
   'PNB': '#c41e3a',
@@ -48,6 +64,8 @@ const LENDER_COLORS: Record<string, string> = {
   'FEDERAL': '#002f6c',
   'CANARA': '#ffd700',
 };
+
+const getLenderLogo = (code: string): string | undefined => LENDER_LOGOS[code?.toUpperCase()];
 
 // Steps data
 const STEPS = [
@@ -465,23 +483,32 @@ const StudentLanding = () => {
                   </button>
                   
                   <div className="flex-1 flex gap-3 transition-all duration-500 ease-in-out">
-                    {visibleLenders.map((lender) => (
-                      <div key={lender.id} className="flex-1 bg-white rounded-xl p-4 border border-border/50 text-center shadow-sm">
-                        <div 
-                          className="h-10 flex items-center justify-center mb-2 rounded px-2"
-                          style={{ backgroundColor: getLenderColor(lender.code) }}
-                        >
-                          {lender.logo_url ? (
-                            <img src={lender.logo_url} alt={lender.name} className="h-8 object-contain" />
-                          ) : (
-                            <span className="text-white text-xs font-bold truncate">{lender.name}</span>
-                          )}
+                    {visibleLenders.map((lender) => {
+                      const logoSrc = getLenderLogo(lender.code);
+                      return (
+                        <div key={lender.id} className="flex-1 bg-white rounded-xl p-4 border border-border/50 text-center shadow-sm">
+                          <div className="h-12 flex items-center justify-center mb-2 rounded px-2 overflow-hidden bg-white">
+                            {logoSrc ? (
+                              <img 
+                                src={logoSrc} 
+                                alt={lender.name} 
+                                className="h-10 object-contain max-w-full" 
+                              />
+                            ) : (
+                              <div 
+                                className="h-10 w-full flex items-center justify-center rounded"
+                                style={{ backgroundColor: getLenderColor(lender.code) }}
+                              >
+                                <span className="text-white text-xs font-bold truncate">{lender.name}</span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            From <span className="font-semibold text-foreground">{lender.interest_rate_min || '8.5'}%</span>
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          From <span className="font-semibold text-foreground">{lender.interest_rate_min || '8.5'}%</span>
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   
                   <button 
