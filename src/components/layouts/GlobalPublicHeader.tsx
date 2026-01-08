@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, Users } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const GlobalPublicHeader = () => {
@@ -24,34 +24,26 @@ const GlobalPublicHeader = () => {
             <span className="text-xl font-bold tracking-tight">
               Edu<span className="text-primary">Loans</span>
             </span>
-            <span className="text-xs text-muted-foreground ml-1.5">by Cashkaro</span>
+            <span className="text-xs text-muted-foreground ml-1.5 hidden sm:inline">by Cashkaro</span>
           </Link>
 
           {/* Auth Navigation */}
-          <nav className="flex items-center gap-2 sm:gap-3">
-            <Button 
-              variant={isPartnerLogin ? "secondary" : "ghost"} 
-              size="sm"
-              asChild
-              className="text-muted-foreground hover:text-foreground"
+          <nav className="flex items-center gap-3 sm:gap-4">
+            <Link 
+              to="/login/partner" 
+              className={`text-sm font-medium transition-colors ${isPartnerLogin ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
-              <Link to="/login/partner" className="flex items-center gap-1.5">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Partner Login</span>
-                <span className="sm:hidden">Partner</span>
-              </Link>
-            </Button>
+              Partner Login
+            </Link>
             
             <Button 
-              variant={isStudentAuth ? "default" : "default"}
+              variant="default"
               size="sm"
               asChild
               className="shadow-sm"
             >
-              <Link to="/login/student" className="flex items-center gap-1.5">
-                <GraduationCap className="h-4 w-4" />
-                <span className="hidden sm:inline">Student Login</span>
-                <span className="sm:hidden">Login</span>
+              <Link to="/login/student">
+                Student Login
               </Link>
             </Button>
           </nav>
