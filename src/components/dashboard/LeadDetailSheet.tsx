@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,85 +113,87 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     lead?.loan_classification as LoanClassification | null
   );
 
-  // Log lead view and fetch preferred lenders and universities
+  // Fetch universities, courses and preferred lenders
+  const fetchAdditionalData = useCallback(async () => {
+    if (!lead?.id) return;
+    
+    // Fetch universities for this lead
+    const { data: univData } = await supabase
+      .from('lead_universities')
+      .select('university_id, universities(id, name, city, country)')
+      .eq('lead_id', lead.id);
+
+    if (univData) {
+      const universities = univData
+        .filter((u: any) => u.universities)
+        .map((u: any) => ({
+          id: u.universities.id,
+          name: u.universities.name,
+          city: u.universities.city,
+          country: u.universities.country
+        }));
+      setLeadUniversities(universities);
+
+      // Fetch preferred lenders based on university preferences
+      if (universities.length > 0) {
+        const { data: prefData } = await supabase
+          .from('university_lender_preferences')
+          .select('lender_id, is_preferred, lenders(id, name)')
+          .eq('university_id', universities[0].id)
+          .eq('study_destination', lead.study_destination)
+          .eq('is_preferred', true)
+          .limit(2);
+
+        if (prefData) {
+          const lenders = prefData
+            .filter((p: any) => p.lenders)
+            .map((p: any) => ({
+              id: p.lenders.id,
+              name: p.lenders.name
+            }));
+          setPreferredLenders(lenders);
+        }
+      }
+    }
+
+    // Fetch courses for this lead
+    const { data: courseData } = await supabase
+      .from('lead_courses')
+      .select(`
+        id,
+        course_id,
+        is_custom_course,
+        custom_course_name,
+        courses (
+          id,
+          program_name,
+          degree,
+          stream_name,
+          study_level,
+          tuition_fees
+        )
+      `)
+      .eq('lead_id', lead.id);
+
+    if (courseData) {
+      setLeadCourses(courseData.map((c: any) => ({
+        id: c.id,
+        course_id: c.course_id,
+        is_custom_course: c.is_custom_course,
+        custom_course_name: c.custom_course_name,
+        course: c.courses,
+      })));
+    }
+  }, [lead?.id, lead?.study_destination]);
+
+  // Log lead view and fetch additional data on mount
   useEffect(() => {
     if (!lead?.id) return;
     
     // Silent background logging
     logLeadView(lead.id);
-
-    const fetchAdditionalData = async () => {
-      // Fetch universities for this lead
-      const { data: univData } = await supabase
-        .from('lead_universities')
-        .select('university_id, universities(id, name, city, country)')
-        .eq('lead_id', lead.id);
-
-      if (univData) {
-        const universities = univData
-          .filter((u: any) => u.universities)
-          .map((u: any) => ({
-            id: u.universities.id,
-            name: u.universities.name,
-            city: u.universities.city,
-            country: u.universities.country
-          }));
-        setLeadUniversities(universities);
-
-        // Fetch preferred lenders based on university preferences
-        if (universities.length > 0) {
-          const { data: prefData } = await supabase
-            .from('university_lender_preferences')
-            .select('lender_id, is_preferred, lenders(id, name)')
-            .eq('university_id', universities[0].id)
-            .eq('study_destination', lead.study_destination)
-            .eq('is_preferred', true)
-            .limit(2);
-
-          if (prefData) {
-            const lenders = prefData
-              .filter((p: any) => p.lenders)
-              .map((p: any) => ({
-                id: p.lenders.id,
-                name: p.lenders.name
-              }));
-            setPreferredLenders(lenders);
-          }
-        }
-      }
-
-      // Fetch courses for this lead
-      const { data: courseData } = await supabase
-        .from('lead_courses')
-        .select(`
-          id,
-          course_id,
-          is_custom_course,
-          custom_course_name,
-          courses (
-            id,
-            program_name,
-            degree,
-            stream_name,
-            study_level,
-            tuition_fees
-          )
-        `)
-        .eq('lead_id', lead.id);
-
-      if (courseData) {
-        setLeadCourses(courseData.map((c: any) => ({
-          id: c.id,
-          course_id: c.course_id,
-          is_custom_course: c.is_custom_course,
-          custom_course_name: c.custom_course_name,
-          course: c.courses,
-        })));
-      }
-    };
-
     fetchAdditionalData();
-  }, [lead?.id, lead?.study_destination]);
+  }, [lead?.id, lead?.study_destination, fetchAdditionalData]);
 
   // Fetch all lenders for the loan configuration dropdown
   useEffect(() => {
@@ -413,6 +415,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
                     isAdmin={true}
                     onUpdate={() => {
                       refetchDocuments();
+                      fetchAdditionalData();
                       onLeadUpdated?.();
                     }}
                     onChangeLender={() => setLenderAssignmentModalOpen(true)}
