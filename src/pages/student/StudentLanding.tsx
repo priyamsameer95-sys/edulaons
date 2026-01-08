@@ -15,6 +15,7 @@ import { OTPInput } from "@/components/student/OTPInput";
 import { GraduationCap, ArrowRight, Check, Shield, Star, Zap, User, Loader2, Trophy, Rocket, Sparkles, ChevronLeft, Clock, FileCheck, Smartphone, RefreshCw, FileText, ChevronRight } from "lucide-react";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 
 // Country data - synced with universities master
 const COUNTRIES = [
@@ -32,15 +33,21 @@ const COUNTRIES = [
   { code: "Other", name: "Other", value: "Other" }
 ];
 
-// Lender data for carousel
-const LENDERS = [
-  { code: "SBI", name: "State Bank of India", shortName: "SBI", rate: "8.65%", color: "#1a4f9c" },
-  { code: "PNB", name: "Punjab National Bank", shortName: "PNB", rate: "7.50%", color: "#c41e3a" },
-  { code: "ICICI", name: "ICICI Bank", shortName: "ICICI", rate: "10.25%", color: "#f37021" },
-  { code: "HDFC", name: "HDFC Bank", shortName: "HDFC", rate: "10.50%", color: "#004c8f" },
-  { code: "AXIS", name: "Axis Bank", shortName: "Axis", rate: "9.75%", color: "#97144d" },
-  { code: "BOB", name: "Bank of Baroda", shortName: "BoB", rate: "8.85%", color: "#f26522" }
-];
+// Lender color mapping by code
+const LENDER_COLORS: Record<string, string> = {
+  'SBI': '#1a4f9c',
+  'PNB': '#c41e3a',
+  'ICICI': '#f37021',
+  'HDFC': '#004c8f',
+  'AXIS': '#97144d',
+  'BOB': '#f26522',
+  'CREDILA': '#00a0e3',
+  'AVANSE': '#00a651',
+  'IDFC': '#9c1d26',
+  'KOTAK': '#ed1c24',
+  'FEDERAL': '#002f6c',
+  'CANARA': '#ffd700',
+};
 
 // Steps data
 const STEPS = [
@@ -111,6 +118,37 @@ const StudentLanding = () => {
   const [result, setResult] = useState<EligibilityResult | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [lenderScrollPosition, setLenderScrollPosition] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+
+  // Fetch lenders from database
+  const { data: lenders = [] } = useQuery({
+    queryKey: ['public-lenders-landing'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lenders')
+        .select('id, name, code, logo_url, interest_rate_min, is_active, display_order')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Auto-rotate lenders carousel
+  useEffect(() => {
+    if (lenders.length <= 4 || isCarouselPaused) return;
+    
+    const interval = setInterval(() => {
+      setLenderScrollPosition(prev => {
+        const maxScroll = lenders.length - 4;
+        return prev >= maxScroll ? 0 : prev + 1;
+      });
+    }, 3000); // Rotate every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [lenders.length, isCarouselPaused]);
 
   // Inline OTP verification states
   const [authStep, setAuthStep] = useState<AuthStep>('results');
@@ -332,12 +370,13 @@ const StudentLanding = () => {
   const estimatedEMI = result ? calculateEMI(loanAmountLakhs * 100000, result.estimatedRateMin) : 0;
 
   const scrollLenders = (direction: 'left' | 'right') => {
-    const maxScroll = LENDERS.length - 4;
-    if (direction === 'left') setLenderScrollPosition(Math.max(0, lenderScrollPosition - 1));
-    else setLenderScrollPosition(Math.min(maxScroll, lenderScrollPosition + 1));
+    const maxScroll = Math.max(0, lenders.length - 4);
+    if (direction === 'left') setLenderScrollPosition(prev => prev === 0 ? maxScroll : prev - 1);
+    else setLenderScrollPosition(prev => prev >= maxScroll ? 0 : prev + 1);
   };
 
-  const visibleLenders = LENDERS.slice(lenderScrollPosition, lenderScrollPosition + 4);
+  const visibleLenders = lenders.slice(lenderScrollPosition, lenderScrollPosition + 4);
+  const getLenderColor = (code: string) => LENDER_COLORS[code?.toUpperCase()] || '#6366f1';
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
@@ -413,26 +452,33 @@ const StudentLanding = () => {
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                   Our Top Lenders
                 </p>
-                <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-2"
+                  onMouseEnter={() => setIsCarouselPaused(true)}
+                  onMouseLeave={() => setIsCarouselPaused(false)}
+                >
                   <button 
                     onClick={() => scrollLenders('left')} 
-                    disabled={lenderScrollPosition === 0}
                     className="w-8 h-8 rounded-full border border-border bg-white flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   
-                  <div className="flex-1 flex gap-3">
+                  <div className="flex-1 flex gap-3 transition-all duration-500 ease-in-out">
                     {visibleLenders.map((lender) => (
-                      <div key={lender.code} className="flex-1 bg-white rounded-xl p-4 border border-border/50 text-center shadow-sm">
+                      <div key={lender.id} className="flex-1 bg-white rounded-xl p-4 border border-border/50 text-center shadow-sm">
                         <div 
                           className="h-10 flex items-center justify-center mb-2 rounded px-2"
-                          style={{ backgroundColor: lender.color }}
+                          style={{ backgroundColor: getLenderColor(lender.code) }}
                         >
-                          <span className="text-white text-xs font-bold">{lender.name}</span>
+                          {lender.logo_url ? (
+                            <img src={lender.logo_url} alt={lender.name} className="h-8 object-contain" />
+                          ) : (
+                            <span className="text-white text-xs font-bold truncate">{lender.name}</span>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          From <span className="font-semibold text-foreground">{lender.rate}</span>
+                          From <span className="font-semibold text-foreground">{lender.interest_rate_min || '8.5'}%</span>
                         </p>
                       </div>
                     ))}
@@ -440,7 +486,6 @@ const StudentLanding = () => {
                   
                   <button 
                     onClick={() => scrollLenders('right')} 
-                    disabled={lenderScrollPosition >= LENDERS.length - 4}
                     className="w-8 h-8 rounded-full border border-border bg-white flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ChevronRight className="h-4 w-4" />
