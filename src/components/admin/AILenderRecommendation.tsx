@@ -790,6 +790,32 @@ export function AILenderRecommendation({
             </div>
           </div>
 
+          {/* View Details Toggle */}
+          <button 
+            onClick={() => setExpandedCard(expandedCard === lender.lender_id ? null : lender.lender_id)}
+            className="w-full text-sm text-primary hover:underline flex items-center justify-center gap-1 py-2"
+          >
+            {expandedCard === lender.lender_id ? 'Hide Details' : 'View Details'}
+            {expandedCard === lender.lender_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+
+          {/* Expanded Details */}
+          {expandedCard === lender.lender_id && (
+            <div className="pt-3 border-t space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                Costs Covered
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {['Tuition Fees', 'Living Expenses', 'Travel Costs', 'Books & Equipment', 'Health Insurance'].map((expense, i) => (
+                  <Badge key={i} variant="secondary" className="text-xs font-normal bg-emerald-50 text-emerald-700">
+                    {expense}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Select Button - pushed to bottom */}
           <div className="mt-auto pt-2">
             <Button 
