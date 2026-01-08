@@ -736,8 +736,8 @@ export function AILenderRecommendation({
     const insight = generateAIInsight(lender, false);
     
     return (
-      <div className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow">
-        <div className="p-4">
+      <div className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+        <div className="p-4 flex flex-col flex-1">
           {/* Lender Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -790,20 +790,22 @@ export function AILenderRecommendation({
             </div>
           </div>
 
-          {/* Select Button */}
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => acceptLender(lender.lender_id, false)}
-            disabled={accepting !== null}
-          >
-            {accepting === lender.lender_id ? (
-              <Bot className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Check className="h-4 w-4 mr-2" />
-            )}
-            Select Lender
-          </Button>
+          {/* Select Button - pushed to bottom */}
+          <div className="mt-auto pt-2">
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => acceptLender(lender.lender_id, false)}
+              disabled={accepting !== null}
+            >
+              {accepting === lender.lender_id ? (
+                <Bot className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Select Lender
+            </Button>
+          </div>
         </div>
       </div>
     );
