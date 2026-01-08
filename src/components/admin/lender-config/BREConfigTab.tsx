@@ -6,6 +6,7 @@
  * - Used by AI for matching and recommendations
  * - Last updated info
  * - Premium universities list with CSV upload
+ * - Ranked universities list with tiered scoring
  */
 
 import { useState, useEffect } from 'react';
@@ -15,12 +16,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { FileText, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { PremiumUniversitiesSection, type PremiumUniversity } from './PremiumUniversitiesSection';
+import { RankedUniversitiesSection, type RankedUniversity } from './RankedUniversitiesSection';
 
 export interface SimplifiedBREData {
   bre_text: string;
   bre_updated_at?: string | null;
   bre_updated_by?: string | null;
   premium_universities?: PremiumUniversity[];
+  ranked_universities?: RankedUniversity[];
 }
 
 interface BREConfigTabProps {
@@ -70,8 +73,12 @@ export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
     onChange({ ...data, bre_text: value });
   };
 
-  const handleUniversitiesChange = (universities: PremiumUniversity[]) => {
+  const handlePremiumUniversitiesChange = (universities: PremiumUniversity[]) => {
     onChange({ ...data, premium_universities: universities });
+  };
+
+  const handleRankedUniversitiesChange = (universities: RankedUniversity[]) => {
+    onChange({ ...data, ranked_universities: universities });
   };
 
   const formatLastUpdated = () => {
@@ -131,7 +138,13 @@ export function BREConfigTab({ data, onChange }: BREConfigTabProps) {
       {/* Premium Universities Section */}
       <PremiumUniversitiesSection
         universities={data.premium_universities || []}
-        onChange={handleUniversitiesChange}
+        onChange={handlePremiumUniversitiesChange}
+      />
+
+      {/* Ranked Universities Section */}
+      <RankedUniversitiesSection
+        universities={data.ranked_universities || []}
+        onChange={handleRankedUniversitiesChange}
       />
     </div>
   );

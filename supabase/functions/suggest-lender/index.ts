@@ -286,6 +286,56 @@ function applyStrategicAdjustments(
 }
 
 // ============================================================================
+// RANKED UNIVERSITY TIER BOOST CALCULATOR
+// ============================================================================
+
+interface RankedUniversity {
+  name: string;
+  country: string;
+  rank: number;
+}
+
+/**
+ * Calculates the tier boost for a university based on its rank in the lender's ranked list.
+ * Uses percentage-based tiers that scale with list size:
+ * - Top 10%: +15 points
+ * - 10-50%: +10 points
+ * - 50-80%: +5 points
+ * - Bottom 20%: +2 points
+ */
+function calculateRankedUniversityBoost(
+  universityName: string | null | undefined,
+  rankedUniversities: RankedUniversity[]
+): { boost: number; tier: number | null; matched: boolean } {
+  if (!universityName || !rankedUniversities || rankedUniversities.length === 0) {
+    return { boost: 0, tier: null, matched: false };
+  }
+
+  const normalizedName = universityName.toLowerCase().trim();
+  const totalCount = rankedUniversities.length;
+
+  // Find the university in the ranked list
+  const rankedEntry = rankedUniversities.find(
+    (u) => u.name.toLowerCase().trim() === normalizedName
+  );
+
+  if (!rankedEntry) {
+    return { boost: 0, tier: null, matched: false };
+  }
+
+  const percentile = (rankedEntry.rank / totalCount) * 100;
+
+  if (percentile <= 10) {
+    return { boost: 15, tier: 1, matched: true };
+  } else if (percentile <= 50) {
+    return { boost: 10, tier: 2, matched: true };
+  } else if (percentile <= 80) {
+    return { boost: 5, tier: 3, matched: true };
+  }
+  return { boost: 2, tier: 4, matched: true };
+}
+
+// ============================================================================
 // LAYER 4: SCORER - 3-Pillar Evaluation
 // ============================================================================
 
@@ -665,10 +715,30 @@ Deno.serve(async (req) => {
         strategy
       );
       
+      // Calculate ranked university boost
+      const universityRestrictions = lender.university_restrictions as {
+        premium?: { name: string; country: string }[];
+        ranked?: RankedUniversity[];
+      } | null;
+      const rankedUniversities = universityRestrictions?.ranked || [];
+      const rankedBoost = calculateRankedUniversityBoost(
+        primaryUniversity?.name,
+        rankedUniversities
+      );
+      
+      // Apply ranked university boost to adjusted score
+      const scoreWithRankedBoost = Math.min(100, adjustedScore + rankedBoost.boost);
+      
+      // Add badge if matched
+      const finalBadges = [...badges];
+      if (rankedBoost.matched) {
+        finalBadges.push(`🎓 Ranked Tier ${rankedBoost.tier} (+${rankedBoost.boost}%)`);
+      }
+      
       // Apply knockout penalty (but don't zero out)
       const finalScore = knockout.isLocked 
-        ? Math.max(0, adjustedScore - knockout.penaltyScore)
-        : adjustedScore;
+        ? Math.max(0, scoreWithRankedBoost - knockout.penaltyScore)
+        : scoreWithRankedBoost;
       
       // Determine status
       let status: LenderStatus = 'BACKUP';
@@ -712,7 +782,7 @@ Deno.serve(async (req) => {
         adjustment,
         finalScore,
         status,
-        badges,
+        badges: finalBadges,
         fitFactors,
         riskFlags,
       };
