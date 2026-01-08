@@ -892,88 +892,20 @@ export function AILenderRecommendation({
           </button>
         </div>
 
-        {/* Expanded Details */}
+        {/* Expanded Details - Simplified to show costs covered */}
         {isExpanded && (
-          <div className="px-3 pb-3 pt-0 border-t bg-muted/30 space-y-3">
-            {/* Trade-offs for non-top picks */}
-            {normalized.effectiveTradeOffs.length > 0 && (
-              <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
-                <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1 mb-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Trade-offs vs Top Pick
-                </h4>
-                <ul className="text-xs text-amber-600 dark:text-amber-400 space-y-0.5">
-                  {normalized.effectiveTradeOffs.map((tradeoff, i) => (
-                    <li key={i}>• {tradeoff}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Score Insight */}
-            <div className="mt-3">
-              <ScoreInsight 
-                score={effectiveScore}
-                lenderName={evaluation.lender_name}
-                topLenderName={topLender?.lender_name}
-                gapReason={considerations[0]?.description}
-              />
+          <div className="px-3 pb-3 pt-3 border-t bg-muted/30">
+            <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+              <Wallet className="h-3.5 w-3.5" />
+              Costs Covered
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {['Tuition Fees', 'Living Expenses', 'Travel Costs', 'Books & Equipment', 'Health Insurance', 'Exam Fees'].map((expense, i) => (
+                <Badge key={i} variant="secondary" className="text-xs font-normal">
+                  {expense}
+                </Badge>
+              ))}
             </div>
-
-            {/* Key Strengths */}
-            {bigWins.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                  <Star className="h-3 w-3" />
-                  Key Strengths
-                </h4>
-                <div className="space-y-1.5">
-                  {bigWins.map((factor, i) => (
-                    <HumanizedFactorCard key={i} factor={factor} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Eligibility Met */}
-            {eligibilityMet.length > 0 && (
-              <div className="space-y-1.5">
-                <h4 className="text-xs text-muted-foreground font-medium">
-                  Eligibility Criteria Met
-                </h4>
-                <div className="flex flex-wrap gap-1">
-                  {eligibilityMet.map((factor, i) => (
-                    <HumanizedFactorCard key={i} factor={factor} compact />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Considerations */}
-            {considerations.length > 0 && (
-              <div className="space-y-1.5">
-                <h4 className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Considerations
-                </h4>
-                <div className="space-y-1">
-                  {considerations.map((factor, i) => (
-                    <HumanizedFactorCard key={i} factor={factor} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Pro-Tip */}
-            {proTip && <ProTipBanner tip={proTip} />}
-
-            {/* Full Justification/Reason */}
-            {effectiveReason && (
-              <div className="p-2 bg-background rounded text-xs text-muted-foreground italic border">
-                <span className="font-medium not-italic">AI Analysis: </span>
-                "{effectiveReason}"
-              </div>
-            )}
           </div>
         )}
       </div>
