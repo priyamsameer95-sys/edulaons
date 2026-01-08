@@ -1,5 +1,5 @@
 /**
- * AI Lender Recommendation Component - 4-Layer Smart Engine
+ * AI Lender Recommendation Component - Redesigned Clean UI
  * 
  * Per Knowledge Base:
  * - AI suggests lender(s) + rationale + confidence score
@@ -14,10 +14,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
@@ -26,15 +24,10 @@ import {
   Bot, Check, Clock, Sparkles, Building2, AlertCircle, 
   ChevronDown, ChevronRight, AlertTriangle, XCircle,
   Zap, CheckCircle2, RefreshCw, Star, Lock, TrendingUp,
-  GraduationCap, Wallet, History, Target, Brain, Settings,
-  Percent, ArrowUpDown
+  GraduationCap, Wallet, History, Target, Brain, 
+  Percent, ArrowRight, Columns, ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { HumanizedFactorCard, ScoreInsight, ProTipBanner } from './lender-recommendation';
-import { groupAndHumanizeFactors, generateProTip } from '@/constants/breHumanizer';
-import { UrgencyZoneBadge } from '@/components/shared/UrgencyZoneBadge';
-import { TierBadge } from '@/components/shared/TierBadge';
 
 // 3-Pillar Score Interface
 interface PillarScores {
@@ -43,19 +36,6 @@ interface PillarScores {
   past_record: number;
   weighted_academic?: number;
   compensation_bonus?: number;
-}
-
-// Lender score from 4-layer engine
-interface LenderScore {
-  lender_id: string;
-  lender_name: string;
-  final_score: number;
-  pillar_scores: PillarScores;
-  strategic_adjustment: number;
-  knockout_penalty: number;
-  knockout_reasons: string[];
-  is_locked: boolean;
-  unlock_hint?: string;
 }
 
 interface StudentFacingReason {
@@ -75,36 +55,30 @@ interface UniversityBoost {
 interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
-  // New engine uses "score", old used "fit_score" - support both
   score?: number;
   fit_score?: number;
   probability_band?: 'high' | 'medium' | 'low';
   processing_time_estimate?: string;
-  // New engine uses "reason", old used "justification" - support both
   reason?: string;
   justification?: string;
   risk_flags?: string[];
-  // New engine uses "fit_factors", old used "bre_rules_matched" - support both
   fit_factors?: string[];
   bre_rules_matched?: string[];
   group?: 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable';
-  // New engine uses "status" for grouping
   status?: 'BEST_FIT' | 'GOOD_FIT' | 'WORTH_EXPLORING' | 'LOCKED';
   student_facing_reason?: StudentFacingReason | string | null;
   trade_offs?: string[];
-  trade_off?: string; // New engine uses singular
+  trade_off?: string;
   pillar_scores?: PillarScores;
   pillar_breakdown?: { future?: { score: number }; financial?: { score: number }; past?: { score: number } };
   strategic_adjustment?: number;
   knockout_penalty?: number;
   is_locked?: boolean;
   unlock_hint?: string;
-  // Display fields from new engine
   interest_rate_display?: string;
   loan_range_display?: string;
   badges?: string[];
   rank?: number;
-  // University boost scoring details
   university_boost?: UniversityBoost;
 }
 
@@ -115,7 +89,6 @@ function normalizeEvaluation(evaluation: LenderEvaluation) {
   const effectiveFactors = evaluation.fit_factors ?? evaluation.bre_rules_matched ?? [];
   const effectiveTradeOffs = evaluation.trade_offs ?? (evaluation.trade_off ? [evaluation.trade_off] : []);
   
-  // Normalize group from status if needed
   let effectiveGroup = evaluation.group;
   if (!effectiveGroup && evaluation.status) {
     const statusToGroup: Record<string, 'best_fit' | 'also_consider' | 'possible_but_risky' | 'not_suitable'> = {
@@ -127,7 +100,6 @@ function normalizeEvaluation(evaluation: LenderEvaluation) {
     effectiveGroup = statusToGroup[evaluation.status] ?? 'not_suitable';
   }
   
-  // Normalize pillar_scores from pillar_breakdown
   let effectivePillarScores = evaluation.pillar_scores;
   if (!effectivePillarScores && evaluation.pillar_breakdown) {
     effectivePillarScores = {
@@ -137,7 +109,6 @@ function normalizeEvaluation(evaluation: LenderEvaluation) {
     };
   }
   
-  // Determine probability band from score if not provided
   let effectiveProbabilityBand = evaluation.probability_band;
   if (!effectiveProbabilityBand) {
     if (effectiveScore >= 80) effectiveProbabilityBand = 'high';
@@ -193,7 +164,7 @@ interface AIRecommendationData {
   strategy: string | null;
   override_reason: string | null;
   pillar_scores: Record<string, PillarScores> | null;
-  all_lender_scores: LenderScore[] | null;
+  all_lender_scores: unknown[] | null;
 }
 
 interface AILenderRecommendationProps {
@@ -206,84 +177,44 @@ interface AILenderRecommendationProps {
   className?: string;
 }
 
-// Strategy display labels
-const strategyLabels: Record<string, { label: string; icon: typeof Target; color: string }> = {
-  'speed': { label: 'Prioritizing Speed', icon: Zap, color: 'text-orange-600' },
-  'cost': { label: 'Optimizing for Cost', icon: Wallet, color: 'text-emerald-600' },
-  'balanced': { label: 'Balanced Approach', icon: Target, color: 'text-blue-600' },
-};
-
-// Helper to compute verdict label - uses normalized score and evaluation context
-function getVerdict(
-  score: number, 
-  riskFlags: string[] = [],
-  evaluation?: {
-    university_boost?: { type: string; amount: number };
-    badges?: string[];
-    fit_factors?: string[];
-    probability_band?: string;
-    lender_name?: string;
-  }
-): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger'; description: string } {
-  const hasRisks = riskFlags && riskFlags.length > 0;
+// Generate personalized AI insight for a lender
+function generateAIInsight(
+  evaluation: LenderEvaluation,
+  isTopPick: boolean,
+  context?: { universityName?: string; testScore?: string }
+): string {
+  const factors = evaluation.fit_factors ?? evaluation.bre_rules_matched ?? [];
+  const score = evaluation.score ?? evaluation.fit_score ?? 0;
+  const boost = evaluation.university_boost;
   
-  // Build personalized description based on context
-  const buildDescription = (base: string): string => {
-    const highlights: string[] = [];
-    
-    // Check for premium university
-    if (evaluation?.university_boost?.type === 'premium') {
-      highlights.push('Your university is on their premium partner list');
-    } else if (evaluation?.university_boost?.type === 'ranked') {
-      highlights.push('Your university ranks well with this lender');
+  // Top pick gets more detailed insight
+  if (isTopPick) {
+    if (boost?.type === 'premium') {
+      return 'Your university is on their premium partner list — priority processing and better rates.';
     }
-    
-    // Check for collateral advantage
-    if (evaluation?.fit_factors?.some(f => f.toLowerCase().includes('collateral'))) {
-      highlights.push('collateral secured');
+    if (factors.some(f => f.toLowerCase().includes('collateral'))) {
+      return 'Strong fit with secured loan option. Your collateral profile unlocks better terms.';
     }
-    
-    // Check for income match
-    if (evaluation?.fit_factors?.some(f => f.toLowerCase().includes('income') || f.toLowerCase().includes('salary'))) {
-      highlights.push('income profile matches');
+    if (factors.some(f => f.toLowerCase().includes('income') || f.toLowerCase().includes('salary'))) {
+      return 'Income profile aligns well. High approval probability based on co-applicant strength.';
     }
-    
-    // Check for fast processing
-    if (evaluation?.fit_factors?.some(f => f.toLowerCase().includes('fast') || f.toLowerCase().includes('processing'))) {
-      highlights.push('fast processing available');
-    }
-    
-    if (highlights.length > 0) {
-      return `${base} — ${highlights.slice(0, 2).join(', ')}.`;
-    }
-    return base;
-  };
-  
-  if (score >= 80 && !hasRisks) {
-    return { 
-      label: 'Excellent Match', 
-      variant: 'success', 
-      description: buildDescription('Strong profile alignment')
-    };
-  } else if (score >= 70) {
-    return { 
-      label: 'Strong Option', 
-      variant: 'warning', 
-      description: buildDescription('Good fit with some considerations')
-    };
-  } else if (score >= 50) {
-    return { 
-      label: 'Worth Exploring', 
-      variant: 'caution', 
-      description: buildDescription('May require additional documentation')
-    };
-  } else {
-    return { 
-      label: 'Not Recommended', 
-      variant: 'danger', 
-      description: 'Profile doesn\'t meet key eligibility criteria for this lender.'
-    };
+    return 'Best overall match based on your profile, destination, and loan requirements.';
   }
+  
+  // Secondary lenders get shorter insights
+  if (boost?.type === 'ranked') {
+    return 'University ranks well with this lender. Worth exploring as backup.';
+  }
+  if (factors.some(f => f.toLowerCase().includes('fast') || f.toLowerCase().includes('processing'))) {
+    return 'Faster processing times if you need quick disbursement.';
+  }
+  if (factors.some(f => f.toLowerCase().includes('collateral'))) {
+    return 'Good alternative if you have a co-signer with 750+ CIBIL score.';
+  }
+  if (score >= 70) {
+    return 'Solid option with competitive rates. Review specific terms.';
+  }
+  return 'Consider if primary options don\'t work out. May need additional documentation.';
 }
 
 // Format currency
@@ -307,15 +238,8 @@ export function AILenderRecommendation({
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [accepting, setAccepting] = useState<string | null>(null);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    best_fit: true,
-    also_consider: false,
-    possible_but_risky: false,
-    not_suitable: false,
-  });
-  const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyVersions, setHistoryVersions] = useState<AIRecommendationData[]>([]);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [showAllLenders, setShowAllLenders] = useState(false);
   
   // Override modal state
   const [overrideModal, setOverrideModal] = useState<{ open: boolean; lenderId: string | null; lenderName: string }>({
@@ -352,8 +276,8 @@ export function AILenderRecommendation({
             inputs_snapshot: data.inputs_snapshot as unknown as InputsSnapshot | null,
             recommendation_context: data.recommendation_context as unknown as RecommendationContext | null,
             pillar_scores: data.pillar_scores as unknown as Record<string, PillarScores> | null,
-            all_lender_scores: data.all_lender_scores as unknown as LenderScore[] | null,
-            override_reason: (data as any).override_reason || null,
+            all_lender_scores: data.all_lender_scores as unknown[] | null,
+            override_reason: (data as Record<string, unknown>).override_reason as string | null,
           });
         }
       } catch (err) {
@@ -367,30 +291,6 @@ export function AILenderRecommendation({
       fetchRecommendation();
     }
   }, [leadId]);
-
-  // Fetch history versions
-  const fetchHistory = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('ai_lender_recommendations')
-        .select('*')
-        .eq('lead_id', leadId)
-        .order('version', { ascending: false });
-
-      if (error) throw error;
-      setHistoryVersions((data || []).map(d => ({
-        ...d,
-        all_lenders_output: (d.all_lenders_output as unknown as LenderEvaluation[]) || [],
-        inputs_snapshot: d.inputs_snapshot as unknown as InputsSnapshot | null,
-        recommendation_context: d.recommendation_context as unknown as RecommendationContext | null,
-        pillar_scores: d.pillar_scores as unknown as Record<string, PillarScores> | null,
-        all_lender_scores: d.all_lender_scores as unknown as LenderScore[] | null,
-        override_reason: (d as any).override_reason || null,
-      })));
-    } catch (err) {
-      console.error('Error fetching history:', err);
-    }
-  };
 
   // Generate new AI recommendation
   const generateRecommendation = async () => {
@@ -409,13 +309,12 @@ export function AILenderRecommendation({
           inputs_snapshot: data.recommendation.inputs_snapshot as unknown as InputsSnapshot | null,
           recommendation_context: data.recommendation.recommendation_context as unknown as RecommendationContext | null,
           pillar_scores: data.recommendation.pillar_scores as unknown as Record<string, PillarScores> | null,
-          all_lender_scores: data.recommendation.all_lender_scores as unknown as LenderScore[] | null,
+          all_lender_scores: data.recommendation.all_lender_scores as unknown[] | null,
           override_reason: data.recommendation.override_reason || null,
         });
-        setExpandedGroups(prev => ({ ...prev, best_fit: true }));
         toast({
           title: 'AI Analysis Complete',
-          description: `Evaluated ${data.recommendation.all_lenders_output?.length || 0} lenders with 4-layer engine`,
+          description: `Evaluated ${data.recommendation.all_lenders_output?.length || 0} lenders`,
         });
       }
     } catch (err) {
@@ -433,7 +332,6 @@ export function AILenderRecommendation({
   // Accept a specific lender recommendation (top pick)
   const acceptLender = async (lenderId: string, isTopPick: boolean) => {
     if (!isTopPick) {
-      // For non-top picks, show override modal
       const lender = recommendation?.all_lenders_output.find(l => l.lender_id === lenderId);
       setOverrideModal({
         open: true,
@@ -499,7 +397,6 @@ export function AILenderRecommendation({
 
     setOverrideSubmitting(true);
     try {
-      // Store override feedback - use normalized scores
       const topLender = recommendation?.all_lenders_output.find(l => 
         l.group === 'best_fit' || l.status === 'BEST_FIT'
       );
@@ -567,45 +464,29 @@ export function AILenderRecommendation({
     }
   };
 
-  const handleDefer = () => {
-    onDefer?.();
-    toast({
-      title: 'Decision Deferred',
-      description: 'You can revisit the AI recommendation later',
-    });
-  };
-
-  const toggleGroup = (group: string) => {
-    setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
-  };
-
-  const toggleCard = (lenderId: string) => {
-    setExpandedCards(prev => ({ ...prev, [lenderId]: !prev[lenderId] }));
-  };
-
-  // Group lenders - handle both old 'group' field and new 'status' field
-  const getGroupedLenders = () => {
+  // Get sorted lenders for display
+  const getSortedLenders = () => {
     const all = recommendation?.all_lenders_output || [];
     
-    // Helper to check group membership (supports both old and new format)
     const isInGroup = (e: LenderEvaluation, group: string, status: string) => 
       e.group === group || e.status === status;
     
-    return {
-      best_fit: all.filter(e => isInGroup(e, 'best_fit', 'BEST_FIT')),
-      also_consider: all.filter(e => isInGroup(e, 'also_consider', 'GOOD_FIT')),
-      possible_but_risky: all.filter(e => isInGroup(e, 'possible_but_risky', 'WORTH_EXPLORING')),
-      not_suitable: all.filter(e => isInGroup(e, 'not_suitable', 'LOCKED') || e.is_locked),
-    };
+    const bestFit = all.filter(e => isInGroup(e, 'best_fit', 'BEST_FIT'));
+    const alsoConsider = all.filter(e => isInGroup(e, 'also_consider', 'GOOD_FIT'));
+    const others = all.filter(e => 
+      !isInGroup(e, 'best_fit', 'BEST_FIT') && 
+      !isInGroup(e, 'also_consider', 'GOOD_FIT') &&
+      !e.is_locked
+    );
+    
+    return [...bestFit, ...alsoConsider, ...others].filter(e => !e.is_locked);
   };
 
   if (loading) {
     return (
       <Card className={cn("animate-pulse", className)}>
-        <CardHeader className="pb-3">
-          <div className="h-5 bg-muted rounded w-48" />
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
+          <div className="h-5 bg-muted rounded w-48 mb-4" />
           <div className="h-32 bg-muted rounded" />
         </CardContent>
       </Card>
@@ -616,16 +497,14 @@ export function AILenderRecommendation({
   if (recommendation?.assignment_mode) {
     return (
       <Card className={cn("border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20", className)}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <span className="font-semibold text-emerald-700 dark:text-emerald-400">
               AI Recommendation Applied
-            </CardTitle>
+            </span>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-emerald-600 dark:text-emerald-400">
+          <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-4">
             Lender assigned via {recommendation.assignment_mode === 'ai' ? 'AI recommendation' : 'AI override'}
             {recommendation.assignment_mode === 'ai_override' && recommendation.override_reason && (
               <span className="block mt-1 text-muted-foreground">
@@ -634,24 +513,21 @@ export function AILenderRecommendation({
             )}
           </p>
           
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex-1"
               onClick={generateRecommendation}
               disabled={generating}
             >
-              <RefreshCw className={cn("h-4 w-4 mr-1", generating && "animate-spin")} />
+              <RefreshCw className={cn("h-4 w-4 mr-2", generating && "animate-spin")} />
               Re-evaluate
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex-1"
               onClick={onDefer}
             >
-              <Settings className="h-4 w-4 mr-1" />
               Change Manually
             </Button>
           </div>
@@ -664,26 +540,20 @@ export function AILenderRecommendation({
   if (!recommendation) {
     return (
       <Card className={cn("border-dashed", className)}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm font-medium">AI Lender Analysis</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground mb-3">
-            4-Layer Smart Engine will evaluate all lenders using 3-Pillar scoring
+        <CardContent className="p-6 text-center">
+          <Bot className="h-10 w-10 text-primary mx-auto mb-3" />
+          <h3 className="font-semibold mb-2">AI Lender Analysis</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Get smart recommendations based on profile, university, and loan requirements
           </p>
           <Button 
             onClick={generateRecommendation} 
             disabled={generating}
-            variant="default"
-            className="w-full"
           >
             {generating ? (
               <>
                 <Bot className="mr-2 h-4 w-4 animate-spin" />
-                Running 4-Layer Analysis...
+                Analyzing...
               </>
             ) : (
               <>
@@ -697,490 +567,360 @@ export function AILenderRecommendation({
     );
   }
 
-  const grouped = getGroupedLenders();
-  const topLender = grouped.best_fit[0] || grouped.also_consider[0];
+  const sortedLenders = getSortedLenders();
+  const topLender = sortedLenders[0];
+  const alternatives = sortedLenders.slice(1, showAllLenders ? undefined : 3);
+  const hasMoreLenders = sortedLenders.length > 3;
   const inputs = recommendation.inputs_snapshot;
-  const context = recommendation.recommendation_context;
-  const needsHumanReview = (recommendation.confidence_score || 0) < 70;
-  const strategy = strategyLabels[recommendation.strategy || 'balanced'] || strategyLabels.balanced;
+  const confidenceScore = recommendation.confidence_score || 0;
 
-  // Render 3-Pillar visualization
-  const renderPillarScores = (pillarScores?: PillarScores) => {
-    if (!pillarScores) return null;
-    
-    const pillars = [
-      { key: 'future_earnings', label: 'Future Earnings', icon: GraduationCap, color: 'emerald' },
-      { key: 'financial_security', label: 'Financial Security', icon: Wallet, color: 'blue' },
-      { key: 'past_record', label: 'Past Record', icon: History, color: 'purple' },
-    ];
-
-    return (
-      <div className="grid grid-cols-3 gap-2 mt-2">
-        {pillars.map(pillar => {
-          const score = pillarScores[pillar.key as keyof PillarScores] as number || 0;
-          return (
-            <div key={pillar.key} className="text-center p-2 rounded-lg bg-muted/50">
-              <pillar.icon className={cn("h-3.5 w-3.5 mx-auto mb-1", `text-${pillar.color}-600`)} />
-              <div className="text-xs font-semibold">{Math.round(score)}</div>
-              <div className="text-[9px] text-muted-foreground">{pillar.label}</div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Render university boost indicator
-  const renderUniversityBoost = (boost?: UniversityBoost) => {
-    if (!boost || boost.type === 'none') return null;
-    
-    const isPremium = boost.type === 'premium';
+  // Top Pick Card Component
+  const TopPickCard = ({ lender }: { lender: LenderEvaluation }) => {
+    const normalized = normalizeEvaluation(lender);
+    const insight = generateAIInsight(lender, true);
+    const isExpanded = expandedCard === lender.lender_id;
     
     return (
-      <div className={cn(
-        "mt-2 p-2 rounded-lg border text-xs",
-        isPremium 
-          ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800" 
-          : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
-      )}>
-        <div className="flex items-center gap-1.5">
-          {isPremium ? (
-            <Star className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-          ) : (
-            <GraduationCap className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-          )}
-          <span className={cn(
-            "font-semibold",
-            isPremium ? "text-amber-700 dark:text-amber-400" : "text-blue-700 dark:text-blue-400"
-          )}>
-            {isPremium ? 'Premium University' : `Ranked Tier ${boost.ranked_tier}`}
-          </span>
-          <Badge 
-            variant="secondary" 
-            className={cn(
-              "text-[10px] h-4 ml-auto",
-              isPremium ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-            )}
-          >
-            +{boost.amount} pts
-          </Badge>
+      <div className="rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20 overflow-hidden">
+        {/* Top Banner */}
+        <div className="bg-emerald-500 dark:bg-emerald-600 text-white px-4 py-2 flex items-center gap-2">
+          <Star className="h-4 w-4 fill-current" />
+          <span className="text-sm font-semibold">AI RECOMMENDED • BEST FIT</span>
         </div>
-        {boost.duplicate_detected && (
-          <p className="text-[10px] text-muted-foreground mt-1">
-            {boost.details}
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  // Render a single lender card with 4-layer breakdown
-  const renderLenderCard = (evaluation: LenderEvaluation, isTopPick: boolean = false) => {
-    // Normalize evaluation data for backwards compatibility
-    const normalized = normalizeEvaluation(evaluation);
-    const { effectiveScore, effectiveReason, effectiveFactors, effectivePillarScores, effectiveProbabilityBand } = normalized;
-    
-    const verdict = getVerdict(effectiveScore, evaluation.risk_flags, {
-      university_boost: evaluation.university_boost,
-      badges: evaluation.badges,
-      fit_factors: effectiveFactors,
-      probability_band: effectiveProbabilityBand,
-      lender_name: evaluation.lender_name,
-    });
-    const isExpanded = expandedCards[evaluation.lender_id];
-    const { bigWins, eligibilityMet, considerations } = groupAndHumanizeFactors(
-      effectiveFactors,
-      evaluation.risk_flags || []
-    );
-    
-    const proTip = generateProTip({
-      loanAmount: inputs?.loan_amount,
-      factors: effectiveFactors,
-      processingTimeAdvantage: effectiveFactors.includes('Fast processing time'),
-    });
-
-    const isLocked = evaluation.is_locked;
-    
-    return (
-      <div 
-        key={evaluation.lender_id}
-        className={cn(
-          "rounded-lg border transition-all",
-          isLocked && "opacity-75 bg-muted/30",
-          isTopPick 
-            ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" 
-            : "bg-card"
-        )}
-      >
-        {/* Main Row */}
-        <div className="p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              {/* Lender Name + Top Pick Badge */}
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <div className="flex items-center gap-1.5">
-                  {isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
-                  <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className={cn("font-semibold text-sm", isLocked && "text-muted-foreground")}>{evaluation.lender_name}</span>
-                </div>
-                {isTopPick && !isLocked && (
-                  <Badge className="bg-emerald-500 text-white text-[10px] h-4">
-                    <Star className="h-2.5 w-2.5 mr-0.5" />
-                    Top Pick
-                  </Badge>
-                )}
-                {isLocked && (
-                  <Badge variant="outline" className="text-[10px] h-4 border-amber-500 text-amber-600">
-                    <Lock className="h-2.5 w-2.5 mr-0.5" />
-                    Locked
-                  </Badge>
-                )}
+        
+        <div className="p-4">
+          {/* Lender Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-white dark:bg-gray-800 border flex items-center justify-center shadow-sm">
+                <Building2 className="h-6 w-6 text-primary" />
               </div>
-
-              {/* Unlock Hint for Locked Lenders */}
-              {isLocked && evaluation.unlock_hint && (
-                <div className="mb-2 flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
-                  <AlertCircle className="h-3 w-3 shrink-0" />
-                  {evaluation.unlock_hint}
-                </div>
-              )}
-
-              {/* Key Metrics Grid */}
-              {!isLocked && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                  {/* Interest Rate */}
-                  <div className="bg-muted/50 rounded px-2 py-1.5">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Interest Rate</div>
-                    <div className="text-sm font-semibold flex items-center gap-1">
-                      <Percent className="h-3 w-3 text-primary" />
-                      {evaluation.interest_rate_display || '8-12%'}
-                    </div>
-                  </div>
-                  {/* Loan Range */}
-                  <div className="bg-muted/50 rounded px-2 py-1.5">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Loan Amount</div>
-                    <div className="text-sm font-semibold flex items-center gap-1">
-                      <Wallet className="h-3 w-3 text-primary" />
-                      {evaluation.loan_range_display || '₹5L - ₹1.5Cr'}
-                    </div>
-                  </div>
-                  {/* Moratorium Period */}
-                  <div className="bg-muted/50 rounded px-2 py-1.5">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Moratorium</div>
-                    <div className="text-sm font-semibold flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-primary" />
-                      Course + 6mo
-                    </div>
-                  </div>
-                  {/* Approval Chance */}
-                  <div className="bg-muted/50 rounded px-2 py-1.5">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Approval Chance</div>
-                    <div className={cn(
-                      "text-sm font-semibold flex items-center gap-1",
-                      effectiveProbabilityBand === 'high' && "text-emerald-600",
-                      effectiveProbabilityBand === 'medium' && "text-amber-600",
-                      effectiveProbabilityBand === 'low' && "text-orange-600"
-                    )}>
-                      <TrendingUp className="h-3 w-3" />
-                      {effectiveProbabilityBand === 'high' ? 'High' : effectiveProbabilityBand === 'medium' ? 'Medium' : 'Low'}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Verdict - Clean single line */}
-              {!isLocked && (
-                <div className={cn(
-                  "flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs",
-                  verdict.variant === 'success' && "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800",
-                  verdict.variant === 'warning' && "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800",
-                  verdict.variant === 'caution' && "bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800",
-                  verdict.variant === 'danger' && "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
-                )}>
-                  <Brain className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="font-medium">AI Suggestion:</span>
-                  <span className="text-muted-foreground">{verdict.description}</span>
-                </div>
-              )}
+              <div>
+                <h3 className="font-bold text-lg">{lender.lender_name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {lender.processing_time_estimate || 'Standard Processing'}
+                </p>
+              </div>
             </div>
-
-            {/* Accept Button */}
-            {!isLocked && (
-              <Button
-                size="sm"
-                variant={isTopPick ? "default" : "outline"}
-                onClick={() => acceptLender(evaluation.lender_id, isTopPick)}
-                disabled={accepting !== null}
-                className="shrink-0"
-              >
-                {accepting === evaluation.lender_id ? (
-                  <Bot className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Check className="h-3 w-3" />
-                )}
-                <span className="ml-1 text-xs">Accept</span>
-              </Button>
-            )}
+            <div className="text-right">
+              <div className="text-2xl font-bold text-emerald-600">{normalized.effectiveScore}%</div>
+              <div className="text-xs text-muted-foreground">Match Score</div>
+            </div>
           </div>
 
-          {/* Toggle Details */}
+          {/* Why this is your top pick */}
+          <div className="bg-white dark:bg-gray-800/50 rounded-lg p-3 mb-4 border border-emerald-200 dark:border-emerald-800">
+            <div className="flex items-start gap-2">
+              <Brain className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Why this is your top pick</p>
+                <p className="text-sm text-muted-foreground">{insight}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-3 border">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                <Percent className="h-3.5 w-3.5" />
+                <span className="text-xs">Interest Rate</span>
+              </div>
+              <div className="font-bold text-lg">{lender.interest_rate_display || '8-12%'}</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-3 border">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                <Wallet className="h-3.5 w-3.5" />
+                <span className="text-xs">Max Amount</span>
+              </div>
+              <div className="font-bold text-lg">{lender.loan_range_display || '₹1.5 Cr'}</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-3 border">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="text-xs">Tenure</span>
+              </div>
+              <div className="font-bold text-lg">Up to 15 yrs</div>
+            </div>
+            <div className="bg-white dark:bg-gray-800/50 rounded-lg p-3 border">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                <TrendingUp className="h-3.5 w-3.5" />
+                <span className="text-xs">Approval Chance</span>
+              </div>
+              <div className={cn(
+                "font-bold text-lg",
+                normalized.effectiveProbabilityBand === 'high' && "text-emerald-600",
+                normalized.effectiveProbabilityBand === 'medium' && "text-amber-600",
+                normalized.effectiveProbabilityBand === 'low' && "text-orange-600"
+              )}>
+                {normalized.effectiveProbabilityBand === 'high' ? 'High' : normalized.effectiveProbabilityBand === 'medium' ? 'Medium' : 'Low'}
+              </div>
+            </div>
+          </div>
+
+          {/* University Boost Badge */}
+          {lender.university_boost && lender.university_boost.type !== 'none' && (
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg mb-4 text-sm",
+              lender.university_boost.type === 'premium' 
+                ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+                : "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+            )}>
+              {lender.university_boost.type === 'premium' ? (
+                <Star className="h-4 w-4 text-amber-600 fill-amber-500" />
+              ) : (
+                <GraduationCap className="h-4 w-4 text-blue-600" />
+              )}
+              <span className={cn(
+                "font-medium",
+                lender.university_boost.type === 'premium' ? "text-amber-700" : "text-blue-700"
+              )}>
+                {lender.university_boost.type === 'premium' ? 'Premium University Partner' : `Ranked Tier ${lender.university_boost.ranked_tier}`}
+              </span>
+              <Badge variant="secondary" className="ml-auto text-xs">
+                +{lender.university_boost.amount} pts
+              </Badge>
+            </div>
+          )}
+
+          {/* CTA Buttons */}
+          <div className="flex gap-3">
+            <Button 
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => acceptLender(lender.lender_id, true)}
+              disabled={accepting !== null}
+            >
+              {accepting === lender.lender_id ? (
+                <Bot className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Start Application
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+
+          {/* View Details Link */}
           <button 
-            onClick={() => toggleCard(evaluation.lender_id)}
-            className="mt-2 text-xs text-primary flex items-center gap-1 hover:underline"
+            onClick={() => setExpandedCard(isExpanded ? null : lender.lender_id)}
+            className="w-full mt-3 text-sm text-primary hover:underline flex items-center justify-center gap-1"
           >
-            {isExpanded ? 'Hide' : 'Show'} Details
-            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            {isExpanded ? 'Hide Details' : 'View Full Details'}
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
-        </div>
 
-        {/* Expanded Details - Simplified to show costs covered */}
-        {isExpanded && (
-          <div className="px-3 pb-3 pt-3 border-t bg-muted/30">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-              <Wallet className="h-3.5 w-3.5" />
-              Costs Covered
-            </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {['Tuition Fees', 'Living Expenses', 'Travel Costs', 'Books & Equipment', 'Health Insurance', 'Exam Fees'].map((expense, i) => (
-                <Badge key={i} variant="secondary" className="text-xs font-normal">
-                  {expense}
-                </Badge>
-              ))}
+          {/* Expanded Details */}
+          {isExpanded && (
+            <div className="mt-4 pt-4 border-t space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                Costs Covered
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {['Tuition Fees', 'Living Expenses', 'Travel Costs', 'Books & Equipment', 'Health Insurance'].map((expense, i) => (
+                  <Badge key={i} variant="secondary" className="text-xs font-normal">
+                    {expense}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   };
 
-  // Render group section
-  const renderGroupSection = (
-    groupKey: string,
-    title: string,
-    icon: React.ReactNode,
-    lenders: LenderEvaluation[],
-    accentClass: string
-  ) => {
-    if (lenders.length === 0) return null;
+  // Alternative Lender Card Component
+  const LenderCard = ({ lender, index }: { lender: LenderEvaluation; index: number }) => {
+    const normalized = normalizeEvaluation(lender);
+    const insight = generateAIInsight(lender, false);
     
-    const isExpanded = expandedGroups[groupKey];
-    const isTopPickGroup = groupKey === 'best_fit';
-
     return (
-      <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(groupKey)}>
-        <CollapsibleTrigger className={cn(
-          "w-full flex items-center justify-between p-2 rounded-lg transition-colors",
-          accentClass
-        )}>
-          <div className="flex items-center gap-2">
-            {icon}
-            <span className="text-sm font-medium">{title}</span>
-            <Badge variant="secondary" className="text-[10px] h-4">
-              {lenders.length}
-            </Badge>
+      <div className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow">
+        <div className="p-4">
+          {/* Lender Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-muted border flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold">{lender.lender_name}</h3>
+                <Badge variant="outline" className="text-xs mt-1">
+                  Option {index + 2}
+                </Badge>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold">{normalized.effectiveScore}%</div>
+              <div className="text-xs text-muted-foreground">Match</div>
+            </div>
           </div>
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-2 mt-2">
-          {lenders.map((lender, idx) => 
-            renderLenderCard(lender, isTopPickGroup && idx === 0)
-          )}
-        </CollapsibleContent>
-      </Collapsible>
+
+          {/* AI Insight */}
+          <div className="bg-muted/50 rounded-lg p-2.5 mb-3 flex items-start gap-2">
+            <Brain className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+            <p className="text-xs text-muted-foreground">{insight}</p>
+          </div>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="bg-muted/50 rounded px-2.5 py-2">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Interest</div>
+              <div className="text-sm font-semibold">{lender.interest_rate_display || '8-12%'}</div>
+            </div>
+            <div className="bg-muted/50 rounded px-2.5 py-2">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Max Amount</div>
+              <div className="text-sm font-semibold">{lender.loan_range_display || '₹1.5 Cr'}</div>
+            </div>
+            <div className="bg-muted/50 rounded px-2.5 py-2">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Tenure</div>
+              <div className="text-sm font-semibold">Up to 15 yrs</div>
+            </div>
+            <div className="bg-muted/50 rounded px-2.5 py-2">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Approval</div>
+              <div className={cn(
+                "text-sm font-semibold",
+                normalized.effectiveProbabilityBand === 'high' && "text-emerald-600",
+                normalized.effectiveProbabilityBand === 'medium' && "text-amber-600",
+                normalized.effectiveProbabilityBand === 'low' && "text-orange-600"
+              )}>
+                {normalized.effectiveProbabilityBand === 'high' ? 'High' : normalized.effectiveProbabilityBand === 'medium' ? 'Medium' : 'Low'}
+              </div>
+            </div>
+          </div>
+
+          {/* Select Button */}
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => acceptLender(lender.lender_id, false)}
+            disabled={accepting !== null}
+          >
+            {accepting === lender.lender_id ? (
+              <Bot className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Check className="h-4 w-4 mr-2" />
+            )}
+            Select Lender
+          </Button>
+        </div>
+      </div>
     );
   };
 
   return (
     <>
-      <Card className={cn("", className)}>
-        {/* Context Banner - 4-Layer Summary */}
-        <div className="px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-info/5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Brain className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold text-primary">4-Layer Smart Engine</span>
-            <div className="flex flex-wrap gap-1.5 ml-auto">
-              {recommendation.student_tier && (
-                <TierBadge tier={recommendation.student_tier as 'S' | 'A' | 'B' | 'C'} size="sm" />
-              )}
-              {recommendation.urgency_zone && (
-                <UrgencyZoneBadge 
-                  zone={recommendation.urgency_zone as 'GREEN' | 'YELLOW' | 'RED'} 
-                  daysUntil={context?.days_until_intake}
-                  size="sm"
-                />
-              )}
-              <Badge variant="outline" className={cn("text-[10px] h-5", strategy.color)}>
-                <strategy.icon className="h-3 w-3 mr-1" />
-                {strategy.label}
+      <div className={cn("space-y-4", className)}>
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-primary text-primary-foreground text-xs">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI ANALYSIS COMPLETE
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                v{recommendation.model_version}
               </Badge>
             </div>
+            <h2 className="text-xl font-bold">
+              We found {sortedLenders.length} lender{sortedLenders.length !== 1 ? 's' : ''} matching your profile
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {inputs?.study_destination && `${inputs.study_destination} • `}
+              {inputs?.loan_amount && `${formatCurrency(inputs.loan_amount)} loan`}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-center px-4 py-2 bg-muted rounded-lg">
+              <div className={cn(
+                "text-2xl font-bold",
+                confidenceScore >= 80 ? "text-emerald-600" :
+                confidenceScore >= 60 ? "text-amber-600" : "text-orange-600"
+              )}>
+                {confidenceScore}%
+              </div>
+              <div className="text-xs text-muted-foreground">Confidence</div>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={generateRecommendation}
+              disabled={generating}
+            >
+              <RefreshCw className={cn("h-4 w-4", generating && "animate-spin")} />
+            </Button>
           </div>
         </div>
 
-        {/* Smart Summary Header */}
-        <CardHeader className="pb-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-primary" />
-              <CardTitle className="text-sm font-medium">AI Lender Analysis</CardTitle>
-              {recommendation.version && recommendation.version > 1 && (
-                <Badge variant="secondary" className="text-[10px]">v{recommendation.version}</Badge>
-              )}
-            </div>
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-xs",
-                (recommendation.confidence_score || 0) >= 80 
-                  ? "border-emerald-500 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50"
-                  : (recommendation.confidence_score || 0) >= 60 
-                    ? "border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/50"
-                    : "border-orange-500 text-orange-700 bg-orange-50 dark:bg-orange-950/50"
-              )}
-            >
-              {recommendation.confidence_score || 0}% Confidence
-            </Badge>
-          </div>
-
-          {/* Key Inputs Used */}
-          <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-            {inputs?.loan_amount && (
-              <Badge variant="secondary" className="text-[10px] h-5 font-normal">
-                {formatCurrency(inputs.loan_amount)} {inputs.loan_classification || 'Loan'}
-              </Badge>
-            )}
-            {inputs?.study_destination && (
-              <Badge variant="secondary" className="text-[10px] h-5 font-normal">
-                {inputs.study_destination}
-              </Badge>
-            )}
-            {inputs?.co_applicant_employment && (
-              <Badge variant="secondary" className="text-[10px] h-5 font-normal">
-                {inputs.co_applicant_employment} Co-applicant
-              </Badge>
-            )}
-            {inputs?.co_applicant_salary && (
-              <Badge variant="secondary" className="text-[10px] h-5 font-normal">
-                {formatCurrency(inputs.co_applicant_salary)}/mo
-              </Badge>
-            )}
-          </div>
-
-          {/* Human Review Flag */}
-          {needsHumanReview && (
-            <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
-              <AlertTriangle className="h-3 w-3" />
-              Needs Human Review — confidence below 70%
-            </div>
-          )}
-
-          {/* Model Info */}
-          <p className="text-[10px] text-muted-foreground">
-            Model: {recommendation.model_version} • {new Date(recommendation.created_at).toLocaleDateString()}
-            {recommendation.ai_unavailable && " • Rule-based fallback"}
-          </p>
-        </CardHeader>
-
-        <CardContent className="space-y-3">
-          {/* Grouped Sections */}
-          {renderGroupSection(
-            'best_fit',
-            'Best Fit',
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
-            grouped.best_fit,
-            'bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50'
-          )}
-
-          {renderGroupSection(
-            'also_consider',
-            'Also Consider',
-            <AlertCircle className="h-4 w-4 text-blue-600" />,
-            grouped.also_consider,
-            'bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50'
-          )}
-
-          {renderGroupSection(
-            'possible_but_risky',
-            'Possible but Risky',
-            <AlertTriangle className="h-4 w-4 text-amber-600" />,
-            grouped.possible_but_risky,
-            'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50'
-          )}
-
-          {renderGroupSection(
-            'not_suitable',
-            'Not Suitable',
-            <XCircle className="h-4 w-4 text-red-500" />,
-            grouped.not_suitable,
-            'bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50'
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleDefer}
-              className="flex-1"
-            >
-              <Clock className="mr-1 h-3 w-3" />
-              Defer
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={generateRecommendation}
-              disabled={generating}
-              className="flex-1"
-            >
-              <RefreshCw className={cn("mr-1 h-3 w-3", generating && "animate-spin")} />
-              Refresh
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => {
-                fetchHistory();
-                setShowHistory(!showHistory);
-              }}
-              className="flex-1"
-            >
-              <History className="mr-1 h-3 w-3" />
-              History
-            </Button>
-          </div>
-
-          {/* Version History */}
-          {showHistory && historyVersions.length > 1 && (
-            <div className="p-2 bg-muted/50 rounded-lg border space-y-2">
-              <h4 className="text-xs font-semibold flex items-center gap-1">
-                <History className="h-3 w-3" />
-                Previous Versions
-              </h4>
-              {historyVersions.slice(1).map((v) => (
-                <div key={v.id} className="text-xs p-2 bg-background rounded border flex justify-between items-center">
-                  <span>v{v.version} — {new Date(v.created_at).toLocaleDateString()}</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {v.confidence_score}% conf
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Human-in-the-loop notice */}
-          <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg border">
-            <AlertCircle className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-[10px] text-muted-foreground">
-              AI suggestions require human approval. Final lender assignment is always your decision.
+        {/* Low Confidence Warning */}
+        {confidenceScore < 70 && (
+          <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              <span className="font-medium">Needs Human Review</span> — AI confidence is below 70%. Please verify recommendations carefully.
             </p>
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Lender Cards Grid */}
+        {topLender && (
+          <div className="space-y-4">
+            {/* Top Pick */}
+            <TopPickCard lender={topLender} />
+
+            {/* Alternative Options */}
+            {alternatives.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  OTHER OPTIONS TO CONSIDER
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {alternatives.map((lender, index) => (
+                    <LenderCard key={lender.lender_id} lender={lender} index={index} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Show More Button */}
+            {hasMoreLenders && !showAllLenders && (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowAllLenders(true)}
+              >
+                Show {sortedLenders.length - 3} more lender{sortedLenders.length - 3 !== 1 ? 's' : ''}
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Compare Bar */}
+        {sortedLenders.length > 1 && (
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-2 text-sm">
+              <Columns className="h-4 w-4 text-muted-foreground" />
+              <span>Compare {sortedLenders.length} offers side-by-side</span>
+            </div>
+            <Button variant="outline" size="sm">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Compare Now
+            </Button>
+          </div>
+        )}
+
+        {/* Human-in-the-loop notice */}
+        <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border">
+          <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            AI suggestions require human approval. Final lender assignment is always your decision.
+          </p>
+        </div>
+      </div>
 
       {/* Override Reason Modal */}
       <Dialog open={overrideModal.open} onOpenChange={(open) => !open && setOverrideModal({ open: false, lenderId: null, lenderName: '' })}>
@@ -1205,7 +945,7 @@ export function AILenderRecommendation({
                 rows={3}
               />
             </div>
-            <div className="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
               <TrendingUp className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
               <p className="text-xs text-blue-700 dark:text-blue-400">
                 AI will learn from this choice to improve future recommendations for similar cases.
