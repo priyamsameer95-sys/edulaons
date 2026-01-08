@@ -750,14 +750,14 @@ export function AILenderRecommendation({
       >
         {/* Main Row */}
         <div className="p-3">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              {/* Lender Name + Badges */}
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* Lender Name + Top Pick Badge */}
+              <div className="flex items-center gap-2 flex-wrap mb-2">
                 <div className="flex items-center gap-1.5">
                   {isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                   <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className={cn("font-medium text-sm", isLocked && "text-muted-foreground")}>{evaluation.lender_name}</span>
+                  <span className={cn("font-semibold text-sm", isLocked && "text-muted-foreground")}>{evaluation.lender_name}</span>
                 </div>
                 {isTopPick && !isLocked && (
                   <Badge className="bg-emerald-500 text-white text-[10px] h-4">
@@ -771,94 +771,71 @@ export function AILenderRecommendation({
                     Locked
                   </Badge>
                 )}
-                {evaluation.processing_time_estimate && !isLocked && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                    <Zap className="h-3 w-3" />
-                    {evaluation.processing_time_estimate}
-                  </span>
-                )}
               </div>
 
               {/* Unlock Hint for Locked Lenders */}
               {isLocked && evaluation.unlock_hint && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
                   <AlertCircle className="h-3 w-3 shrink-0" />
                   {evaluation.unlock_hint}
                 </div>
               )}
 
-              {/* Fit Score Progress - now with labeled score */}
+              {/* Key Metrics Grid */}
               {!isLocked && (
-                <div className="mt-2 flex items-center gap-2">
-                  <Progress 
-                    value={effectiveScore} 
-                    className={cn(
-                      "h-2 flex-1",
-                      effectiveScore >= 80 ? "[&>div]:bg-emerald-500" :
-                      effectiveScore >= 60 ? "[&>div]:bg-amber-500" :
-                      "[&>div]:bg-orange-500"
-                    )}
-                  />
-                  <span className={cn(
-                    "text-xs font-semibold shrink-0 tabular-nums",
-                    effectiveProbabilityBand === 'high' && "text-emerald-700",
-                    effectiveProbabilityBand === 'medium' && "text-amber-700",
-                    effectiveProbabilityBand === 'low' && "text-orange-700"
-                  )}>
-                    Score: {effectiveScore}%
-                  </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  {/* Interest Rate */}
+                  <div className="bg-muted/50 rounded px-2 py-1.5">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Interest Rate</div>
+                    <div className="text-sm font-semibold flex items-center gap-1">
+                      <Percent className="h-3 w-3 text-primary" />
+                      {evaluation.interest_rate_display || '8-12%'}
+                    </div>
+                  </div>
+                  {/* Loan Range */}
+                  <div className="bg-muted/50 rounded px-2 py-1.5">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Loan Amount</div>
+                    <div className="text-sm font-semibold flex items-center gap-1">
+                      <Wallet className="h-3 w-3 text-primary" />
+                      {evaluation.loan_range_display || '₹5L - ₹1.5Cr'}
+                    </div>
+                  </div>
+                  {/* Moratorium Period */}
+                  <div className="bg-muted/50 rounded px-2 py-1.5">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Moratorium</div>
+                    <div className="text-sm font-semibold flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-primary" />
+                      Course + 6mo
+                    </div>
+                  </div>
+                  {/* Approval Chance */}
+                  <div className="bg-muted/50 rounded px-2 py-1.5">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Approval Chance</div>
+                    <div className={cn(
+                      "text-sm font-semibold flex items-center gap-1",
+                      effectiveProbabilityBand === 'high' && "text-emerald-600",
+                      effectiveProbabilityBand === 'medium' && "text-amber-600",
+                      effectiveProbabilityBand === 'low' && "text-orange-600"
+                    )}>
+                      <TrendingUp className="h-3 w-3" />
+                      {effectiveProbabilityBand === 'high' ? 'High' : effectiveProbabilityBand === 'medium' ? 'Medium' : 'Low'}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* 3-Pillar Mini Visualization */}
-              {!isLocked && effectivePillarScores && renderPillarScores(effectivePillarScores)}
-
-              {/* University Boost Indicator */}
-              {!isLocked && evaluation.university_boost && renderUniversityBoost(evaluation.university_boost)}
-
-              {/* Strategic Adjustment Indicator */}
-              {!isLocked && evaluation.strategic_adjustment !== undefined && evaluation.strategic_adjustment !== 0 && (
-                <div className="mt-2 flex items-center gap-1.5 text-xs">
-                  <Target className={cn("h-3 w-3", evaluation.strategic_adjustment > 0 ? "text-emerald-600" : "text-amber-600")} />
-                  <span className={evaluation.strategic_adjustment > 0 ? "text-emerald-700" : "text-amber-700"}>
-                    {evaluation.strategic_adjustment > 0 ? '+' : ''}{evaluation.strategic_adjustment} strategy adjustment
-                  </span>
-                </div>
-              )}
-
-              {/* Humanized Verdict - uses verdict.description for consistency */}
+              {/* AI Verdict - Clean single line */}
               {!isLocked && (
-                <div className="mt-2 flex items-center gap-1.5">
-                  {verdict.variant === 'success' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                  {verdict.variant === 'warning' && <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />}
-                  {verdict.variant === 'caution' && <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />}
-                  {verdict.variant === 'danger' && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
-                  <span className={cn(
-                    "text-xs font-medium",
-                    verdict.variant === 'success' && "text-emerald-700 dark:text-emerald-400",
-                    verdict.variant === 'warning' && "text-amber-700 dark:text-amber-400",
-                    verdict.variant === 'caution' && "text-orange-700 dark:text-orange-400",
-                    verdict.variant === 'danger' && "text-red-700 dark:text-red-400"
-                  )}>
-                    {verdict.label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    — {verdict.description}
-                  </span>
-                </div>
-              )}
-
-              {/* Key Strengths Preview */}
-              {!isLocked && bigWins.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {bigWins.slice(0, 2).map((factor, i) => (
-                    <HumanizedFactorCard key={i} factor={factor} compact />
-                  ))}
-                  {bigWins.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground self-center">
-                      +{bigWins.length - 2} more
-                    </span>
-                  )}
+                <div className={cn(
+                  "flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs",
+                  verdict.variant === 'success' && "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800",
+                  verdict.variant === 'warning' && "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800",
+                  verdict.variant === 'caution' && "bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800",
+                  verdict.variant === 'danger' && "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
+                )}>
+                  <Brain className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-medium">AI Suggestion:</span>
+                  <span className="text-muted-foreground">{verdict.description}</span>
                 </div>
               )}
             </div>
