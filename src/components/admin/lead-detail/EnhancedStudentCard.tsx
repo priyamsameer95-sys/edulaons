@@ -207,6 +207,13 @@ export function EnhancedStudentCard({
     );
   };
 
+  const genderLabels: Record<string, string> = {
+    'male': 'Male',
+    'female': 'Female',
+    'other': 'Other',
+    'prefer_not_to_say': 'Prefer Not to Say'
+  };
+
   const renderField = (label: string, value: string | number | null | undefined, field?: keyof Student, type: 'text' | 'number' | 'date' | 'select' = 'text', options?: string[]) => {
     if (isEditing && field && isAdmin) {
       if (type === 'select' && options) {
@@ -222,7 +229,7 @@ export function EnhancedStudentCard({
               </SelectTrigger>
               <SelectContent>
                 {options.map(opt => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  <SelectItem key={opt} value={opt}>{genderLabels[opt] || opt}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -288,7 +295,7 @@ export function EnhancedStudentCard({
           {renderField('Phone', student.phone, 'phone')}
           {renderEmailField()}
           {renderField('Date of Birth', student.date_of_birth ? format(new Date(student.date_of_birth), 'dd MMM yyyy') : null, 'date_of_birth', 'date')}
-          {renderField('Gender', student.gender, 'gender', 'select', ['Male', 'Female', 'Other'])}
+          {renderField('Gender', genderLabels[student.gender || ''] || student.gender, 'gender', 'select', ['male', 'female', 'other', 'prefer_not_to_say'])}
           {renderField('Nationality', student.nationality, 'nationality')}
         </div>
 
