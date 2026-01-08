@@ -213,18 +213,76 @@ const strategyLabels: Record<string, { label: string; icon: typeof Target; color
   'balanced': { label: 'Balanced Approach', icon: Target, color: 'text-blue-600' },
 };
 
-// Helper to compute verdict label - uses normalized score
-function getVerdict(score: number, riskFlags: string[] = []): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger'; description: string } {
+// Helper to compute verdict label - uses normalized score and evaluation context
+function getVerdict(
+  score: number, 
+  riskFlags: string[] = [],
+  evaluation?: {
+    university_boost?: { type: string; amount: number };
+    badges?: string[];
+    fit_factors?: string[];
+    probability_band?: string;
+    lender_name?: string;
+  }
+): { label: string; variant: 'success' | 'warning' | 'caution' | 'danger'; description: string } {
   const hasRisks = riskFlags && riskFlags.length > 0;
   
+  // Build personalized description based on context
+  const buildDescription = (base: string): string => {
+    const highlights: string[] = [];
+    
+    // Check for premium university
+    if (evaluation?.university_boost?.type === 'premium') {
+      highlights.push('Your university is on their premium partner list');
+    } else if (evaluation?.university_boost?.type === 'ranked') {
+      highlights.push('Your university ranks well with this lender');
+    }
+    
+    // Check for collateral advantage
+    if (evaluation?.fit_factors?.some(f => f.toLowerCase().includes('collateral'))) {
+      highlights.push('collateral secured');
+    }
+    
+    // Check for income match
+    if (evaluation?.fit_factors?.some(f => f.toLowerCase().includes('income') || f.toLowerCase().includes('salary'))) {
+      highlights.push('income profile matches');
+    }
+    
+    // Check for fast processing
+    if (evaluation?.fit_factors?.some(f => f.toLowerCase().includes('fast') || f.toLowerCase().includes('processing'))) {
+      highlights.push('fast processing available');
+    }
+    
+    if (highlights.length > 0) {
+      return `${base} — ${highlights.slice(0, 2).join(', ')}.`;
+    }
+    return base;
+  };
+  
   if (score >= 80 && !hasRisks) {
-    return { label: 'Excellent Match', variant: 'success', description: 'An excellent match for this profile.' };
+    return { 
+      label: 'Excellent Match', 
+      variant: 'success', 
+      description: buildDescription('Strong profile alignment')
+    };
   } else if (score >= 70) {
-    return { label: 'Strong Option', variant: 'warning', description: 'A solid option worth considering.' };
+    return { 
+      label: 'Strong Option', 
+      variant: 'warning', 
+      description: buildDescription('Good fit with some considerations')
+    };
   } else if (score >= 50) {
-    return { label: 'Worth Exploring', variant: 'caution', description: 'Some conditions may apply. Review details.' };
+    return { 
+      label: 'Worth Exploring', 
+      variant: 'caution', 
+      description: buildDescription('May require additional documentation')
+    };
   } else {
-    return { label: 'Not Recommended', variant: 'danger', description: 'Does not meet key eligibility criteria.' };
+    return { 
+      label: 'Not Recommended', 
+      variant: 'danger', 
+      description: 'Profile doesn\'t meet key eligibility criteria for this lender.'
+    };
   }
 }
 
@@ -722,7 +780,13 @@ export function AILenderRecommendation({
     const normalized = normalizeEvaluation(evaluation);
     const { effectiveScore, effectiveReason, effectiveFactors, effectivePillarScores, effectiveProbabilityBand } = normalized;
     
-    const verdict = getVerdict(effectiveScore, evaluation.risk_flags);
+    const verdict = getVerdict(effectiveScore, evaluation.risk_flags, {
+      university_boost: evaluation.university_boost,
+      badges: evaluation.badges,
+      fit_factors: effectiveFactors,
+      probability_band: effectiveProbabilityBand,
+      lender_name: evaluation.lender_name,
+    });
     const isExpanded = expandedCards[evaluation.lender_id];
     const { bigWins, eligibilityMet, considerations } = groupAndHumanizeFactors(
       effectiveFactors,
