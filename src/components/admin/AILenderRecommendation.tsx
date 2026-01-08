@@ -64,6 +64,14 @@ interface StudentFacingReason {
   cta: string;
 }
 
+interface UniversityBoost {
+  type: 'premium' | 'ranked' | 'none';
+  amount: number;
+  details: string;
+  duplicate_detected: boolean;
+  ranked_tier: number | null;
+}
+
 interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
@@ -96,6 +104,8 @@ interface LenderEvaluation {
   loan_range_display?: string;
   badges?: string[];
   rank?: number;
+  // University boost scoring details
+  university_boost?: UniversityBoost;
 }
 
 // Normalize evaluation data from new/old engine format
@@ -662,6 +672,50 @@ export function AILenderRecommendation({
     );
   };
 
+  // Render university boost indicator
+  const renderUniversityBoost = (boost?: UniversityBoost) => {
+    if (!boost || boost.type === 'none') return null;
+    
+    const isPremium = boost.type === 'premium';
+    
+    return (
+      <div className={cn(
+        "mt-2 p-2 rounded-lg border text-xs",
+        isPremium 
+          ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800" 
+          : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
+      )}>
+        <div className="flex items-center gap-1.5">
+          {isPremium ? (
+            <Star className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+          ) : (
+            <GraduationCap className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+          )}
+          <span className={cn(
+            "font-semibold",
+            isPremium ? "text-amber-700 dark:text-amber-400" : "text-blue-700 dark:text-blue-400"
+          )}>
+            {isPremium ? 'Premium University' : `Ranked Tier ${boost.ranked_tier}`}
+          </span>
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "text-[10px] h-4 ml-auto",
+              isPremium ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+            )}
+          >
+            +{boost.amount} pts
+          </Badge>
+        </div>
+        {boost.duplicate_detected && (
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {boost.details}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   // Render comparison table for quick side-by-side view
   const renderComparisonTable = () => {
     const allLenders = recommendation?.all_lenders_output as LenderEvaluation[] | undefined;
@@ -861,6 +915,9 @@ export function AILenderRecommendation({
 
               {/* 3-Pillar Mini Visualization */}
               {!isLocked && effectivePillarScores && renderPillarScores(effectivePillarScores)}
+
+              {/* University Boost Indicator */}
+              {!isLocked && evaluation.university_boost && renderUniversityBoost(evaluation.university_boost)}
 
               {/* Strategic Adjustment Indicator */}
               {!isLocked && evaluation.strategic_adjustment !== undefined && evaluation.strategic_adjustment !== 0 && (
