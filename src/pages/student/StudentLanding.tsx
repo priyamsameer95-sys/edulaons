@@ -26,18 +26,19 @@ import boiLogo from "@/assets/lenders/boi-logo.jpg";
 
 // Country data - synced with universities master
 const COUNTRIES = [
-  { code: "US", name: "US", value: "United States" },
-  { code: "UK", name: "UK", value: "United Kingdom" },
-  { code: "Canada", name: "Canada", value: "Canada" },
-  { code: "Australia", name: "Australia", value: "Australia" },
-  { code: "Germany", name: "Germany", value: "Germany" },
-  { code: "NZ", name: "New Zealand", value: "New Zealand" },
-  { code: "SG", name: "Singapore", value: "Singapore" },
-  { code: "HK", name: "Hong Kong", value: "Hong Kong SAR" },
-  { code: "JP", name: "Japan", value: "Japan" },
-  { code: "CH", name: "Switzerland", value: "Switzerland" },
-  { code: "CN", name: "China", value: "China" },
-  { code: "Other", name: "Other", value: "Other" }
+  { code: "US", name: "US", value: "United States", flag: "🇺🇸" },
+  { code: "UK", name: "UK", value: "United Kingdom", flag: "🇬🇧" },
+  { code: "Canada", name: "Canada", value: "Canada", flag: "🇨🇦" },
+  { code: "Australia", name: "Australia", value: "Australia", flag: "🇦🇺" },
+  { code: "Germany", name: "Germany", value: "Germany", flag: "🇩🇪" },
+  { code: "Ireland", name: "Ireland", value: "Ireland", flag: "🇮🇪" },
+  { code: "NZ", name: "New Zealand", value: "New Zealand", flag: "🇳🇿" },
+  { code: "SG", name: "Singapore", value: "Singapore", flag: "🇸🇬" },
+  { code: "HK", name: "Hong Kong", value: "Hong Kong SAR", flag: "🇭🇰" },
+  { code: "JP", name: "Japan", value: "Japan", flag: "🇯🇵" },
+  { code: "CH", name: "Switzerland", value: "Switzerland", flag: "🇨🇭" },
+  { code: "CN", name: "China", value: "China", flag: "🇨🇳" },
+  { code: "Other", name: "Other", value: "Other", flag: "🌍" }
 ];
 
 // Lender logo mapping by code
@@ -558,7 +559,7 @@ const StudentLanding = () => {
                         <Input 
                           value={formData.student_phone} 
                           onChange={e => handleChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))} 
-                          placeholder="Phone phone" 
+                          placeholder="Phone number" 
                           className={cn("h-11 rounded-l-none bg-background", errors.student_phone && 'border-destructive')} 
                         />
                       </div>
@@ -578,13 +579,14 @@ const StudentLanding = () => {
                               handleChange('university_id', '');
                             }} 
                             className={cn(
-                              "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
+                              "px-3 py-1.5 rounded-full text-sm font-medium border transition-all inline-flex items-center gap-1.5",
                               formData.country === country.code 
                                 ? 'border-primary bg-primary text-primary-foreground' 
                                 : 'border-border bg-background text-foreground hover:border-primary/50'
                             )}
                           >
-                            {country.name}
+                            <span className="text-base">{country.flag}</span>
+                            <span>{country.name}</span>
                           </button>
                         ))}
                       </div>
