@@ -17,13 +17,13 @@ interface Student {
   name: string;
   phone: string;
   email?: string | null;
-  dob?: string | null;
+  date_of_birth?: string | null;
   gender?: string | null;
   nationality?: string | null;
-  address_line1?: string | null;
-  address_city?: string | null;
-  address_state?: string | null;
-  address_postal_code?: string | null;
+  street_address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
   tenth_percentage?: number | null;
   twelfth_percentage?: number | null;
   bachelors_percentage?: number | null;
@@ -116,13 +116,13 @@ export function EnhancedStudentCard({
           name: editData.name,
           phone: editData.phone,
           email: editData.email || student.email, // Keep original if empty
-          dob: editData.dob,
+          date_of_birth: editData.date_of_birth,
           gender: editData.gender,
           nationality: editData.nationality,
-          address_line1: editData.address_line1,
-          address_city: editData.address_city,
-          address_state: editData.address_state,
-          address_postal_code: editData.address_postal_code,
+          street_address: editData.street_address,
+          city: editData.city,
+          state: editData.state,
+          postal_code: editData.postal_code,
           tenth_percentage: editData.tenth_percentage,
           twelfth_percentage: editData.twelfth_percentage,
           bachelors_percentage: editData.bachelors_percentage,
@@ -287,7 +287,7 @@ export function EnhancedStudentCard({
           {renderField('Full Name', student.name, 'name')}
           {renderField('Phone', student.phone, 'phone')}
           {renderEmailField()}
-          {renderField('Date of Birth', student.dob ? format(new Date(student.dob), 'dd MMM yyyy') : null, 'dob', 'date')}
+          {renderField('Date of Birth', student.date_of_birth ? format(new Date(student.date_of_birth), 'dd MMM yyyy') : null, 'date_of_birth', 'date')}
           {renderField('Gender', student.gender, 'gender', 'select', ['Male', 'Female', 'Other'])}
           {renderField('Nationality', student.nationality, 'nationality')}
         </div>
@@ -299,10 +299,10 @@ export function EnhancedStudentCard({
             <span className="text-xs font-medium text-muted-foreground">Address</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {renderField('Street', student.address_line1, 'address_line1')}
-            {renderField('City', student.address_city, 'address_city')}
-            {renderField('State', student.address_state, 'address_state')}
-            {renderField('PIN Code', student.address_postal_code, 'address_postal_code')}
+            {renderField('Street', student.street_address, 'street_address')}
+            {renderField('City', student.city, 'city')}
+            {renderField('State', student.state, 'state')}
+            {renderField('PIN Code', student.postal_code, 'postal_code')}
           </div>
         </div>
 
