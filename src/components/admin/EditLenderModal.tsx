@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BREConfigTab, type SimplifiedBREData } from './lender-config/BREConfigTab';
 import { useAuth } from '@/hooks/useAuth';
 import type { PremiumUniversity } from './lender-config/PremiumUniversitiesSection';
+import type { RankedUniversity } from './lender-config/RankedUniversitiesSection';
 import type { Json } from '@/integrations/supabase/types';
 
 interface Lender {
@@ -88,10 +89,12 @@ export function EditLenderModal({
     bre_updated_at: null,
     bre_updated_by: null,
     premium_universities: [],
+    ranked_universities: [],
   });
 
   const [originalBreText, setOriginalBreText] = useState<string>('');
   const [originalPremiumUniversities, setOriginalPremiumUniversities] = useState<PremiumUniversity[]>([]);
+  const [originalRankedUniversities, setOriginalRankedUniversities] = useState<RankedUniversity[]>([]);
 
   useEffect(() => {
     if (lender) {
@@ -115,9 +118,14 @@ export function EditLenderModal({
         logo_url: lender.logo_url || '',
       });
 
-      // Parse premium universities from university_restrictions
-      const restrictions = lender.university_restrictions as { premium?: PremiumUniversity[]; updated_at?: string } | null;
+      // Parse premium and ranked universities from university_restrictions
+      const restrictions = lender.university_restrictions as { 
+        premium?: PremiumUniversity[]; 
+        ranked?: RankedUniversity[];
+        updated_at?: string 
+      } | null;
       const premiumUniversities = restrictions?.premium || [];
+      const rankedUniversities = restrictions?.ranked || [];
 
       // Set BRE data from lender
       setBreData({
@@ -125,9 +133,11 @@ export function EditLenderModal({
         bre_updated_at: lender.bre_updated_at || null,
         bre_updated_by: lender.bre_updated_by || null,
         premium_universities: premiumUniversities,
+        ranked_universities: rankedUniversities,
       });
       setOriginalBreText(lender.bre_text || '');
       setOriginalPremiumUniversities(premiumUniversities);
+      setOriginalRankedUniversities(rankedUniversities);
     }
   }, [lender]);
 
@@ -147,9 +157,11 @@ export function EditLenderModal({
 
     setLoading(true);
     try {
-      // Check if BRE text or premium universities were modified
+      // Check if BRE text or universities were modified
       const breTextChanged = breData.bre_text !== originalBreText;
-      const universitiesChanged = JSON.stringify(breData.premium_universities || []) !== JSON.stringify(originalPremiumUniversities);
+      const premiumChanged = JSON.stringify(breData.premium_universities || []) !== JSON.stringify(originalPremiumUniversities);
+      const rankedChanged = JSON.stringify(breData.ranked_universities || []) !== JSON.stringify(originalRankedUniversities);
+      const universitiesChanged = premiumChanged || rankedChanged;
 
       const updateData: Record<string, unknown> = {
         name: formData.name,
@@ -171,9 +183,10 @@ export function EditLenderModal({
         logo_url: formData.logo_url || null,
         // Always update bre_text
         bre_text: breData.bre_text || null,
-        // Save premium universities to university_restrictions JSONB
+        // Save premium and ranked universities to university_restrictions JSONB
         university_restrictions: {
           premium: breData.premium_universities || [],
+          ranked: breData.ranked_universities || [],
           updated_at: universitiesChanged ? new Date().toISOString() : undefined,
         },
       };
