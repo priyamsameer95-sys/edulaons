@@ -589,162 +589,175 @@ const StudentLanding = () => {
       <GlobalPublicHeader />
 
       {/* Main Content - Single Scroll Design */}
-      <main className="pt-14">
+      <main className="pt-16">
         {/* Hero + Form Section */}
-        <section className="min-h-[calc(100vh-56px)] flex items-start justify-center pt-8 lg:pt-12">
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row lg:gap-12 xl:gap-16 items-start">
+        <section className="min-h-[calc(100vh-64px)] flex items-start justify-center pt-6 lg:pt-10">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row lg:gap-10 xl:gap-16 items-start">
           {/* Left - Hero Content */}
-          <div className="flex-1 flex flex-col items-center lg:items-start py-4 lg:py-0 lg:max-w-[480px] xl:max-w-[520px] overflow-hidden">
-              {/* Trust Badge - Enhanced */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium mb-5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                ₹500Cr+ loans funded with India's top RBI-registered lenders
-              </div>
-
-              {/* Headline - Emotional & Outcome-Driven */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-[1.1] tracking-tight mb-3">
-                <span className="text-primary">4 Simple Steps</span> to Fund{" "}
-                <span className="relative">
-                  Your Dream University
-                  <svg className="absolute -bottom-1 left-0 w-full h-2 text-primary/30" viewBox="0 0 200 8" preserveAspectRatio="none">
-                    <path d="M0 7 Q 50 0, 100 4 T 200 3" fill="none" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                </span>
+          <div className="flex-1 flex flex-col items-center lg:items-start py-4 lg:py-0 lg:max-w-[560px] xl:max-w-[600px] overflow-hidden">
+              {/* Headline - Clear & Bold */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-foreground leading-[1.15] tracking-tight mb-4 text-center lg:text-left">
+                <span className="text-primary">4 Simple Steps</span> to Fund Your Dream University
               </h1>
 
               {/* Subheadline - Reassurance */}
-              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2 max-w-md">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-5 max-w-lg text-center lg:text-left">
                 Compare and secure loans from India's top lenders in 60 seconds — with zero credit impact.
               </p>
               
-              {/* Emotional micro-copy */}
-              <p className="text-sm text-primary/80 font-medium mb-6">
-                Don't let finances stop your dreams — get matched with verified lenders in minutes.
-              </p>
+              {/* Trust Badge - Gradient Background */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary/10 via-primary/5 to-emerald-500/10 border border-primary/20 text-sm mb-6">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-foreground font-medium">₹500Cr+ loans funded</span>
+                <span className="text-muted-foreground">with India's top RBI-registered lenders</span>
+              </div>
 
-              {/* How It Works - Contained in a card */}
-              <div className="w-full bg-card rounded-xl border border-border p-4 shadow-sm">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">4 Simple Steps</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {STEPS.map((step, i) => <div key={i} className="text-center group cursor-default" onMouseEnter={() => setHoveredStep(i)} onMouseLeave={() => setHoveredStep(null)}>
-                      <div className={cn("w-10 h-10 mx-auto rounded-lg bg-muted flex items-center justify-center mb-1.5 transition-all duration-300 border border-transparent", hoveredStep === i && "bg-primary/10 border-primary/20 scale-110 shadow-lg shadow-primary/10")}>
-                        <step.icon className={cn("h-4 w-4 transition-colors duration-300", hoveredStep === i ? "text-primary" : "text-muted-foreground")} />
+              {/* 4 Simple Steps Section */}
+              <div className="w-full mb-6">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">4 Simple Steps</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {STEPS.map((step, i) => (
+                    <div 
+                      key={i} 
+                      className="bg-muted/40 rounded-xl p-4 text-center border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-default"
+                      onMouseEnter={() => setHoveredStep(i)} 
+                      onMouseLeave={() => setHoveredStep(null)}
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-2xl font-bold text-primary">{i + 1}</span>
+                        <step.icon className={cn("h-5 w-5", hoveredStep === i ? "text-primary" : "text-muted-foreground")} />
                       </div>
-                      <p className="text-[11px] font-medium text-foreground leading-tight">{step.title}</p>
-                      <p className={cn("text-[10px] font-semibold transition-colors mt-0.5", hoveredStep === i ? "text-primary" : "text-emerald-600")}>{step.time}</p>
-                    </div>)}
-                </div>
-                
-                {/* Lenders - Auto-scrolling Carousel - Inside same card */}
-                <div className="mt-3 pt-3 border-t border-border/50">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Our Top Lenders</p>
-                  <div className="relative overflow-hidden rounded-lg -mx-1">
-                    {/* Gradient fades */}
-                    <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-card to-transparent z-10" />
-                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-card to-transparent z-10" />
-                    
-                    {/* Scrolling container */}
-                    <div className="flex animate-[scroll_20s_linear_infinite] hover:pause">
-                      {[...LENDERS, ...LENDERS].map((lender, idx) => <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex items-center gap-2 px-2.5 py-1.5 mx-1 bg-muted/50 rounded-md border border-border/50">
-                          <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold text-primary-foreground" style={{
-                        backgroundColor: `hsl(var(${lender.brandVar}))`
-                      }}>
-                            {lender.shortName.slice(0, 2)}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-medium text-foreground whitespace-nowrap">{lender.name}</span>
-                            <span className="text-[9px] text-emerald-600 font-medium">From {lender.rate}</span>
-                          </div>
-                        </div>)}
+                      <p className="text-sm font-semibold text-foreground">{step.title}</p>
+                      <p className="text-xs text-emerald-600 font-medium mt-0.5">{step.time}</p>
                     </div>
-                  </div>
-                  <p className="text-[9px] text-muted-foreground mt-2 text-center">All lenders are RBI-approved</p>
+                  ))}
                 </div>
               </div>
 
-              {/* Trust Indicators - Enhanced */}
+              {/* Our Top Lenders Section */}
+              <div className="w-full">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Our Top Lenders</p>
+                <div className="relative overflow-hidden rounded-lg">
+                  {/* Gradient fades */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10" />
+                  
+                  {/* Scrolling container */}
+                  <div className="flex animate-[scroll_25s_linear_infinite] hover:pause">
+                    {[...LENDERS, ...LENDERS].map((lender, idx) => (
+                      <div key={`${lender.code}-${idx}`} className="flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 mx-1.5 bg-card rounded-lg border border-border/50 min-w-[100px]">
+                        <div 
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm" 
+                          style={{ backgroundColor: `hsl(var(${lender.brandVar}))` }}
+                        >
+                          {lender.shortName.slice(0, 3)}
+                        </div>
+                        <span className="text-xs font-medium text-foreground whitespace-nowrap">{lender.shortName}</span>
+                        <span className="text-[11px] text-emerald-600 font-medium">From {lender.rate}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 text-center">All lenders are RBI-approved • See All Lenders</p>
+              </div>
           </div>
 
           {/* Right - Form with Enhanced Styling */}
-          <div ref={formRef} className="flex-1 flex items-start justify-center py-4 lg:py-0 lg:max-w-md xl:max-w-lg">
+          <div ref={formRef} className="flex-1 flex items-start justify-center py-4 lg:py-0 lg:max-w-md xl:max-w-lg w-full">
             <div className="w-full max-w-md">
-              <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-xl shadow-primary/5">
+              <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-lg">
                 {!result ? (/* Form State */
-              <div className="space-y-4 animate-fade-in">
-                    <div className="mb-1">
-                      <h2 className="text-xl font-semibold text-foreground">Quick Eligibility Check</h2>
+              <div className="space-y-5 animate-fade-in">
+                    <div className="mb-2">
+                      <h2 className="text-xl font-bold text-foreground">Quick Eligibility Check</h2>
                       <p className="text-sm text-muted-foreground">See matching lenders instantly — takes 60 seconds</p>
                     </div>
 
-                    {/* Name & Phone Row */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-foreground">Your name</Label>
-                        <Input value={formData.student_name} onChange={e => handleChange('student_name', e.target.value)} placeholder="Name as per Aadhaar" className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_name && 'border-destructive')} />
-                        {errors.student_name && <p className="text-[10px] text-destructive">{errors.student_name}</p>}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-foreground">Phone</Label>
-                        <Input value={formData.student_phone} onChange={e => handleChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="9876543210" className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.student_phone && 'border-destructive')} />
-                        {errors.student_phone && <p className="text-[10px] text-destructive">{errors.student_phone}</p>}
-                      </div>
+                    {/* Name Input */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground">Your name</Label>
+                      <Input value={formData.student_name} onChange={e => handleChange('student_name', e.target.value)} placeholder="Name as per Aadhaar" className={cn("h-11 text-sm bg-background transition-all", errors.student_name && 'border-destructive')} />
+                      {errors.student_name && <p className="text-xs text-destructive">{errors.student_name}</p>}
                     </div>
 
-                    {/* Country */}
-                    <div className="space-y-1">
-                      <Label className="text-xs text-foreground">Study destination</Label>
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
-                        {COUNTRIES.map(country => <button key={country.code} type="button" onClick={() => {
-                      handleChange('country', country.code);
-                      handleChange('university_id', '');
-                    }} className={cn("flex flex-col items-center justify-center py-2 rounded-lg border transition-all duration-200", formData.country === country.code ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-sm' : 'border-border bg-background hover:border-primary/50 hover:bg-muted/50')}>
-                            <span className="text-lg">{country.flag}</span>
-                            <span className="text-[9px] font-medium mt-0.5 text-foreground">{country.name}</span>
-                          </button>)}
+                    {/* Phone Input */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground">Phone</Label>
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-muted border border-r-0 border-border rounded-l-md text-sm text-muted-foreground">
+                          +91
+                        </div>
+                        <Input value={formData.student_phone} onChange={e => handleChange('student_phone', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="9876543210" className={cn("h-11 text-sm bg-background rounded-l-none", errors.student_phone && 'border-destructive')} />
                       </div>
-                      {errors.country && <p className="text-[10px] text-destructive">{errors.country}</p>}
+                      {errors.student_phone && <p className="text-xs text-destructive">{errors.student_phone}</p>}
+                    </div>
+
+                    {/* Country - Pill Buttons */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-foreground">Study destination</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {COUNTRIES.map(country => (
+                          <button 
+                            key={country.code} 
+                            type="button" 
+                            onClick={() => {
+                              handleChange('country', country.code);
+                              handleChange('university_id', '');
+                            }} 
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                              formData.country === country.code 
+                                ? 'border-primary bg-primary text-primary-foreground shadow-sm' 
+                                : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-muted/50'
+                            )}
+                          >
+                            {country.name}
+                          </button>
+                        ))}
+                      </div>
+                      {errors.country && <p className="text-xs text-destructive">{errors.country}</p>}
                     </div>
 
                     {/* University - Show manual input for "Other" country */}
-                    <div className="space-y-1">
-                      <Label className="text-xs text-foreground">University</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground">University</Label>
                       {formData.country === 'Other' ? (
                         <Input 
                           value={formData.university_id} 
                           onChange={e => handleChange('university_id', e.target.value)} 
                           placeholder="Enter university name" 
-                          className={cn("h-10 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.university_id && 'border-destructive')} 
+                          className={cn("h-11 text-sm bg-background", errors.university_id && 'border-destructive')} 
                         />
                       ) : (
                         <div className={cn(errors.university_id && '[&_button]:border-destructive')}>
                           <UniversityCombobox country={COUNTRIES.find(c => c.code === formData.country)?.value || ""} value={formData.university_id} onChange={value => handleChange('university_id', value)} placeholder={formData.country ? "Search university..." : "Select country first"} disabled={!formData.country} />
                         </div>
                       )}
-                      {errors.university_id && <p className="text-[10px] text-destructive">{errors.university_id}</p>}
+                      {errors.university_id && <p className="text-xs text-destructive">{errors.university_id}</p>}
                     </div>
 
-                    {/* Loan Amount & Salary Row */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-foreground">Loan amount</Label>
-                          <span className="text-sm font-semibold text-primary">{formatAmount(formData.loan_amount[0])}</span>
-                        </div>
-                        <Slider value={formData.loan_amount} onValueChange={val => handleChange('loan_amount', val)} min={5} max={100} step={5} className="cursor-pointer" />
-                        <div className="flex justify-between text-[10px] text-muted-foreground">
-                          <span>₹5L</span>
-                          <span>₹1Cr</span>
-                        </div>
+                    {/* Loan Amount - Full Width Slider */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-foreground">Loan amount</Label>
+                        <span className="text-lg font-bold text-primary">{formatAmount(formData.loan_amount[0])}</span>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-foreground">Co-applicant salary</Label>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₹</span>
-                          <Input value={formData.co_applicant_monthly_salary} onChange={e => handleChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))} placeholder="75,000" className={cn("h-10 pl-6 text-sm bg-background transition-all focus:ring-2 focus:ring-primary/20", errors.co_applicant_monthly_salary && 'border-destructive')} />
-                        </div>
-                        {salaryInWords && <p className="text-[10px] text-muted-foreground">{salaryInWords}</p>}
-                        {errors.co_applicant_monthly_salary && <p className="text-[10px] text-destructive">{errors.co_applicant_monthly_salary}</p>}
+                      <Slider value={formData.loan_amount} onValueChange={val => handleChange('loan_amount', val)} min={5} max={100} step={5} className="cursor-pointer" />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>₹5L</span>
+                        <span>₹1Cr</span>
                       </div>
+                    </div>
+
+                    {/* Co-applicant Salary */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground">Co-applicant monthly salary</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                        <Input value={formData.co_applicant_monthly_salary} onChange={e => handleChange('co_applicant_monthly_salary', formatCurrencyInput(e.target.value))} placeholder="75,000" className={cn("h-11 pl-7 text-sm bg-background", errors.co_applicant_monthly_salary && 'border-destructive')} />
+                        {salaryInWords && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{salaryInWords}</span>}
+                      </div>
+                      {errors.co_applicant_monthly_salary && <p className="text-xs text-destructive">{errors.co_applicant_monthly_salary}</p>}
                     </div>
 
                     {/* CTA - Enhanced */}
@@ -954,61 +967,102 @@ const StudentLanding = () => {
         
 
         {/* Footer */}
-        <footer className="py-4 px-4 sm:px-6 border-t border-border bg-background">
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-                <GraduationCap className="h-3 w-3 text-primary-foreground" />
+        <footer className="py-6 px-4 sm:px-6 border-t border-border bg-muted/30">
+          <div className="max-w-6xl mx-auto">
+            {/* Footer Links Row */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+                  <GraduationCap className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="text-lg font-bold text-foreground">EduLoans</span>
+                <span className="text-sm text-muted-foreground">by Cashkaro</span>
               </div>
-              <span className="font-medium text-foreground">EduLoans</span>
-              <span className="text-muted-foreground">by Cashkaro</span>
+              
+              <div className="flex items-center gap-6 text-sm">
+                <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
+                <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh]">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Privacy Policy
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                      <div className="prose prose-sm dark:prose-invert">
+                        <p>Your privacy is important to us. This policy outlines how we collect, use, and protect your information.</p>
+                      </div>
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="text-muted-foreground hover:text-foreground transition-colors">Terms</button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh]">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Terms & Conditions
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                      <div className="prose prose-sm dark:prose-invert">
+                        <h3>1. Introduction</h3>
+                        <p>Welcome to EduLoans. These Terms and Conditions govern your use of our education loan comparison and application platform. By using our services, you agree to be bound by these terms.</p>
+                        
+                        <h3>2. Services</h3>
+                        <p>EduLoans provides a platform to compare education loan offers from various RBI-registered lenders. We do not directly provide loans but facilitate connections between students and lending partners.</p>
+                        
+                        <h3>3. Eligibility</h3>
+                        <p>To use our services, you must be an Indian citizen, at least 18 years old, and have a valid admission offer from a recognized educational institution abroad.</p>
+                        
+                        <h3>4. Data Privacy</h3>
+                        <p>We collect and process your personal information in accordance with applicable data protection laws. Your data is shared with lending partners only with your consent and for the purpose of loan processing.</p>
+                        
+                        <h3>5. User Responsibilities</h3>
+                        <p>You agree to provide accurate and complete information. Submission of false or misleading information may result in rejection of your application and/or legal action.</p>
+                        
+                        <h3>6. Loan Terms</h3>
+                        <p>Final loan terms including interest rates, amounts, and repayment schedules are determined by the respective lending partners. EduLoans does not guarantee loan approval.</p>
+                        
+                        <h3>7. Disclaimer</h3>
+                        <p>EduLoans is a loan marketplace and does not guarantee the accuracy of information provided by lending partners. All loan decisions are at the sole discretion of the lenders.</p>
+                        
+                        <h3>8. Contact</h3>
+                        <p>For queries, contact us at support@eduloans.cashkaro.com</p>
+                      </div>
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              {/* Social Icons Placeholder */}
+              <div className="flex items-center gap-3">
+                <a href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <a href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <a href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+                <a href="#" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                </a>
+              </div>
             </div>
-            <div className="flex gap-4">
-              <Link to="/student/auth" className="hover:text-foreground transition-colors">Student Login</Link>
-              <Link to="/partner/login" className="hover:text-foreground transition-colors">Partner Login</Link>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button className="hover:text-foreground transition-colors">Terms & Conditions</button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh]">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Terms & Conditions
-                    </DialogTitle>
-                  </DialogHeader>
-                  <ScrollArea className="max-h-[60vh] pr-4">
-                    <div className="prose prose-sm dark:prose-invert">
-                      <h3>1. Introduction</h3>
-                      <p>Welcome to EduLoans. These Terms and Conditions govern your use of our education loan comparison and application platform. By using our services, you agree to be bound by these terms.</p>
-                      
-                      <h3>2. Services</h3>
-                      <p>EduLoans provides a platform to compare education loan offers from various RBI-registered lenders. We do not directly provide loans but facilitate connections between students and lending partners.</p>
-                      
-                      <h3>3. Eligibility</h3>
-                      <p>To use our services, you must be an Indian citizen, at least 18 years old, and have a valid admission offer from a recognized educational institution abroad.</p>
-                      
-                      <h3>4. Data Privacy</h3>
-                      <p>We collect and process your personal information in accordance with applicable data protection laws. Your data is shared with lending partners only with your consent and for the purpose of loan processing.</p>
-                      
-                      <h3>5. User Responsibilities</h3>
-                      <p>You agree to provide accurate and complete information. Submission of false or misleading information may result in rejection of your application and/or legal action.</p>
-                      
-                      <h3>6. Loan Terms</h3>
-                      <p>Final loan terms including interest rates, amounts, and repayment schedules are determined by the respective lending partners. EduLoans does not guarantee loan approval.</p>
-                      
-                      <h3>7. Disclaimer</h3>
-                      <p>EduLoans is a loan marketplace and does not guarantee the accuracy of information provided by lending partners. All loan decisions are at the sole discretion of the lenders.</p>
-                      
-                      <h3>8. Contact</h3>
-                      <p>For queries, contact us at support@eduloans.cashkaro.com</p>
-                    </div>
-                  </ScrollArea>
-                </DialogContent>
-              </Dialog>
-              <span>support@eduloans.cashkaro.com</span>
+            
+            {/* Copyright Row */}
+            <div className="pt-4 border-t border-border/50 text-center text-xs text-muted-foreground">
+              © {new Date().getFullYear()} EduLoans by Cashkaro. All rights reserved.
             </div>
-            <span>© {new Date().getFullYear()} EduLoans by Cashkaro</span>
           </div>
         </footer>
       </main>
