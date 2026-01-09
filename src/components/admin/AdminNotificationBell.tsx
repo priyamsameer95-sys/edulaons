@@ -505,7 +505,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       </PopoverTrigger>
       <PopoverContent 
         align="end" 
-        className="w-[420px] max-w-[25vw] min-w-[320px] p-0"
+        className="w-[630px] max-w-[90vw] min-w-[480px] p-0"
         sideOffset={8}
       >
         {/* Compact Header */}
