@@ -505,11 +505,11 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       </PopoverTrigger>
       <PopoverContent 
         align="end" 
-        className="w-[630px] max-w-[90vw] min-w-[480px] p-0"
+        className="w-[630px] max-w-[90vw] min-w-[480px] p-0 shadow-xl shadow-primary/10 border-primary/20"
         sideOffset={8}
       >
         {/* Compact Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-primary/10 bg-gradient-to-r from-primary/5 via-accent/5 to-muted/30 shadow-sm">
           <div className="flex items-center gap-1">
             {(['24h', '7d', 'all'] as TimeFilter[]).map((f) => (
               <Button
