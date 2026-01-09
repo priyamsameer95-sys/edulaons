@@ -10,12 +10,13 @@ import {
   separateUniversities,
   cleanPhoneNumber,
   normalizeCountry,
+  getDbCountryName,
   type ValidationResult,
   type ValidationError,
 } from '../_shared/validation.ts';
 
 // Re-export shared utilities
-export { isUUID, separateUniversities, cleanPhoneNumber, normalizeCountry };
+export { isUUID, separateUniversities, cleanPhoneNumber, normalizeCountry, getDbCountryName };
 
 /**
  * Required fields for full lead creation (partner/admin)
