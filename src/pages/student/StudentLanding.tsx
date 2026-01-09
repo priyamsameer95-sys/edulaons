@@ -48,6 +48,7 @@ const LENDER_LOGOS: Record<string, string> = {
   'CREDILA': credilaLogo,
   'AVANSE': avanseLogo,
   'BOI': boiLogo,
+  'ICICI': '', // Fallback to color
 };
 
 // Lender color mapping by code (fallback)
@@ -140,7 +141,7 @@ const StudentLanding = () => {
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
   // Fetch lenders from database
-  const { data: lenders = [] } = useQuery({
+  const { data: lenders = [], isLoading: isLoadingLenders } = useQuery({
     queryKey: ['public-lenders-landing'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -483,11 +484,15 @@ const StudentLanding = () => {
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   
-                  <div className="flex-1 flex gap-3 transition-all duration-500 ease-in-out">
-                    {visibleLenders.map((lender) => {
+                  <div className="flex-1 flex gap-3 transition-all duration-500 ease-in-out overflow-hidden">
+                    {isLoadingLenders ? (
+                      <div className="flex-1 flex items-center justify-center py-8 text-muted-foreground text-sm">
+                        Loading lenders...
+                      </div>
+                    ) : visibleLenders.length > 0 ? visibleLenders.map((lender) => {
                       const logoSrc = getLenderLogo(lender.code);
                       return (
-                        <div key={lender.id} className="flex-1 bg-white rounded-xl p-4 border border-border/50 text-center shadow-sm">
+                        <div key={lender.id} className="flex-1 min-w-[100px] bg-white rounded-xl p-4 border border-border/50 text-center shadow-sm">
                           <div className="h-12 flex items-center justify-center mb-2 rounded px-2 overflow-hidden bg-white">
                             {logoSrc ? (
                               <img 
@@ -509,7 +514,11 @@ const StudentLanding = () => {
                           </p>
                         </div>
                       );
-                    })}
+                    }) : (
+                      <div className="flex-1 flex items-center justify-center py-8 text-muted-foreground text-sm">
+                        No lenders available
+                      </div>
+                    )}
                   </div>
                   
                   <button 
