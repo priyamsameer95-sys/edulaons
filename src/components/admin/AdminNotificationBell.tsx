@@ -509,21 +509,21 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
         sideOffset={8}
       >
         {/* Compact Header */}
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-primary/10 bg-gradient-to-r from-primary/5 via-accent/5 to-muted/30 shadow-sm">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-primary/15 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center gap-1.5 bg-background/60 rounded-lg p-1 border border-border/50">
             {(['24h', '7d', 'all'] as TimeFilter[]).map((f) => (
               <Button
                 key={f}
-                variant={timeFilter === f ? 'secondary' : 'ghost'}
+                variant={timeFilter === f ? 'default' : 'ghost'}
                 size="sm"
-                className="h-7 px-2 text-xs"
+                className={`h-7 px-3 text-xs font-medium transition-all ${timeFilter === f ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-muted/80'}`}
                 onClick={() => setTimeFilter(f)}
               >
                 {f === 'all' ? 'All' : f}
               </Button>
             ))}
           </div>
-          <span className="text-xs text-muted-foreground tabular-nums">{filterCount} items</span>
+          <span className="text-xs font-medium text-primary/80 tabular-nums bg-primary/10 px-2.5 py-1 rounded-full">{filterCount} items</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
