@@ -52,6 +52,12 @@ interface UniversityBoost {
   ranked_tier: number | null;
 }
 
+interface TieBreakerInfo {
+  applied: boolean;
+  criteria: string;
+  value: number | string;
+}
+
 interface LenderEvaluation {
   lender_id: string;
   lender_name: string;
@@ -80,6 +86,7 @@ interface LenderEvaluation {
   badges?: string[];
   rank?: number;
   university_boost?: UniversityBoost;
+  tie_breaker?: TieBreakerInfo;
 }
 
 // Normalize evaluation data from new/old engine format
@@ -746,9 +753,16 @@ export function AILenderRecommendation({
               </div>
               <div>
                 <h3 className="font-semibold">{lender.lender_name}</h3>
-                <Badge variant="outline" className="text-xs mt-1">
-                  Option {index + 2}
-                </Badge>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Badge variant="outline" className="text-xs">
+                    Option {index + 2}
+                  </Badge>
+                  {lender.tie_breaker?.applied && (
+                    <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      ↑ {lender.tie_breaker.criteria.replace(/_/g, ' ')}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             <div className="text-right">

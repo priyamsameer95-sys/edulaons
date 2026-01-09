@@ -48,6 +48,21 @@ interface PillarBreakdown {
   two_of_three_bonus: number;
 }
 
+interface TieBreakerInfo {
+  applied: boolean;
+  criteria: string;
+  value: number | string;
+}
+
+interface DataCompleteness {
+  has_university: boolean;
+  has_intake: boolean;
+  has_income: boolean;
+  has_academics: boolean;
+  score: number;
+  needs_review: boolean;
+}
+
 interface LenderResult {
   rank: number;
   lender_id: string;
@@ -82,6 +97,7 @@ interface LenderResult {
     duplicate_detected: boolean;
     ranked_tier: number | null;
   };
+  tie_breaker?: TieBreakerInfo;
 }
 
 interface SmartLenderOutput {
@@ -790,11 +806,30 @@ Deno.serve(async (req) => {
 
     console.log(`📐 Layer 1 - Tier: ${tier}, Zone: ${zone} (${daysUntil} days), Strategy: ${strategy}, Academic: ${academicScore}`);
 
-    // Build missing data warnings
+    // Build missing data warnings and data completeness score
     const missingWarnings: string[] = [];
     if (!primaryUniversity) missingWarnings.push('University not specified');
     if (!lead.intake_month || !lead.intake_year) missingWarnings.push('Intake date not specified');
     if (!coApplicant?.monthly_salary) missingWarnings.push('Co-applicant income missing');
+    
+    // Data Completeness Tracking
+    const dataCompleteness: DataCompleteness = {
+      has_university: !!primaryUniversity?.global_rank,
+      has_intake: !!(lead.intake_month && lead.intake_year),
+      has_income: !!coApplicant?.monthly_salary,
+      has_academics: !!(student?.tenth_percentage || student?.twelfth_percentage || student?.bachelors_percentage),
+      score: 0,
+      needs_review: false,
+    };
+    dataCompleteness.score = [
+      dataCompleteness.has_university,
+      dataCompleteness.has_intake,
+      dataCompleteness.has_income,
+      dataCompleteness.has_academics,
+    ].filter(Boolean).length;
+    dataCompleteness.needs_review = dataCompleteness.score < 3;
+    
+    console.log(`📊 Data Completeness: ${dataCompleteness.score}/4 (needs_review: ${dataCompleteness.needs_review})`);
 
     // =========================================================================
     // LAYERS 2-4: BOUNCER + STRATEGIST + SCORER
@@ -823,14 +858,14 @@ Deno.serve(async (req) => {
         effectiveLoanAmount
       );
       
-      // Base score from pillars (weighted average)
+      // Base score from pillars (weighted average) - CAP AT 100
       const pillarWeights = { future: 0.35, financial: 0.4, past: 0.25 };
-      const rawScore = Math.round(
+      const rawScore = Math.min(100, Math.round(
         pillars.future.score * pillarWeights.future +
         pillars.financial.score * pillarWeights.financial +
         pillars.past.score * pillarWeights.past +
         pillars.two_of_three_bonus
-      );
+      ));
       
       // Layer 3: Strategic Adjustments
       const { adjustedScore, adjustment, badges } = applyStrategicAdjustments(
@@ -854,8 +889,14 @@ Deno.serve(async (req) => {
         rankedUniversities
       );
       
-      // Apply university boost to adjusted score
-      const scoreWithUniversityBoost = Math.min(100, adjustedScore + universityBoost.boost);
+      // FIX: Apply knockout penalty BEFORE university boost
+      // This prevents locked lenders from ranking higher than unlocked ones
+      const scoreAfterKnockout = knockout.isLocked 
+        ? Math.max(0, adjustedScore - knockout.penaltyScore)
+        : adjustedScore;
+      
+      // Apply university boost AFTER knockout penalty, capped at 100
+      const finalScore = Math.min(100, scoreAfterKnockout + universityBoost.boost);
       
       // Add badge if matched (with boost type indicator)
       const finalBadges = [...badges];
@@ -864,11 +905,6 @@ Deno.serve(async (req) => {
       } else if (universityBoost.type === 'ranked') {
         finalBadges.push(`🎓 Ranked Tier ${universityBoost.rankedTier} (+${universityBoost.boost})`);
       }
-      
-      // Apply knockout penalty (but don't zero out)
-      const finalScore = knockout.isLocked 
-        ? Math.max(0, scoreWithUniversityBoost - knockout.penaltyScore)
-        : scoreWithUniversityBoost;
       
       // Determine status
       let status: LenderStatus = 'BACKUP';
@@ -919,8 +955,84 @@ Deno.serve(async (req) => {
       };
     });
     
-    // Sort by final score (locked lenders will naturally be lower due to penalty)
-    scoredLenders.sort((a, b) => b.finalScore - a.finalScore);
+    // DETERMINISTIC TIE-BREAKER SORTING
+    // Multi-criteria sort ensures consistent rankings when scores are equal
+    scoredLenders.sort((a, b) => {
+      // Primary: Final score (descending)
+      if (b.finalScore !== a.finalScore) {
+        return b.finalScore - a.finalScore;
+      }
+      
+      // Tie-breaker 1: Raw pillar score before adjustments (descending)
+      if (b.rawScore !== a.rawScore) {
+        return b.rawScore - a.rawScore;
+      }
+      
+      // Tie-breaker 2: Processing speed - faster wins (ascending)
+      const aProcessing = a.lender.processing_time_days || a.lender.processing_time_range_min || 30;
+      const bProcessing = b.lender.processing_time_days || b.lender.processing_time_range_min || 30;
+      if (aProcessing !== bProcessing) {
+        return aProcessing - bProcessing;
+      }
+      
+      // Tie-breaker 3: Interest rate - lower wins (ascending)
+      const aRate = a.lender.interest_rate_min || 12;
+      const bRate = b.lender.interest_rate_min || 12;
+      if (aRate !== bRate) {
+        return aRate - bRate;
+      }
+      
+      // Tie-breaker 4: Preferred rank if set (ascending)
+      const aRank = a.lender.preferred_rank || 999;
+      const bRank = b.lender.preferred_rank || 999;
+      if (aRank !== bRank) {
+        return aRank - bRank;
+      }
+      
+      // Final fallback: Alphabetical by name for determinism
+      return a.lender.name.localeCompare(b.lender.name);
+    });
+    
+    // Track which tie-breaker was applied for transparency
+    const tieBreakerResults: Map<string, TieBreakerInfo> = new Map();
+    for (let i = 1; i < scoredLenders.length; i++) {
+      const current = scoredLenders[i];
+      const previous = scoredLenders[i - 1];
+      
+      if (current.finalScore === previous.finalScore) {
+        // Determine which criteria broke the tie
+        let criteria = 'alphabetical';
+        let value: number | string = current.lender.name;
+        
+        if (previous.rawScore !== current.rawScore) {
+          criteria = 'raw_pillar_score';
+          value = previous.rawScore;
+        } else {
+          const prevProcessing = previous.lender.processing_time_days || previous.lender.processing_time_range_min || 30;
+          const currProcessing = current.lender.processing_time_days || current.lender.processing_time_range_min || 30;
+          if (prevProcessing !== currProcessing) {
+            criteria = 'processing_speed';
+            value = `${prevProcessing} days`;
+          } else {
+            const prevRate = previous.lender.interest_rate_min || 12;
+            const currRate = current.lender.interest_rate_min || 12;
+            if (prevRate !== currRate) {
+              criteria = 'interest_rate';
+              value = `${prevRate}%`;
+            } else {
+              const prevRank = previous.lender.preferred_rank || 999;
+              const currRank = current.lender.preferred_rank || 999;
+              if (prevRank !== currRank) {
+                criteria = 'preferred_rank';
+                value = prevRank;
+              }
+            }
+          }
+        }
+        
+        tieBreakerResults.set(previous.lender.id, { applied: true, criteria, value });
+      }
+    }
 
     // =========================================================================
     // BUILD RESULTS
@@ -997,6 +1109,7 @@ Deno.serve(async (req) => {
           duplicate_detected: universityBoost.duplicateDetected,
           ranked_tier: universityBoost.rankedTier,
         } : undefined,
+        tie_breaker: tieBreakerResults.get(lender.id),
       };
     });
 
