@@ -426,6 +426,140 @@ export const UI_TO_DB_COUNTRY: Record<string, string> = {
   'Other': '',
 };
 
+// ============================================
+// COMPREHENSIVE COUNTRY ALIASES FOR FUZZY MATCHING
+// ============================================
+
+// Each key is a canonical ID, values are all known aliases (case-insensitive matching)
+const COUNTRY_ALIASES: Record<string, string[]> = {
+  'united_states': ['USA', 'US', 'United States', 'United States of America', 'America', 'U.S.A', 'U.S.', 'U.S.A.'],
+  'united_kingdom': ['UK', 'United Kingdom', 'Great Britain', 'GB', 'England', 'Britain', 'U.K.', 'U.K'],
+  'united_arab_emirates': ['UAE', 'United Arab Emirates', 'Dubai', 'Abu Dhabi', 'U.A.E.', 'U.A.E'],
+  'new_zealand': ['NZ', 'New Zealand', 'N.Z.', 'N.Z'],
+  'singapore': ['SG', 'Singapore', 'SGP'],
+  'hong_kong': ['HK', 'Hong Kong', 'Hong Kong SAR', 'Hongkong', 'H.K.'],
+  'switzerland': ['CH', 'Switzerland', 'Swiss', 'Schweiz', 'Suisse'],
+  'canada': ['Canada', 'CA', 'CAN'],
+  'australia': ['Australia', 'AU', 'AUS', 'Aus'],
+  'germany': ['Germany', 'DE', 'Deutschland', 'GER'],
+  'japan': ['Japan', 'JP', 'JPN', 'Nippon'],
+  'china': ['China', 'CN', 'PRC', "People's Republic of China", 'Mainland China'],
+  'ireland': ['Ireland', 'IE', 'Eire', 'Republic of Ireland', 'IRL'],
+  'france': ['France', 'FR', 'FRA'],
+  'netherlands': ['Netherlands', 'NL', 'Holland', 'The Netherlands', 'Dutch'],
+  'south_korea': ['South Korea', 'Korea', 'KR', 'Republic of Korea', 'S. Korea', 'ROK'],
+  'italy': ['Italy', 'IT', 'Italia', 'ITA'],
+  'spain': ['Spain', 'ES', 'España', 'Espana', 'ESP'],
+  'sweden': ['Sweden', 'SE', 'Sverige', 'SWE'],
+  'norway': ['Norway', 'NO', 'Norge', 'NOR'],
+  'denmark': ['Denmark', 'DK', 'Danmark', 'DNK'],
+  'finland': ['Finland', 'FI', 'Suomi', 'FIN'],
+  'austria': ['Austria', 'AT', 'Österreich', 'Oesterreich', 'AUT'],
+  'belgium': ['Belgium', 'BE', 'België', 'Belgie', 'BEL'],
+  'poland': ['Poland', 'PL', 'Polska', 'POL'],
+  'czech_republic': ['Czech Republic', 'CZ', 'Czechia', 'Czech', 'CZE'],
+  'hungary': ['Hungary', 'HU', 'Magyarország', 'Magyarorszag', 'HUN'],
+  'portugal': ['Portugal', 'PT', 'PRT'],
+  'russia': ['Russia', 'RU', 'Russian Federation', 'RUS'],
+  'india': ['India', 'IN', 'Bharat', 'IND'],
+  'malaysia': ['Malaysia', 'MY', 'MYS'],
+  'thailand': ['Thailand', 'TH', 'THA'],
+  'vietnam': ['Vietnam', 'VN', 'Viet Nam', 'VNM'],
+  'philippines': ['Philippines', 'PH', 'PHL'],
+  'indonesia': ['Indonesia', 'ID', 'IDN'],
+  'taiwan': ['Taiwan', 'TW', 'Chinese Taipei', 'TWN'],
+  'saudi_arabia': ['Saudi Arabia', 'SA', 'KSA', 'Kingdom of Saudi Arabia', 'SAU'],
+  'qatar': ['Qatar', 'QA', 'QAT'],
+  'kuwait': ['Kuwait', 'KW', 'KWT'],
+  'bahrain': ['Bahrain', 'BH', 'BHR'],
+  'oman': ['Oman', 'OM', 'OMN'],
+  'israel': ['Israel', 'IL', 'ISR'],
+  'turkey': ['Turkey', 'TR', 'Türkiye', 'Turkiye', 'TUR'],
+  'south_africa': ['South Africa', 'ZA', 'RSA', 'ZAF'],
+  'nigeria': ['Nigeria', 'NG', 'NGA'],
+  'egypt': ['Egypt', 'EG', 'EGY'],
+  'kenya': ['Kenya', 'KE', 'KEN'],
+  'brazil': ['Brazil', 'BR', 'Brasil', 'BRA'],
+  'mexico': ['Mexico', 'MX', 'México', 'MEX'],
+  'argentina': ['Argentina', 'AR', 'ARG'],
+  'chile': ['Chile', 'CL', 'CHL'],
+  'colombia': ['Colombia', 'CO', 'COL'],
+  'peru': ['Peru', 'PE', 'PER'],
+  'greece': ['Greece', 'GR', 'Hellas', 'GRC'],
+  'cyprus': ['Cyprus', 'CY', 'CYP'],
+  'malta': ['Malta', 'MT', 'MLT'],
+  'luxembourg': ['Luxembourg', 'LU', 'LUX'],
+  'iceland': ['Iceland', 'IS', 'ISL'],
+  'croatia': ['Croatia', 'HR', 'HRV'],
+  'romania': ['Romania', 'RO', 'ROU'],
+  'bulgaria': ['Bulgaria', 'BG', 'BGR'],
+  'slovakia': ['Slovakia', 'SK', 'SVK'],
+  'slovenia': ['Slovenia', 'SI', 'SVN'],
+  'lithuania': ['Lithuania', 'LT', 'LTU'],
+  'latvia': ['Latvia', 'LV', 'LVA'],
+  'estonia': ['Estonia', 'EE', 'EST'],
+};
+
+// Build reverse lookup for O(1) matching
+function buildCountryMatcher(): Record<string, string> {
+  const aliasToCanonical: Record<string, string> = {};
+  
+  for (const [canonical, aliases] of Object.entries(COUNTRY_ALIASES)) {
+    for (const alias of aliases) {
+      aliasToCanonical[alias.toLowerCase().trim()] = canonical;
+    }
+  }
+  
+  return aliasToCanonical;
+}
+
+const COUNTRY_MATCHER = buildCountryMatcher();
+
+/**
+ * Get the canonical country ID from any alias
+ * Returns the input normalized if no match found (for "Other" countries)
+ */
+export function getCanonicalCountry(country: string): string {
+  if (!country) return '';
+  const normalized = country.toLowerCase().trim();
+  return COUNTRY_MATCHER[normalized] || normalized;
+}
+
+/**
+ * Check if two country values represent the same country
+ * Handles abbreviations, full names, and common variations
+ * 
+ * Examples:
+ * - countriesMatch('UK', 'United Kingdom') → true
+ * - countriesMatch('USA', 'United States') → true
+ * - countriesMatch('UAE', 'Dubai') → true
+ * - countriesMatch('NZ', 'New Zealand') → true
+ */
+export function countriesMatch(country1: string, country2: string): boolean {
+  if (!country1 || !country2) return false;
+  
+  const c1 = country1.toLowerCase().trim();
+  const c2 = country2.toLowerCase().trim();
+  
+  // Exact match (case-insensitive)
+  if (c1 === c2) return true;
+  
+  // Check if both resolve to the same canonical country
+  const canonical1 = COUNTRY_MATCHER[c1] || c1;
+  const canonical2 = COUNTRY_MATCHER[c2] || c2;
+  
+  return canonical1 === canonical2;
+}
+
+/**
+ * Get all known aliases for a country
+ * Useful for OR queries across different DB formats
+ */
+export function getCountryAliases(country: string): string[] {
+  const canonical = getCanonicalCountry(country);
+  return COUNTRY_ALIASES[canonical] || [country];
+}
+
 export function normalizeCountry(country: string): string {
   const trimmed = String(country).trim();
   return COUNTRY_MAPPING[trimmed] || trimmed;

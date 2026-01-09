@@ -2,7 +2,7 @@
  * Database operations for create-lead edge function
  */
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { cleanPhoneNumber, isUUID, separateUniversities, getDbCountryName } from './validation.ts';
+import { cleanPhoneNumber, isUUID, separateUniversities, countriesMatch } from './validation.ts';
 
 /**
  * Validate universities match the study destination
@@ -27,17 +27,10 @@ export async function validateUniversities(
     throw new Error(`Failed to validate universities: ${error.message}`);
   }
   
-  // Convert UI country code to database country name for comparison
-  // UI sends: 'UK', DB stores: 'United Kingdom'
-  const dbCountryName = getDbCountryName(country);
-  const uiCountryCode = country;
-  
+  // Use smart country matching that handles all variations:
+  // UK/United Kingdom, USA/United States, UAE/Dubai, NZ/New Zealand, etc.
   const invalidUniversities = dbUniversities?.filter((uni: any) => {
-    const uniCountry = uni.country.toLowerCase();
-    // Check against both full DB name and UI short code for flexibility
-    const matchesFullName = uniCountry === dbCountryName.toLowerCase();
-    const matchesShortCode = uniCountry === uiCountryCode.toLowerCase();
-    return !matchesFullName && !matchesShortCode;
+    return !countriesMatch(uni.country, country);
   });
   
   if (invalidUniversities && invalidUniversities.length > 0) {
