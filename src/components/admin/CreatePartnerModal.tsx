@@ -159,8 +159,14 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
         if (value.length < 3) return 'Partner code must be at least 3 characters.';
         return null;
       case 'phone':
-        if (value && !/^\+?[\d\s-]{10,15}$/.test(value.replace(/\s/g, ''))) {
-          return 'Please enter a valid phone number.';
+        if (value) {
+          const digitsOnly = value.replace(/\D/g, '');
+          if (digitsOnly.length !== 10) {
+            return 'Phone number must be exactly 10 digits.';
+          }
+          if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+            return 'Please enter a valid Indian mobile number.';
+          }
         }
         return null;
       default:
@@ -179,6 +185,11 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
     // Force lowercase for partner code
     if (field === 'partnerCode') {
       processedValue = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+    
+    // Phone: digits only, max 10
+    if (field === 'phone') {
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
     }
     
     setFormData(prev => ({ ...prev, [field]: processedValue }));
@@ -607,6 +618,7 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
                     aria-required="true"
                     aria-invalid={!!errors.password}
                     className={cn(
+                      "pr-10",
                       touched.password && errors.password && 'border-destructive focus-visible:ring-destructive',
                       touched.password && !errors.password && formData.password && 'border-success'
                     )}
@@ -646,7 +658,9 @@ const CreatePartnerModal = ({ open, onOpenChange, onPartnerCreated }: CreatePart
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 onBlur={() => handleBlur('phone')}
-                placeholder="+91 98765 43210"
+                placeholder="9876543210"
+                maxLength={10}
+                inputMode="numeric"
                 disabled={loading}
                 className={cn(
                   touched.phone && errors.phone && 'border-destructive focus-visible:ring-destructive',
