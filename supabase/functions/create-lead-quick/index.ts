@@ -172,7 +172,7 @@ serve(async (req) => {
           name: body.student_name.trim(),
           email: `${cleanStudentPhone}@quick.placeholder`,
           phone: cleanStudentPhone,
-          postal_code: body.student_pin_code?.trim() || '000000',
+          postal_code: '000000', // Default placeholder - PIN no longer collected in quick lead
           country: 'India',
           nationality: 'Indian',
         })
@@ -200,7 +200,8 @@ serve(async (req) => {
         relationship: body.co_applicant_relationship || 'parent',
         salary: coApplicantSalary * 12, // Annual salary
         monthly_salary: coApplicantSalary,
-        pin_code: body.co_applicant_pin_code?.trim() || body.co_applicant_state?.substring(0, 6) || '000000',
+        pin_code: '000000', // Default placeholder - PIN no longer collected
+        state: body.co_applicant_state || null, // NEW: Store state instead of PIN
         occupation: body.co_applicant_occupation || null,
         employment_type: body.co_applicant_employer_type || null,
         employer: body.co_applicant_employer?.trim() || null,

@@ -21,6 +21,7 @@ import { UniversityCombobox } from "@/components/ui/university-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { convertINRToWords, formatIndianNumber } from "@/utils/currencyFormatter";
+import { ALL_STATES_AND_UTS } from "@/constants/indianStates";
 
 interface QuickLeadModalProps {
   open: boolean;
@@ -35,7 +36,6 @@ interface FormData {
   student_name: string;
   student_phone: string;
   student_email: string;
-  student_pin_code: string;
   country: string;
   university_id: string;
   loan_amount: string;
@@ -44,7 +44,7 @@ interface FormData {
   co_applicant_relationship: string;
   co_applicant_name: string;
   co_applicant_phone: string;
-  co_applicant_pin_code: string;
+  co_applicant_state: string;
   co_applicant_monthly_salary: string;
 }
 
@@ -52,7 +52,6 @@ interface FormErrors {
   student_name?: string;
   student_phone?: string;
   student_email?: string;
-  student_pin_code?: string;
   country?: string;
   university_id?: string;
   loan_amount?: string;
@@ -61,7 +60,7 @@ interface FormErrors {
   co_applicant_relationship?: string;
   co_applicant_name?: string;
   co_applicant_phone?: string;
-  co_applicant_pin_code?: string;
+  co_applicant_state?: string;
   co_applicant_monthly_salary?: string;
 }
 
@@ -111,7 +110,6 @@ const initialFormData: FormData = {
   student_name: "",
   student_phone: "",
   student_email: "",
-  student_pin_code: "",
   country: "",
   university_id: "",
   loan_amount: "",
@@ -120,7 +118,7 @@ const initialFormData: FormData = {
   co_applicant_relationship: "",
   co_applicant_name: "",
   co_applicant_phone: "",
-  co_applicant_pin_code: "",
+  co_applicant_state: "",
   co_applicant_monthly_salary: "",
 };
 
@@ -210,13 +208,6 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
       }
     }
 
-    // PIN code
-    if (!formData.student_pin_code.trim()) {
-      newErrors.student_pin_code = "Required";
-    } else if (!/^\d{6}$/.test(formData.student_pin_code.trim())) {
-      newErrors.student_pin_code = "Must be 6 digits";
-    }
-
     // Country
     if (!formData.country) {
       newErrors.country = "Required";
@@ -264,11 +255,9 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
       newErrors.co_applicant_phone = "Invalid number";
     }
 
-    // Co-Applicant PIN code
-    if (!formData.co_applicant_pin_code.trim()) {
-      newErrors.co_applicant_pin_code = "Required";
-    } else if (!/^\d{6}$/.test(formData.co_applicant_pin_code.trim())) {
-      newErrors.co_applicant_pin_code = "Must be 6 digits";
+    // Co-Applicant State
+    if (!formData.co_applicant_state) {
+      newErrors.co_applicant_state = "Required";
     }
 
     // Salary
@@ -294,7 +283,6 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
           student_name: formData.student_name.trim(),
           student_phone: formData.student_phone.replace(/\D/g, ''),
           student_email: formData.student_email.trim() || undefined,
-          student_pin_code: formData.student_pin_code.trim(),
           country: formData.country,
           university_id: formData.university_id || undefined,
           loan_amount: parseInt(formData.loan_amount.replace(/,/g, '')),
@@ -303,7 +291,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_name: formData.co_applicant_name.trim(),
           co_applicant_phone: formData.co_applicant_phone.replace(/\D/g, ''),
-          co_applicant_pin_code: formData.co_applicant_pin_code.trim(),
+          co_applicant_state: formData.co_applicant_state,
           co_applicant_monthly_salary: parseFloat(formData.co_applicant_monthly_salary.replace(/,/g, '')),
           partner_id: partnerId,
         }
@@ -360,27 +348,24 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
     const breakdown: string[] = [];
     
     if (formData.student_email.trim()) {
-      score += 20;
+      score += 25;
     } else {
       breakdown.push('email');
     }
     if (formData.university_id) {
-      score += 20;
+      score += 25;
     } else {
       breakdown.push('university');
     }
     if (formData.co_applicant_name.trim() && formData.co_applicant_monthly_salary) {
-      score += 20;
+      score += 25;
     }
     // Loan amount in sweet spot (15-50L)
     const loanNum = parseInt(formData.loan_amount.replace(/,/g, '') || '0');
     if (loanNum >= 1500000 && loanNum <= 5000000) {
-      score += 20;
+      score += 25;
     } else if (loanNum > 0) {
-      score += 10;
-    }
-    if (formData.student_pin_code.trim()) {
-      score += 20;
+      score += 15;
     }
     
     return { score, missingFields: breakdown };
@@ -531,22 +516,6 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
             )}
           </div>
 
-          {/* PIN Code */}
-          <div className="space-y-1.5">
-            <Label htmlFor="student_pin_code" className="text-xs">
-              PIN Code *
-            </Label>
-            <Input
-              id="student_pin_code"
-              value={formData.student_pin_code}
-              onChange={(e) => handleInputChange('student_pin_code', e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="6 digits"
-              className={errors.student_pin_code ? 'border-destructive' : ''}
-            />
-            {errors.student_pin_code && (
-              <p className="text-xs text-destructive">{errors.student_pin_code}</p>
-            )}
-          </div>
 
           {/* Country */}
           <div className="space-y-1.5">
@@ -733,20 +702,28 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
             )}
           </div>
 
-          {/* Co-Applicant PIN Code */}
+          {/* Co-Applicant State */}
           <div className="space-y-1.5">
-            <Label htmlFor="co_applicant_pin_code" className="text-xs">
-              PIN Code *
+            <Label htmlFor="co_applicant_state" className="text-xs">
+              State *
             </Label>
-            <Input
-              id="co_applicant_pin_code"
-              value={formData.co_applicant_pin_code}
-              onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="6 digits"
-              className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
-            />
-            {errors.co_applicant_pin_code && (
-              <p className="text-xs text-destructive">{errors.co_applicant_pin_code}</p>
+            <Select
+              value={formData.co_applicant_state}
+              onValueChange={(value) => handleInputChange('co_applicant_state', value)}
+            >
+              <SelectTrigger className={errors.co_applicant_state ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {ALL_STATES_AND_UTS.map((state) => (
+                  <SelectItem key={state} value={state}>
+                    {state}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.co_applicant_state && (
+              <p className="text-xs text-destructive">{errors.co_applicant_state}</p>
             )}
           </div>
 
