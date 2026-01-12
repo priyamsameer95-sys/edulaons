@@ -81,7 +81,7 @@ export function SmartFilterBar({
         {/* Status dropdown - grouped by phase */}
         <Select value={statusFilter} onValueChange={onStatusChange}>
           <SelectTrigger className="w-[130px] h-7 text-xs border-0 bg-transparent shadow-none focus:ring-0 px-2 font-medium">
-            <SelectValue placeholder="Status">{getFilterLabel(statusFilter)}</SelectValue>
+            <span className="truncate">{getFilterLabel(statusFilter)}</span>
           </SelectTrigger>
           <SelectContent className="bg-popover max-h-[400px]">
             <SelectItem value="all" className="text-xs py-2 font-medium">
