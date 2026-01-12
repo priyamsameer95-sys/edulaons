@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import ConversationalForm from './conversational/ConversationalForm';
 import SuccessStep from './SuccessStep';
-import { useLenderRecommendationTrigger } from '@/hooks/useLenderRecommendationTrigger';
 
 const StudentApplicationFlow = () => {
   const {
@@ -15,7 +14,6 @@ const StudentApplicationFlow = () => {
   } = useStudentApplication();
   
   const [submissionResult, setSubmissionResult] = useState<any>(null);
-  const { triggerRecommendation } = useLenderRecommendationTrigger();
 
   // Validate user context matches stored draft
   useEffect(() => {
@@ -50,16 +48,7 @@ const StudentApplicationFlow = () => {
     const result = await submitApplication();
     if (result) {
       setSubmissionResult(result);
-      
-      // Trigger AI lender recommendation in background
-      if (result.lead?.id) {
-        triggerRecommendation({
-          leadId: result.lead.id,
-          studyDestination: applicationData.studyDestination,
-          loanAmount: parseInt(String(applicationData.loanAmount).replace(/,/g, '')),
-          silent: true,
-        });
-      }
+      // AI lender recommendations are fetched async in SuccessStep
     }
   };
 

@@ -541,13 +541,20 @@ serve(async (req) => {
           change_reason: body?.is_edit ? 'Student edited their application' : 'Student re-submitted their application',
         });
 
-      // Re-run AI lender evaluation with updated data
-      const recommendedLenders = await evaluateLendersForLead(
-        supabaseAdmin,
-        leadIdForUpdate,
-        studyDestination,
-        loanAmount
-      );
+      // AI lender evaluation - skip if run_ai_evaluation is explicitly false
+      let recommendedLenders: any[] = [];
+      const runAiEval = body.run_ai_evaluation !== false;
+      
+      if (runAiEval) {
+        recommendedLenders = await evaluateLendersForLead(
+          supabaseAdmin,
+          leadIdForUpdate,
+          studyDestination,
+          loanAmount
+        );
+      } else {
+        console.log('⏭️ Skipping AI evaluation (run_ai_evaluation=false)');
+      }
 
       console.log('✅ Existing lead update completed');
 
@@ -596,12 +603,20 @@ serve(async (req) => {
         }
       }
 
-      const recommendedLenders = await evaluateLendersForLead(
-        supabaseAdmin,
-        existingLead.id,
-        existingLead.study_destination || studyDestination,
-        parseFloat(existingLead.loan_amount) || loanAmount
-      );
+      // AI lender evaluation - skip if run_ai_evaluation is explicitly false
+      let recommendedLenders: any[] = [];
+      const runAiEval = body.run_ai_evaluation !== false;
+      
+      if (runAiEval) {
+        recommendedLenders = await evaluateLendersForLead(
+          supabaseAdmin,
+          existingLead.id,
+          existingLead.study_destination || studyDestination,
+          parseFloat(existingLead.loan_amount) || loanAmount
+        );
+      } else {
+        console.log('⏭️ Skipping AI evaluation (run_ai_evaluation=false)');
+      }
 
       return new Response(
         JSON.stringify({
@@ -628,12 +643,20 @@ serve(async (req) => {
     if (existingLead && !existingLead.partner_id) {
       console.log('✅ Found existing organic lead:', existingLead.case_id);
 
-      const recommendedLenders = await evaluateLendersForLead(
-        supabaseAdmin,
-        existingLead.id,
-        existingLead.study_destination || studyDestination,
-        parseFloat(existingLead.loan_amount) || loanAmount
-      );
+      // AI lender evaluation - skip if run_ai_evaluation is explicitly false
+      let recommendedLenders: any[] = [];
+      const runAiEval = body.run_ai_evaluation !== false;
+      
+      if (runAiEval) {
+        recommendedLenders = await evaluateLendersForLead(
+          supabaseAdmin,
+          existingLead.id,
+          existingLead.study_destination || studyDestination,
+          parseFloat(existingLead.loan_amount) || loanAmount
+        );
+      } else {
+        console.log('⏭️ Skipping AI evaluation (run_ai_evaluation=false)');
+      }
 
       return new Response(
         JSON.stringify({
@@ -916,12 +939,20 @@ serve(async (req) => {
     }
 
     // ===== AI LENDER EVALUATION FOR NEW LEAD =====
-    const recommendedLenders = await evaluateLendersForLead(
-      supabaseAdmin,
-      lead.id,
-      studyDestination,
-      loanAmount
-    );
+    // Skip if run_ai_evaluation is explicitly false (frontend will fetch async)
+    let recommendedLenders: any[] = [];
+    const runAiEval = body.run_ai_evaluation !== false;
+    
+    if (runAiEval) {
+      recommendedLenders = await evaluateLendersForLead(
+        supabaseAdmin,
+        lead.id,
+        studyDestination,
+        loanAmount
+      );
+    } else {
+      console.log('⏭️ Skipping AI evaluation (run_ai_evaluation=false)');
+    }
 
     console.log('🎉 Student lead creation completed');
 
