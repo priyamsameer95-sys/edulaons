@@ -57,7 +57,16 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
   };
 
   const handleReview = () => { if (validate()) setShowReview(true); };
-  const handleSubmit = () => { if (agreed) onSubmit(); };
+  const handleSubmit = async () => { 
+    if (agreed) {
+      try {
+        await onSubmit();
+      } catch (error) {
+        // Error already handled by parent (useStudentApplication shows toast)
+        console.error('Submission error:', error);
+      }
+    }
+  };
 
   const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

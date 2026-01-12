@@ -478,6 +478,8 @@ export const useStudentApplication = () => {
         // Pass edit mode info so edge function knows this is an update
         is_edit: isEditMode,
         existing_lead_id: existingLeadId,
+        // Don't block on AI evaluation - let frontend fetch async
+        run_ai_evaluation: false,
       };
       
       console.log('📤 [submitApplication] Calling create-lead-student edge function...');
