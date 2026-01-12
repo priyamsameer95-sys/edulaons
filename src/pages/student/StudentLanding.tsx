@@ -24,20 +24,27 @@ import credilaLogo from "@/assets/lenders/credila-logo.jpg";
 import avanseLogo from "@/assets/lenders/avanse-logo.jpg";
 import boiLogo from "@/assets/lenders/boi-logo.jpg";
 
-// Country data - synced with universities master
+// Country data - SINGLE SOURCE OF TRUTH with proper ISO2 codes
+// Flag is computed from ISO2: "US" → 🇺🇸, "GB" → 🇬🇧
+const getFlag = (iso2: string): string => {
+  if (!iso2 || iso2.length !== 2) return '🌍';
+  const codePoints = iso2.toUpperCase().split('').map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+};
+
 const COUNTRIES = [
-  { code: "US", name: "US", value: "United States", flag: "🇺🇸" },
-  { code: "UK", name: "UK", value: "United Kingdom", flag: "🇬🇧" },
-  { code: "Canada", name: "Canada", value: "Canada", flag: "🇨🇦" },
-  { code: "Australia", name: "Australia", value: "Australia", flag: "🇦🇺" },
-  { code: "Germany", name: "Germany", value: "Germany", flag: "🇩🇪" },
-  { code: "Ireland", name: "Ireland", value: "Ireland", flag: "🇮🇪" },
-  { code: "NZ", name: "New Zealand", value: "New Zealand", flag: "🇳🇿" },
-  { code: "SG", name: "Singapore", value: "Singapore", flag: "🇸🇬" },
-  { code: "HK", name: "Hong Kong", value: "Hong Kong SAR", flag: "🇭🇰" },
-  { code: "JP", name: "Japan", value: "Japan", flag: "🇯🇵" },
-  { code: "CH", name: "Switzerland", value: "Switzerland", flag: "🇨🇭" },
-  { code: "CN", name: "China", value: "China", flag: "🇨🇳" },
+  { code: "US", name: "USA", value: "United States", flag: getFlag("US") },
+  { code: "GB", name: "UK", value: "United Kingdom", flag: getFlag("GB") },
+  { code: "CA", name: "Canada", value: "Canada", flag: getFlag("CA") },
+  { code: "AU", name: "Australia", value: "Australia", flag: getFlag("AU") },
+  { code: "DE", name: "Germany", value: "Germany", flag: getFlag("DE") },
+  { code: "IE", name: "Ireland", value: "Ireland", flag: getFlag("IE") },
+  { code: "NZ", name: "New Zealand", value: "New Zealand", flag: getFlag("NZ") },
+  { code: "SG", name: "Singapore", value: "Singapore", flag: getFlag("SG") },
+  { code: "HK", name: "Hong Kong", value: "Hong Kong SAR", flag: getFlag("HK") },
+  { code: "JP", name: "Japan", value: "Japan", flag: getFlag("JP") },
+  { code: "CH", name: "Switzerland", value: "Switzerland", flag: getFlag("CH") },
+  { code: "CN", name: "China", value: "China", flag: getFlag("CN") },
   { code: "Other", name: "Other", value: "Other", flag: "🌍" }
 ];
 

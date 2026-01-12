@@ -13,11 +13,22 @@ interface University {
 }
 
 export const useUniversities = (country: string) => {
+  // The country parameter may already be the full name (e.g., "United States") 
+  // or a code (e.g., "US"). Try to normalize.
   const countryName = country ? getCountryNameFromCode(country) : '';
+  
+  // DEBUG: Log what we're querying (dev only)
+  if (import.meta.env.DEV) {
+    console.log('[useUniversities] input:', country, '→ resolved:', countryName);
+  }
 
   const { data: universities = [], isLoading, error, refetch } = useQuery({
     queryKey: ['universities', countryName],
     queryFn: async () => {
+      if (import.meta.env.DEV) {
+        console.log('[useUniversities] fetching for country:', countryName);
+      }
+      
       let query = supabase
         .from('universities')
         .select('*')
@@ -29,7 +40,14 @@ export const useUniversities = (country: string) => {
 
       const { data, error } = await query.limit(1000);
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('[useUniversities] query error:', error.message);
+        throw new Error(error.message);
+      }
+      
+      if (import.meta.env.DEV) {
+        console.log('[useUniversities] fetched', data?.length || 0, 'universities');
+      }
 
       return (data || []).map((uni: any) => ({
         id: uni.id,
