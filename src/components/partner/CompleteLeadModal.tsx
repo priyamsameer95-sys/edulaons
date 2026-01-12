@@ -516,6 +516,21 @@ export const CompleteLeadModal = ({
     if (!lead || !existingData) return;
 
     if (!validateForm()) {
+      // Show toast with specific missing fields
+      const missingFields: string[] = [];
+      if (errors.studentState || !studentState.trim()) missingFields.push("Student State");
+      if (errors.courseId || !courseType.trim()) missingFields.push("Course Type");
+      if (errors.coApplicantName || !coApplicantName.trim()) missingFields.push("Co-Applicant Name");
+      if (errors.coApplicantRelationship || !coApplicantRelationship) missingFields.push("Co-Applicant Relationship");
+      if (errors.coApplicantPhone || !coApplicantPhone.trim()) missingFields.push("Co-Applicant Phone");
+      if (errors.coApplicantSalary || !coApplicantSalary.trim()) missingFields.push("Co-Applicant Salary");
+      if (errors.coApplicantState || !coApplicantState.trim()) missingFields.push("Co-Applicant State");
+      
+      if (missingFields.length > 0) {
+        toast.error(`Please fill required fields: ${missingFields.join(", ")}`);
+      } else {
+        toast.error("Please fix the validation errors above");
+      }
       return;
     }
 
