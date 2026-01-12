@@ -36,7 +36,7 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
-import { CourseCombobox } from "@/components/ui/course-combobox";
+import { CourseTypeSelector } from "@/components/shared/CourseTypeSelector";
 import { UniversitySelector } from "@/components/ui/university-selector";
 import { Progress } from "@/components/ui/progress";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
@@ -168,8 +168,8 @@ export const CompleteLeadModal = ({
   const [loanType, setLoanType] = useState<string>("");
   const [universities, setUniversities] = useState<string[]>([""]);
   
-  // Course field
-  const [courseId, setCourseId] = useState<string>("");
+  // Course type field
+  const [courseType, setCourseType] = useState<string>("");
   const [isCustomCourse, setIsCustomCourse] = useState(false);
   
   // Co-applicant required fields
@@ -273,13 +273,14 @@ export const CompleteLeadModal = ({
         setIntakeMonth(lead.intake_month ? String(lead.intake_month) : "");
         setIntakeYear(lead.intake_year ? String(lead.intake_year) : "");
 
-        // Pre-populate course if exists
+        // Pre-populate course type if exists
         if (courseData) {
           if (courseData.is_custom_course && courseData.custom_course_name) {
-            setCourseId(courseData.custom_course_name);
+            setCourseType(courseData.custom_course_name);
             setIsCustomCourse(true);
           } else if (courseData.course_id) {
-            setCourseId(courseData.course_id);
+            // For existing course_id, we'll default to 'others' 
+            setCourseType('others');
             setIsCustomCourse(false);
           }
         }
@@ -372,7 +373,7 @@ export const CompleteLeadModal = ({
     setUniversities([""]);
 
     // Course
-    setCourseId("");
+    setCourseType("");
     setIsCustomCourse(false);
 
     // Co-applicant required
@@ -411,9 +412,9 @@ export const CompleteLeadModal = ({
       newErrors.studentPinCode = "Enter valid 6-digit PIN";
     }
 
-    // Course is required
-    if (!courseId.trim()) {
-      newErrors.courseId = "Please select or enter a course/program";
+    // Course type is required
+    if (!courseType.trim()) {
+      newErrors.courseId = "Please select a course type";
     }
 
     // Co-Applicant Name validation - REQUIRED
@@ -582,21 +583,8 @@ export const CompleteLeadModal = ({
 
         const primaryUniversityId = universities.find(u => u && u.trim() && u.length > 10) || null;
 
-        if (isCustomCourse || !primaryUniversityId) {
-          console.log("Custom course entered:", courseId);
-        } else if (courseId && primaryUniversityId) {
-          const { error: courseError } = await supabase
-            .from("lead_courses")
-            .insert({
-              lead_id: lead.id,
-              course_id: courseId,
-              is_custom_course: false,
-            });
-
-          if (courseError) {
-            console.warn("Could not save course association:", courseError);
-          }
-        }
+        // Course type is stored in lead's course_type field via the lead update
+        console.log("Course type selected:", courseType);
       } catch (courseErr) {
         console.warn("Error handling course:", courseErr);
       }
@@ -985,45 +973,24 @@ export const CompleteLeadModal = ({
               )}
             </div>
 
-            {/* Course Selection */}
+            {/* Course Type Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <GraduationCap className="h-4 w-4" />
-                Course / Program <span className="text-destructive">*</span>
+                Course Type <span className="text-destructive">*</span>
               </Label>
-              {universities[0] && universities[0].length > 10 ? (
-                <CourseCombobox
-                  universityId={universities[0]}
-                  value={courseId}
-                  onChange={(value, isCustom) => {
-                    setCourseId(value);
-                    setIsCustomCourse(isCustom || false);
-                    if (errors.courseId) {
-                      setErrors(prev => ({ ...prev, courseId: undefined }));
-                    }
-                  }}
-                  placeholder="Search or enter course name..."
-                  error={errors.courseId}
-                />
-              ) : (
-                <Input
-                  placeholder="Enter course/program name"
-                  value={courseId}
-                  onChange={(e) => {
-                    setCourseId(e.target.value);
-                    setIsCustomCourse(true);
-                    if (errors.courseId) {
-                      setErrors(prev => ({ ...prev, courseId: undefined }));
-                    }
-                  }}
-                  className={errors.courseId ? 'border-destructive' : ''}
-                />
-              )}
-              {!(universities[0] && universities[0].length > 10) && (
-                <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md">
-                  💡 Select a university first to see available courses, or enter a custom course name.
-                </p>
-              )}
+              <CourseTypeSelector
+                value={courseType}
+                onChange={(value) => {
+                  setCourseType(value);
+                  setIsCustomCourse(false);
+                  if (errors.courseId) {
+                    setErrors(prev => ({ ...prev, courseId: undefined }));
+                  }
+                }}
+                error={!!errors.courseId}
+                label=""
+              />
               {errors.courseId && (
                 <p className="text-xs text-destructive">{errors.courseId}</p>
               )}
