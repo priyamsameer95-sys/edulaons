@@ -58,7 +58,7 @@ const StudentAuthContent = () => {
   
   // Get returnTo from URL params
   const searchParams = new URLSearchParams(location.search);
-  const returnTo = searchParams.get('returnTo') || '/student';
+  const returnTo = searchParams.get('returnTo') || '/dashboard/student';
   const [step, setStep] = useState<AuthStep>('phone');
   const [isLoading, setIsLoading] = useState(false);
   const [otpError, setOtpError] = useState(false);
@@ -396,7 +396,7 @@ const StudentAuthContent = () => {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Link>
-          <Link to="/partner/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link to="/login/partner" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Partner Login →
           </Link>
         </div>

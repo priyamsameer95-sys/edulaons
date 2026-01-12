@@ -144,7 +144,7 @@ const Login = () => {
               asChild
               className="gap-2 text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm shadow-sm border-border/50 hover:border-primary/30 transition-all"
             >
-              <Link to="/partner/login">
+              <Link to="/login/partner">
                 <Briefcase className="h-4 w-4" />
                 <span>Partner Login</span>
               </Link>
@@ -344,7 +344,7 @@ const Login = () => {
           <div className="mt-6 text-center relative z-10">
             <p className="text-sm text-muted-foreground">
               Prefer OTP login?{' '}
-              <Link to="/student/auth" className="font-semibold text-primary hover:underline underline-offset-2">
+              <Link to="/login/student" className="font-semibold text-primary hover:underline underline-offset-2">
                 Sign in with Phone
               </Link>
             </p>

@@ -199,7 +199,7 @@ export function CommandPalette({
               <span>Create New Lead</span>
             </CommandItem>
             <CommandItem onSelect={() => {
-              navigate('/admin/v2');
+              navigate('/dashboard/admin');
               onOpenChange(false);
             }}>
               <Users className="mr-2 h-4 w-4" />
@@ -212,21 +212,21 @@ export function CommandPalette({
           {/* Navigation */}
           <CommandGroup heading="Navigation">
             <CommandItem onSelect={() => {
-              navigate('/admin/v2?tab=partners');
+              navigate('/dashboard/admin?tab=partners');
               onOpenChange(false);
             }}>
               <Building2 className="mr-2 h-4 w-4" />
               <span>Partners</span>
             </CommandItem>
             <CommandItem onSelect={() => {
-              navigate('/admin/v2?tab=lenders');
+              navigate('/dashboard/admin?tab=lenders');
               onOpenChange(false);
             }}>
               <Building2 className="mr-2 h-4 w-4" />
               <span>Lenders</span>
             </CommandItem>
             <CommandItem onSelect={() => {
-              navigate('/admin/v2?tab=settings');
+              navigate('/dashboard/admin?tab=settings');
               onOpenChange(false);
             }}>
               <Settings className="mr-2 h-4 w-4" />

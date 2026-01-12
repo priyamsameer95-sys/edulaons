@@ -226,7 +226,7 @@ const PartnerDashboard = ({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+            {isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/admin')}>
                 Admin
               </Button>}
             <PartnerNotificationBell partnerId={partner?.id} />

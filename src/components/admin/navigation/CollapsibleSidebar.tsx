@@ -24,14 +24,14 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
-  { label: 'Dashboard', icon: Home, href: '/admin/v2' },
-  { label: 'Leads', icon: Users, href: '/admin/v2?tab=leads' },
-  { label: 'Partners', icon: Handshake, href: '/admin/v2?tab=partners' },
-  { label: 'Lenders', icon: Building2, href: '/admin/v2?tab=lenders' },
-  { label: 'Documents', icon: FileText, href: '/admin/v2?tab=documents' },
-  { label: 'Analytics', icon: BarChart3, href: '/admin/v2?tab=analytics' },
-  { label: 'Users', icon: User, href: '/admin/v2?tab=users' },
-  { label: 'Settings', icon: Settings, href: '/admin/v2?tab=settings' },
+  { label: 'Dashboard', icon: Home, href: '/dashboard/admin' },
+  { label: 'Leads', icon: Users, href: '/dashboard/admin?tab=leads' },
+  { label: 'Partners', icon: Handshake, href: '/dashboard/admin?tab=partners' },
+  { label: 'Lenders', icon: Building2, href: '/dashboard/admin?tab=lenders' },
+  { label: 'Documents', icon: FileText, href: '/dashboard/admin?tab=documents' },
+  { label: 'Analytics', icon: BarChart3, href: '/dashboard/admin?tab=analytics' },
+  { label: 'Users', icon: User, href: '/dashboard/admin?tab=users' },
+  { label: 'Settings', icon: Settings, href: '/dashboard/admin?tab=settings' },
 ];
 
 interface CollapsibleSidebarProps {
@@ -46,8 +46,8 @@ export const CollapsibleSidebar = ({ className, collapsed: externalCollapsed, on
   const location = useLocation();
 
   const isActive = (href: string) => {
-    if (href === '/admin/v2') {
-      return location.pathname === '/admin/v2' && !location.search;
+    if (href === '/dashboard/admin') {
+      return location.pathname === '/dashboard/admin' && !location.search;
     }
     const tabMatch = href.match(/tab=([^&]+)/);
     if (tabMatch) {
