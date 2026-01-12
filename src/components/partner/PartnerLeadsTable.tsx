@@ -23,14 +23,27 @@ interface PartnerLeadsTableProps {
 }
 
 // Memoized helper functions
+// A lead is incomplete if:
+// 1. It's marked as a quick lead (is_quick_lead=true) AND
+// 2. It hasn't been completed yet (quick_lead_completed_at is null) OR
+// 3. It has placeholder PIN codes (from eligibility check flow)
 const isIncompleteQuickLead = (lead: RefactoredLead): boolean => {
+  // Full leads (is_quick_lead=false) are never incomplete
+  if (lead.is_quick_lead === false) {
+    return false;
+  }
+  
+  // Quick leads without completion timestamp are incomplete
   if (lead.is_quick_lead === true && !lead.quick_lead_completed_at) {
     return true;
   }
+  
+  // Quick leads with placeholder PINs are incomplete (eligibility check flow)
   const coApplicant = lead.co_applicant;
   if (coApplicant?.pin_code === '000000') {
     return true;
   }
+  
   return false;
 };
 const isEligibilityCheckedLead = (lead: RefactoredLead): boolean => {
