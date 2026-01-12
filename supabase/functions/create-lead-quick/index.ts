@@ -232,6 +232,21 @@ serve(async (req) => {
     const caseId = `EDU-${Date.now()}`;
     console.log('📝 Creating quick lead:', caseId);
 
+    // Check if this quick lead has enough data to be considered complete
+    const hasCompleteName = body.co_applicant_name?.trim()?.length > 2;
+    const hasCompletePhone = body.co_applicant_phone?.trim()?.length >= 10;
+    const hasCompleteSalary = coApplicantSalary > 0;
+    const hasCompleteState = body.co_applicant_state?.trim()?.length > 2;
+    const isCompleteData = hasCompleteName && hasCompletePhone && hasCompleteSalary && hasCompleteState;
+    
+    console.log('📊 Quick lead completeness check:', {
+      hasCompleteName,
+      hasCompletePhone,
+      hasCompleteSalary,
+      hasCompleteState,
+      isCompleteData,
+    });
+
     const { data: lead, error: leadError } = await supabaseAdmin
       .from('leads_new')
       .insert({
@@ -245,10 +260,13 @@ serve(async (req) => {
         study_destination: studyDestination,
         intake_month: intakeMonth,
         intake_year: intakeYear,
-        status: 'new',
+        status: isCompleteData ? 'lead_intake' : 'new',
         documents_status: 'pending',
         is_quick_lead: true,
+        quick_lead_completed_at: isCompleteData ? new Date().toISOString() : null,
         source: 'partner_quick',
+        created_by_user_id: user.id,
+        created_by_role: isAdmin ? 'admin' : 'partner',
       })
       .select()
       .single();
