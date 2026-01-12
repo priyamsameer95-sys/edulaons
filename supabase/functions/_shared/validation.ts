@@ -312,6 +312,7 @@ export function validateSalary(salary: any, fieldName: string = 'monthly_salary'
 
 /**
  * Validate intake month and year
+ * Note: (0, 0) is valid and means "Not sure yet"
  */
 export function validateIntake(month: any, year: any): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -319,12 +320,29 @@ export function validateIntake(month: any, year: any): ValidationError[] {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;
   
-  // Validate month
+  const numMonth = typeof month === 'number' ? month : parseInt(String(month), 10);
+  const numYear = typeof year === 'number' ? year : parseInt(String(year), 10);
+  
+  // Handle "Not sure yet" case - both month and year are 0
+  if (numMonth === 0 && numYear === 0) {
+    // This is valid - "Not sure yet" option
+    return errors;
+  }
+  
+  // If only one is 0, that's invalid (partial "not sure" state)
+  if (numMonth === 0 || numYear === 0) {
+    errors.push({
+      field: 'intake_month',
+      message: 'Both intake month and year must be provided, or select "Not sure yet"',
+      code: 'INVALID_PAIR',
+    });
+    return errors;
+  }
+  
+  // Validate month (1-12)
   if (month === undefined || month === null || month === '') {
     errors.push({ field: 'intake_month', message: 'Intake month is required', code: 'REQUIRED' });
   } else {
-    const numMonth = typeof month === 'number' ? month : parseInt(String(month), 10);
-    
     if (isNaN(numMonth) || numMonth < VALIDATION_RULES.INTAKE_MONTH.MIN || numMonth > VALIDATION_RULES.INTAKE_MONTH.MAX) {
       errors.push({
         field: 'intake_month',
@@ -339,7 +357,6 @@ export function validateIntake(month: any, year: any): ValidationError[] {
   if (year === undefined || year === null || year === '') {
     errors.push({ field: 'intake_year', message: 'Intake year is required', code: 'REQUIRED' });
   } else {
-    const numYear = typeof year === 'number' ? year : parseInt(String(year), 10);
     const minYear = currentYear + VALIDATION_RULES.INTAKE_YEAR.MIN_OFFSET;
     const maxYear = currentYear + VALIDATION_RULES.INTAKE_YEAR.MAX_OFFSET;
     
@@ -353,8 +370,7 @@ export function validateIntake(month: any, year: any): ValidationError[] {
     }
     
     // Check if intake is in the past
-    if (!isNaN(numYear) && month !== undefined) {
-      const numMonth = typeof month === 'number' ? month : parseInt(String(month), 10);
+    if (!isNaN(numYear) && !isNaN(numMonth)) {
       if (numYear === currentYear && numMonth < currentMonth) {
         errors.push({
           field: 'intake_month',

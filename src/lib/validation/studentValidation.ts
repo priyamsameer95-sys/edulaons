@@ -69,6 +69,7 @@ export const academicBackgroundSchema = z.object({
 });
 
 // Study Details Schema - Base schema without refinements
+// Note: intakeMonth=0 and intakeYear=0 means "Not sure yet"
 const studyDetailsBaseSchema = z.object({
   universities: z.array(z.string())
     .min(VALIDATION_RULES.UNIVERSITIES.MIN_COUNT, ERROR_MESSAGES.UNIVERSITIES_MIN)
@@ -76,8 +77,8 @@ const studyDetailsBaseSchema = z.object({
   studyDestination: z.string().min(1, ERROR_MESSAGES.REQUIRED),
   courseName: z.string().max(VALIDATION_RULES.COURSE_NAME.MAX_LENGTH).optional(),
   loanType: z.enum(['secured', 'unsecured']),
-  intakeMonth: z.number().min(1).max(12),
-  intakeYear: z.number().min(new Date().getFullYear()),
+  intakeMonth: z.number().min(0).max(12), // 0 = "Not sure yet"
+  intakeYear: z.number().min(0), // 0 = "Not sure yet"
   loanAmount: z.number()
     .min(VALIDATION_RULES.LOAN_AMOUNT.MIN, ERROR_MESSAGES.LOAN_AMOUNT_TOO_LOW)
     .max(VALIDATION_RULES.LOAN_AMOUNT.MAX, ERROR_MESSAGES.LOAN_AMOUNT_TOO_HIGH),
@@ -116,6 +117,16 @@ export const studentApplicationSchema = personalDetailsSchema
   .merge(studyDetailsBaseSchema)
   .merge(coApplicantDetailsSchema)
   .refine((data) => {
+    // "Not sure yet" case - both are 0, which is valid
+    if (data.intakeMonth === 0 && data.intakeYear === 0) {
+      return true;
+    }
+    
+    // If only one is 0 but not the other, invalid state
+    if (data.intakeMonth === 0 || data.intakeYear === 0) {
+      return false;
+    }
+    
     // Validate that intake date is in the future
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -127,7 +138,7 @@ export const studentApplicationSchema = personalDetailsSchema
     }
     return true;
   }, {
-    message: 'Intake date must be in the future',
+    message: 'Intake date must be in the future or select "Not sure yet"',
     path: ['intakeMonth'],
   });
 
