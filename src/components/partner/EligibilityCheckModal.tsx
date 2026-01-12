@@ -486,16 +486,6 @@ export const EligibilityCheckModal = ({
               {tierConfig.subtext}
             </p>
 
-            {/* Progress Bar - 90% complete */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="text-muted-foreground">Profile Completion</span>
-                <span className="font-semibold text-emerald-600">90%</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full w-[90%] bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000" />
-              </div>
-            </div>
           </div>
 
           {/* Scrollable Content Section */}
