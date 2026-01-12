@@ -405,11 +405,9 @@ export const CompleteLeadModal = ({
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Student PIN Code validation (6 digits) - REQUIRED
-    if (!studentPinCode.trim()) {
-      newErrors.studentPinCode = "Required";
-    } else if (!/^\d{6}$/.test(studentPinCode.trim())) {
-      newErrors.studentPinCode = "Enter valid 6-digit PIN";
+    // Student State validation - REQUIRED
+    if (!studentState.trim()) {
+      newErrors.studentState = "Required";
     }
 
     // Course type is required
@@ -714,23 +712,30 @@ export const CompleteLeadModal = ({
               </h4>
               <div className="space-y-2">
                 <Label className="text-sm">
-                  PIN Code <span className="text-destructive">*</span>
+                  State <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  placeholder="6-digit PIN code"
-                  value={studentPinCode}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setStudentPinCode(value);
-                    if (errors.studentPinCode) {
-                      setErrors(prev => ({ ...prev, studentPinCode: undefined }));
+                <Select 
+                  value={studentState} 
+                  onValueChange={(value) => {
+                    setStudentState(value);
+                    if (errors.studentState) {
+                      setErrors(prev => ({ ...prev, studentState: undefined }));
                     }
                   }}
-                  maxLength={6}
-                  className={errors.studentPinCode ? 'border-destructive' : ''}
-                />
-                {errors.studentPinCode && (
-                  <p className="text-xs text-destructive">{errors.studentPinCode}</p>
+                >
+                  <SelectTrigger className={errors.studentState ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Select state..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_STATES_AND_UTS.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.studentState && (
+                  <p className="text-xs text-destructive">{errors.studentState}</p>
                 )}
               </div>
               
@@ -788,19 +793,16 @@ export const CompleteLeadModal = ({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm">State</Label>
-                      <Select value={studentState} onValueChange={setStudentState}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select state..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ALL_STATES_AND_UTS.map((state) => (
-                            <SelectItem key={state} value={state}>
-                              {state}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm">PIN Code</Label>
+                      <Input
+                        placeholder="6-digit PIN code"
+                        value={studentPinCode}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setStudentPinCode(value);
+                        }}
+                        maxLength={6}
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
