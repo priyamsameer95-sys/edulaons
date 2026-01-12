@@ -456,7 +456,7 @@ export const EligibilityCheckModal = ({
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-lg overflow-hidden p-0 max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-lg overflow-hidden p-0 max-h-[85vh] flex flex-col">
           {/* Clean Hero Header */}
           <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-muted/50 to-background">
             {/* Success Badge */}
@@ -499,7 +499,7 @@ export const EligibilityCheckModal = ({
           </div>
 
           {/* Scrollable Content Section */}
-          <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1">
+          <div className="px-6 pb-6 space-y-4 overflow-y-auto flex-1 min-h-0">
             {/* Student Card - Compact */}
             <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
               <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
@@ -588,7 +588,7 @@ export const EligibilityCheckModal = ({
           </div>
 
           {/* Sticky CTA Section - Always visible */}
-          <div className="px-6 pb-6 pt-4 bg-background border-t space-y-3 sticky bottom-0">
+          <div className="px-6 pb-6 pt-4 bg-background border-t space-y-3 flex-shrink-0">
             <Button 
               onClick={handleContinueApplication} 
               size="lg"
