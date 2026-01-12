@@ -61,6 +61,7 @@ interface FormData {
   co_applicant_name: string;
   co_applicant_relationship: string;
   co_applicant_phone: string;
+  co_applicant_pin_code: string; // NEW: Required for full lead
   co_applicant_state: string;
   co_applicant_income_range: string;
   co_applicant_occupation: string;
@@ -139,6 +140,7 @@ const initialFormData: FormData = {
   co_applicant_name: "",
   co_applicant_relationship: "",
   co_applicant_phone: "",
+  co_applicant_pin_code: "", // NEW: Required for full lead
   co_applicant_state: "",
   co_applicant_income_range: "",
   co_applicant_occupation: "",
@@ -295,6 +297,13 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
         newErrors.co_applicant_phone = "Invalid number";
       }
 
+      // NEW: Co-applicant PIN code validation
+      if (!formData.co_applicant_pin_code.trim()) {
+        newErrors.co_applicant_pin_code = "Required";
+      } else if (!/^\d{6}$/.test(formData.co_applicant_pin_code.trim())) {
+        newErrors.co_applicant_pin_code = "Must be 6 digits";
+      }
+
       if (!formData.co_applicant_state) {
         newErrors.co_applicant_state = "Required";
       }
@@ -351,6 +360,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           co_applicant_name: formData.co_applicant_name.trim(),
           co_applicant_relationship: formData.co_applicant_relationship,
           co_applicant_phone: formData.co_applicant_phone.replace(/\D/g, ''),
+          co_applicant_pin_code: formData.co_applicant_pin_code.trim(), // NEW: Pass real PIN
           co_applicant_state: formData.co_applicant_state,
           co_applicant_monthly_salary: parseInt(formData.co_applicant_income_range),
           co_applicant_occupation: formData.co_applicant_occupation || undefined,
@@ -817,6 +827,18 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                   </SelectContent>
                 </Select>
                 {errors.co_applicant_state && <p className="text-xs text-destructive">{errors.co_applicant_state}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="co_applicant_pin_code" className="text-sm">PIN Code *</Label>
+                <Input
+                  id="co_applicant_pin_code"
+                  value={formData.co_applicant_pin_code}
+                  onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6 digit PIN"
+                  className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
+                />
+                {errors.co_applicant_pin_code && <p className="text-xs text-destructive">{errors.co_applicant_pin_code}</p>}
               </div>
 
               <div className="space-y-1.5">

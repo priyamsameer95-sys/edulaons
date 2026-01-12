@@ -192,6 +192,18 @@ serve(async (req) => {
     // Determine salary - accept income_range value or direct monthly_salary
     const coApplicantSalary = parseFloat(body.co_applicant_monthly_salary || '50000');
     
+    // Determine if this is a full lead (has real PIN) vs eligibility check (placeholder PIN)
+    const coApplicantPinCode = body.co_applicant_pin_code?.trim() || '000000';
+    const studentPinCode = body.student_pin_code?.trim() || '000000';
+    const isEligibilityCheck = body.source === 'eligibility_check' || coApplicantPinCode === '000000';
+    
+    console.log('📊 Lead type detection:', {
+      source: body.source,
+      coApplicantPinCode,
+      studentPinCode,
+      isEligibilityCheck,
+    });
+    
     const { data: coApplicant, error: coApplicantError } = await supabaseAdmin
       .from('co_applicants')
       .insert({
@@ -200,8 +212,8 @@ serve(async (req) => {
         relationship: body.co_applicant_relationship || 'parent',
         salary: coApplicantSalary * 12, // Annual salary
         monthly_salary: coApplicantSalary,
-        pin_code: '000000', // Default placeholder - PIN no longer collected
-        state: body.co_applicant_state || null, // NEW: Store state instead of PIN
+        pin_code: coApplicantPinCode, // Use actual value from form
+        state: body.co_applicant_state || null,
         occupation: body.co_applicant_occupation || null,
         employment_type: body.co_applicant_employer_type || null,
         employer: body.co_applicant_employer?.trim() || null,
@@ -232,19 +244,29 @@ serve(async (req) => {
     const caseId = `EDU-${Date.now()}`;
     console.log('📝 Creating quick lead:', caseId);
 
-    // Check if this quick lead has enough data to be considered complete
+    // Determine lead completion status based on:
+    // - For "New Lead" (AddNewLeadModal): has real PINs → is_quick_lead=false, complete
+    // - For "Eligibility Check": placeholder PINs → is_quick_lead=true, incomplete
+    const hasRealCoApplicantPin = coApplicantPinCode !== '000000' && /^\d{6}$/.test(coApplicantPinCode);
+    const hasRealStudentPin = studentPinCode !== '000000' && /^\d{6}$/.test(studentPinCode);
     const hasCompleteName = body.co_applicant_name?.trim()?.length > 2;
     const hasCompletePhone = body.co_applicant_phone?.trim()?.length >= 10;
     const hasCompleteSalary = coApplicantSalary > 0;
     const hasCompleteState = body.co_applicant_state?.trim()?.length > 2;
-    const isCompleteData = hasCompleteName && hasCompletePhone && hasCompleteSalary && hasCompleteState;
     
-    console.log('📊 Quick lead completeness check:', {
+    // Full lead = has real PIN codes + core data (from AddNewLeadModal)
+    // Eligibility check = placeholder PINs (from EligibilityCheckModal)
+    const isFullLead = hasRealCoApplicantPin && hasCompleteName && hasCompletePhone && hasCompleteSalary && hasCompleteState;
+    
+    console.log('📊 Lead completion check:', {
+      hasRealCoApplicantPin,
+      hasRealStudentPin,
       hasCompleteName,
       hasCompletePhone,
       hasCompleteSalary,
       hasCompleteState,
-      isCompleteData,
+      isFullLead,
+      isEligibilityCheck,
     });
 
     const { data: lead, error: leadError } = await supabaseAdmin
@@ -260,11 +282,11 @@ serve(async (req) => {
         study_destination: studyDestination,
         intake_month: intakeMonth,
         intake_year: intakeYear,
-        status: isCompleteData ? 'lead_intake' : 'new',
+        status: isFullLead ? 'lead_intake' : 'new',
         documents_status: 'pending',
-        is_quick_lead: true,
-        quick_lead_completed_at: isCompleteData ? new Date().toISOString() : null,
-        source: 'partner_quick',
+        is_quick_lead: !isFullLead, // Full leads are NOT quick leads
+        quick_lead_completed_at: isFullLead ? new Date().toISOString() : null,
+        source: body.source || (isFullLead ? 'partner_full' : 'partner_quick'),
         created_by_user_id: user.id,
         created_by_role: isAdmin ? 'admin' : 'partner',
       })
