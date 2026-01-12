@@ -5,11 +5,16 @@
 
 // Map frontend country codes to database country names
 export const COUNTRY_CODE_TO_NAME: Record<string, string> = {
+  // Primary codes used in StudentLanding
   'USA': 'United States',
+  'US': 'United States',
   'UK': 'United Kingdom',
+  'GB': 'United Kingdom',
   'Canada': 'Canada',
   'Australia': 'Australia',
   'Germany': 'Germany',
+  'Ireland': 'Ireland',
+  'IE': 'Ireland',
   'NZ': 'New Zealand',
   'New Zealand': 'New Zealand',
   'SG': 'Singapore',
@@ -22,7 +27,10 @@ export const COUNTRY_CODE_TO_NAME: Record<string, string> = {
   'Switzerland': 'Switzerland',
   'CN': 'China',
   'China': 'China',
-  'Other': 'Other'
+  'Other': 'Other',
+  // Pass-through for full country names
+  'United States': 'United States',
+  'United Kingdom': 'United Kingdom',
 };
 
 // Reverse mapping for display purposes
