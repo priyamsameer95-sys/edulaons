@@ -50,12 +50,7 @@ const amountRanges = [
 ];
 
 
-const courseTypes: { value: CourseType; label: string }[] = [
-  { value: 'masters_stem', label: 'Masters STEM' },
-  { value: 'bachelors_stem', label: 'Bachelors STEM' },
-  { value: 'mba_management', label: 'MBA' },
-  { value: 'others', label: 'Others' },
-];
+import { CourseTypeSelector, COURSE_TYPES } from '@/components/shared/CourseTypeSelector';
 
 // UI country values → DB country names mapping
 const COUNTRY_TO_DB: Record<string, string[]> = {
@@ -365,27 +360,15 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
         </div>
 
         {/* Row 4: Course Type */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Course Type *</label>
-          <div className="flex flex-wrap gap-2">
-            {courseTypes.map(ct => (
-              <button
-                key={ct.value}
-                type="button"
-                onClick={() => { onUpdate({ courseType: ct.value }); setErrors(p => ({ ...p, courseType: '' })); }}
-                className={cn(
-                  "px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all",
-                  data.courseType === ct.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:border-primary/40 text-foreground",
-                  errors.courseType && !data.courseType && "border-destructive"
-                )}
-              >
-                {ct.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CourseTypeSelector
+          value={data.courseType}
+          onChange={(value) => { 
+            onUpdate({ courseType: value }); 
+            setErrors(p => ({ ...p, courseType: '' })); 
+          }}
+          error={!!errors.courseType}
+          required
+        />
 
         {/* Row 5: Intake Month */}
         <div className="space-y-2">

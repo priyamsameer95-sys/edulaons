@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { UniversitySelector } from '@/components/ui/university-selector';
 import { MonthYearPicker } from '@/components/ui/month-year-picker';
-import { CourseCombobox } from '@/components/ui/course-combobox';
+import { CourseTypeSelector } from '@/components/shared/CourseTypeSelector';
 import { PartnerCombobox, PartnerOption } from '@/components/ui/partner-combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -58,7 +58,7 @@ interface FormData {
   // Study fields
   country: string;
   universities: string[];
-  course_id: string;
+  course_type: string;
   is_custom_course: boolean;
   intake_month: string;
   loan_type: 'secured' | 'unsecured' | '';
@@ -181,7 +181,7 @@ export const AdminNewLeadModal = ({
     student_credit_score: '',
     country: '',
     universities: [''],
-    course_id: '',
+    course_type: '',
     is_custom_course: false,
     intake_month: '',
     loan_type: '',
@@ -219,7 +219,7 @@ export const AdminNewLeadModal = ({
       student_credit_score: '',
       country: '',
       universities: [''],
-      course_id: '',
+      course_type: '',
       is_custom_course: false,
       intake_month: '',
       loan_type: '',
@@ -940,20 +940,14 @@ export const AdminNewLeadModal = ({
                   <UniversitySelector country={formData.country} universities={formData.universities} onChange={handleUniversitiesChange} />
                 </div>}
 
-              {/* Course Selection - show when university is selected */}
-              {formData.universities[0] && formData.universities[0].length > 10 && <div>
-                  <Label>Course / Program (Optional)</Label>
-                  <CourseCombobox universityId={formData.universities[0]} value={formData.course_id} onChange={(value, isCustom) => {
-                setFormData(prev => ({
-                  ...prev,
-                  course_id: value,
-                  is_custom_course: isCustom || false
-                }));
-              }} placeholder="Search or enter course name..." />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select from available courses or enter a custom course name
-                  </p>
-                </div>}
+              {/* Course Type Selection - chip selector */}
+              <CourseTypeSelector
+                value={formData.course_type}
+                onChange={(value) => {
+                  setFormData(prev => ({ ...prev, course_type: value }));
+                }}
+                label="Course Type"
+              />
 
               <FieldWrapper label="Loan Type" required error={errors.loan_type} touched={touched.loan_type} isValid={!!formData.loan_type} helperText={loanTypeHelperText} id="loan_type">
                 <RadioGroup value={formData.loan_type} onValueChange={v => {

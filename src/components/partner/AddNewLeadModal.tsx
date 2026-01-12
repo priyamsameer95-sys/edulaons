@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UniversityCombobox } from "@/components/ui/university-combobox";
-import { CourseCombobox } from "@/components/ui/course-combobox";
+import { CourseTypeSelector } from "@/components/shared/CourseTypeSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -50,7 +50,7 @@ interface FormData {
   university_id: string;
   university_name: string;
   is_custom_university: boolean;
-  course_id: string;
+  course_type: string;
   course_name: string;
   is_custom_course: boolean;
   intake_month: string;
@@ -129,7 +129,7 @@ const initialFormData: FormData = {
   university_id: "",
   university_name: "",
   is_custom_university: false,
-  course_id: "",
+  course_type: "",
   course_name: "",
   is_custom_course: false,
   intake_month: "",
@@ -253,8 +253,8 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
         newErrors.university_id = "Required";
       }
 
-      if (!formData.course_id && !formData.course_name) {
-        newErrors.course_id = "Required";
+      if (!formData.course_type && !formData.course_name) {
+        newErrors.course_type = "Required";
       }
 
       if (!formData.intake_month) {
@@ -341,8 +341,8 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           country: formData.study_destination,
           university_id: formData.is_custom_university ? undefined : formData.university_id,
           university_name: formData.is_custom_university ? formData.university_name : undefined,
-          course_id: formData.is_custom_course ? undefined : formData.course_id,
-          course_name: formData.is_custom_course ? formData.course_name : formData.course_name,
+          course_type: formData.course_type || undefined,
+          course_name: formData.course_name || undefined,
           intake_month: parseInt(formData.intake_month),
           intake_year: parseInt(formData.intake_year),
           loan_amount: parseInt(formData.loan_amount.replace(/,/g, '')),
@@ -425,21 +425,14 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
       handleInputChange('is_custom_university', false);
     }
     // Reset course when university changes
-    handleInputChange('course_id', '');
+    handleInputChange('course_type', '');
     handleInputChange('course_name', '');
     handleInputChange('is_custom_course', false);
   };
 
-  const handleCourseChange = (value: string, isCustom?: boolean) => {
-    if (isCustom) {
-      handleInputChange('course_id', '');
-      handleInputChange('course_name', value);
-      handleInputChange('is_custom_course', true);
-    } else {
-      handleInputChange('course_id', value);
-      handleInputChange('course_name', '');
-      handleInputChange('is_custom_course', false);
-    }
+  const handleCourseTypeChange = (value: string) => {
+    handleInputChange('course_type', value);
+    handleInputChange('is_custom_course', false);
   };
 
   if (showSuccess) {
@@ -644,7 +637,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                     handleInputChange('study_destination', value);
                     handleInputChange('university_id', '');
                     handleInputChange('university_name', '');
-                    handleInputChange('course_id', '');
+                    handleInputChange('course_type', '');
                     handleInputChange('course_name', '');
                   }}
                 >
@@ -674,16 +667,14 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
               </div>
 
               <div className="col-span-2 space-y-1.5">
-                <Label className="text-sm">Course/Program *</Label>
-                <CourseCombobox
-                  universityId={formData.university_id}
-                  value={formData.course_id || formData.course_name}
-                  onChange={handleCourseChange}
-                  placeholder="Search or enter course name"
+                <CourseTypeSelector
+                  value={formData.course_type}
+                  onChange={handleCourseTypeChange}
+                  error={!!errors.course_type}
                   disabled={!formData.study_destination}
-                  error={errors.course_id}
+                  required
                 />
-                {errors.course_id && <p className="text-xs text-destructive">{errors.course_id}</p>}
+                {errors.course_type && <p className="text-xs text-destructive">{errors.course_type}</p>}
               </div>
 
               <div className="space-y-1.5">

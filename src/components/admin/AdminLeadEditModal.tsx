@@ -46,7 +46,7 @@ import {
 import { QUALIFICATION_OPTIONS, TEST_TYPES } from "@/utils/leadCompletionSchema";
 import { INDIAN_STATES } from "@/constants/indianStates";
 import { UniversitySelector } from "@/components/ui/university-selector";
-import { CourseCombobox } from "@/components/ui/course-combobox";
+import { CourseTypeSelector } from '@/components/shared/CourseTypeSelector';
 import { 
   Loader2, 
   User, 
@@ -1115,23 +1115,18 @@ export function AdminLeadEditModal({
                         />
                       </div>
                       
-                      {universities[0] && universities[0].length > 10 && (
-                        <div className="space-y-2">
-                          <Label>Course / Program</Label>
-                          <CourseCombobox
-                            universityId={universities[0]}
-                            value={courseId}
-                            onChange={(value, customFlag) => {
-                              setCourseId(value);
-                              setIsCustomCourse(customFlag || false);
-                            }}
-                            placeholder="Search or enter course name..."
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Select from available courses or enter a custom course name
-                          </p>
-                        </div>
-                      )}
+                      {/* Course Type Selection */}
+                      <div className="space-y-2">
+                        <Label>Course Type</Label>
+                        <CourseTypeSelector
+                          value={courseId}
+                          onChange={(value) => {
+                            setCourseId(value);
+                            setIsCustomCourse(false);
+                          }}
+                          label=""
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 )}
