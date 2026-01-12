@@ -84,7 +84,7 @@ interface FormErrors {
   coApplicantRelationship?: string;
   coApplicantPhone?: string;
   coApplicantSalary?: string;
-  coApplicantPinCode?: string;
+  coApplicantState?: string;
   coApplicantOccupation?: string;
   coApplicantEmployer?: string;
   coApplicantEmploymentType?: string;
@@ -178,6 +178,7 @@ export const CompleteLeadModal = ({
   const [coApplicantPhone, setCoApplicantPhone] = useState<string>("");
   const [coApplicantSalary, setCoApplicantSalary] = useState<string>("");
   const [coApplicantPinCode, setCoApplicantPinCode] = useState<string>("");
+  const [coApplicantState, setCoApplicantState] = useState<string>("");
   
   // Co-applicant optional employment fields
   const [coApplicantOccupation, setCoApplicantOccupation] = useState<string>("");
@@ -303,6 +304,8 @@ export const CompleteLeadModal = ({
         const coPin = coAppData?.pin_code;
         const isCoPinPlaceholder = !coPin || coPin === "000000";
         setCoApplicantPinCode(isCoPinPlaceholder ? "" : coPin);
+        // @ts-ignore - state may exist on co_applicant
+        setCoApplicantState((coAppData as any)?.state || "");
         
         // Co-applicant optional employment fields
         setCoApplicantOccupation(coAppData?.occupation || "");
@@ -382,6 +385,7 @@ export const CompleteLeadModal = ({
     setCoApplicantPhone("");
     setCoApplicantSalary("");
     setCoApplicantPinCode("");
+    setCoApplicantState("");
 
     // Co-applicant optional
     setCoApplicantOccupation("");
@@ -444,11 +448,9 @@ export const CompleteLeadModal = ({
       }
     }
 
-    // Co-Applicant PIN Code validation (6 digits) - REQUIRED
-    if (!coApplicantPinCode.trim()) {
-      newErrors.coApplicantPinCode = "Required";
-    } else if (!/^\d{6}$/.test(coApplicantPinCode.trim())) {
-      newErrors.coApplicantPinCode = "Enter valid 6-digit PIN";
+    // Co-Applicant State validation - REQUIRED
+    if (!coApplicantState.trim()) {
+      newErrors.coApplicantState = "Required";
     }
 
     // Optional field validations (only if filled)
@@ -596,7 +598,8 @@ export const CompleteLeadModal = ({
           relationship: coApplicantRelationship as RelationshipEnum,
           phone: coApplicantPhone.trim(),
           salary: salaryValue,
-          pin_code: coApplicantPinCode.trim(),
+          pin_code: coApplicantPinCode.trim() || null,
+          state: coApplicantState.trim() || null,
           occupation: coApplicantOccupation || null,
           employer: coApplicantEmployer.trim() || null,
           employment_type: coApplicantEmploymentType || null,
@@ -1104,28 +1107,47 @@ export const CompleteLeadModal = ({
                 </div>
               </div>
 
-              {/* PIN Code Row */}
+              {/* State Row */}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="space-y-2">
                   <Label className="text-sm">
-                    PIN Code <span className="text-destructive">*</span>
+                    State <span className="text-destructive">*</span>
                   </Label>
+                  <Select 
+                    value={coApplicantState} 
+                    onValueChange={(value) => {
+                      setCoApplicantState(value);
+                      if (errors.coApplicantState) {
+                        setErrors(prev => ({ ...prev, coApplicantState: undefined }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className={errors.coApplicantState ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select state..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALL_STATES_AND_UTS.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.coApplicantState && (
+                    <p className="text-xs text-destructive">{errors.coApplicantState}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">PIN Code</Label>
                   <Input
                     placeholder="6-digit PIN"
                     value={coApplicantPinCode}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                       setCoApplicantPinCode(value);
-                      if (errors.coApplicantPinCode) {
-                        setErrors(prev => ({ ...prev, coApplicantPinCode: undefined }));
-                      }
                     }}
                     maxLength={6}
-                    className={errors.coApplicantPinCode ? 'border-destructive' : ''}
                   />
-                  {errors.coApplicantPinCode && (
-                    <p className="text-xs text-destructive">{errors.coApplicantPinCode}</p>
-                  )}
                 </div>
               </div>
               
