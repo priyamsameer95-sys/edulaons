@@ -579,6 +579,7 @@ export type Database = {
           pin_code: string
           relationship: Database["public"]["Enums"]["relationship_enum"]
           salary: number
+          state: string | null
           updated_at: string
         }
         Insert: {
@@ -599,6 +600,7 @@ export type Database = {
           pin_code: string
           relationship: Database["public"]["Enums"]["relationship_enum"]
           salary: number
+          state?: string | null
           updated_at?: string
         }
         Update: {
@@ -619,6 +621,7 @@ export type Database = {
           pin_code?: string
           relationship?: Database["public"]["Enums"]["relationship_enum"]
           salary?: number
+          state?: string | null
           updated_at?: string
         }
         Relationships: []
