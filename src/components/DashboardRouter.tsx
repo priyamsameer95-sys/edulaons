@@ -78,7 +78,7 @@ export default function DashboardRouter({ children }: DashboardRouterProps) {
     const path = location.pathname;
     
     if (path.includes('/admin') || path.includes('/dashboard/admin')) {
-      return <Navigate to={`/login/admin?returnTo=${returnTo}`} replace />;
+      return <Navigate to={`/login/partner?returnTo=${returnTo}`} replace />;
     }
     if (path.includes('/partner')) {
       return <Navigate to={`/login/partner?returnTo=${returnTo}`} replace />;
