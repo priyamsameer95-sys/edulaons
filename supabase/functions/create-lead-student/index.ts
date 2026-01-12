@@ -285,8 +285,14 @@ serve(async (req) => {
     const source = body.source || 'student_direct';
     const studyDestination = mapCountryToEnum(normalizeCountry(body.country));
     const loanAmount = parseInt(body.loan_amount) || 3000000;
-    const intakeMonth = body.intake_month || (new Date().getMonth() + 4) % 12 + 1;
-    const intakeYear = body.intake_year || (intakeMonth <= new Date().getMonth() + 1 ? new Date().getFullYear() + 1 : new Date().getFullYear());
+    
+    // Handle "Not sure yet" case: (0, 0) means store null in DB
+    const rawIntakeMonth = body.intake_month;
+    const rawIntakeYear = body.intake_year;
+    const isNotSureYet = rawIntakeMonth === 0 && rawIntakeYear === 0;
+    
+    const intakeMonth = isNotSureYet ? null : (rawIntakeMonth || (new Date().getMonth() + 4) % 12 + 1);
+    const intakeYear = isNotSureYet ? null : (rawIntakeYear || (intakeMonth && intakeMonth <= new Date().getMonth() + 1 ? new Date().getFullYear() + 1 : new Date().getFullYear()));
 
     // Check for existing lead by phone number
     console.log('🔍 Checking for existing lead by phone:', cleanStudentPhone);
