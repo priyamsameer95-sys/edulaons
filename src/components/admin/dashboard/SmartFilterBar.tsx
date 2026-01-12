@@ -96,7 +96,7 @@ export function SmartFilterBar({
                 {PHASE_CONFIG.pre_login.label}
               </SelectLabel>
               {GROUPED_OPTIONS.pre_login.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5">
                   {status.label}
                 </SelectItem>
               ))}
@@ -110,7 +110,7 @@ export function SmartFilterBar({
                 {PHASE_CONFIG.with_lender.label}
               </SelectLabel>
               {GROUPED_OPTIONS.with_lender.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5">
                   {status.label}
                 </SelectItem>
               ))}
@@ -124,7 +124,7 @@ export function SmartFilterBar({
                 {PHASE_CONFIG.sanction.label}
               </SelectLabel>
               {GROUPED_OPTIONS.sanction.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5">
                   {status.label}
                 </SelectItem>
               ))}
@@ -138,7 +138,7 @@ export function SmartFilterBar({
                 {PHASE_CONFIG.disbursement.label}
               </SelectLabel>
               {GROUPED_OPTIONS.disbursement.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5">
                   {status.label}
                 </SelectItem>
               ))}
@@ -152,7 +152,7 @@ export function SmartFilterBar({
                 {PHASE_CONFIG.terminal.label}
               </SelectLabel>
               {GROUPED_OPTIONS.terminal.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5 pl-4">
+                <SelectItem key={status.value} value={status.value} className="text-xs py-1.5">
                   {status.label}
                 </SelectItem>
               ))}
