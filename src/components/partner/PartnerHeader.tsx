@@ -55,7 +55,7 @@ export const PartnerHeader = ({ partner, isAdmin, onSignOut }: PartnerHeaderProp
             {isAdmin && (
               <Button 
                 variant="outline"
-                onClick={() => window.location.href = '/admin'}
+                onClick={() => window.location.href = '/dashboard/admin'}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 Admin Panel

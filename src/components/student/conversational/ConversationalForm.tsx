@@ -79,7 +79,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
 
   const handleExitConfirm = () => {
     setShowExitDialog(false);
-    navigate('/student');
+    navigate('/dashboard/student');
   };
 
   const goToStep = (step: number) => {
