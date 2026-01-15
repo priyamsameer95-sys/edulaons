@@ -1,3 +1,13 @@
+/**
+ * Protected Route Component
+ * 
+ * AUTH HYDRATION GUARD:
+ * - NEVER render protected content until auth is FULLY resolved
+ * - Show loading spinner during session validation
+ * - Only redirect to login if session explicitly returns null
+ * 
+ * This prevents the "Access Denied" flash on refresh.
+ */
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,8 +22,11 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, appUser, loading, hasStoredSession, sessionState } = useAuth();
+  const { user, appUser, loading, sessionState } = useAuth();
   const location = useLocation();
+
+  // Build returnTo param
+  const returnTo = encodeURIComponent(location.pathname + location.search);
 
   // Determine the appropriate login path based on required role
   const getLoginPath = () => {
@@ -23,47 +36,57 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return '/login/student';
   };
 
-  // Build returnTo param
-  const returnTo = encodeURIComponent(location.pathname + location.search);
+  // ════════════════════════════════════════════════════════════════════════════
+  // AUTH HYDRATION GUARD: Core Logic
+  // ════════════════════════════════════════════════════════════════════════════
+  // 
+  // The bug was: on refresh, we'd render children BEFORE appUser was fetched,
+  // causing "Cannot read properties of undefined" when children access appUser.role
+  //
+  // NEW RULE: Show spinner until BOTH conditions are true:
+  // 1. Session validation is complete (not 'validating' or 'unknown')
+  // 2. If there IS a user, appUser must also be loaded
+  // ════════════════════════════════════════════════════════════════════════════
 
-  // Optimistic rendering: if we have a stored session, render children immediately
-  // while validation happens in the background
-  const shouldShowLoadingSpinner = loading && !hasStoredSession;
-
-  // If loading with no stored session hint, show loading screen
-  if (shouldShowLoadingSpinner) {
+  // STATE 1: Auth not initialized yet - ALWAYS show spinner
+  if (sessionState === 'unknown') {
     return <AuthLoadingScreen />;
   }
 
-  // If session is definitely expired and no user, redirect immediately
+  // STATE 2: Session is being validated - ALWAYS show spinner
+  if (sessionState === 'validating') {
+    return <AuthLoadingScreen />;
+  }
+
+  // STATE 3: Loading flag is true - ALWAYS show spinner
+  if (loading) {
+    return <AuthLoadingScreen />;
+  }
+
+  // STATE 4: Session expired with no user - redirect to login
   if (sessionState === 'expired' && !user) {
     const loginPath = getLoginPath();
     return <Navigate to={`${loginPath}?returnTo=${returnTo}`} replace />;
   }
 
-  // If still validating but we have a stored session, render children optimistically
-  // EXCEPT for student routes - they need a confirmed user to fetch data correctly
-  if (sessionState === 'validating' && hasStoredSession) {
-    if (requiredRole === 'student' && !user) {
-      // For student routes, wait until user is confirmed to prevent empty dashboard
-      return <AuthLoadingScreen />;
-    }
-    return <>{children}</>;
-  }
-
-  // If we have a user but still loading app user data, render children
-  if (user && !appUser && loading) {
-    return <>{children}</>;
-  }
-
-  // No user after loading complete - redirect
+  // STATE 5: No user after auth completed - redirect to login
   if (!user) {
     const loginPath = getLoginPath();
     return <Navigate to={`${loginPath}?returnTo=${returnTo}`} replace />;
   }
 
+  // STATE 6: User exists but appUser not yet loaded - show spinner
+  // This is critical! Children might access appUser.role which would crash
+  if (user && !appUser) {
+    return <AuthLoadingScreen />;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // At this point: user exists AND appUser exists - safe to check roles
+  // ════════════════════════════════════════════════════════════════════════════
+
   // Check if account is active
-  if (appUser && !appUser.is_active) {
+  if (!appUser.is_active) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="bg-card p-8 rounded-lg shadow-lg text-center max-w-md border border-border">
@@ -83,7 +106,7 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   }
 
   // Role check
-  if (requiredRole && appUser) {
+  if (requiredRole) {
     const hasRequiredRole = () => {
       switch (requiredRole) {
         case 'super_admin':
@@ -114,5 +137,6 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     }
   }
 
+  // All checks passed - render protected content
   return <>{children}</>;
 }

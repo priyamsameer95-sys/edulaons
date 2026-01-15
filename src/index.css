@@ -65,24 +65,24 @@
 
 @layer base {
   :root {
-    /* B2C Color Palette - Professional & Trustworthy */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* B2C Color Palette - Professional & Trustworthy (V3) */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 222 47% 11%;
 
     /* Interactive elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary - Trust Blue */
-    --primary: 217 91% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 48%;
+    /* Primary - Trust Navy (Royal Blue #1E3A8A) */
+    --primary: 224 64% 33%;
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 224 64% 25%;
 
-    /* Brand tokens (for lender "logos"; keep in HSL) */
+    /* Brand tokens */
     --brand-sbi: 214 71% 36%;
     --brand-pnb: 351 78% 47%;
     --brand-icici: 20 84% 55%;
@@ -91,46 +91,53 @@
     --brand-bob: 20 89% 54%;
 
     /* Secondary - Neutral Gray */
-    --secondary: 214 15% 96%;
-    --secondary-foreground: 215 25% 15%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
     /* Muted elements */
-    --muted: 214 15% 95%;
-    --muted-foreground: 215 10% 46%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
     /* Accent - Subtle highlight */
-    --accent: 214 15% 96%;
-    --accent-foreground: 215 25% 15%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    /* Status colors - B2C Friendly */
-    --success: 142 71% 45%;
+    /* Status colors - V3 Standards */
+    /* Success: #10B981 */
+    --success: 151 84% 39%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 76% 96%;
+    --success-light: 149 80% 95%; /* Light Green Background */
+    
+    /* Warning: #F59E0B */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --warning-light: 38 100% 96%;
+    --warning-light: 48 96% 95%; /* Light Gold Background */
+
+    /* Destructive/Error: #EF4444 */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 93% 97%;
-    --info: 217 91% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --destructive-light: 0 96% 95%; /* Light Red Background */
+
+    /* Info: #3B82F6 (Old Primary) */
+    --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
-    --info-light: 217 91% 97%;
+    --info-light: 217 91% 95%;
 
-    /* Trust indicator colors */
-    --trust: 142 71% 45%;
+    /* Trust indicator colors (Mapped to Success) */
+    --trust: 151 84% 39%;
     --trust-foreground: 0 0% 100%;
-    --trust-light: 142 76% 96%;
-    --trust-border: 142 60% 85%;
+    --trust-light: 149 80% 95%;
+    --trust-border: 151 60% 85%;
 
-    /* Highlight/attention colors */
+    /* Highlight/attention colors (Mapped to Warning) */
     --highlight: 38 92% 50%;
     --highlight-foreground: 0 0% 100%;
 
     /* Borders and inputs */
-    --border: 214 15% 88%;
-    --input: 214 15% 88%;
-    --input-focus: 217 91% 55%;
-    --ring: 217 91% 55%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --input-focus: 224 64% 33%; /* Match Primary */
+    --ring: 224 64% 33%; /* Match Primary */
 
     /* Spacing system (8px grid) */
     --spacing-xs: 0.25rem;

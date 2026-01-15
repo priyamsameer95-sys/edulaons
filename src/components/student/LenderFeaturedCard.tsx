@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Building2, 
-  Star, 
-  Check, 
-  ChevronDown, 
+import { SmartCard } from '@/components/common/smart-card';
+import { ReasoningBox } from '@/components/common/reasoning-box';
+import { Badge } from '@/components/ui/badge';
+import {
+  Building2,
+  Star,
+  Check,
+  ChevronDown,
   CheckCircle2,
   Zap,
   ArrowRight,
@@ -70,6 +73,9 @@ interface LenderFeaturedCardProps {
   isSelected: boolean;
   onSelect: (lenderId: string) => void;
   isUpdating: boolean;
+  marketRate?: number;
+  lowestRate?: number;
+  recommendationContext?: any;
 }
 
 const LenderFeaturedCard = ({
@@ -77,304 +83,229 @@ const LenderFeaturedCard = ({
   rank,
   isSelected,
   onSelect,
-  isUpdating
+  isUpdating,
+  recommendationContext,
+  marketRate = 10,
+  lowestRate = 10
 }: LenderFeaturedCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isTopMatch = rank === 1;
-  
-  const expensesCovered = lender.eligible_expenses?.length 
-    ? lender.eligible_expenses.slice(0, 4)
-    : ['Tuition Fees', 'Living Expenses', 'Travel Costs', 'Books & Equipment'];
 
-  const displayAmount = lender.eligible_loan_max || lender.loan_amount_max;
+  // DERIVED VARIABLES (The "Think" Step)
+  const VISA_BUFFER = 7;
+  const intakeGap = (recommendationContext?.days_until_deadline || 60) - (lender.processing_time_days || 30);
+  const netAvailableDays = intakeGap - VISA_BUFFER;
+  const ratePremium = marketRate - (lender.interest_rate_min || 10);
+  const coverageRatio = (recommendationContext?.loan_amount && lender.loan_amount_max)
+    ? (lender.loan_amount_max / recommendationContext.loan_amount)
+    : 1;
 
-  // Generate benefit highlights based on lender data
-  const getBenefits = () => {
-    const benefits: { icon: typeof TrendingUp; text: string }[] = [];
-    if (lender.interest_rate_min && lender.interest_rate_min < 9) {
-      benefits.push({ icon: TrendingUp, text: 'Among the lowest rates in market' });
-    }
-    if (lender.processing_time_days && lender.processing_time_days <= 7) {
-      benefits.push({ icon: Zap, text: 'Super fast approval' });
-    }
-    if (lender.moratorium_period) {
-      benefits.push({ icon: Shield, text: `${lender.moratorium_period} moratorium` });
-    }
-    if (lender.compatibility_score >= 90) {
-      benefits.push({ icon: CheckCircle2, text: 'Excellent profile match' });
-    }
-    return benefits.slice(0, 2);
-  };
+  // PRIORITY-BASED REASONING (Insights)
+  const insights: string[] = [];
 
-  const benefits = getBenefits();
+  // Priority 1: The Speed Specialist (Timeline Risk)
+  // Trigger if we have less than 5 days "spare" after accounting for visa buffer
+  if (netAvailableDays < 5 && netAvailableDays > -15 && recommendationContext?.urgency_zone === 'RED') {
+    insights.push(`⚡ CRITICAL TIMELINE: Selected because they meet your deadline while leaving a safe ${VISA_BUFFER}-day visa buffer.`);
+  }
+
+  // Priority 2: The Cost Leader (If lowest rate)
+  if ((lender.interest_rate_min || 10) === lowestRate && ratePremium > 0) {
+    const loanAmount = recommendationContext?.loan_amount || 0;
+    const annualSavings = Math.round((loanAmount * (ratePremium / 100)));
+    const savingsFormatted = annualSavings > 0
+      ? `₹${(annualSavings / 1000).toFixed(1)}k`
+      : 'significant amount';
+
+    insights.push(`🏆 BEST IN MARKET: This rate is ${ratePremium.toFixed(2)}% lower than your other matches, saving you approx ${savingsFormatted} in interest.`);
+  }
+
+  // Priority 3: The High Coverage (Full Funding)
+  if (coverageRatio >= 1 && recommendationContext?.loan_amount > 2000000) {
+    insights.push(`✅ FULL FUNDING: This lender fully covers your requested ₹${(recommendationContext.loan_amount / 100000).toFixed(1)}L without a gap.`);
+  }
+
+  // Fallback Pointers if list is short
+  if (insights.length === 0) {
+    if (lender.processing_time_days && lender.processing_time_days <= 7) insights.push("⚡ Fast 7-day approval process.");
+    if (lender.interest_rate_min && lender.interest_rate_min < 10) insights.push(`💰 Competitive interest rate starting at ${lender.interest_rate_min}%.`);
+    insights.push("🛡️ Reliable option matching your university tier.");
+  }
+
+  // Ensure we have something
+  if (insights.length < 2) {
+    insights.push("⭐ Strong match based on your overall profile.");
+  }
+
+  const displayedInsights = isExpanded ? insights : insights.slice(0, 2);
+
+  // Determine Background Style
+  const isTimelineWarning = recommendationContext?.urgency_zone === 'RED' && (lender.processing_time_days || 30) > (recommendationContext?.days_until_deadline || 60);
+
+  const cardAction = (
+    <div className="flex items-center gap-1.5">
+      <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-primary/20">
+        {lender.compatibility_score}% Match
+      </Badge>
+    </div>
+  );
 
   return (
-    <div
+    <SmartCard
       className={cn(
-        "rounded-2xl border-2 bg-card overflow-hidden transition-all duration-300 flex flex-col h-full",
-        isTopMatch && "border-warning shadow-xl shadow-warning/15 relative",
-        isSelected && "ring-2 ring-success border-success shadow-lg shadow-success/10",
-        !isTopMatch && !isSelected && "border-border/60 hover:border-primary/30 hover:shadow-lg",
-        isUpdating && "opacity-60 pointer-events-none"
+        "h-full flex flex-col transition-all duration-300 relative",
+        isSelected ? 'ring-2 ring-primary shadow-lg scale-[1.01] z-10' : 'hover:-translate-y-1 hover:shadow-xl'
       )}
-    >
-      {/* Top Match Ribbon - or placeholder for consistent height */}
-      {isTopMatch ? (
-        <div className="bg-gradient-to-r from-warning to-warning/80 text-warning-foreground py-2.5 px-4 flex items-center justify-center gap-2">
-          <Sparkles className="h-4 w-4" />
-          <span className="text-xs font-bold uppercase tracking-wider">Best Match for You</span>
-          <Sparkles className="h-4 w-4" />
-        </div>
-      ) : (
-        <div className="h-[44px]" /> 
-      )}
-
-      {/* Header Section - Cleaner layout */}
-      <div className="p-4 pb-3">
+      noPadding
+      title={
         <div className="flex items-center gap-3">
-          {/* Logo */}
-          <div className={cn(
-            "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 border",
-            isTopMatch ? "bg-warning/5 border-warning/20" : "bg-muted/30 border-border/40"
-          )}>
+          <div className="w-12 h-12 rounded-lg border bg-white p-2 shadow-sm flex items-center justify-center">
             {lender.logo_url ? (
-              <img 
-                src={lender.logo_url} 
-                alt={lender.lender_name} 
-                className="w-8 h-8 object-contain" 
-              />
+              <img src={lender.logo_url} alt={lender.lender_name} className="w-full h-full object-contain" />
             ) : (
-              <Building2 className="h-6 w-6 text-muted-foreground" />
+              <span className="text-xl font-bold text-primary">{lender.lender_name[0]}</span>
             )}
           </div>
-          
-          {/* Name & Match Badge */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-bold text-foreground text-base leading-tight truncate">
-                {lender.lender_name}
-              </h4>
-              {isTopMatch && <Star className="h-4 w-4 text-warning fill-warning flex-shrink-0" />}
-              
-              {/* Secured Loan Indicator */}
-              {lender.collateral_preference?.includes('required') && (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700">
-                  <Shield className="h-3 w-3" />
-                  Secured Loan
-                </div>
-              )}
-              {lender.collateral_preference?.includes('preferred') && 
-               !lender.collateral_preference?.includes('required') && (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-500 dark:border-amber-800">
-                  <Shield className="h-3 w-3" />
-                  Collateral Preferred
-                </div>
-              )}
-            </div>
-            
-            {/* AI Badges */}
-            {lender.badges && lender.badges.length > 0 && (
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                {lender.badges.slice(0, 3).map((badge, idx) => (
-                  <div 
-                    key={idx}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20"
-                  >
-                    {badge === 'Fast Approval' && <Zap className="h-3 w-3" />}
-                    {badge === 'Lowest Rate' && <TrendingUp className="h-3 w-3" />}
-                    {badge}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {!isTopMatch && !lender.badges?.length && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <div className={cn(
-                  "flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold",
-                  rank === 2 ? "bg-primary/10 text-primary" : "bg-info/10 text-info"
-                )}>
-                  <FileCheck className="h-3 w-3" />
-                  {rank === 2 ? "Strong Alternative" : "Great Option"}
-                </div>
-              </div>
-            )}
-          </div>
+          <span className="font-bold text-lg text-foreground leading-tight">{lender.lender_name}</span>
         </div>
-      </div>
-
-      {/* Why This Lender - Counselor-style 3-line format */}
-      <div className="px-4 pb-3">
-        <div className="bg-gradient-to-br from-primary/5 via-primary/8 to-info/5 rounded-lg p-3 border border-primary/10">
-          <div className="flex gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1.5">Why This Lender?</p>
-              
-              {typeof lender.student_facing_reason === 'object' && lender.student_facing_reason ? (
-                <div className="space-y-1.5">
-                  {/* Line 1: Personal Greeting */}
-                  <p className="text-sm font-medium text-foreground">
-                    {lender.student_facing_reason.greeting}
-                  </p>
-                  
-                  {/* Line 2: Confidence/Approval Message */}
-                  <p className="text-xs text-success flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
-                    {lender.student_facing_reason.confidence}
-                  </p>
-                  
-                  {/* Line 3: CTA */}
-                  <p className="text-xs text-muted-foreground italic">
-                    {lender.student_facing_reason.cta}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs text-foreground leading-relaxed">
-                  {typeof lender.student_facing_reason === 'string' 
-                    ? lender.student_facing_reason 
-                    : 'Matched based on your loan requirements and profile.'}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Key Stats - Vertical layout for better readability */}
-      <div className="px-4 pb-3">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Percent className="h-3.5 w-3.5 text-success" />
-            </div>
-            <p className="text-sm font-bold text-foreground tabular-nums">
-              {lender.interest_rate_min ? `${lender.interest_rate_min}%` : '—'}
-            </p>
-            <p className="text-[9px] text-muted-foreground font-medium uppercase mt-0.5">Rate</p>
-          </div>
-          
-          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Wallet className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <p className="text-sm font-bold text-foreground tabular-nums">
-              {displayAmount ? `₹${(displayAmount / 10000000).toFixed(1)}Cr` : '—'}
-            </p>
-            <p className="text-[9px] text-muted-foreground font-medium uppercase mt-0.5">Max Loan</p>
-          </div>
-          
-          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Clock className="h-3.5 w-3.5 text-info" />
-            </div>
-            <p className="text-sm font-bold text-foreground tabular-nums">
-              {lender.processing_time_days || '7-10'}d
-            </p>
-            <p className="text-[9px] text-muted-foreground font-medium uppercase mt-0.5">Process</p>
-          </div>
-        </div>
-      </div>
-
-      {/* View Details - Expandable Section */}
-      <div className="px-4 pb-2">
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className={cn(
-            "w-full flex items-center justify-between py-2.5 px-3 rounded-lg transition-all",
-            "bg-muted/30 hover:bg-muted/50 border border-border/40",
-            showDetails && "bg-muted/50"
-          )}
-        >
-          <span className="text-xs font-semibold text-foreground">View Full Details</span>
-          <ChevronDown className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform duration-300",
-            showDetails && "rotate-180"
-          )} />
-        </button>
-      </div>
-
-      {/* Expanded Details */}
-      {showDetails && (
-        <div className="px-4 py-3 space-y-3 animate-fade-in border-t border-border/30">
-          {/* Benefits */}
-          {benefits.length > 0 && (
-            <div>
-              <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-2">Highlights</p>
-              <div className="flex flex-wrap gap-1.5">
-                {benefits.map((benefit, idx) => (
-                  <div key={idx} className="flex items-center gap-1 px-2 py-1 rounded bg-success/5 border border-success/15">
-                    <benefit.icon className="h-3 w-3 text-success flex-shrink-0" />
-                    <span className="text-[10px] text-foreground/80">{benefit.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Expenses Covered */}
-          <div>
-            <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-2">What's Covered</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {expensesCovered.map((expense, idx) => (
-                <div key={idx} className="flex items-center gap-1.5 p-1.5 rounded bg-success/5 border border-success/10">
-                  <CheckCircle2 className="h-3 w-3 text-success flex-shrink-0" />
-                  <span className="text-[10px] text-foreground/80 truncate">
-                    {typeof expense === 'string' ? expense : expense.name || 'Covered'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Additional Info */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40">
-            <div className="p-2 rounded bg-muted/30">
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wide mb-0.5">Moratorium</p>
-              <p className="text-xs font-semibold text-foreground">{lender.moratorium_period || 'Course + 6mo'}</p>
-            </div>
-            <div className="p-2 rounded bg-muted/30">
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wide mb-0.5">Processing Fee</p>
-              <p className="text-xs font-semibold text-foreground">{formatProcessingFee(lender.processing_fee)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Spacer */}
-      <div className="flex-1 min-h-2" />
-
-      {/* Select Button */}
-      <div className="p-4 pt-2">
+      }
+      action={cardAction}
+      footer={
         <Button
+          className={cn(
+            "w-full gap-2 font-semibold shadow-md transition-all duration-300",
+            isSelected && !isUpdating
+              ? 'bg-success hover:bg-success/90 text-white shadow-success/20'
+              : 'bg-primary hover:bg-primary/90 shadow-primary/20'
+          )}
+          size="lg"
           onClick={() => onSelect(lender.lender_id)}
           disabled={isUpdating}
-          className={cn(
-            "w-full h-10 font-bold text-sm rounded-lg transition-all",
-            isSelected 
-              ? "bg-success hover:bg-success/90 text-success-foreground shadow-md shadow-success/20" 
-              : isTopMatch 
-                ? "bg-primary hover:bg-primary/90 shadow-md shadow-primary/20" 
-                : ""
-          )}
-          variant={isSelected ? "default" : isTopMatch ? "default" : "outline"}
         >
-          {isSelected ? (
-            <>
-              <Check className="h-4 w-4 mr-1.5" />
-              Selected
-            </>
+          {isUpdating && isSelected ? (
+            <>Saving...</>
           ) : (
             <>
-              Choose This Lender
-              <ArrowRight className="h-4 w-4 ml-1.5" />
+              {isSelected ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" /> Selected
+                </>
+              ) : (
+                <>
+                  Select Lender <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </>
           )}
         </Button>
+      }
+    >
+      {/* Top Badge Overlay */}
+      <div className={cn(
+        "absolute top-0 inset-x-0 py-1.5 px-3 text-center text-[10px] font-bold uppercase tracking-wider rounded-t-xl z-20",
+        isTopMatch ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'
+      )}>
+        {isTopMatch ? '🌟 Your Top Choice' : `Option #${rank}`}
       </div>
-    </div>
+
+      <div className="p-5 pt-12 flex flex-col h-full gap-4">
+        {/* Why This Lender - Deep Insights */}
+        <div className="flex-1">
+          {/* TIMELINE VISUALIZATION */}
+          <div className="bg-white/50 rounded-lg p-2.5 mb-3 border border-border/40">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Timeline Check</span>
+              <span className={cn(
+                "text-[10px] font-bold",
+                netAvailableDays < 0 ? 'text-destructive' : netAvailableDays < 7 ? 'text-amber-600' : 'text-success'
+              )}>
+                {netAvailableDays < 0 ? 'RISK: Too Late' : `${netAvailableDays} Days Buffer`}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden flex">
+              <div
+                className="bg-primary h-full"
+                style={{ width: `${Math.min(100, ((lender.processing_time_days || 20) / (recommendationContext?.days_until_deadline || 60)) * 100)}%` }}
+              />
+              <div
+                className={cn("h-full border-l border-white/50", netAvailableDays < 5 ? 'bg-red-400' : 'bg-emerald-400')}
+                style={{ width: `${Math.min(100, (VISA_BUFFER / (recommendationContext?.days_until_deadline || 60)) * 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1 text-[9px] text-muted-foreground">
+              <span>Today</span>
+              <span>Deadline</span>
+            </div>
+          </div>
+
+          {/* COST BADGE */}
+          {(lender.interest_rate_min || 10) === lowestRate && ratePremium > 0 && (
+            <div className="mb-3 bg-emerald-50 border border-emerald-100 rounded-lg p-2 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="bg-emerald-100 p-1 rounded-full text-emerald-700">
+                  <Wallet className="h-3 w-3" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase leading-none">Smart Savings</p>
+                  <p className="text-[10px] text-emerald-600 leading-tight">vs Market Average</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-emerald-700 leading-none tabular-nums">
+                  ₹{Math.round((recommendationContext?.loan_amount || 0) * (ratePremium / 100) / 1000)}k
+                </p>
+                <p className="text-[9px] text-emerald-600">per year</p>
+              </div>
+            </div>
+          )}
+
+          <ReasoningBox
+            points={displayedInsights}
+            variant={isTimelineWarning ? "insight" : "feature"} // Reuse insight style for emphasis if warning
+            className={cn(isTimelineWarning ? "bg-amber-50 border-amber-200" : "")}
+          />
+
+          {/* Expand Logic */}
+          {insights.length > 2 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+              className="mt-2 w-full text-[10px] font-semibold text-primary/80 hover:text-primary flex items-center justify-center gap-1 transition-colors"
+            >
+              {isExpanded ? 'Show less' : `Read more (${insights.length - 2} insights)`}
+              <ChevronDown className={cn("h-3 w-3 transition-transform", isExpanded && 'rotate-180')} />
+            </button>
+          )}
+        </div>
+
+        {/* Key Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
+            <Percent className="h-3.5 w-3.5 text-success mx-auto mb-1" />
+            <p className="text-sm font-bold text-foreground tabular-nums">
+              {lender.interest_rate_min}%
+            </p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Interest</p>
+          </div>
+
+          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
+            <Wallet className="h-3.5 w-3.5 text-primary mx-auto mb-1" />
+            <p className="text-sm font-bold text-foreground tabular-nums">
+              ₹{(lender.loan_amount_max ? lender.loan_amount_max / 100000 : 0)}L
+            </p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Max Loan</p>
+          </div>
+
+          <div className="text-center p-2.5 rounded-lg bg-muted/30 border border-border/30">
+            <Clock className="h-3.5 w-3.5 text-amber-600 mx-auto mb-1" />
+            <p className="text-sm font-bold text-foreground tabular-nums">
+              {lender.processing_time_days}d
+            </p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Process</p>
+          </div>
+        </div>
+      </div>
+    </SmartCard>
   );
 };
 

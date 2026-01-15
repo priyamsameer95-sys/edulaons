@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Loader2, Shield, Sparkles, ChevronRight } from 'lucide-react';
+import { Users, Loader2, Shield, Sparkles, ChevronRight, Phone, Mail, User, Briefcase, IndianRupee, ArrowLeft, ArrowRight, Check, Edit2, MapPin, GraduationCap, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { formatCompactCurrency } from '@/utils/formatters';
+import { Card } from '@/components/ui/card';
+import { FloatingLabelInput } from '@/components/ui/input';
+import { FeatureIcon } from '@/components/ui/feature-icon';
+import { formatCompactCurrency, formatIncome } from '@/utils/formatters';
 import type { StudentApplicationData, Relationship, EmploymentType } from '@/types/student-application';
 
 interface CoApplicantReviewPageProps {
@@ -37,12 +40,13 @@ const incomeOptions = [
   { value: 200000, label: '₹2L+' },
 ];
 
-const formatIncome = (v: number) => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`;
+
 
 const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev }: CoApplicantReviewPageProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showReview, setShowReview] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -56,8 +60,18 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
     return !Object.keys(e).length;
   };
 
-  const handleReview = () => { if (validate()) setShowReview(true); };
-  const handleSubmit = async () => { 
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const isValid = (field: string) => touched[field] && !errors[field];
+
+  const handleReview = () => {
+    setTouched({ name: true, phone: true, email: true });
+    if (validate()) setShowReview(true);
+  };
+
+  const handleSubmit = async () => {
     if (agreed) {
       try {
         await onSubmit();
@@ -71,91 +85,106 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
   const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full pb-8">
       <AnimatePresence mode="wait">
         {!showReview ? (
           <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -50 }}>
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-2">
-                <Users className="w-4 h-4" /> Step 3 of 3
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider mb-3">
+                <Users className="w-3 h-3" /> Step 3 of 3
               </div>
-              <h1 className="text-2xl font-bold text-foreground">Co-applicant Details</h1>
-              <p className="text-sm text-muted-foreground mt-1">A co-applicant strengthens your loan approval</p>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Co-applicant Details</h1>
+              <p className="text-muted-foreground mt-2">A co-applicant strengthens your loan approval</p>
             </div>
 
-            <div className="bg-card rounded-xl border border-border shadow-lg p-5 sm:p-6 space-y-6">
-              
+            <Card className="rounded-2xl border-white/20 shadow-xl shadow-blue-900/5 p-6 sm:p-8 space-y-8 bg-white/80 backdrop-blur-sm">
+
               {/* Row 1: Relationship */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Relationship *</label>
+                <label className="text-sm font-medium text-foreground">Relationship with Student *</label>
                 <div className="flex flex-wrap gap-2">
                   {relationships.map(r => (
-                    <button 
-                      key={r.value} 
-                      type="button" 
+                    <motion.button
+                      key={r.value}
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => { onUpdate({ coApplicantRelationship: r.value }); setErrors(p => ({ ...p, rel: '' })); }}
                       className={cn(
-                        "px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all",
-                        data.coApplicantRelationship === r.value 
-                          ? "border-primary bg-primary/10 text-primary" 
-                          : "border-border hover:border-primary/40 text-foreground",
+                        "px-4 py-2.5 rounded-lg border text-sm font-medium transition-all shadow-sm",
+                        data.coApplicantRelationship === r.value
+                          ? "border-blue-600 bg-blue-50 text-blue-700 ring-1 ring-blue-600/20"
+                          : "border-input bg-background hover:bg-muted text-foreground",
                         errors.rel && !data.coApplicantRelationship && "border-destructive"
                       )}
                     >
                       {r.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
+                {errors.rel && <p className="text-xs text-destructive">{errors.rel}</p>}
               </div>
 
               {/* Row 2: Name */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Full Name *</label>
-                <input 
-                  type="text" 
-                  value={data.coApplicantName || ''} 
+              <div className="space-y-1">
+                <FloatingLabelInput
+                  id="coName"
+                  label="Co-applicant Full Name"
+                  value={data.coApplicantName || ''}
                   onChange={e => { onUpdate({ coApplicantName: e.target.value }); setErrors(p => ({ ...p, name: '' })); }}
-                  placeholder="Co-applicant's full name as per passport"
+                  onBlur={() => handleBlur('name')}
                   className={cn(
-                    "w-full h-11 px-4 rounded-lg border-2 bg-background text-sm outline-none transition-all",
-                    errors.name ? "border-destructive" : "border-border focus:border-primary"
-                  )} 
+                    errors.name && touched.name ? "border-destructive focus-visible:ring-destructive" :
+                      isValid('name') ? "border-green-500 focus-visible:ring-green-500" : ""
+                  )}
                 />
-                {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                {errors.name && touched.name && <p className="text-xs text-destructive pl-1">{errors.name}</p>}
               </div>
 
               {/* Row 3: Phone & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Phone *</label>
-                  <div className={cn(
-                    "flex items-center h-11 px-4 rounded-lg border-2 bg-background",
-                    errors.phone ? "border-destructive" : "border-border focus-within:border-primary"
-                  )}>
-                    <span className="text-sm text-muted-foreground mr-2">+91</span>
-                    <input 
-                      type="tel" 
-                      value={data.coApplicantPhone || ''} 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-1">
+                  <div className="relative">
+                    <div className="absolute left-3 top-4 z-10 flex items-center gap-2 text-muted-foreground border-r pr-2 h-6 pointer-events-none">
+                      <span className="text-sm font-medium">🇮🇳 +91</span>
+                    </div>
+                    <input
+                      id="coPhone"
+                      type="tel"
+                      value={data.coApplicantPhone || ''}
                       onChange={e => { onUpdate({ coApplicantPhone: e.target.value.replace(/\D/g, '').slice(0, 10) }); setErrors(p => ({ ...p, phone: '' })); }}
-                      placeholder="9876543210"
-                      className="flex-1 bg-transparent outline-none text-sm text-foreground" 
+                      onBlur={() => handleBlur('phone')}
+                      placeholder=" "
+                      className={cn(
+                        "flex h-14 w-full rounded-md border border-input bg-background pl-24 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ease-out hover:border-primary/50 peer pt-4 pb-1",
+                        errors.phone && touched.phone ? "border-destructive focus-visible:ring-destructive" :
+                          isValid('phone') ? "border-green-500 focus-visible:ring-green-500" : ""
+                      )}
                     />
+                    <label
+                      htmlFor="coPhone"
+                      className="absolute left-24 top-1 z-10 origin-[0] -translate-y-0 transform text-xs text-muted-foreground duration-300 peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-focus:top-1 peer-focus:text-xs peer-focus:text-primary"
+                    >
+                      Phone Number
+                    </label>
                   </div>
-                  {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+                  {errors.phone && touched.phone && <p className="text-xs text-destructive pl-1">{errors.phone}</p>}
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Email *</label>
-                  <input 
-                    type="email" 
-                    value={data.coApplicantEmail || ''} 
+
+                <div className="space-y-1">
+                  <FloatingLabelInput
+                    id="coEmail"
+                    type="email"
+                    label="Email Address"
+                    value={data.coApplicantEmail || ''}
                     onChange={e => { onUpdate({ coApplicantEmail: e.target.value }); setErrors(p => ({ ...p, email: '' })); }}
-                    placeholder="email@example.com"
+                    onBlur={() => handleBlur('email')}
                     className={cn(
-                      "w-full h-11 px-4 rounded-lg border-2 bg-background text-sm outline-none transition-all",
-                      errors.email ? "border-destructive" : "border-border focus:border-primary"
-                    )} 
+                      errors.email && touched.email ? "border-destructive focus-visible:ring-destructive" :
+                        isValid('email') ? "border-green-500 focus-visible:ring-green-500" : ""
+                    )}
                   />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                  {errors.email && touched.email && <p className="text-xs text-destructive pl-1">{errors.email}</p>}
                 </div>
               </div>
 
@@ -164,22 +193,25 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
                 <label className="text-sm font-medium text-foreground">Employment Type *</label>
                 <div className="flex flex-wrap gap-2">
                   {employmentTypes.map(e => (
-                    <button 
-                      key={e.value} 
-                      type="button" 
+                    <motion.button
+                      key={e.value}
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => { onUpdate({ coApplicantEmploymentType: e.value }); setErrors(p => ({ ...p, emp: '' })); }}
                       className={cn(
-                        "px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all",
-                        data.coApplicantEmploymentType === e.value 
-                          ? "border-primary bg-primary/10 text-primary" 
-                          : "border-border hover:border-primary/40 text-foreground",
+                        "px-4 py-2.5 rounded-lg border text-sm font-medium transition-all shadow-sm",
+                        data.coApplicantEmploymentType === e.value
+                          ? "border-blue-600 bg-blue-50 text-blue-700 ring-1 ring-blue-600/20"
+                          : "border-input bg-background hover:bg-muted text-foreground",
                         errors.emp && !data.coApplicantEmploymentType && "border-destructive"
                       )}
                     >
                       {e.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
+                {errors.emp && <p className="text-xs text-destructive">{errors.emp}</p>}
               </div>
 
               {/* Row 5: Monthly Income */}
@@ -187,136 +219,174 @@ const CoApplicantReviewPage = ({ data, onUpdate, onSubmit, isSubmitting, onPrev 
                 <label className="text-sm font-medium text-foreground">Monthly Income *</label>
                 <div className="flex flex-wrap gap-2">
                   {incomeOptions.map(opt => (
-                    <button 
-                      key={opt.value} 
-                      type="button" 
+                    <motion.button
+                      key={opt.value}
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => { onUpdate({ coApplicantMonthlySalary: opt.value }); setErrors(p => ({ ...p, salary: '' })); }}
                       className={cn(
-                        "px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all",
-                        data.coApplicantMonthlySalary === opt.value 
-                          ? "border-primary bg-primary/10 text-primary" 
-                          : "border-border hover:border-primary/40 text-foreground",
+                        "px-4 py-2.5 rounded-lg border text-sm font-medium transition-all shadow-sm",
+                        data.coApplicantMonthlySalary === opt.value
+                          ? "border-blue-600 bg-blue-50 text-blue-700 ring-1 ring-blue-600/20"
+                          : "border-input bg-background hover:bg-muted text-foreground",
                         errors.salary && !data.coApplicantMonthlySalary && "border-destructive"
                       )}
                     >
                       {opt.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                  <Sparkles className="w-3.5 h-3.5" /> Higher income improves approval chances
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Higher income increases approval chances
                 </p>
+                {errors.salary && <p className="text-xs text-destructive">{errors.salary}</p>}
               </div>
 
-            </div>
+            </Card>
 
             {/* Navigation */}
-            <div className="flex justify-between mt-5">
-              <Button variant="outline" onClick={onPrev} size="sm" className="rounded-full">← Back</Button>
-              <Button onClick={handleReview} size="sm" className="rounded-full px-6">
-                Review & Submit <ChevronRight className="w-4 h-4 ml-1" />
+            <div className="flex justify-between items-center mt-8 px-2">
+              <Button
+                variant="ghost"
+                onClick={onPrev}
+                size="lg"
+                className="rounded-full h-14 px-6 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back
+              </Button>
+              <Button
+                onClick={handleReview}
+                size="lg"
+                className="rounded-full h-14 px-8 text-base shadow-lg shadow-primary/25 border-t border-white/20"
+              >
+                Review Application <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
           </motion.div>
         ) : (
           <motion.div key="review" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-600 text-sm font-medium mb-2">
-                <Sparkles className="w-4 h-4" /> Almost done!
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-wider mb-3">
+                <Sparkles className="w-3 h-3" /> Almost done!
               </div>
-              <h1 className="text-2xl font-bold text-foreground">Review Your Application</h1>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Review Application</h1>
+              <p className="text-muted-foreground mt-2">Please verify your details before submitting.</p>
             </div>
 
-            <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
+            <Card className="rounded-2xl border-white/20 shadow-xl shadow-blue-900/5 bg-white/80 backdrop-blur-sm overflow-hidden">
               {/* Student Info Header */}
-              <div className="bg-muted/30 p-5 border-b border-border">
+              <div className="bg-muted/30 p-6 border-b border-border">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
+                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-xl font-bold text-primary ring-4 ring-white">
                     {data.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'}
                   </div>
                   <div>
-                    <h2 className="font-semibold text-foreground">{data.name}</h2>
-                    <p className="text-sm text-muted-foreground">+91 {data.phone}</p>
+                    <h2 className="text-lg font-semibold text-foreground">{data.name}</h2>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> +91 {data.phone}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-5 space-y-4">
+              <div className="p-6 space-y-6">
                 {/* Loan Details */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-xs text-muted-foreground">Destination</p>
-                    <p className="font-medium text-foreground">{data.studyDestination}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-muted/40 border border-black/5 flex items-start gap-3">
+                    <FeatureIcon icon={MapPin} variant="rose" size="md" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Destination</p>
+                      <p className="font-semibold text-foreground">{data.studyDestination}</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-xs text-muted-foreground">Loan Amount</p>
-                    <p className="font-medium text-foreground">{formatCompactCurrency(data.loanAmount || 0)}</p>
+                  <div className="p-4 rounded-xl bg-muted/40 border border-black/5 flex items-start gap-3">
+                    <FeatureIcon icon={IndianRupee} variant="success" size="md" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Loan Amount</p>
+                      <p className="font-semibold text-foreground">{formatCompactCurrency(data.loanAmount || 0)}</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-xs text-muted-foreground">Course</p>
-                    <p className="font-medium text-foreground capitalize">{data.courseType?.replace('_', ' ')}</p>
+                  <div className="p-4 rounded-xl bg-muted/40 border border-black/5 flex items-start gap-3">
+                    <FeatureIcon icon={GraduationCap} variant="primary" size="md" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Course</p>
+                      <p className="font-semibold text-foreground capitalize">{data.courseType?.replace('_', ' ')}</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <p className="text-xs text-muted-foreground">Intake</p>
-                    <p className="font-medium text-foreground">
-                      {data.intakeMonth === 0 ? 'Not sure yet' : `${months[data.intakeMonth || 0]} ${data.intakeYear}`}
-                    </p>
+                  <div className="p-4 rounded-xl bg-muted/40 border border-black/5 flex items-start gap-3">
+                    <FeatureIcon icon={Calendar} variant="warning" size="md" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Intake</p>
+                      <p className="font-semibold text-foreground">
+                        {data.intakeMonth === 0 ? 'Not sure yet' : `${months[data.intakeMonth || 0]} ${data.intakeYear}`}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Co-applicant Summary */}
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-xs text-muted-foreground mb-2">Co-Applicant</p>
+                <div className="p-5 rounded-xl bg-primary/5 border border-primary/10">
+                  <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" /> Co-Applicant Details
+                  </p>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-foreground">{data.coApplicantName}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{data.coApplicantRelationship} • {data.coApplicantEmploymentType?.replace('_', ' ')}</p>
+                      <p className="font-semibold text-foreground text-lg">{data.coApplicantName}</p>
+                      <p className="text-sm text-muted-foreground capitalize mt-0.5">{data.coApplicantRelationship} • {data.coApplicantEmploymentType?.replace('_', ' ')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-primary">{formatIncome(data.coApplicantMonthlySalary || 0)}/mo</p>
+                      <p className="text-sm text-muted-foreground">Monthly Income</p>
+                      <p className="font-bold text-primary text-lg">{formatIncome(data.coApplicantMonthlySalary || 0)}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Terms Checkbox */}
-                <label className="flex items-start gap-3 p-4 rounded-lg border border-border hover:bg-muted/30 cursor-pointer transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={agreed} 
-                    onChange={e => setAgreed(e.target.checked)} 
-                    className="mt-0.5 w-4 h-4 rounded border-border accent-primary" 
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    I confirm that all the information is accurate and agree to the{' '}
-                    <a href="#" className="text-primary hover:underline">Terms</a> &{' '}
-                    <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                <label className="flex items-start gap-3 p-4 rounded-xl border border-border hover:bg-muted/30 cursor-pointer transition-colors group">
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={e => setAgreed(e.target.checked)}
+                      className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-input shadow-sm transition-all checked:border-primary checked:bg-primary hover:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                    <Check className="pointer-events-none absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 text-primary-foreground opacity-0 peer-checked:opacity-100" />
+                  </div>
+                  <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors leading-relaxed">
+                    I confirm that all the information provided is accurate and I agree to the{' '}
+                    <a href="#" className="text-primary font-medium hover:underline">Terms of Service</a> &{' '}
+                    <a href="#" className="text-primary font-medium hover:underline">Privacy Policy</a>.
                   </span>
                 </label>
 
                 {/* Submit Buttons */}
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" onClick={() => setShowReview(false)} size="sm" className="rounded-full">
-                    ← Edit
+                <div className="flex gap-4 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowReview(false)}
+                    size="lg"
+                    className="rounded-full px-6 h-14"
+                  >
+                    Edit Details
                   </Button>
-                  <Button 
-                    onClick={handleSubmit} 
+                  <Button
+                    onClick={handleSubmit}
                     disabled={!agreed || isSubmitting}
-                    size="sm"
+                    size="lg"
                     className={cn(
-                      "flex-1 rounded-full",
-                      agreed ? "bg-green-600 hover:bg-green-700" : ""
+                      "flex-1 rounded-full h-14 text-base font-semibold shadow-lg shadow-emerald-500/20",
+                      agreed ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
                     )}
                   >
                     {isSubmitting ? (
-                      <><Loader2 className="w-4 h-4 animate-spin mr-2" />Submitting...</>
+                      <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Submitting Application...</>
                     ) : (
-                      'Submit Application'
+                      <>Submit Application <Sparkles className="w-5 h-5 ml-2" /></>
                     )}
                   </Button>
                 </div>
 
               </div>
-            </div>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>

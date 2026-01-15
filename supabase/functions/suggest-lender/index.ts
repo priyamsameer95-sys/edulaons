@@ -89,7 +89,7 @@ interface LenderResult {
     greeting: string;
     confidence: string;
     cta: string;
-  };
+  } | string;
   university_boost?: {
     type: 'premium' | 'ranked' | 'none';
     amount: number;
@@ -126,14 +126,17 @@ function calculateUrgencyZone(intakeMonth: number | null, intakeYear: number | n
   if (!intakeMonth || !intakeYear) {
     return { zone: 'YELLOW', daysUntil: 60 }; // Default to balanced
   }
-  
+
   const now = new Date();
   const intakeDate = new Date(intakeYear, intakeMonth - 1, 1);
   const diffTime = intakeDate.getTime() - now.getTime();
   const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (daysUntil <= 30) return { zone: 'RED', daysUntil };
-  if (daysUntil <= 60) return { zone: 'YELLOW', daysUntil };
+
+  const VISA_BUFFER = 7;
+  const effectiveDays = daysUntil - VISA_BUFFER;
+
+  if (effectiveDays <= 30) return { zone: 'RED', daysUntil };
+  if (effectiveDays <= 60) return { zone: 'YELLOW', daysUntil };
   return { zone: 'GREEN', daysUntil };
 }
 
@@ -153,18 +156,18 @@ function calculateWeightedAcademicScore(
 ): number {
   // Convert CGPA to percentage if needed
   const bachPercent = bachelors || (cgpa ? cgpa * 10 : null);
-  
+
   const scores: { value: number; weight: number }[] = [];
   if (tenth) scores.push({ value: tenth, weight: 0.2 });
   if (twelfth) scores.push({ value: twelfth, weight: 0.3 });
   if (bachPercent) scores.push({ value: bachPercent, weight: 0.5 });
-  
+
   if (scores.length === 0) return 50; // Default
-  
+
   // Normalize weights if not all present
   const totalWeight = scores.reduce((sum, s) => sum + s.weight, 0);
   const weightedSum = scores.reduce((sum, s) => sum + (s.value * s.weight / totalWeight), 0);
-  
+
   return Math.round(weightedSum);
 }
 
@@ -188,11 +191,11 @@ function checkLenderKnockouts(
   tier: UniversityTier
 ): KnockoutResult {
   const breJson = lender.bre_json || {};
-  
+
   // 1. Check Tier-Specific Loan Limits (from bre_json)
   const tierLimitKey = `tier_${tier.toLowerCase()}_limit`;
   const tierLimit = breJson[tierLimitKey];
-  
+
   if (tierLimit && loanAmount > tierLimit) {
     return {
       isLocked: true,
@@ -201,11 +204,11 @@ function checkLenderKnockouts(
       penaltyScore: 40,
     };
   }
-  
+
   // 2. Check overall loan amount limits
   const maxAmount = lender.loan_amount_max || 0;
   const minAmount = lender.loan_amount_min || 0;
-  
+
   if (maxAmount > 0 && loanAmount > maxAmount) {
     return {
       isLocked: true,
@@ -214,7 +217,7 @@ function checkLenderKnockouts(
       penaltyScore: 35,
     };
   }
-  
+
   if (minAmount > 0 && loanAmount < minAmount) {
     return {
       isLocked: true,
@@ -223,7 +226,7 @@ function checkLenderKnockouts(
       penaltyScore: 30,
     };
   }
-  
+
   // 3. Check income requirements (collateral can override)
   const incomeMin = lender.income_expectations_min || 0;
   if (incomeMin > 0 && coApplicantSalary && coApplicantSalary < incomeMin && !hasCollateral) {
@@ -234,7 +237,7 @@ function checkLenderKnockouts(
       penaltyScore: 25,
     };
   }
-  
+
   return { isLocked: false, reason: null, unlockHint: null, penaltyScore: 0 };
 }
 
@@ -250,15 +253,15 @@ function applyStrategicAdjustments(
 ): { adjustedScore: number; adjustment: number; badges: string[] } {
   let adjustment = 0;
   const badges: string[] = [];
-  
+
   const processingDays = lender.processing_time_days || lender.processing_time_range_min || 20;
   const interestRate = lender.interest_rate_min || 10;
-  
+
   const isFast = processingDays <= 15;
   const isSlow = processingDays >= 31;
   const isLowRate = interestRate < 9.5;
   const isHighRate = interestRate > 11;
-  
+
   switch (strategy) {
     case 'SPEED_PRIORITY': // RED zone
       if (isFast) {
@@ -270,7 +273,7 @@ function applyStrategicAdjustments(
         badges.push('🐢 Slow Processing');
       }
       break;
-      
+
     case 'COST_OPTIMIZATION': // GREEN zone
       if (isLowRate) {
         adjustment += 30;
@@ -285,7 +288,7 @@ function applyStrategicAdjustments(
         badges.push('Quick Turnaround');
       }
       break;
-      
+
     case 'BALANCED': // YELLOW zone
       if (isFast) {
         adjustment += 15;
@@ -300,7 +303,7 @@ function applyStrategicAdjustments(
       }
       break;
   }
-  
+
   return {
     adjustedScore: Math.min(100, Math.max(0, baseScore + adjustment)),
     adjustment,
@@ -336,7 +339,7 @@ function calculatePremiumUniversityBoost(
   }
 
   const normalizedInput = universityName.toLowerCase().trim();
-  
+
   // Fuzzy matching: check if input contains premium name or vice versa
   const matchedPremium = premiumUniversities.find((u) => {
     const premiumName = u.name.toLowerCase().trim();
@@ -350,7 +353,7 @@ function calculatePremiumUniversityBoost(
   if (matchedPremium) {
     return { boost: 25, matched: true, matchedName: matchedPremium.name };
   }
-  
+
   return { boost: 0, matched: false };
 }
 
@@ -377,7 +380,7 @@ function calculateRankedUniversityBoost(
   let rankedEntry = rankedUniversities.find(
     (u) => u.name.toLowerCase().trim() === normalizedInput
   );
-  
+
   // If no exact match, try fuzzy matching (partial name match)
   if (!rankedEntry) {
     rankedEntry = rankedUniversities.find((u) => {
@@ -423,7 +426,7 @@ function calculateCombinedUniversityBoost(
 ): UniversityBoostResult {
   const premiumResult = calculatePremiumUniversityBoost(universityName, premiumUniversities);
   const rankedResult = calculateRankedUniversityBoost(universityName, rankedUniversities);
-  
+
   // Both matched - take higher boost (duplicate prevention)
   if (premiumResult.matched && rankedResult.matched) {
     const usePremium = premiumResult.boost >= rankedResult.boost;
@@ -437,7 +440,7 @@ function calculateCombinedUniversityBoost(
       rankedTier: rankedResult.tier,
     };
   }
-  
+
   // Premium only
   if (premiumResult.matched) {
     return {
@@ -450,7 +453,7 @@ function calculateCombinedUniversityBoost(
       rankedTier: null,
     };
   }
-  
+
   // Ranked only
   if (rankedResult.matched) {
     return {
@@ -463,7 +466,7 @@ function calculateCombinedUniversityBoost(
       rankedTier: rankedResult.tier,
     };
   }
-  
+
   // No match
   return {
     boost: 0,
@@ -492,12 +495,12 @@ function calculate3PillarScore(
   let futureScore = 0;
   let futureLabel = '';
   let futureDetails = '';
-  
+
   const tierScores: Record<UniversityTier, number> = { S: 100, A: 80, B: 60, C: 40 };
   futureScore = tierScores[tier];
-  
+
   switch (tier) {
-    case 'S': 
+    case 'S':
       futureLabel = 'Top 100 University';
       futureDetails = 'Premium institution recognition';
       break;
@@ -513,15 +516,15 @@ function calculate3PillarScore(
       futureLabel = 'Standard University';
       futureDetails = 'May need additional documentation';
   }
-  
+
   // ===== FINANCIAL PILLAR (Income/Collateral) - Max 100 =====
   let financialScore = 0;
   let financialLabel = '';
   let financialDetails = '';
-  
+
   const incomeExpected = lender.income_expectations_min || 50000;
   const incomeRatio = coApplicantSalary ? coApplicantSalary / incomeExpected : 0;
-  
+
   if (hasCollateral) {
     financialScore = 90; // Collateral provides strong backing
     financialLabel = 'Collateral Secured';
@@ -543,12 +546,12 @@ function calculate3PillarScore(
     financialLabel = 'Income Gap';
     financialDetails = 'Consider adding co-applicant or collateral';
   }
-  
+
   // ===== PAST PILLAR (Academics) - Max 100 =====
   let pastScore = academicScore;
   let pastLabel = '';
   let pastDetails = '';
-  
+
   if (academicScore >= 80) {
     pastLabel = 'Excellent Academics';
     pastDetails = 'Strong academic profile';
@@ -562,16 +565,16 @@ function calculate3PillarScore(
     pastLabel = 'Needs Support';
     pastDetails = 'Academic profile may need explanation';
   }
-  
+
   // ===== 2-OUT-OF-3 COMPENSATION BONUS =====
   const strongPillars = [
     futureScore >= 70,
     financialScore >= 70,
     pastScore >= 70,
   ].filter(Boolean).length;
-  
+
   const twoOfThreeBonus = strongPillars >= 2 ? 10 : 0;
-  
+
   return {
     future: { score: futureScore, label: futureLabel, strong: futureScore >= 70, details: futureDetails },
     financial: { score: financialScore, label: financialLabel, strong: financialScore >= 70, details: financialDetails },
@@ -581,8 +584,38 @@ function calculate3PillarScore(
 }
 
 // ============================================================================
-// STUDENT-FRIENDLY REASON GENERATOR
+// STUDENT-FRIENDLY REASON GENERATOR (SMART ENGINE)
 // ============================================================================
+
+function generateSmartReason(
+  student: any,
+  lender: any,
+  loanAmount: number,
+  context: RecommendationContext
+): string {
+  // 1. The "Scholar" Match
+  const gpa = student.bachelors_cgpa || (student.bachelors_percentage ? student.bachelors_percentage / 10 : 0);
+  const lenderMinGpa = lender.min_cgpa_requirement || 0; // Assuming this field exists or default 0
+
+  if (gpa > 7.5 && (lenderMinGpa < 7 || lenderMinGpa === 0)) {
+    return `Your strong academic profile (GPA ${gpa.toFixed(1)}) makes you a preferred candidate here.`;
+  }
+
+  // 2. The "High Value" Match
+  const lenderMaxLoan = lender.loan_amount_max || 0;
+  if (loanAmount > 2000000 && lenderMaxLoan >= loanAmount) {
+    return `Fully covers your ₹${(loanAmount / 100000).toFixed(1)}L request where others might cap out.`;
+  }
+
+  // 3. The "Speed" Match
+  const processingTime = lender.processing_time_days || 20;
+  if (context.urgency_zone === 'RED' && processingTime < 7) {
+    return `Selected because they can meet your tight deadline (<${processingTime} days).`;
+  }
+
+  // 4. Fallback (Safety)
+  return "Balanced match for your profile and loan requirement.";
+}
 
 function generateStudentReason(
   lender: any,
@@ -591,6 +624,8 @@ function generateStudentReason(
   daysUntil: number,
   isLocked: boolean
 ): { greeting: string; confidence: string; cta: string } {
+  // Deprecated but kept for type compatibility if needed, 
+  // though we will prefer generateSmartReason in the main flow.
   if (isLocked) {
     return {
       greeting: 'This lender has specific requirements.',
@@ -598,34 +633,10 @@ function generateStudentReason(
       cta: 'View other options below.',
     };
   }
-  
-  let greeting = '';
-  let confidence = '';
-  
-  if (score >= 85) {
-    greeting = 'An excellent match for your profile.';
-    confidence = 'High approval likelihood with competitive rates.';
-  } else if (score >= 70) {
-    greeting = 'A strong option for your study plans.';
-    confidence = 'Good match based on your profile.';
-  } else if (score >= 55) {
-    greeting = 'Worth considering as a backup.';
-    confidence = 'Moderate fit - review the terms carefully.';
-  } else {
-    greeting = 'An alternative to explore.';
-    confidence = 'Some conditions may apply.';
-  }
-  
-  // Add zone-specific context
-  if (zone === 'RED' && daysUntil <= 30) {
-    confidence = `Fast processing prioritized for your ${daysUntil}-day timeline.`;
-  } else if (zone === 'GREEN' && daysUntil > 60) {
-    confidence = 'Cost-optimized for your relaxed timeline.';
-  }
-  
+
   return {
-    greeting,
-    confidence,
+    greeting: 'A strong option for your study plans.',
+    confidence: 'Good match based on your profile.',
     cta: 'Compare terms below to decide.',
   };
 }
@@ -642,7 +653,7 @@ async function generateAIJustifications(
   if (!lovableApiKey || results.length === 0) {
     return results;
   }
-  
+
   try {
     const prompt = `You are a friendly loan counselor. Generate persuasive reasons and trade-offs for these lender rankings.
 
@@ -695,11 +706,11 @@ Respond in JSON format:
 
     const aiResult = await response.json();
     const content = aiResult.choices?.[0]?.message?.content;
-    
+
     if (content) {
       const parsed = JSON.parse(content);
       const justifications = parsed.lender_justifications || [];
-      
+
       return results.map(r => {
         const aiJust = justifications.find((j: any) => j.lender_id === r.lender_id);
         if (aiJust) {
@@ -715,7 +726,7 @@ Respond in JSON format:
   } catch (err) {
     console.error('AI justification error:', err);
   }
-  
+
   return results;
 }
 
@@ -735,13 +746,13 @@ Deno.serve(async (req) => {
 
   try {
     const { leadId, studyDestination, loanAmount } = await req.json();
-    
+
     console.log('🧠 [Smart Lender Engine] Processing lead:', leadId);
 
     // =========================================================================
     // FETCH DATA
     // =========================================================================
-    
+
     const { data: lead, error: leadError } = await supabase
       .from('leads_new')
       .select(`
@@ -784,7 +795,7 @@ Deno.serve(async (req) => {
     const coApplicant = lead.co_applicant as any;
     const universities = (lead.lead_universities as any[])?.map(lu => lu.university) || [];
     const primaryUniversity = universities[0];
-    
+
     const effectiveLoanAmount = loanAmount || lead.loan_amount;
     const effectiveLoanType = lead.loan_type || 'secured';
     const hasCollateral = effectiveLoanType === 'secured';
@@ -792,11 +803,11 @@ Deno.serve(async (req) => {
     // =========================================================================
     // LAYER 1: TRANSLATOR
     // =========================================================================
-    
+
     const tier = calculateUniversityTier(primaryUniversity?.global_rank);
     const { zone, daysUntil } = calculateUrgencyZone(lead.intake_month, lead.intake_year);
     const strategy = determineStrategy(zone);
-    
+
     const academicScore = calculateWeightedAcademicScore(
       student?.tenth_percentage,
       student?.twelfth_percentage,
@@ -811,7 +822,7 @@ Deno.serve(async (req) => {
     if (!primaryUniversity) missingWarnings.push('University not specified');
     if (!lead.intake_month || !lead.intake_year) missingWarnings.push('Intake date not specified');
     if (!coApplicant?.monthly_salary) missingWarnings.push('Co-applicant income missing');
-    
+
     // Data Completeness Tracking
     const dataCompleteness: DataCompleteness = {
       has_university: !!primaryUniversity?.global_rank,
@@ -828,15 +839,28 @@ Deno.serve(async (req) => {
       dataCompleteness.has_academics,
     ].filter(Boolean).length;
     dataCompleteness.needs_review = dataCompleteness.score < 3;
-    
+
     console.log(`📊 Data Completeness: ${dataCompleteness.score}/4 (needs_review: ${dataCompleteness.needs_review})`);
+
+    // Construct Context for Smart Engine
+    const recommendationContext: RecommendationContext = {
+      student_tier: tier,
+      urgency_zone: zone,
+      days_until_deadline: daysUntil,
+      strategy,
+      missing_data_warnings: missingWarnings,
+      intake_date: lead.intake_month && lead.intake_year ? `${lead.intake_month}/${lead.intake_year}` : null,
+      loan_amount: effectiveLoanAmount,
+      loan_type: effectiveLoanType,
+      has_collateral: hasCollateral,
+    };
 
     // =========================================================================
     // LAYERS 2-4: BOUNCER + STRATEGIST + SCORER
     // =========================================================================
-    
+
     const coApplicantSalary = coApplicant?.monthly_salary || null;
-    
+
     const scoredLenders = lenders.map(lender => {
       // Layer 2: Bouncer
       const knockout = checkLenderKnockouts(
@@ -847,7 +871,7 @@ Deno.serve(async (req) => {
         hasCollateral,
         tier
       );
-      
+
       // Layer 4: 3-Pillar Score
       const pillars = calculate3PillarScore(
         lender,
@@ -857,7 +881,7 @@ Deno.serve(async (req) => {
         hasCollateral,
         effectiveLoanAmount
       );
-      
+
       // Base score from pillars (weighted average) - CAP AT 100
       const pillarWeights = { future: 0.35, financial: 0.4, past: 0.25 };
       const rawScore = Math.min(100, Math.round(
@@ -866,7 +890,7 @@ Deno.serve(async (req) => {
         pillars.past.score * pillarWeights.past +
         pillars.two_of_three_bonus
       ));
-      
+
       // Layer 3: Strategic Adjustments
       const { adjustedScore, adjustment, badges } = applyStrategicAdjustments(
         rawScore,
@@ -874,7 +898,7 @@ Deno.serve(async (req) => {
         zone,
         strategy
       );
-      
+
       // Calculate combined university boost (premium + ranked with duplicate prevention)
       const universityRestrictions = lender.university_restrictions as {
         premium?: PremiumUniversity[];
@@ -882,22 +906,22 @@ Deno.serve(async (req) => {
       } | null;
       const premiumUniversities = universityRestrictions?.premium || [];
       const rankedUniversities = universityRestrictions?.ranked || [];
-      
+
       const universityBoost = calculateCombinedUniversityBoost(
         primaryUniversity?.name,
         premiumUniversities,
         rankedUniversities
       );
-      
+
       // FIX: Apply knockout penalty BEFORE university boost
       // This prevents locked lenders from ranking higher than unlocked ones
-      const scoreAfterKnockout = knockout.isLocked 
+      const scoreAfterKnockout = knockout.isLocked
         ? Math.max(0, adjustedScore - knockout.penaltyScore)
         : adjustedScore;
-      
+
       // Apply university boost AFTER knockout penalty, capped at 100
       const finalScore = Math.min(100, scoreAfterKnockout + universityBoost.boost);
-      
+
       // Add badge if matched (with boost type indicator)
       const finalBadges = [...badges];
       if (universityBoost.type === 'premium') {
@@ -905,7 +929,7 @@ Deno.serve(async (req) => {
       } else if (universityBoost.type === 'ranked') {
         finalBadges.push(`🎓 Ranked Tier ${universityBoost.rankedTier} (+${universityBoost.boost})`);
       }
-      
+
       // Determine status
       let status: LenderStatus = 'BACKUP';
       if (knockout.isLocked) {
@@ -915,31 +939,31 @@ Deno.serve(async (req) => {
       } else if (finalScore >= 60) {
         status = 'GOOD_FIT';
       }
-      
+
       // Build fit factors
       const fitFactors: string[] = [];
       if (pillars.future.strong) fitFactors.push(pillars.future.label);
       if (pillars.financial.strong) fitFactors.push(pillars.financial.label);
       if (pillars.past.strong) fitFactors.push(pillars.past.label);
-      
+
       // Check loan coverage
       const min = lender.loan_amount_min || 0;
       const max = lender.loan_amount_max || 0;
       if (min > 0 && max > 0 && effectiveLoanAmount >= min && effectiveLoanAmount <= max) {
         fitFactors.push('Loan Amount Covered');
       }
-      
+
       // Add income match if applicable
       if (coApplicantSalary && lender.income_expectations_min && coApplicantSalary >= lender.income_expectations_min) {
         fitFactors.push('Income Meets Expectations');
       }
-      
+
       // Risk flags
       const riskFlags: string[] = [];
       if (knockout.isLocked && knockout.reason) {
         riskFlags.push(knockout.reason);
       }
-      
+
       return {
         lender,
         knockout,
@@ -954,7 +978,7 @@ Deno.serve(async (req) => {
         universityBoost,
       };
     });
-    
+
     // DETERMINISTIC TIE-BREAKER SORTING
     // Multi-criteria sort ensures consistent rankings when scores are equal
     scoredLenders.sort((a, b) => {
@@ -962,48 +986,48 @@ Deno.serve(async (req) => {
       if (b.finalScore !== a.finalScore) {
         return b.finalScore - a.finalScore;
       }
-      
+
       // Tie-breaker 1: Raw pillar score before adjustments (descending)
       if (b.rawScore !== a.rawScore) {
         return b.rawScore - a.rawScore;
       }
-      
+
       // Tie-breaker 2: Processing speed - faster wins (ascending)
       const aProcessing = a.lender.processing_time_days || a.lender.processing_time_range_min || 30;
       const bProcessing = b.lender.processing_time_days || b.lender.processing_time_range_min || 30;
       if (aProcessing !== bProcessing) {
         return aProcessing - bProcessing;
       }
-      
+
       // Tie-breaker 3: Interest rate - lower wins (ascending)
       const aRate = a.lender.interest_rate_min || 12;
       const bRate = b.lender.interest_rate_min || 12;
       if (aRate !== bRate) {
         return aRate - bRate;
       }
-      
+
       // Tie-breaker 4: Preferred rank if set (ascending)
       const aRank = a.lender.preferred_rank || 999;
       const bRank = b.lender.preferred_rank || 999;
       if (aRank !== bRank) {
         return aRank - bRank;
       }
-      
+
       // Final fallback: Alphabetical by name for determinism
       return a.lender.name.localeCompare(b.lender.name);
     });
-    
+
     // Track which tie-breaker was applied for transparency
     const tieBreakerResults: Map<string, TieBreakerInfo> = new Map();
     for (let i = 1; i < scoredLenders.length; i++) {
       const current = scoredLenders[i];
       const previous = scoredLenders[i - 1];
-      
+
       if (current.finalScore === previous.finalScore) {
         // Determine which criteria broke the tie
         let criteria = 'alphabetical';
         let value: number | string = current.lender.name;
-        
+
         if (previous.rawScore !== current.rawScore) {
           criteria = 'raw_pillar_score';
           value = previous.rawScore;
@@ -1029,7 +1053,7 @@ Deno.serve(async (req) => {
             }
           }
         }
-        
+
         tieBreakerResults.set(previous.lender.id, { applied: true, criteria, value });
       }
     }
@@ -1037,26 +1061,26 @@ Deno.serve(async (req) => {
     // =========================================================================
     // BUILD RESULTS
     // =========================================================================
-    
+
     const results: LenderResult[] = scoredLenders.map((sl, index) => {
       const { lender, knockout, pillars, rawScore, adjustment, finalScore, status, badges, fitFactors, riskFlags, universityBoost } = sl;
-      
+
       // Determine group
       let group: LenderResult['group'] = 'not_suitable';
       if (status === 'BEST_FIT') group = 'best_fit';
       else if (status === 'GOOD_FIT') group = 'also_consider';
       else if (status === 'BACKUP') group = 'possible_but_risky';
       else if (status === 'LOCKED') group = 'not_suitable';
-      
+
       // Probability band
       let probabilityBand: LenderResult['probability_band'] = 'low';
       if (finalScore >= 80) probabilityBand = 'high';
       else if (finalScore >= 60) probabilityBand = 'medium';
-      
+
       // Generate basic reason and trade-off (AI will enhance these)
       let reason = '';
       let tradeOff = '';
-      
+
       if (knockout.isLocked) {
         reason = `Currently doesn't match due to ${knockout.reason?.toLowerCase().replace(/_/g, ' ')}. ${knockout.unlockHint}`;
         tradeOff = 'Unlock by following the hint above.';
@@ -1068,9 +1092,9 @@ Deno.serve(async (req) => {
         reason = `Solid alternative with ${badges.length > 0 ? badges[0] : 'good overall fit'}.`;
         tradeOff = `${topLender.finalScore - finalScore} points behind ${topLender.lender.name}.`;
       }
-      
-      const studentReason = generateStudentReason(lender, finalScore, zone, daysUntil, knockout.isLocked);
-      
+
+      const studentReason = generateSmartReason(student, lender, effectiveLoanAmount, recommendationContext);
+
       return {
         rank: index + 1,
         lender_id: lender.id,
@@ -1088,7 +1112,7 @@ Deno.serve(async (req) => {
         unlock_hint: knockout.unlockHint || undefined,
         processing_time_estimate: lender.processing_time_range_min && lender.processing_time_range_max
           ? `${lender.processing_time_range_min}-${lender.processing_time_range_max} days`
-          : lender.processing_time_days 
+          : lender.processing_time_days
             ? `~${lender.processing_time_days} days`
             : 'Not specified',
         interest_rate_display: lender.interest_rate_min && lender.interest_rate_max
@@ -1116,7 +1140,7 @@ Deno.serve(async (req) => {
     // =========================================================================
     // AI ENHANCEMENT (optional)
     // =========================================================================
-    
+
     const enhancedResults = await generateAIJustifications(
       results,
       {
@@ -1125,7 +1149,7 @@ Deno.serve(async (req) => {
         days_until_deadline: daysUntil,
         strategy,
         missing_data_warnings: missingWarnings,
-        intake_date: lead.intake_month && lead.intake_year 
+        intake_date: lead.intake_month && lead.intake_year
           ? `${lead.intake_month}/${lead.intake_year}`
           : null,
         loan_amount: effectiveLoanAmount,
@@ -1138,7 +1162,7 @@ Deno.serve(async (req) => {
     // =========================================================================
     // BUILD OUTPUT
     // =========================================================================
-    
+
     const topResult = enhancedResults.find(r => r.status !== 'LOCKED') || enhancedResults[0];
     const topScores = enhancedResults.slice(0, 3).map(r => r.score);
     const overallConfidence = Math.round(topScores.reduce((a, b) => a + b, 0) / topScores.length);
@@ -1150,7 +1174,7 @@ Deno.serve(async (req) => {
         days_until_deadline: daysUntil,
         strategy,
         missing_data_warnings: missingWarnings,
-        intake_date: lead.intake_month && lead.intake_year 
+        intake_date: lead.intake_month && lead.intake_year
           ? `${lead.intake_month}/${lead.intake_year}`
           : null,
         loan_amount: effectiveLoanAmount,
@@ -1170,7 +1194,7 @@ Deno.serve(async (req) => {
     // =========================================================================
     // GET NEXT VERSION NUMBER
     // =========================================================================
-    
+
     const { data: existingRec } = await supabase
       .from('ai_lender_recommendations')
       .select('version')
@@ -1178,13 +1202,13 @@ Deno.serve(async (req) => {
       .order('version', { ascending: false })
       .limit(1)
       .maybeSingle();
-    
+
     const nextVersion = (existingRec?.version || 0) + 1;
 
     // =========================================================================
     // SAVE TO DATABASE
     // =========================================================================
-    
+
     const { data: savedRec, error: saveError } = await supabase
       .from('ai_lender_recommendations')
       .insert({
@@ -1198,7 +1222,7 @@ Deno.serve(async (req) => {
           match_factors: r.fit_factors,
         })),
         all_lenders_output: enhancedResults,
-        rationale: topResult 
+        rationale: topResult
           ? `Smart Lender recommends ${topResult.lender_name} with ${topResult.score}% fit`
           : 'No clear recommendation - human review needed',
         confidence_score: overallConfidence,
@@ -1210,7 +1234,7 @@ Deno.serve(async (req) => {
           loan_type: effectiveLoanType,
           co_applicant_salary: coApplicantSalary,
           university: primaryUniversity?.name,
-          intake: lead.intake_month && lead.intake_year 
+          intake: lead.intake_month && lead.intake_year
             ? `${lead.intake_month}/${lead.intake_year}`
             : null,
         },
@@ -1239,7 +1263,7 @@ Deno.serve(async (req) => {
     // =========================================================================
     // RESPONSE
     // =========================================================================
-    
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -1263,8 +1287,8 @@ Deno.serve(async (req) => {
   } catch (error: any) {
     console.error('💥 [Smart Lender] Error:', error.message);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
+      JSON.stringify({
+        success: false,
         error: error.message,
         ai_unavailable: true,
       }),

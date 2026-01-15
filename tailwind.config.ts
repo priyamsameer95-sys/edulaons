@@ -15,8 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-        display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-        brand: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+        display: ['Inter', 'Plus Jakarta Sans', 'sans-serif'], // Unify display font to Inter as well for consistency
       },
       colors: {
         border: "hsl(var(--border))",
@@ -24,10 +23,13 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+
+        // V3 Standard Colors
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
           hover: "hsl(var(--primary-hover))",
+          light: "hsl(210, 40%, 98%)", // Light background for primary areas
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -36,6 +38,7 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          light: "hsl(var(--destructive-light))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -45,6 +48,7 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        // Semantic Status Colors
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
@@ -60,23 +64,14 @@ export default {
           foreground: "hsl(var(--info-foreground))",
           light: "hsl(var(--info-light))",
         },
-        trust: {
-          DEFAULT: "hsl(var(--trust))",
-          foreground: "hsl(var(--trust-foreground))",
-          light: "hsl(var(--trust-light))",
-          border: "hsl(var(--trust-border))",
-        },
-        highlight: {
-          DEFAULT: "hsl(var(--highlight))",
-          foreground: "hsl(var(--highlight-foreground))",
+        // Legacy/Mappings
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

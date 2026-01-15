@@ -9,16 +9,16 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDocumentTypes } from "@/hooks/useDocumentTypes";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  FileText, 
-  Upload, 
+import {
+  FileText,
+  Upload,
   Check,
   CheckCircle,
-  AlertCircle, 
-  File, 
-  ChevronDown, 
-  User, 
-  Users, 
+  AlertCircle,
+  File,
+  ChevronDown,
+  User,
+  Users,
   Building,
   Globe,
   HelpCircle
@@ -81,21 +81,21 @@ const DOCUMENT_CATEGORIES: DocumentCategory[] = [
   }
 ];
 
-export const DocumentUploadSection = ({ 
-  leadId, 
+export const DocumentUploadSection = ({
+  leadId,
   loanType = 'unsecured',
-  onDocumentsChange 
+  onDocumentsChange
 }: DocumentUploadSectionProps) => {
   const { documentTypes, loading } = useDocumentTypes();
   const { toast } = useToast();
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
   const [uploading, setUploading] = useState<string[]>([]);
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    student: true,
-    financial_co_applicant: true,
+    student: false,
+    financial_co_applicant: false,
     nri_financial: false,
     non_financial_co_applicant: false,
-    collateral: loanType === 'secured'
+    collateral: false
   });
 
   const toggleCategory = (categoryId: string) => {
@@ -122,11 +122,11 @@ export const DocumentUploadSection = ({
 
   // Calculate progress
   const requiredDocs = documentTypes.filter(dt => dt.required);
-  const uploadedRequiredDocs = requiredDocs.filter(dt => 
+  const uploadedRequiredDocs = requiredDocs.filter(dt =>
     getDocumentStatus(dt.id) === 'uploaded'
   );
-  const progressPercentage = requiredDocs.length > 0 
-    ? (uploadedRequiredDocs.length / requiredDocs.length) * 100 
+  const progressPercentage = requiredDocs.length > 0
+    ? (uploadedRequiredDocs.length / requiredDocs.length) * 100
     : 0;
 
   // Filter categories based on loan type
@@ -174,11 +174,11 @@ export const DocumentUploadSection = ({
             </div>
           </div>
         </div>
-        
+
         {/* Compact Progress */}
         {requiredDocs.length > 0 && (
-          <Progress 
-            value={progressPercentage} 
+          <Progress
+            value={progressPercentage}
             className="w-full h-1.5 mt-3"
           />
         )}
@@ -211,11 +211,11 @@ export const DocumentUploadSection = ({
                         </Badge>
                       )}
                     </div>
-                    <ChevronDown 
+                    <ChevronDown
                       className={cn(
                         "h-4 w-4 transition-transform text-muted-foreground",
                         openCategories[category.id] && "transform rotate-180"
-                      )} 
+                      )}
                     />
                   </div>
                 </div>
@@ -227,10 +227,10 @@ export const DocumentUploadSection = ({
                   {categoryDocs.map((docType) => {
                     const status = getDocumentStatus(docType.id);
                     const isUploading = uploading.includes(docType.id);
-                    
+
                     return (
-                      <div 
-                        key={docType.id} 
+                      <div
+                        key={docType.id}
                         className="px-4 py-3 border-t border-border/50 hover:bg-muted/30 transition-colors"
                       >
                         <div className="flex items-center justify-between gap-4">
@@ -258,7 +258,7 @@ export const DocumentUploadSection = ({
                               )}
                             </div>
                           </div>
-                          
+
                           {/* Status & Actions */}
                           <div className="flex items-center gap-3">
                             {/* Upload Status */}
@@ -268,35 +268,35 @@ export const DocumentUploadSection = ({
                                 <span className="text-xs font-medium">Uploaded</span>
                               </div>
                             )}
-                            
+
                             {status === 'error' && (
                               <div className="flex items-center gap-1.5 text-destructive">
                                 <AlertCircle className="h-4 w-4" />
                                 <span className="text-xs font-medium">Failed</span>
                               </div>
                             )}
-                            
+
                             {isUploading && (
                               <div className="flex items-center gap-1.5 text-primary">
                                 <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 <span className="text-xs font-medium">Uploading...</span>
                               </div>
                             )}
-                            
+
                             {/* Upload Button */}
                             {status !== 'uploaded' && (
                               <EnhancedDocumentUpload
                                 leadId={leadId}
                                 documentType={docType}
                                 onUploadSuccess={(document) => {
-                                  setUploadedDocs(prev => 
-                                    prev.map(doc => 
-                                      doc.documentTypeId === docType.id 
+                                  setUploadedDocs(prev =>
+                                    prev.map(doc =>
+                                      doc.documentTypeId === docType.id
                                         ? { ...doc, status: 'uploaded' as const }
                                         : doc
                                     )
                                   );
-                                  
+
                                   toast({
                                     title: "✅ Upload Complete",
                                     description: `${docType.name} uploaded successfully`,
@@ -307,9 +307,9 @@ export const DocumentUploadSection = ({
                                   onDocumentsChange?.(totalUploaded, totalRequired);
                                 }}
                                 onUploadError={(error) => {
-                                  setUploadedDocs(prev => 
-                                    prev.map(doc => 
-                                      doc.documentTypeId === docType.id 
+                                  setUploadedDocs(prev =>
+                                    prev.map(doc =>
+                                      doc.documentTypeId === docType.id
                                         ? { ...doc, status: 'error' as const }
                                         : doc
                                     )
@@ -335,7 +335,7 @@ export const DocumentUploadSection = ({
           );
         })}
       </div>
-        
+
       {/* Empty State */}
       {documentTypes.length === 0 && (
         <EnhancedEmptyState

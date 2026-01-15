@@ -4,7 +4,7 @@
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, Globe, Calendar, IndianRupee, Building2 } from 'lucide-react';
+import { Pencil, Globe, Calendar, IndianRupee, Building2, ArrowRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ApplicationDetailsCardProps {
@@ -40,7 +40,7 @@ const formatIntake = (month: number | null, year: number | null) => {
 const formatDestination = (destination: string) => {
   const map: Record<string, string> = {
     'usa': '🇺🇸 USA',
-    'uk': '🇬🇧 UK', 
+    'uk': '🇬🇧 UK',
     'canada': '🇨🇦 Canada',
     'australia': '🇦🇺 Australia',
     'germany': '🇩🇪 Germany',
@@ -67,15 +67,26 @@ const ApplicationDetailsCard = ({
       <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
         <CardTitle className="text-base font-medium">Application Details</CardTitle>
         {!isEditLocked && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onEditClick}
-            className="h-8 text-muted-foreground hover:text-foreground"
-          >
-            <Pencil className="w-3.5 h-3.5 mr-1.5" />
-            Edit
-          </Button>
+          targetLender ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onEditClick}
+              className="h-8 text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="w-3.5 h-3.5 mr-1.5" />
+              Edit
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={onEditClick}
+              className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            >
+              Continue Application
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Button>
+          )
         )}
       </CardHeader>
       <CardContent className="pt-0 pb-4 px-4">

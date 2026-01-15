@@ -15,14 +15,15 @@ import { LeadQueueTab } from '@/components/admin/dashboard/LeadQueueTab';
 import { SettingsTab } from '@/components/admin/dashboard/SettingsTab';
 import { LenderManagementTab } from '@/components/admin/LenderManagementTab';
 import { AdminPartnersTab } from '@/components/admin/dashboard/AdminPartnersTab';
+import { UniversityManagementTab } from '@/components/admin/dashboard/UniversityManagementTab';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 const AdminDashboard = () => {
   const { signOut, appUser } = useAuth();
-  
+
   // Use the consolidated dashboard hook
   const dashboard = useAdminDashboard(50);
-  
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onCommandK: () => dashboard.openModal('commandPalette'),
@@ -85,6 +86,10 @@ const AdminDashboard = () => {
                   <Building className="h-4 w-4" />
                   Lenders
                 </TabsTrigger>
+                <TabsTrigger value="universities" className="gap-1.5 data-[state=active]:bg-background">
+                  <Building className="h-4 w-4" />
+                  Universities
+                </TabsTrigger>
                 <TabsTrigger value="settings" className="gap-1.5 data-[state=active]:bg-background">
                   <Settings className="h-4 w-4" />
                   Settings
@@ -134,6 +139,13 @@ const AdminDashboard = () => {
               className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden"
             >
               <LenderManagementTab />
+            </TabsContent>
+
+            <TabsContent
+              value="universities"
+              className="flex-1 overflow-auto p-4 mt-0 data-[state=inactive]:hidden"
+            >
+              <UniversityManagementTab />
             </TabsContent>
 
             <TabsContent

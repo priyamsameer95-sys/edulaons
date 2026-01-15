@@ -32,7 +32,7 @@ interface AdminModalsManagerProps {
   allPartners: Partner[];
   leads: PaginatedLead[];
   defaultPartnerId?: string | null;
-  
+
   // Callbacks
   onCloseModal: (modal: keyof ModalState) => void;
   onStatusUpdated: () => void;
@@ -119,7 +119,7 @@ export const AdminModalsManager = React.memo(function AdminModalsManager({
         open={modals.newLead}
         onOpenChange={(open) => !open && onCloseModal('newLead')}
         onSuccess={onNewLeadSuccess}
-        partners={allPartners}
+        partners={allPartners ?? []}
         defaultPartnerId={defaultPartnerId}
       />
 

@@ -27,6 +27,8 @@ import { convertINRToWords, formatIndianNumber } from "@/utils/currencyFormatter
 import { ALL_STATES_AND_UTS } from "@/constants/indianStates";
 import { OCCUPATION_OPTIONS, EMPLOYER_TYPE_OPTIONS, INCOME_RANGE_OPTIONS } from "@/utils/leadCompletionSchema";
 import { useLenderRecommendationTrigger } from "@/hooks/useLenderRecommendationTrigger";
+import { DatePickerWithYearSelect } from "@/components/ui/date-picker-with-year-select";
+import { parseISO } from "date-fns";
 
 interface AddNewLeadModalProps {
   open: boolean;
@@ -163,7 +165,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
   const [createdCaseId, setCreatedCaseId] = useState<string | null>(null);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
   const { triggerRecommendation } = useLenderRecommendationTrigger();
-  
+
   // Phone duplicate check state
   const [phoneCheckResult, setPhoneCheckResult] = useState<{ exists: boolean; studentName?: string } | null>(null);
   const [checkingPhone, setCheckingPhone] = useState(false);
@@ -176,7 +178,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
         setPhoneCheckResult(null);
         return;
       }
-      
+
       setCheckingPhone(true);
       try {
         const { data } = await supabase
@@ -184,7 +186,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           .select('id, name')
           .eq('phone', debouncedPhone)
           .maybeSingle();
-        
+
         setPhoneCheckResult(data ? { exists: true, studentName: data.name } : { exists: false });
       } catch (err) {
         console.error('Phone check error:', err);
@@ -193,7 +195,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
         setCheckingPhone(false);
       }
     };
-    
+
     checkPhone();
   }, [debouncedPhone]);
 
@@ -208,7 +210,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
 
   // Convert amounts to words using centralized function
   const loanAmountInWords = useMemo(() => convertINRToWords(formData.loan_amount), [formData.loan_amount]);
-  
+
   // Check if employer name should be shown
   const showEmployerType = formData.co_applicant_occupation === 'salaried' || formData.co_applicant_occupation === 'professional';
   const showEmployerName = (showEmployerType && (formData.co_applicant_employer_type === 'private' || formData.co_applicant_employer_type === 'mnc')) || formData.co_applicant_occupation === 'business_owner';
@@ -378,7 +380,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
       setCreatedLeadId(data.lead.id);
       setShowSuccess(true);
       toast.success('Lead created successfully!');
-      
+
       // Trigger AI lender recommendation in background
       if (data.lead?.id) {
         triggerRecommendation({
@@ -388,7 +390,7 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           silent: true,
         });
       }
-      
+
       onSuccess?.();
 
     } catch (error: any) {
@@ -466,8 +468,8 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
             {/* Action Buttons */}
             <div className="w-full space-y-2 mt-2">
               {onContinueApplication && (
-                <Button 
-                  onClick={handleCompleteApplication} 
+                <Button
+                  onClick={handleCompleteApplication}
                   className="w-full gap-2"
                   size="lg"
                 >
@@ -475,21 +477,21 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               )}
-              
+
               {onUploadDocuments && (
-                <Button 
-                  onClick={handleUploadDocs} 
-                  variant="outline" 
+                <Button
+                  onClick={handleUploadDocs}
+                  variant="outline"
                   className="w-full gap-2"
                 >
                   <FileText className="h-4 w-4" />
                   Upload Documents
                 </Button>
               )}
-              
-              <Button 
-                onClick={handleClose} 
-                variant="ghost" 
+
+              <Button
+                onClick={handleClose}
+                variant="ghost"
                 className="w-full text-muted-foreground"
               >
                 Done for Now
@@ -508,14 +510,14 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
           <DialogTitle className="flex items-center gap-2">
             Add New Lead
           </DialogTitle>
-          
+
           {/* Step Indicator */}
           <div className="flex items-center justify-between pt-4">
             {STEPS.map((step, index) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
-              
+
               return (
                 <div key={step.id} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
@@ -623,14 +625,15 @@ export const AddNewLeadModal = ({ open, onClose, onSuccess, onContinueApplicatio
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 flex flex-col">
                 <Label htmlFor="student_dob" className="text-sm">Date of Birth</Label>
-                <Input
-                  id="student_dob"
-                  type="date"
-                  value={formData.student_dob}
-                  onChange={(e) => handleInputChange('student_dob', e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
+                <DatePickerWithYearSelect
+                  date={formData.student_dob ? parseISO(formData.student_dob) : undefined}
+                  setDate={(date) => handleInputChange('student_dob', date ? date.toISOString().split('T')[0] : "")}
+                  placeholder="Select Date of Birth"
+                  fromYear={1960}
+                  toYear={new Date().getFullYear()}
+                  className="h-12"
                 />
               </div>
             </div>

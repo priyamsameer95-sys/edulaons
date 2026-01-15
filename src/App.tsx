@@ -21,6 +21,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import DashboardRouter from "./components/DashboardRouter";
 import PublicPartner from "./pages/public/PublicPartner";
+import TestPrototype from "./pages/TestPrototype"; // TEMP IMPORT
+import DesignPreview from "./components/DesignPreview";
+import SystemTestPage from "./pages/SystemTestPage";
 
 const queryClient = new QueryClient();
 
@@ -34,116 +37,120 @@ const App = () => (
           <Routes>
             {/* Root = Student Landing Page (Primary) */}
             <Route path="/" element={<StudentLanding />} />
-            
+            <Route path="/" element={<StudentLanding />} />
+            <Route path="/test-new-lead" element={<NewLeadPage />} /> {/* TEMP TEST ROUTE */}
+            <Route path="/design-system" element={<DesignPreview />} /> {/* DESIGN SYSTEM PREVIEW */}
+            <Route path="/qa-system-test" element={<SystemTestPage />} /> {/* QA SYSTEM TEST RUNNER */}
+
             {/* ============ NEW STANDARDIZED ROUTES ============ */}
-            
+
             {/* Login Routes - Standardized */}
             <Route path="/login/student" element={<StudentAuth />} />
             <Route path="/login/partner" element={<PartnerLogin />} />
             <Route path="/login/admin" element={<Navigate to="/login/partner" replace />} />
-            
+
             {/* Dashboard Routes - Standardized */}
             <Route path="/dashboard" element={<DashboardRouter />} />
-            <Route 
-              path="/dashboard/admin" 
+            <Route
+              path="/dashboard/admin"
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/dashboard/student" 
+            <Route
+              path="/dashboard/student"
               element={
                 <ProtectedRoute requiredRole="student">
                   <StudentDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
             {/* Partner dashboard uses dynamic route with partner code */}
-            <Route 
-              path="/dashboard/partner" 
-              element={<DashboardRouter />} 
+            <Route
+              path="/dashboard/partner"
+              element={<DashboardRouter />}
             />
-            
+
             {/* ============ BACKWARD-COMPATIBLE REDIRECTS ============ */}
-            
+
             {/* Legacy login routes */}
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/partner/login" element={<Navigate to="/login/partner" replace />} />
             <Route path="/student/auth" element={<Navigate to="/login/student" replace />} />
             <Route path="/student/landing" element={<Navigate to="/" replace />} />
-            
+
             {/* Legacy dashboard routes */}
             <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
             <Route path="/admin/v2" element={<Navigate to="/dashboard/admin" replace />} />
             <Route path="/student" element={<Navigate to="/dashboard/student" replace />} />
-            
+
             {/* Student Welcome Page (post-auth landing) */}
-            <Route 
-              path="/student/welcome" 
+            <Route
+              path="/student/welcome"
               element={
                 <ProtectedRoute requiredRole="student">
                   <StudentSignedInLanding />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* ============ FUNCTIONAL ROUTES ============ */}
-            
+
             {/* Public Routes - No Authentication Required */}
-            <Route 
-              path="/public/partner/:partnerCode" 
+            <Route
+              path="/public/partner/:partnerCode"
               element={
                 <PublicRoute>
                   <PublicPartner />
                 </PublicRoute>
-              } 
+              }
             />
-            
+
             {/* Partner Dashboard - Multi-tenant */}
-            <Route 
-              path="/partner/:partnerCode" 
+            <Route
+              path="/partner/:partnerCode"
               element={
                 <ProtectedRoute requiredRole="partner">
                   <PartnerDashboardWrapper />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* New Lead Page */}
-            <Route 
-              path="/partner/:partnerCode/new-lead" 
+            <Route
+              path="/partner/:partnerCode/new-lead"
               element={
                 <ProtectedRoute requiredRole="partner">
                   <NewLeadPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Partner Document Page */}
-            <Route 
-              path="/partner/:partnerCode/lead/:leadId/documents" 
+            <Route
+              path="/partner/:partnerCode/lead/:leadId/documents"
               element={
                 <ProtectedRoute requiredRole="partner">
                   <PartnerDocumentPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Student Application Form */}
-            <Route 
-              path="/student/apply" 
+            <Route
+              path="/student/apply"
               element={
                 <ProtectedRoute requiredRole="student">
                   <StudentApplicationFlow />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Unauthorized page */}
-            <Route 
-              path="/unauthorized" 
+            <Route
+              path="/unauthorized"
               element={
                 <div className="flex min-h-screen items-center justify-center">
                   <div className="text-center">
@@ -151,9 +158,9 @@ const App = () => (
                     <p className="text-muted-foreground">You don't have permission to access this page.</p>
                   </div>
                 </div>
-              } 
+              }
             />
-            
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import LenderComparisonGrid from './LenderComparisonGrid';
 import { ConfettiAnimation } from './ConfettiAnimation';
+import { LottieAnimation } from '@/components/ui/lottie-animation';
 
 interface LenderData {
   lender_id: string;
@@ -31,82 +32,91 @@ interface SuccessStepProps {
   leadId?: string;
   requestedAmount?: number;
   recommendedLenders: LenderData[];
+  studentName?: string;
 }
 
 const SuccessStep = ({
   caseId,
   leadId,
-  recommendedLenders: initialLenders
+  recommendedLenders: initialLenders,
+  studentName
 }: SuccessStepProps) => {
   const navigate = useNavigate();
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [recommendedLenders, setRecommendedLenders] = useState<LenderData[]>(initialLenders);
+  const [recommendationContext, setRecommendationContext] = useState<any>(null);
   const [isLoadingLenders, setIsLoadingLenders] = useState(false);
 
   // Fetch lender recommendations async if not provided
   useEffect(() => {
     const fetchLenderRecommendations = async () => {
       if (recommendedLenders.length > 0 || !leadId) return;
-      
+
       setIsLoadingLenders(true);
       console.log('🔄 Fetching lender recommendations for lead:', leadId);
-      
+
       try {
         const { data, error } = await supabase.functions.invoke('suggest-lender', {
           body: { leadId }
         });
-        
+
         if (error) {
           console.error('❌ Failed to fetch lender recommendations:', error);
           return;
         }
-        
-        if (data?.success && data?.grouped_evaluations) {
-          // Merge all groups into one list
-          const allEvaluations = [
-            ...(data.grouped_evaluations.best_fit || []).map((e: any) => ({ ...e, fit_group: 'best_fit' })),
-            ...(data.grouped_evaluations.also_consider || []).map((e: any) => ({ ...e, fit_group: 'also_consider' })),
-            ...(data.grouped_evaluations.possible_but_risky || []).map((e: any) => ({ ...e, fit_group: 'possible_but_risky' })),
-          ];
-          
-          if (allEvaluations.length > 0) {
-            // Fetch full lender details
-            const lenderIds = allEvaluations.map((e: any) => e.lender_id);
-            
-            const { data: lenderDetails } = await supabase
-              .from('lenders')
-              .select(`
+
+        if (data?.success) {
+          if (data.recommendation_context) {
+            setRecommendationContext(data.recommendation_context);
+          }
+
+          if (data.grouped_evaluations) {
+            // Merge all groups into one list
+            const allEvaluations = [
+              ...(data.grouped_evaluations.best_fit || []).map((e: any) => ({ ...e, fit_group: 'best_fit' })),
+              ...(data.grouped_evaluations.also_consider || []).map((e: any) => ({ ...e, fit_group: 'also_consider' })),
+              ...(data.grouped_evaluations.possible_but_risky || []).map((e: any) => ({ ...e, fit_group: 'possible_but_risky' })),
+            ];
+
+            if (allEvaluations.length > 0) {
+              // Fetch full lender details
+              const lenderIds = allEvaluations.map((e: any) => e.lender_id);
+
+              const { data: lenderDetails } = await supabase
+                .from('lenders')
+                .select(`
                 id, name, code, description, logo_url,
                 interest_rate_min, interest_rate_max,
                 loan_amount_min, loan_amount_max,
                 processing_time_days, approval_rate
               `)
-              .in('id', lenderIds);
-            
-            // Merge AI scores with lender details
-            const mergedLenders: LenderData[] = allEvaluations.map((evalResult: any) => {
-              const details: any = lenderDetails?.find((l: any) => l.id === evalResult.lender_id) || {};
-              return {
-                lender_id: evalResult.lender_id,
-                lender_name: evalResult.lender_name || details.name,
-                lender_code: details.code || '',
-                lender_description: details.description,
-                logo_url: details.logo_url,
-                interest_rate_min: details.interest_rate_min,
-                interest_rate_max: details.interest_rate_max,
-                loan_amount_min: details.loan_amount_min,
-                loan_amount_max: details.loan_amount_max,
-                processing_time_days: details.processing_time_days,
-                approval_rate: details.approval_rate,
-                compatibility_score: evalResult.fit_score || 70,
-                is_preferred: evalResult.fit_group === 'best_fit',
-                student_facing_reason: evalResult.student_facing_reason || evalResult.justification,
-              };
-            });
-            
-            setRecommendedLenders(mergedLenders);
-            console.log('✅ Loaded', mergedLenders.length, 'lender recommendations');
+                .in('id', lenderIds);
+
+              // Merge AI scores with lender details
+              const mergedLenders: LenderData[] = allEvaluations.map((evalResult: any) => {
+                const details: any = lenderDetails?.find((l: any) => l.id === evalResult.lender_id) || {};
+                return {
+                  lender_id: evalResult.lender_id,
+                  lender_name: evalResult.lender_name || details.name,
+                  lender_code: details.code || '',
+                  lender_description: details.description,
+                  logo_url: details.logo_url,
+                  interest_rate_min: details.interest_rate_min,
+                  interest_rate_max: details.interest_rate_max,
+                  loan_amount_min: details.loan_amount_min,
+                  loan_amount_max: details.loan_amount_max,
+                  processing_time_days: details.processing_time_days,
+                  approval_rate: details.approval_rate,
+                  compatibility_score: evalResult.fit_score || 70,
+                  is_preferred: evalResult.fit_group === 'best_fit',
+                  student_facing_reason: evalResult.student_facing_reason || evalResult.justification,
+                };
+              });
+
+              setRecommendedLenders(mergedLenders);
+              console.log('✅ Loaded', mergedLenders.length, 'lender recommendations');
+            }
           }
         }
       } catch (err) {
@@ -115,17 +125,25 @@ const SuccessStep = ({
         setIsLoadingLenders(false);
       }
     };
-    
+
     fetchLenderRecommendations();
   }, [leadId, recommendedLenders.length]);
 
-  // Sort lenders by compatibility score
+  // Sort: Lowest Interest Rate -> Highest AI Score
   const sortedLenders = useMemo(() => {
-    return [...recommendedLenders].sort((a, b) => b.compatibility_score - a.compatibility_score);
+    return [...recommendedLenders].sort((a, b) => {
+      // 1. Sort by lowest interest rate
+      const rateA = a.interest_rate_min || 100;
+      const rateB = b.interest_rate_min || 100;
+      if (rateA !== rateB) return rateA - rateB;
+
+      // 2. Secondary sort by compatibility score
+      return b.compatibility_score - a.compatibility_score;
+    });
   }, [recommendedLenders]);
 
   const [showConfetti, setShowConfetti] = useState(true);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 5000);
     return () => clearTimeout(timer);
@@ -153,26 +171,34 @@ const SuccessStep = ({
     }
   };
 
+  const firstName = studentName?.split(' ')[0] || 'Friend';
+
   return (
     <div className="space-y-8 pb-8">
       {/* Confetti Animation */}
       {showConfetti && <ConfettiAnimation />}
 
       {/* Success Header */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10">
-          <CheckCircle2 className="h-8 w-8 text-success" />
+      <div className="text-center space-y-4 relative pt-6">
+        {/* Background Celebration Lottie */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 opacity-70">
+          <LottieAnimation
+            animationUrl="https://assets10.lottiefiles.com/packages/lf20_u4yrau.json"
+            className="w-[500px] h-[500px]"
+            loop={false}
+          />
         </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-            Application Submitted!
+
+        <div className="space-y-2 relative z-0">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
+            Woohoo! Great job, {firstName}!
           </h2>
-          <p className="text-muted-foreground">
-            Your loan application has been successfully submitted.
+          <p className="text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
+            We’ve analyzed your profile and found these <span className="text-foreground font-semibold">top lenders</span> for you.
           </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-lg border">
-            <span className="text-sm text-muted-foreground">Case ID:</span>
-            <span className="font-mono font-bold text-primary">{caseId}</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 rounded-full border border-blue-100 shadow-sm mt-2">
+            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Case ID</span>
+            <span className="font-mono font-bold text-blue-700">{caseId}</span>
           </div>
         </div>
       </div>
@@ -194,11 +220,12 @@ const SuccessStep = ({
 
       {/* Lender Selection - All visible at once */}
       {!isLoadingLenders && sortedLenders.length > 0 && (
-        <LenderComparisonGrid 
-          lenders={sortedLenders} 
-          selectedLenderId={selectedLenderId} 
-          onSelect={handleLenderSelection} 
-          isUpdating={isUpdating} 
+        <LenderComparisonGrid
+          lenders={sortedLenders}
+          selectedLenderId={selectedLenderId}
+          onSelect={handleLenderSelection}
+          isUpdating={isUpdating}
+          recommendationContext={recommendationContext}
         />
       )}
 
@@ -249,10 +276,10 @@ const SuccessStep = ({
       {/* Action Buttons */}
       <div className="text-center space-y-3">
         <div className="flex gap-3 justify-center">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
             onClick={() => {
               const text = `Just applied for my education loan! Case ID: ${caseId}`;
               if (navigator.share) {
@@ -266,10 +293,10 @@ const SuccessStep = ({
             <Share2 className="h-4 w-4" />
             Share
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
             onClick={() => toast.info('PDF download coming soon!')}
           >
             <Download className="h-4 w-4" />

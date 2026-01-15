@@ -15,7 +15,7 @@ export const formatCurrency = (amount: number, currency = 'INR'): string => {
 
 export const formatDate = (date: string | Date, format: 'short' | 'long' = 'short'): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
-  
+
   if (format === 'long') {
     return d.toLocaleDateString('en-IN', {
       year: 'numeric',
@@ -23,30 +23,30 @@ export const formatDate = (date: string | Date, format: 'short' | 'long' = 'shor
       day: 'numeric',
     });
   }
-  
+
   return d.toLocaleDateString('en-IN');
 };
 
 export const formatPhoneNumber = (phone: string): string => {
   // Remove all non-numeric characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // Format as Indian phone number: +91 XXXXX XXXXX
   if (cleaned.length === 10) {
     return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
   }
-  
+
   return phone;
 };
 
 // New formatters
-export const formatPercentage = (value: number, decimals = 0): string => 
+export const formatPercentage = (value: number, decimals = 0): string =>
   `${value.toFixed(decimals)}%`;
 
-export const formatLakhs = (value: number): string => 
+export const formatLakhs = (value: number): string =>
   `₹${(value / 100000).toFixed(2)}L`;
 
-export const formatCrores = (value: number): string => 
+export const formatCrores = (value: number): string =>
   `₹${(value / 10000000).toFixed(2)}Cr`;
 
 export const formatCompactCurrency = (value: number): string => {
@@ -62,11 +62,18 @@ export const formatTrend = (value: number) => ({
   isPositive: value > 0
 });
 
-export const formatRelativeTime = (date: string | Date): string => 
+export const formatRelativeTime = (date: string | Date): string =>
   formatDistanceToNow(new Date(date), { addSuffix: true });
 
-export const formatNumber = (value: number): string => 
+export const formatNumber = (value: number): string =>
   new Intl.NumberFormat('en-IN').format(value);
+
+export const formatIncome = (value: number): string =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value) + '/mo';
 
 // Placeholder email patterns - system-generated when real email is not available
 const PLACEHOLDER_EMAIL_PATTERNS = [
@@ -97,7 +104,7 @@ export function formatDisplayEmail(email: string | null | undefined): {
   if (!email) {
     return { display: 'Not provided', isPlaceholder: false };
   }
-  
+
   if (isPlaceholderEmail(email)) {
     const phone = email.split('@')[0];
     return {
@@ -106,7 +113,7 @@ export function formatDisplayEmail(email: string | null | undefined): {
       extractedPhone: phone,
     };
   }
-  
+
   return { display: email, isPlaceholder: false };
 }
 
@@ -118,18 +125,18 @@ export function validateEmail(email: string | null | undefined): string | null {
   if (!email || email.trim() === '') {
     return null; // Empty is allowed (optional field)
   }
-  
+
   // Block placeholder patterns
   if (isPlaceholderEmail(email)) {
     return 'Please enter a real email address';
   }
-  
+
   // Standard email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return 'Invalid email format';
   }
-  
+
   return null; // Valid
 }
 

@@ -11,14 +11,14 @@ import { useLeadFiltering } from '@/hooks/useLeadFiltering';
 
 export const AdminLeadsTab = () => {
   const { leads, loading } = useRefactoredLeads();
-  const { 
-    filteredData, 
-    searchTerm, 
-    setSearchTerm, 
-    activeFilters, 
-    setFilter 
+  const {
+    filteredData,
+    searchTerm,
+    setSearchTerm,
+    activeFilters,
+    setFilter
   } = useLeadFiltering(leads);
-  
+
   if (loading) return <TableSkeleton rows={10} columns={6} />;
 
   return (
@@ -44,9 +44,9 @@ export const AdminLeadsTab = () => {
                 className="pl-9"
               />
             </div>
-            
-            <Select 
-              value={activeFilters.partner || 'all'} 
+
+            <Select
+              value={activeFilters.partner || 'all'}
               onValueChange={(value) => setFilter('partner', value)}
             >
               <SelectTrigger className="w-48">
@@ -57,8 +57,8 @@ export const AdminLeadsTab = () => {
               </SelectContent>
             </Select>
 
-            <Select 
-              value={activeFilters.status || 'all'} 
+            <Select
+              value={activeFilters.status || 'all'}
               onValueChange={(value) => setFilter('status', value)}
             >
               <SelectTrigger className="w-48">

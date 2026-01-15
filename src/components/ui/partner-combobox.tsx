@@ -34,13 +34,13 @@ interface PartnerComboboxProps {
 // Helper to highlight search term in text
 function HighlightedText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
-  
+
   const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
-  
+
   return (
     <>
-      {parts.map((part, i) => 
+      {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
           <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">
             {part}
@@ -64,6 +64,10 @@ export function PartnerCombobox({
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
 
+  // DEFENSIVE GUARD: Handle undefined/null partners
+  const safePartners = partners ?? [];
+  const isLoading = !partners;
+
   // Get recent partners from localStorage
   const [recentPartnerIds, setRecentPartnerIds] = React.useState<string[]>(() => {
     try {
@@ -74,7 +78,7 @@ export function PartnerCombobox({
     }
   });
 
-  const selectedPartner = partners.find(p => p.id === value);
+  const selectedPartner = safePartners.find(p => p.id === value);
 
   const handleSelect = (partnerId: string) => {
     const newValue = partnerId === value ? null : partnerId;
@@ -96,20 +100,20 @@ export function PartnerCombobox({
 
   // Filter partners based on search
   const filteredPartners = React.useMemo(() => {
-    if (!searchQuery) return partners;
+    if (!searchQuery) return safePartners;
     const query = searchQuery.toLowerCase();
-    return partners.filter(
-      p => p.name.toLowerCase().includes(query) || 
-           p.partner_code.toLowerCase().includes(query)
+    return safePartners.filter(
+      p => p.name.toLowerCase().includes(query) ||
+        p.partner_code.toLowerCase().includes(query)
     );
-  }, [partners, searchQuery]);
+  }, [safePartners, searchQuery]);
 
   // Get recent partners that exist in current list
-  const recentPartners = React.useMemo(() => 
+  const recentPartners = React.useMemo(() =>
     recentPartnerIds
-      .map(id => partners.find(p => p.id === id))
+      .map(id => safePartners.find(p => p.id === id))
       .filter(Boolean) as PartnerOption[],
-    [recentPartnerIds, partners]
+    [recentPartnerIds, safePartners]
   );
 
   return (
@@ -120,14 +124,16 @@ export function PartnerCombobox({
           role="combobox"
           aria-expanded={open}
           aria-label="Select a partner"
-          disabled={disabled}
+          disabled={disabled || isLoading}
           className={cn(
             'w-full justify-between font-normal',
             !value && 'text-muted-foreground',
             className
           )}
         >
-        {selectedPartner ? (
+          {isLoading ? (
+            <span className="text-muted-foreground">Loading partners...</span>
+          ) : selectedPartner ? (
             <span className="truncate max-w-[calc(100%-24px)]">
               {selectedPartner.name}
               <span className="ml-1.5 text-xs text-muted-foreground">({selectedPartner.partner_code})</span>
@@ -141,8 +147,8 @@ export function PartnerCombobox({
       <PopoverContent className="w-[350px] p-0 bg-popover border shadow-md" align="start">
         <Command shouldFilter={false}>
           <div className="relative flex items-center border-b">
-            <CommandInput 
-              placeholder="Search by name or code..." 
+            <CommandInput
+              placeholder="Search by name or code..."
               value={searchQuery}
               onValueChange={setSearchQuery}
               className="pr-8"
@@ -160,7 +166,7 @@ export function PartnerCombobox({
           </div>
           <CommandList>
             <CommandEmpty>No partner found.</CommandEmpty>
-            
+
             {/* Recent partners section */}
             {recentPartners.length > 0 && !searchQuery && (
               <CommandGroup heading="Recent">

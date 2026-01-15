@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronDown, Lock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LenderFeaturedCard from './LenderFeaturedCard';
@@ -50,6 +50,7 @@ interface LenderComparisonGridProps {
   onSelect: (lenderId: string) => void;
   isUpdating: boolean;
   urgencyZone?: 'GREEN' | 'YELLOW' | 'RED' | null;
+  recommendationContext?: any;
 }
 
 const LenderComparisonGrid = ({
@@ -57,11 +58,12 @@ const LenderComparisonGrid = ({
   selectedLenderId,
   onSelect,
   isUpdating,
-  urgencyZone
+  urgencyZone,
+  recommendationContext
 }: LenderComparisonGridProps) => {
   const [showAllOthers, setShowAllOthers] = useState(false);
   const [showLockedLenders, setShowLockedLenders] = useState(false);
-  
+
   if (lenders.length === 0) return null;
 
   // Group lenders by status
@@ -72,6 +74,17 @@ const LenderComparisonGrid = ({
   const featuredLenders = qualifiedLenders.slice(0, 3);
   const otherLenders = qualifiedLenders.slice(3);
   const visibleOtherLenders = showAllOthers ? otherLenders : otherLenders.slice(0, 3);
+
+  // Calculate Market Rate (Average of top lenders) & Lowest Rate
+  const { marketRate, lowestRate } = useMemo(() => {
+    if (lenders.length === 0) return { marketRate: 10, lowestRate: 10 };
+    const rates = lenders.map(l => l.interest_rate_min || 10);
+    const sum = rates.reduce((a, b) => a + b, 0);
+    return {
+      marketRate: sum / rates.length,
+      lowestRate: Math.min(...rates)
+    };
+  }, [lenders]);
 
   return (
     <div className="space-y-8">
@@ -96,6 +109,9 @@ const LenderComparisonGrid = ({
             isSelected={selectedLenderId === lender.lender_id}
             onSelect={onSelect}
             isUpdating={isUpdating}
+            recommendationContext={recommendationContext}
+            marketRate={marketRate}
+            lowestRate={lowestRate}
           />
         ))}
       </div>
@@ -121,6 +137,9 @@ const LenderComparisonGrid = ({
                 isSelected={selectedLenderId === lender.lender_id}
                 onSelect={onSelect}
                 isUpdating={isUpdating}
+                recommendationContext={recommendationContext}
+                marketRate={marketRate}
+                lowestRate={lowestRate}
               />
             ))}
           </div>
@@ -161,7 +180,7 @@ const LenderComparisonGrid = ({
                   These lenders don't match your current profile. See what's needed to unlock them.
                 </p>
                 {lockedLenders.map((lender) => (
-                  <div 
+                  <div
                     key={lender.lender_id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-border/40 mb-2 last:mb-0"
                   >

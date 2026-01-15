@@ -26,6 +26,7 @@ import { FileQuestion, PenLine, Check } from 'lucide-react';
 import { ClarificationTemplate, Clarification } from '@/hooks/useClarifications';
 import { cn } from '@/lib/utils';
 import { formatDisplayText } from '@/utils/formatters';
+import { DatePickerWithYearSelect } from '@/components/ui/date-picker-with-year-select';
 
 interface RaiseClarificationModalProps {
   open: boolean;
@@ -276,11 +277,13 @@ export function RaiseClarificationModal({
             </div>
             <div className="space-y-2">
               <Label>Due Date (Optional)</Label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+              <DatePickerWithYearSelect
+                date={dueDate ? new Date(dueDate) : undefined}
+                setDate={(date) => setDueDate(date ? date.toISOString().split('T')[0] : "")}
+                placeholder="Select due date"
+                fromYear={new Date().getFullYear()}
+                toYear={new Date().getFullYear() + 1}
+                className="h-12"
               />
             </div>
           </div>
