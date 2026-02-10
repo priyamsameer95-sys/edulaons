@@ -2,26 +2,26 @@ import { useState } from 'react';
 import { LeadFormData, Step } from '../types/leadTypes';
 
 const initialFormData: LeadFormData = {
-    student_name: 'Aditya kumar',
-    student_phone: '+919876543210',
-    student_email: 'Aditya.kumar@example.com',
-    student_dob: '2000-01-01',
-    student_gender: 'male',
-    student_pin_code: '110001',
+    student_name: '',
+    student_phone: '',
+    student_email: '',
+    student_dob: '',
+    student_gender: '',
+    student_pin_code: '',
     qualification: '',
     country: '',
     universities: [''],
-    course_type: 'Masters STEM',
-    intake_month: 'Jan 2026',
+    course_type: '',
+    intake_month: '',
     loan_type: 'unsecured',
-    amount_requested: '₹10 - 25L',
+    amount_requested: '',
     co_applicant_name: '',
     co_applicant_email: '',
     co_applicant_phone: '',
-    co_applicant_salary: '500000',
-    co_applicant_employment_type: 'salaried',
-    co_applicant_relationship: 'Father',
-    co_applicant_pin_code: '000000'
+    co_applicant_salary: '',
+    co_applicant_employment_type: '',
+    co_applicant_relationship: '',
+    co_applicant_pin_code: ''
 };
 
 export const useLeadState = () => {

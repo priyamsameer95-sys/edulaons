@@ -48,20 +48,46 @@ export const leadService = {
     async getBestMatchLenders(leadId: string) {
         if (!leadId) return [];
 
-        const { data: lenders, error } = await supabase
+        // 1. Fetch the lead to understand requirements
+        const { data: lead, error: leadError } = await supabase
+            .from('leads_new')
+            .select('*')
+            .eq('id', leadId)
+            .single();
+
+        if (leadError) throw new Error(`Failed to fetch lead: ${leadError.message}`);
+
+        // 2. Fetch active lenders
+        const { data: lenders, error: lendersError } = await supabase
             .from('lenders')
             .select('*')
             .eq('is_active', true);
 
-        if (error) throw error;
+        if (lendersError) throw new Error(`Failed to fetch lenders: ${lendersError.message}`);
 
-        // In real app, this comes from `ai_lender_recommendations` logic
-        return lenders.map((lender, index) => ({
-            ...lender,
-            isBestMatch: index === 0,
-            matchScore: index === 0 ? 98 : (90 - index * 5),
-            badge: index === 0 ? "BEST MATCH FOR YOU" : "Strong Alternative"
-        }));
+        // 3. Basic Matching Logic (to be replaced by AI later)
+        // Score based on loan amount limits and responsiveness
+        return lenders.map((lender) => {
+            let score = 70; // Base score
+
+            // Boost score if lender max amount covers requested amount (rough heuristic)
+            // Using correct column 'loan_amount_max' and 'loan_amount' from leads_new
+            if ((lender.loan_amount_max || 0) >= (lead.loan_amount || 0)) {
+                score += 15;
+            }
+
+            // Boost for high approval rate lenders (proxy for "verified" or "good" lenders)
+            if ((lender.approval_rate || 0) > 80) {
+                score += 10;
+            }
+
+            return {
+                ...lender,
+                matchScore: Math.min(score, 98), // Cap at 98
+                isBestMatch: score >= 90,
+                badge: score >= 90 ? "BEST MATCH FOR YOU" : (score >= 80 ? "Strong Alternative" : undefined)
+            };
+        }).sort((a, b) => b.matchScore - a.matchScore);
     },
 
     async createLead(formData: LeadFormData, isUpdate: boolean = false) {
