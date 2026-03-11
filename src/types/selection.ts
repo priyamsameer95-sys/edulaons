@@ -7,7 +7,7 @@ export interface University {
   name: string;
   country: string;
   city: string;
-  qs_rank: number | null;
+  qs_rank: string | number | null;
   popular: boolean;
 }
 
@@ -29,6 +29,7 @@ export interface SelectionOption {
   id: string;
   label: string;
   sublabel?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
 

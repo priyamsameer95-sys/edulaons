@@ -8,11 +8,12 @@
  * 
  * This prevents the "Access Denied" flash on refresh.
  */
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthLoadingScreen } from '@/components/auth/AuthLoadingScreen';
 import { AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 type AppRole = 'admin' | 'partner' | 'student' | 'super_admin';
 
@@ -66,12 +67,14 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   // STATE 4: Session expired with no user - redirect to login
   if (sessionState === 'expired' && !user) {
     const loginPath = getLoginPath();
+    toast.info('Your session has expired. Please sign in again.', { id: 'session-expired' });
     return <Navigate to={`${loginPath}?returnTo=${returnTo}`} replace />;
   }
 
   // STATE 5: No user after auth completed - redirect to login
   if (!user) {
     const loginPath = getLoginPath();
+    toast.info('Please sign in to continue.', { id: 'please-sign-in' });
     return <Navigate to={`${loginPath}?returnTo=${returnTo}`} replace />;
   }
 

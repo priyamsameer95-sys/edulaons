@@ -40,9 +40,11 @@ async function evaluateLendersForLead(
   leadId: string,
   studyDestination: string,
   loanAmount: number
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any[]> {
   console.log('🤖 Triggering AI lender evaluation for lead:', leadId);
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let recommendedLenders: any[] = [];
   
   try {
@@ -69,9 +71,13 @@ async function evaluateLendersForLead(
       if (lenderSuggestion.success && lenderSuggestion.grouped_evaluations) {
         // Return ALL lenders grouped by fit category (not just top 5)
         const allEvaluations = [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(lenderSuggestion.grouped_evaluations.best_fit || []).map((e: any) => ({ ...e, fit_group: 'best_fit' })),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(lenderSuggestion.grouped_evaluations.also_consider || []).map((e: any) => ({ ...e, fit_group: 'also_consider' })),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(lenderSuggestion.grouped_evaluations.possible_but_risky || []).map((e: any) => ({ ...e, fit_group: 'possible_but_risky' })),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(lenderSuggestion.grouped_evaluations.not_suitable || []).map((e: any) => ({ ...e, fit_group: 'not_suitable' })),
         ];
         
@@ -79,6 +85,7 @@ async function evaluateLendersForLead(
         
         // Get full lender details for each evaluation
         if (allEvaluations.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const lenderIds = allEvaluations.map((e: any) => e.lender_id);
           
           const { data: lenderDetails } = await supabaseAdmin
@@ -96,7 +103,9 @@ async function evaluateLendersForLead(
             .in('id', lenderIds);
           
           // Merge AI scores with full lender details
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           recommendedLenders = allEvaluations.map((evalResult: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const details: any = lenderDetails?.find((l: any) => l.id === evalResult.lender_id) || {};
             return {
               lender_id: evalResult.lender_id,
@@ -151,6 +160,7 @@ async function evaluateLendersForLead(
       const errorText = await lenderResponse.text();
       console.warn('⚠️ AI lender evaluation returned error:', errorText);
     }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (aiError: any) {
     console.error('❌ AI lender call error:', aiError.message);
   }
@@ -172,6 +182,7 @@ async function evaluateLendersForLead(
       .eq('is_active', true)
       .order('preferred_rank', { ascending: true });
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recommendedLenders = (fallbackLenders || []).map((l: any, index: number) => {
       // Calculate a basic score based on available data
       let score = 50;
@@ -303,6 +314,7 @@ serve(async (req) => {
       .eq('phone', cleanStudentPhone)
       .maybeSingle();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let existingLead: any = null;
     let partnerName: string | null = null;
     
@@ -542,6 +554,7 @@ serve(async (req) => {
         });
 
       // AI lender evaluation - skip if run_ai_evaluation is explicitly false
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let recommendedLenders: any[] = [];
       const runAiEval = body.run_ai_evaluation !== false;
       
@@ -604,6 +617,7 @@ serve(async (req) => {
       }
 
       // AI lender evaluation - skip if run_ai_evaluation is explicitly false
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let recommendedLenders: any[] = [];
       const runAiEval = body.run_ai_evaluation !== false;
       
@@ -644,6 +658,7 @@ serve(async (req) => {
       console.log('✅ Found existing organic lead:', existingLead.case_id);
 
       // AI lender evaluation - skip if run_ai_evaluation is explicitly false
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let recommendedLenders: any[] = [];
       const runAiEval = body.run_ai_evaluation !== false;
       
@@ -940,6 +955,7 @@ serve(async (req) => {
 
     // ===== AI LENDER EVALUATION FOR NEW LEAD =====
     // Skip if run_ai_evaluation is explicitly false (frontend will fetch async)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let recommendedLenders: any[] = [];
     const runAiEval = body.run_ai_evaluation !== false;
     
@@ -978,6 +994,7 @@ serve(async (req) => {
       }
     );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const message = error?.message || 'An unexpected error occurred';
     console.error('💥 [create-lead-student] Error:', message);

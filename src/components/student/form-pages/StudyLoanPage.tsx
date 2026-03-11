@@ -85,6 +85,7 @@ const StudyLoanPage = ({ data, onUpdate, onNext, onPrev }: StudyLoanPageProps) =
           if (unis) setSelectedUnis(unis);
         });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load universities when destination changes or dropdown opens

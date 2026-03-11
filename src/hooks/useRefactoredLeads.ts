@@ -54,6 +54,7 @@ export function useRefactoredLeads(partnerId?: string) {
         return;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedLeads = (data as any)?.map(mapDbRefactoredLeadToLead) || [];
       setLeads(mappedLeads);
     } catch (err) {

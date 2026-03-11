@@ -10,7 +10,9 @@ import { useRefactoredLeads } from "@/hooks/useRefactoredLeads";
 import { CompactStatsBar } from "@/components/partner/CompactStatsBar";
 import { QuickActionsBar } from "@/components/partner/QuickActionsBar";
 import { PartnerLeadsTable } from "@/components/partner/PartnerLeadsTable";
+import { CrossSellBanners } from "@/components/partner/CrossSellBanners";
 import { AddNewLeadModal } from "@/components/partner/AddNewLeadModal";
+import { BulkUploadModal } from "@/components/partner/BulkUploadModal";
 import { EligibilityCheckModal } from "@/components/partner/EligibilityCheckModal";
 import { CompleteLeadModal } from "@/components/partner/CompleteLeadModal";
 import { PartnerLeadDetailSheet } from "@/components/partner/PartnerLeadDetailSheet";
@@ -78,6 +80,7 @@ const PartnerDashboard = ({
 
   // Modal states
   const [showNewLead, setShowNewLead] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showEligibilityCheck, setShowEligibilityCheck] = useState(false);
   const [showCompleteLeadModal, setShowCompleteLeadModal] = useState(false);
 
@@ -123,6 +126,9 @@ const PartnerDashboard = ({
   const handleNewLead = () => {
     setShowNewLead(true);
   };
+  const handleBulkUpload = () => {
+    setShowBulkUpload(true);
+  };
   const handleEligibilityCheck = () => {
     setShowEligibilityCheck(true);
   };
@@ -149,6 +155,7 @@ const PartnerDashboard = ({
       return;
     }
     if (lead) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedLead = mapDbRefactoredLeadToLead(lead as any);
       setSelectedLead(mappedLead);
       // Close eligibility modal AFTER we have the lead data ready
@@ -191,6 +198,7 @@ const PartnerDashboard = ({
       return;
     }
     if (lead) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedLead = mapDbRefactoredLeadToLead(lead as any);
       setSelectedLead(mappedLead);
       setLeadDetailInitialTab("documents");
@@ -207,65 +215,71 @@ const PartnerDashboard = ({
     refetchKPIs();
   };
   return <div className="min-h-screen bg-background">
-      {/* Compact Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-sm">
-              <Building2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-base font-semibold leading-tight">
-                {partner?.name || 'Partner Dashboard'}
-              </h1>
-              {partner?.partner_code && <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
-                    {partner.partner_code}
-                  </span>
-                </div>}
-            </div>
+    {/* Compact Header */}
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-sm">
+            <Building2 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div className="flex items-center gap-1">
-            {isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/admin')}>
-                Admin
-              </Button>}
-            <PartnerNotificationBell partnerId={partner?.id} />
-            <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground gap-2">
-              <LogOut className="h-4 w-4" />
-               Sign out
-            </Button>
+          <div className="flex flex-col">
+            <h1 className="text-base font-semibold leading-tight">
+              {partner?.name || 'Partner Dashboard'}
+            </h1>
+            {partner?.partner_code && <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-xs font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
+                {partner.partner_code}
+              </span>
+            </div>}
           </div>
         </div>
-      </header>
+        <div className="flex items-center gap-1">
+          {isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/admin')}>
+            Admin
+          </Button>}
+          <PartnerNotificationBell partnerId={partner?.id} />
+          <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground gap-2">
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </Button>
+        </div>
+      </div>
+    </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
-        {/* Error Alert */}
-        {leadsError && <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Failed to load leads: {leadsError}
-            </AlertDescription>
-          </Alert>}
+    {/* Main Content */}
+    <main className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+      {/* Error Alert */}
+      {leadsError && <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load leads: {leadsError}
+        </AlertDescription>
+      </Alert>}
 
-        {/* Compact Stats Bar - clickable filters */}
-        <CompactStatsBar kpis={kpis} loading={kpisLoading} activeFilter={statusFilter} onFilterClick={setStatusFilter} />
+      {/* Compact Stats Bar - clickable filters */}
+      <CompactStatsBar kpis={kpis} loading={kpisLoading} activeFilter={statusFilter} onFilterClick={setStatusFilter} />
 
-        {/* Quick Actions Bar */}
-        <QuickActionsBar onNewLead={handleNewLead} onEligibilityCheck={handleEligibilityCheck} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      {/* Quick Actions Bar */}
+      <QuickActionsBar onNewLead={handleNewLead} onEligibilityCheck={handleEligibilityCheck} onBulkUpload={handleBulkUpload} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-        {/* Leads Table */}
-        <PartnerLeadsTable leads={filteredLeads} loading={leadsLoading} searchQuery={debouncedSearch} onUploadDocs={handleUploadDocs} onCompleteLead={handleCompleteLead} onNewLead={handleNewLead} onViewLead={handleViewLead} />
-      </main>
+      {/* Cross Sell Banners */}
+      <CrossSellBanners />
 
-      {/* Add New Lead Modal */}
-      <AddNewLeadModal open={showNewLead} onClose={() => setShowNewLead(false)} onSuccess={handleLeadSuccess} onContinueApplication={handleEligibilityContinue} onUploadDocuments={handleUploadDocsById} partnerId={partner?.id} />
+      {/* Leads Table */}
+      <PartnerLeadsTable leads={filteredLeads} loading={leadsLoading} searchQuery={debouncedSearch} onUploadDocs={handleUploadDocs} onCompleteLead={handleCompleteLead} onNewLead={handleNewLead} onViewLead={handleViewLead} />
+    </main>
 
-      {/* Eligibility Check Modal */}
-      <EligibilityCheckModal open={showEligibilityCheck} onClose={() => setShowEligibilityCheck(false)} onSuccess={handleLeadSuccess} onContinueApplication={handleEligibilityContinue} onUploadDocuments={handleUploadDocsById} partnerId={partner?.id} />
+    {/* Add New Lead Modal */}
+    <AddNewLeadModal open={showNewLead} onClose={() => setShowNewLead(false)} onSuccess={handleLeadSuccess} onContinueApplication={handleEligibilityContinue} onUploadDocuments={handleUploadDocsById} partnerId={partner?.id} />
 
-      {/* Complete Lead Modal - for finishing quick leads */}
-      <CompleteLeadModal open={showCompleteLeadModal} onClose={() => {
+    {/* Bulk Upload Modal */}
+    <BulkUploadModal open={showBulkUpload} onOpenChange={setShowBulkUpload} onSuccess={handleLeadSuccess} partnerId={partner?.id || ''} />
+
+    {/* Eligibility Check Modal */}
+    <EligibilityCheckModal open={showEligibilityCheck} onClose={() => setShowEligibilityCheck(false)} onSuccess={handleLeadSuccess} onContinueApplication={handleEligibilityContinue} onUploadDocuments={handleUploadDocsById} partnerId={partner?.id} />
+
+    {/* Complete Lead Modal - for finishing quick leads */}
+    <CompleteLeadModal open={showCompleteLeadModal} onClose={() => {
       setShowCompleteLeadModal(false);
       setSelectedLead(null);
     }} lead={selectedLead} onSuccess={() => {
@@ -274,11 +288,11 @@ const PartnerDashboard = ({
       setSelectedLead(null);
     }} />
 
-      {/* Partner Lead Detail Sheet */}
-      <PartnerLeadDetailSheet lead={selectedLead} open={showLeadDetail} onOpenChange={open => {
+    {/* Partner Lead Detail Sheet */}
+    <PartnerLeadDetailSheet lead={selectedLead} open={showLeadDetail} onOpenChange={open => {
       setShowLeadDetail(open);
       if (!open) setSelectedLead(null);
     }} onLeadUpdated={handleLeadUpdated} initialTab={leadDetailInitialTab} />
-    </div>;
+  </div>;
 };
 export default PartnerDashboard;

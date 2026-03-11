@@ -86,11 +86,13 @@ export const UniversityList = () => {
             fetchUniversities();
         }, 500);
         return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchQuery]);
 
     // Page change
     useEffect(() => {
         fetchUniversities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page]);
 
     const handleEdit = (uni: University) => {

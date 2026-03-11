@@ -25,6 +25,7 @@ import { useLeadDocuments } from "@/hooks/useLeadDocuments";
 import { StatusBadge } from "@/components/lead-status/StatusBadge";
 import type { LeadStatus } from "@/utils/statusUtils";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
+import { isPlaceholderEmail } from "@/utils/formatters";
 import { LenderRecommendationCard } from "./LenderRecommendationCard";
 
 interface PartnerLeadDetailSheetProps {
@@ -66,9 +67,9 @@ const getProgressPercentage = (status: string, hasDocuments: boolean) => {
   return progressMap[status] || 25;
 };
 
-export const PartnerLeadDetailSheet = ({ 
-  lead, 
-  open, 
+export const PartnerLeadDetailSheet = ({
+  lead,
+  open,
   onOpenChange
 }: PartnerLeadDetailSheetProps) => {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ export const PartnerLeadDetailSheet = ({
   const uploadedCount = documents.length;
   const statusInfo = getStatusInfo(lead.status, uploadedCount > 0);
   const progressPercent = getProgressPercentage(lead.status, uploadedCount > 0);
-  
+
   // Extract short lead ID for friendly display
   const shortLeadId = lead.case_id?.replace('EDU-', '#') || lead.case_id;
 
@@ -98,7 +99,7 @@ export const PartnerLeadDetailSheet = ({
             <SheetTitle className="text-lg font-semibold">
               Lead {shortLeadId} • Added on {createdDate}
             </SheetTitle>
-            
+
             {/* Status with meaning */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-sm font-medium ${statusInfo.color}`}>
@@ -155,7 +156,7 @@ export const PartnerLeadDetailSheet = ({
                         {lead.student.phone}
                       </p>
                     )}
-                    {lead.student?.email && (
+                    {lead.student?.email && !isPlaceholderEmail(lead.student.email) && (
                       <p className="text-sm text-muted-foreground flex items-center gap-2">
                         <Mail className="h-3.5 w-3.5" />
                         {lead.student.email}
@@ -182,7 +183,7 @@ export const PartnerLeadDetailSheet = ({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>
-                        {lead.intake_month && lead.intake_year 
+                        {lead.intake_month && lead.intake_year
                           ? `${format(new Date(2000, lead.intake_month - 1), 'MMM')} ${lead.intake_year}`
                           : 'N/A'}
                       </span>
@@ -197,7 +198,7 @@ export const PartnerLeadDetailSheet = ({
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[200px]">
                           <p className="text-xs">
-                            {lead.loan_type === 'unsecured' 
+                            {lead.loan_type === 'unsecured'
                               ? "Unsecured loans don't require collateral but may have higher interest rates."
                               : "Secured loans require collateral but typically offer lower interest rates."}
                           </p>
@@ -256,8 +257,8 @@ export const PartnerLeadDetailSheet = ({
 
           {/* Sticky CTA Footer */}
           <div className="sticky bottom-0 bg-background border-t pt-4 pb-2 space-y-2">
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleManageDocuments}
             >
               <FileText className="h-4 w-4 mr-2" />

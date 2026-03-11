@@ -39,6 +39,7 @@ const EditUserModal = ({ open, onOpenChange, user, currentUserRole }: EditUserMo
     e.preventDefault();
     if (!user) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updates: any = {
       role,
       is_active: isActive,
@@ -91,6 +92,7 @@ const EditUserModal = ({ open, onOpenChange, user, currentUserRole }: EditUserMo
               <Label htmlFor="role">Role</Label>
               <Select 
                 value={role} 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onValueChange={(v) => setRole(v as any)}
                 disabled={isProtected}
               >

@@ -10,6 +10,7 @@ interface TestScore {
 }
 
 interface StudentProfileData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lead: any;
   testScores: TestScore[];
 }
@@ -19,8 +20,11 @@ interface EligibilityScores {
   student_score: number;
   co_applicant_score: number;
   overall_score: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   university_breakdown: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   student_breakdown: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   co_applicant_breakdown: any;
   approval_status: string;
   rejection_reason?: string | null;
@@ -42,7 +46,9 @@ export function useStudentProfile(leadId: string | null) {
     if (leadId) {
       fetchStudentProfile();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
+ 
 
   const fetchStudentProfile = async () => {
     if (!leadId) return;
@@ -90,6 +96,7 @@ export function useStudentProfile(leadId: string | null) {
       if (eligibilityData) {
         setScores(eligibilityData as EligibilityScores);
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error fetching student profile:', err);
       setError(err.message || 'Failed to load student profile');

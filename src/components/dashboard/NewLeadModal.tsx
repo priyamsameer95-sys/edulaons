@@ -51,9 +51,9 @@ interface FormData {
 }
 
 const leadFormConfig: FieldConfig = {
-  student_name: { 
-    required: true, 
-    minLength: 2, 
+  student_name: {
+    required: true,
+    minLength: 2,
     maxLength: 100,
     custom: (value: string) => {
       const trimmedValue = value.trim();
@@ -66,21 +66,21 @@ const leadFormConfig: FieldConfig = {
       return null;
     }
   },
-  student_phone: { 
-    required: true, 
-    pattern: /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/
+  student_phone: {
+    required: true,
+    pattern: /^(\+[\d]{1,3}[\d\s\-()]{7,14}|[\d]{10})$/
   },
-  student_email: { 
+  student_email: {
     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   },
-  student_pin_code: { 
-    required: true, 
+  student_pin_code: {
+    required: true,
     pattern: /^\d{6}$/
   },
   country: { required: true },
   intake_month: { required: true },
   loan_type: { required: true },
-  amount_requested: { 
+  amount_requested: {
     required: true,
     min: 100000,
     max: 20000000,
@@ -96,8 +96,8 @@ const leadFormConfig: FieldConfig = {
   gre_score: { min: 260, max: 340 },
   toefl_score: { min: 0, max: 120 },
   pte_score: { min: 10, max: 90 },
-  ielts_score: { 
-    min: 0, 
+  ielts_score: {
+    min: 0,
     max: 9,
     custom: (value: string) => {
       if (!value.trim()) return null;
@@ -107,14 +107,14 @@ const leadFormConfig: FieldConfig = {
     }
   },
   co_applicant_name: { required: true, minLength: 2, maxLength: 100 },
-  co_applicant_email: { 
+  co_applicant_email: {
     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   },
-  co_applicant_phone: { 
-    required: true, 
-    pattern: /^(\+[\d]{1,3}[\d\s\-\(\)]{7,14}|[\d]{10})$/
+  co_applicant_phone: {
+    required: true,
+    pattern: /^(\+[\d]{1,3}[\d\s\-()]{7,14}|[\d]{10})$/
   },
-  co_applicant_salary: { 
+  co_applicant_salary: {
     required: true,
     min: 1,
     custom: (value: string) => {
@@ -125,8 +125,8 @@ const leadFormConfig: FieldConfig = {
     }
   },
   co_applicant_relationship: { required: true },
-  co_applicant_pin_code: { 
-    required: true, 
+  co_applicant_pin_code: {
+    required: true,
     pattern: /^\d{6}$/
   },
 };
@@ -134,8 +134,9 @@ const leadFormConfig: FieldConfig = {
 export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProps) => {
   // Two-phase state: 'form' for lead creation, 'documents' for document upload
   const [phase, setPhase] = useState<'form' | 'documents'>('form');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [createdLead, setCreatedLead] = useState<any>(null);
-  
+
   const initialFormData: FormData = {
     student_name: '',
     student_phone: '',
@@ -183,7 +184,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
   const countries = [
     'United States',
-    'Canada', 
+    'Canada',
     'United Kingdom',
     'Australia',
     'Germany',
@@ -204,20 +205,20 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     console.log('🚀 [NewLeadModal] Starting lead creation process...');
-    
+
     const isFormValid = validateForm() && validateUniversities();
-    
+
     if (!isFormValid) {
       const errorCount = Object.keys(errors).filter(key => errors[key]).length;
       const universitiesError = !validateUniversities();
-      
+
       console.log('❌ [NewLeadModal] Form validation failed:', { errorCount, universitiesError, errors });
-      
+
       toast({
         title: "Please complete all required fields",
-        description: universitiesError 
+        description: universitiesError
           ? "Please select at least one university to continue"
           : `Please fix ${errorCount} field${errorCount > 1 ? 's' : ''} marked in red`,
         variant: "destructive",
@@ -229,10 +230,10 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
     try {
       console.log('📡 [NewLeadModal] Calling create-lead edge function...');
-      
+
       // Get current session for auth header
       const { data: { session: currentSession }, error: currentSessionError } = await supabase.auth.getSession();
-      
+
       if (currentSessionError || !currentSession) {
         throw new Error('You are not logged in. Please refresh the page and log in again.');
       }
@@ -244,11 +245,11 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
           .map(async (uni) => {
             // Check if it's a UUID (selected from list)
             const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uni);
-            
+
             if (isUUID) {
               return uni; // Already a UUID
             }
-            
+
             // Custom university name - create a new university record
             console.log('🏛️ [NewLeadModal] Creating custom university:', uni);
             const { data: newUni, error: uniError } = await supabase
@@ -260,12 +261,12 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
               })
               .select('id')
               .single();
-            
+
             if (uniError) {
               console.error('❌ [NewLeadModal] Failed to create custom university:', uniError);
               throw new Error(`Failed to add custom university: ${uni}`);
             }
-            
+
             console.log('✅ [NewLeadModal] Custom university created:', newUni.id);
             return newUni.id;
           })
@@ -296,7 +297,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       };
 
       console.log('📤 [NewLeadModal] Sending request to edge function...');
-      
+
       const { data, error } = await supabase.functions.invoke('create-lead', {
         body: leadPayload
       });
@@ -312,7 +313,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       }
 
       console.log('✅ [NewLeadModal] Lead created successfully:', data.lead);
-      
+
       toast({
         title: "Lead Created Successfully",
         description: `Case ${data.lead.case_id} has been created and is now visible in your leads list.`,
@@ -325,6 +326,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
       setCreatedLead(data.lead);
       setPhase('documents');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('💥 [NewLeadModal] Lead creation process failed:', {
         error: error.message,
@@ -336,11 +338,11 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
           country: formData.country
         }
       });
-      
+
       // Enhanced error handling with specific user guidance
       let errorTitle = 'Failed to Create Application';
       let errorDescription = error.message;
-      
+
       if (error.message?.includes('Authentication') || error.message?.includes('session')) {
         errorTitle = 'Session Expired';
         errorDescription = 'Please refresh the page and log in again.';
@@ -351,7 +353,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         errorTitle = 'Account Issue';
         errorDescription = error.message;
       }
-      
+
       handleError(error, {
         title: errorTitle,
         description: errorDescription
@@ -363,7 +365,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     updateField(field, value);
-    
+
     // Update amount in words for amount_requested field
     if (field === 'amount_requested') {
       const numericAmount = parseFloat(value);
@@ -373,7 +375,7 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
         setAmountInWords('');
       }
     }
-    
+
     // Handle universities array separately
     if (field === 'universities') {
       setFields({ universities: [value] });
@@ -420,557 +422,557 @@ export const NewLeadModal = ({ open, onOpenChange, onSuccess }: NewLeadModalProp
     }}>
       <ErrorBoundary>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            {phase === 'form' ? 'Create New Lead' : 'Upload Required Documents'}
-          </DialogTitle>
-          {phase === 'documents' && createdLead && (
-            <p className="text-sm text-muted-foreground">
-              Lead created successfully • Case {createdLead.case_id}
-            </p>
-          )}
-        </DialogHeader>
-
-        {phase === 'form' ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Student Information Section */}
-            <Card className="border-muted">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center">
-                  <User className="h-5 w-5 mr-2 text-primary" />
-                  Student Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Full Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="student_name" className="text-sm font-medium">
-                    Full Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="student_name"
-                    {...getFieldProps('student_name')}
-                    onChange={(e) => handleInputChange('student_name', e.target.value)}
-                    placeholder="Name as per passport"
-                    className={errors.student_name ? 'border-destructive focus:border-destructive' : ''}
-                  />
-                  {errors.student_name && (
-                    <p className="text-sm text-destructive flex items-center gap-1 mt-1">
-                      <span>💡</span>
-                      {errors.student_name}
-                    </p>
-                  )}
-                </div>
-
-                {/* Mobile Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="student_phone" className="text-sm font-medium">
-                    Mobile Number <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="student_phone"
-                    value={formData.student_phone}
-                    onChange={(e) => handleInputChange('student_phone', e.target.value)}
-                    placeholder="10-digit Indian number or +Country Code"
-                    className={errors.student_phone ? 'border-destructive' : ''}
-                  />
-                  {errors.student_phone && (
-                    <p className="text-sm text-destructive">{errors.student_phone}</p>
-                  )}
-                </div>
-
-                {/* Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="student_email" className="text-sm font-medium">
-                    Email Address <span className="text-muted-foreground">(Optional)</span>
-                  </Label>
-                  <Input
-                    id="student_email"
-                    type="email"
-                    value={formData.student_email}
-                    onChange={(e) => handleInputChange('student_email', e.target.value)}
-                    placeholder="student@example.com"
-                    className={errors.student_email ? 'border-destructive' : ''}
-                  />
-                  {errors.student_email && (
-                    <p className="text-sm text-destructive">{errors.student_email}</p>
-                  )}
-                </div>
-
-                {/* Student PIN Code */}
-                <div className="space-y-2">
-                  <Label htmlFor="student_pin_code" className="text-sm font-medium">
-                    PIN Code <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="student_pin_code"
-                    value={formData.student_pin_code}
-                    onChange={(e) => handleInputChange('student_pin_code', e.target.value)}
-                    placeholder="6-digit PIN code"
-                    maxLength={6}
-                    className={errors.student_pin_code ? 'border-destructive' : ''}
-                  />
-                  {errors.student_pin_code && (
-                    <p className="text-sm text-destructive">{errors.student_pin_code}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Test Scores Section */}
-            <Collapsible open={testScoresOpen} onOpenChange={setTestScoresOpen}>
-              <Card className="border-muted">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Trophy className="h-5 w-5 mr-2 text-primary" />
-                        Test Scores
-                        <span className="text-sm text-muted-foreground font-normal ml-2">(Optional)</span>
-                      </div>
-                      <ChevronDown className={cn("h-4 w-4 transition-transform", testScoresOpen && "transform rotate-180")} />
-                    </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* GMAT Score */}
-                      <div className="space-y-2">
-                        <Label htmlFor="gmat_score" className="text-sm font-medium">
-                          GMAT Score <span className="text-muted-foreground">(200-800)</span>
-                        </Label>
-                        <Input
-                          id="gmat_score"
-                          type="number"
-                          value={formData.gmat_score}
-                          onChange={(e) => handleInputChange('gmat_score', e.target.value)}
-                          placeholder="e.g., 650"
-                          min="200"
-                          max="800"
-                          className={errors.gmat_score ? 'border-destructive' : ''}
-                        />
-                        {errors.gmat_score && (
-                          <p className="text-sm text-destructive">{errors.gmat_score}</p>
-                        )}
-                      </div>
-
-                      {/* GRE Score */}
-                      <div className="space-y-2">
-                        <Label htmlFor="gre_score" className="text-sm font-medium">
-                          GRE Score <span className="text-muted-foreground">(260-340)</span>
-                        </Label>
-                        <Input
-                          id="gre_score"
-                          type="number"
-                          value={formData.gre_score}
-                          onChange={(e) => handleInputChange('gre_score', e.target.value)}
-                          placeholder="e.g., 310"
-                          min="260"
-                          max="340"
-                          className={errors.gre_score ? 'border-destructive' : ''}
-                        />
-                        {errors.gre_score && (
-                          <p className="text-sm text-destructive">{errors.gre_score}</p>
-                        )}
-                      </div>
-
-                      {/* TOEFL Score */}
-                      <div className="space-y-2">
-                        <Label htmlFor="toefl_score" className="text-sm font-medium">
-                          TOEFL Score <span className="text-muted-foreground">(0-120)</span>
-                        </Label>
-                        <Input
-                          id="toefl_score"
-                          type="number"
-                          value={formData.toefl_score}
-                          onChange={(e) => handleInputChange('toefl_score', e.target.value)}
-                          placeholder="e.g., 90"
-                          min="0"
-                          max="120"
-                          className={errors.toefl_score ? 'border-destructive' : ''}
-                        />
-                        {errors.toefl_score && (
-                          <p className="text-sm text-destructive">{errors.toefl_score}</p>
-                        )}
-                      </div>
-
-                      {/* PTE Score */}
-                      <div className="space-y-2">
-                        <Label htmlFor="pte_score" className="text-sm font-medium">
-                          PTE Score <span className="text-muted-foreground">(10-90)</span>
-                        </Label>
-                        <Input
-                          id="pte_score"
-                          type="number"
-                          value={formData.pte_score}
-                          onChange={(e) => handleInputChange('pte_score', e.target.value)}
-                          placeholder="e.g., 65"
-                          min="10"
-                          max="90"
-                          className={errors.pte_score ? 'border-destructive' : ''}
-                        />
-                        {errors.pte_score && (
-                          <p className="text-sm text-destructive">{errors.pte_score}</p>
-                        )}
-                      </div>
-
-                      {/* IELTS Score */}
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="ielts_score" className="text-sm font-medium">
-                          IELTS Score <span className="text-muted-foreground">(0-9, with 0.5 increments)</span>
-                        </Label>
-                        <Input
-                          id="ielts_score"
-                          type="number"
-                          value={formData.ielts_score}
-                          onChange={(e) => handleInputChange('ielts_score', e.target.value)}
-                          placeholder="e.g., 6.5"
-                          min="0"
-                          max="9"
-                          step="0.5"
-                          className={errors.ielts_score ? 'border-destructive' : ''}
-                        />
-                        {errors.ielts_score && (
-                          <p className="text-sm text-destructive">{errors.ielts_score}</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-
-            {/* Case Information Section */}
-            <Card className="border-muted">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center">
-                  <GraduationCap className="h-5 w-5 mr-2 text-primary" />
-                  Study Destination & Program
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Country */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Country <span className="text-destructive">*</span>
-                  </Label>
-                   <Select
-                    value={formData.country}
-                    onValueChange={(value) => {
-                      handleInputChange('country', value);
-                      // Clear universities when country changes
-                      setFields({ universities: [''] });
-                    }}
-                  >
-                    <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
-                      <SelectValue placeholder="Select destination country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.country && (
-                    <p className="text-sm text-destructive">{errors.country}</p>
-                  )}
-                </div>
-
-                {/* Universities */}
-                <UniversitySelector
-                  country={formData.country}
-                  universities={formData.universities}
-                  onChange={handleUniversitiesChange}
-                  error={errors.universities}
-                />
-
-                {/* Intake Month */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Intake Month & Year <span className="text-destructive">*</span>
-                  </Label>
-                  <MonthYearPicker
-                    value={formData.intake_month}
-                    onChange={(value) => {
-                      handleInputChange('intake_month', value);
-                    }}
-                    placeholder="Select intake month and year"
-                    error={!!errors.intake_month}
-                  />
-                  {errors.intake_month && (
-                    <p className="text-sm text-destructive">{errors.intake_month}</p>
-                  )}
-                </div>
-
-                {/* Loan Type */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Loan Type <span className="text-destructive">*</span>
-                  </Label>
-                  <RadioGroup
-                    value={formData.loan_type}
-                    onValueChange={(value: 'secured' | 'unsecured') => {
-                      handleInputChange('loan_type', value);
-                    }}
-                    className="flex space-x-6"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="secured" id="secured" />
-                      <Label htmlFor="secured" className="font-normal">Secured</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="unsecured" id="unsecured" />
-                      <Label htmlFor="unsecured" className="font-normal">Unsecured</Label>
-                    </div>
-                  </RadioGroup>
-                  {errors.loan_type && (
-                    <p className="text-sm text-destructive">{errors.loan_type}</p>
-                  )}
-                </div>
-
-                {/* Requested Amount */}
-                <div className="space-y-2">
-                  <Label htmlFor="amount_requested" className="text-sm font-medium">
-                    Requested Amount (₹)
-                  </Label>
-                  <Input
-                    id="amount_requested"
-                    type="number"
-                    value={formData.amount_requested}
-                    onChange={(e) => handleInputChange('amount_requested', e.target.value)}
-                    placeholder="Enter loan amount in rupees"
-                    step="1000"
-                  />
-                  {amountInWords && (
-                    <p className="text-sm text-muted-foreground">
-                      {amountInWords}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Co-applicant Section */}
-            <Collapsible open={coApplicantOpen} onOpenChange={setCoApplicantOpen}>
-              <Card className="border-muted">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Users className="h-5 w-5 mr-2 text-primary" />
-                        Co-applicant Details
-                        <span className="text-destructive ml-1">*</span>
-                      </div>
-                      <ChevronDown className={cn("h-4 w-4 transition-transform", coApplicantOpen && "transform rotate-180")} />
-                    </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Co-applicant Name */}
-                      <div className="space-y-2">
-                        <Label htmlFor="co_applicant_name" className="text-sm font-medium">
-                          Full Name <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="co_applicant_name"
-                          value={formData.co_applicant_name}
-                          onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
-                          placeholder="Co-applicant's full name"
-                          className={errors.co_applicant_name ? 'border-destructive' : ''}
-                        />
-                        {errors.co_applicant_name && (
-                          <p className="text-sm text-destructive">{errors.co_applicant_name}</p>
-                        )}
-                      </div>
-
-                      {/* Co-applicant Email */}
-                      <div className="space-y-2">
-                        <Label htmlFor="co_applicant_email" className="text-sm font-medium">
-                          Email Address <span className="text-muted-foreground">(Optional)</span>
-                        </Label>
-                        <Input
-                          id="co_applicant_email"
-                          type="email"
-                          value={formData.co_applicant_email}
-                          onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
-                          placeholder="Recommended for faster communication"
-                          className={errors.co_applicant_email ? 'border-destructive' : ''}
-                        />
-                        {errors.co_applicant_email && (
-                          <p className="text-sm text-destructive">{errors.co_applicant_email}</p>
-                        )}
-                      </div>
-
-                      {/* Co-applicant Phone */}
-                      <div className="space-y-2">
-                        <Label htmlFor="co_applicant_phone" className="text-sm font-medium">
-                          Phone Number <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="co_applicant_phone"
-                          value={formData.co_applicant_phone}
-                          onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
-                          placeholder="10-digit mobile number"
-                          className={errors.co_applicant_phone ? 'border-destructive' : ''}
-                        />
-                        {errors.co_applicant_phone && (
-                          <p className="text-sm text-destructive">{errors.co_applicant_phone}</p>
-                        )}
-                      </div>
-
-                      {/* Co-applicant Relationship */}
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Relationship <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                          value={formData.co_applicant_relationship}
-                          onValueChange={(value) => {
-                            handleInputChange('co_applicant_relationship', value);
-                          }}
-                        >
-                          <SelectTrigger className={errors.co_applicant_relationship ? 'border-destructive' : ''}>
-                            <SelectValue placeholder="Select relationship" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="spouse">Spouse</SelectItem>
-                            <SelectItem value="sibling">Sibling</SelectItem>
-                            <SelectItem value="guardian">Guardian</SelectItem>
-                            <SelectItem value="relative">Relative</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {errors.co_applicant_relationship && (
-                          <p className="text-sm text-destructive">{errors.co_applicant_relationship}</p>
-                        )}
-                      </div>
-
-                      {/* Co-applicant Salary */}
-                      <div className="space-y-2">
-                        <Label htmlFor="co_applicant_salary" className="text-sm font-medium">
-                          Annual Salary (₹) <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="co_applicant_salary"
-                          type="number"
-                          value={formData.co_applicant_salary}
-                          onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
-                          placeholder="Annual salary in rupees"
-                          min="0"
-                          className={errors.co_applicant_salary ? 'border-destructive' : ''}
-                        />
-                        {errors.co_applicant_salary && (
-                          <p className="text-sm text-destructive">{errors.co_applicant_salary}</p>
-                        )}
-                      </div>
-
-                      {/* Co-applicant PIN Code */}
-                      <div className="space-y-2">
-                        <Label htmlFor="co_applicant_pin_code" className="text-sm font-medium">
-                          PIN Code <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="co_applicant_pin_code"
-                          value={formData.co_applicant_pin_code}
-                          onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value)}
-                          placeholder="6-digit PIN code"
-                          maxLength={6}
-                          className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
-                        />
-                        {errors.co_applicant_pin_code && (
-                          <p className="text-sm text-destructive">{errors.co_applicant_pin_code}</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-
-            {/* Form Actions */}
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="bg-gradient-primary hover:bg-primary-hover min-w-24"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Lead'
-                )}
-              </Button>
-            </div>
-          </form>
-        ) : (
-          // Document Upload Phase
-          <div className="space-y-6">
-            <div className="bg-success/10 border border-success/20 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-success mb-2">
-                <FileText className="h-5 w-5" />
-                <span className="font-medium">Lead Created Successfully!</span>
-              </div>
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {phase === 'form' ? 'Create New Lead' : 'Upload Required Documents'}
+            </DialogTitle>
+            {phase === 'documents' && createdLead && (
               <p className="text-sm text-muted-foreground">
-                Now let's upload the required documents to complete your application.
+                Lead created successfully • Case {createdLead.case_id}
               </p>
-            </div>
-            
-            <DocumentUploadSection 
-              leadId={createdLead?.id}
-              loanType={formData.loan_type as 'secured' | 'unsecured'}
-              onDocumentsChange={(uploaded, required) => {
-                setDocumentsUploaded(uploaded);
-                setDocumentsRequired(required);
-              }}
-            />
+            )}
+          </DialogHeader>
 
-            {/* Document Upload Actions */}
-            <div className="flex justify-between space-x-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSkipDocuments}
-              >
-                Skip for Now
-              </Button>
-              <div className="flex space-x-3">
+          {phase === 'form' ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Student Information Section */}
+              <Card className="border-muted">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg flex items-center">
+                    <User className="h-5 w-5 mr-2 text-primary" />
+                    Student Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="student_name" className="text-sm font-medium">
+                      Full Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="student_name"
+                      {...getFieldProps('student_name')}
+                      onChange={(e) => handleInputChange('student_name', e.target.value)}
+                      placeholder="Name as per passport"
+                      className={errors.student_name ? 'border-destructive focus:border-destructive' : ''}
+                    />
+                    {errors.student_name && (
+                      <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                        <span>💡</span>
+                        {errors.student_name}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Mobile Number */}
+                  <div className="space-y-2">
+                    <Label htmlFor="student_phone" className="text-sm font-medium">
+                      Mobile Number <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="student_phone"
+                      value={formData.student_phone}
+                      onChange={(e) => handleInputChange('student_phone', e.target.value)}
+                      placeholder="10-digit Indian number or +Country Code"
+                      className={errors.student_phone ? 'border-destructive' : ''}
+                    />
+                    {errors.student_phone && (
+                      <p className="text-sm text-destructive">{errors.student_phone}</p>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="student_email" className="text-sm font-medium">
+                      Email Address <span className="text-muted-foreground">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="student_email"
+                      type="email"
+                      value={formData.student_email}
+                      onChange={(e) => handleInputChange('student_email', e.target.value)}
+                      placeholder="student@example.com"
+                      className={errors.student_email ? 'border-destructive' : ''}
+                    />
+                    {errors.student_email && (
+                      <p className="text-sm text-destructive">{errors.student_email}</p>
+                    )}
+                  </div>
+
+                  {/* Student PIN Code */}
+                  <div className="space-y-2">
+                    <Label htmlFor="student_pin_code" className="text-sm font-medium">
+                      PIN Code <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="student_pin_code"
+                      value={formData.student_pin_code}
+                      onChange={(e) => handleInputChange('student_pin_code', e.target.value)}
+                      placeholder="6-digit PIN code"
+                      maxLength={6}
+                      className={errors.student_pin_code ? 'border-destructive' : ''}
+                    />
+                    {errors.student_pin_code && (
+                      <p className="text-sm text-destructive">{errors.student_pin_code}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Test Scores Section */}
+              <Collapsible open={testScoresOpen} onOpenChange={setTestScoresOpen}>
+                <Card className="border-muted">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Trophy className="h-5 w-5 mr-2 text-primary" />
+                          Test Scores
+                          <span className="text-sm text-muted-foreground font-normal ml-2">(Optional)</span>
+                        </div>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", testScoresOpen && "transform rotate-180")} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* GMAT Score */}
+                        <div className="space-y-2">
+                          <Label htmlFor="gmat_score" className="text-sm font-medium">
+                            GMAT Score <span className="text-muted-foreground">(200-800)</span>
+                          </Label>
+                          <Input
+                            id="gmat_score"
+                            type="number"
+                            value={formData.gmat_score}
+                            onChange={(e) => handleInputChange('gmat_score', e.target.value)}
+                            placeholder="e.g., 650"
+                            min="200"
+                            max="800"
+                            className={errors.gmat_score ? 'border-destructive' : ''}
+                          />
+                          {errors.gmat_score && (
+                            <p className="text-sm text-destructive">{errors.gmat_score}</p>
+                          )}
+                        </div>
+
+                        {/* GRE Score */}
+                        <div className="space-y-2">
+                          <Label htmlFor="gre_score" className="text-sm font-medium">
+                            GRE Score <span className="text-muted-foreground">(260-340)</span>
+                          </Label>
+                          <Input
+                            id="gre_score"
+                            type="number"
+                            value={formData.gre_score}
+                            onChange={(e) => handleInputChange('gre_score', e.target.value)}
+                            placeholder="e.g., 310"
+                            min="260"
+                            max="340"
+                            className={errors.gre_score ? 'border-destructive' : ''}
+                          />
+                          {errors.gre_score && (
+                            <p className="text-sm text-destructive">{errors.gre_score}</p>
+                          )}
+                        </div>
+
+                        {/* TOEFL Score */}
+                        <div className="space-y-2">
+                          <Label htmlFor="toefl_score" className="text-sm font-medium">
+                            TOEFL Score <span className="text-muted-foreground">(0-120)</span>
+                          </Label>
+                          <Input
+                            id="toefl_score"
+                            type="number"
+                            value={formData.toefl_score}
+                            onChange={(e) => handleInputChange('toefl_score', e.target.value)}
+                            placeholder="e.g., 90"
+                            min="0"
+                            max="120"
+                            className={errors.toefl_score ? 'border-destructive' : ''}
+                          />
+                          {errors.toefl_score && (
+                            <p className="text-sm text-destructive">{errors.toefl_score}</p>
+                          )}
+                        </div>
+
+                        {/* PTE Score */}
+                        <div className="space-y-2">
+                          <Label htmlFor="pte_score" className="text-sm font-medium">
+                            PTE Score <span className="text-muted-foreground">(10-90)</span>
+                          </Label>
+                          <Input
+                            id="pte_score"
+                            type="number"
+                            value={formData.pte_score}
+                            onChange={(e) => handleInputChange('pte_score', e.target.value)}
+                            placeholder="e.g., 65"
+                            min="10"
+                            max="90"
+                            className={errors.pte_score ? 'border-destructive' : ''}
+                          />
+                          {errors.pte_score && (
+                            <p className="text-sm text-destructive">{errors.pte_score}</p>
+                          )}
+                        </div>
+
+                        {/* IELTS Score */}
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="ielts_score" className="text-sm font-medium">
+                            IELTS Score <span className="text-muted-foreground">(0-9, with 0.5 increments)</span>
+                          </Label>
+                          <Input
+                            id="ielts_score"
+                            type="number"
+                            value={formData.ielts_score}
+                            onChange={(e) => handleInputChange('ielts_score', e.target.value)}
+                            placeholder="e.g., 6.5"
+                            min="0"
+                            max="9"
+                            step="0.5"
+                            className={errors.ielts_score ? 'border-destructive' : ''}
+                          />
+                          {errors.ielts_score && (
+                            <p className="text-sm text-destructive">{errors.ielts_score}</p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Case Information Section */}
+              <Card className="border-muted">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg flex items-center">
+                    <GraduationCap className="h-5 w-5 mr-2 text-primary" />
+                    Study Destination & Program
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Country */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Country <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={formData.country}
+                      onValueChange={(value) => {
+                        handleInputChange('country', value);
+                        // Clear universities when country changes
+                        setFields({ universities: [''] });
+                      }}
+                    >
+                      <SelectTrigger className={errors.country ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select destination country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.country && (
+                      <p className="text-sm text-destructive">{errors.country}</p>
+                    )}
+                  </div>
+
+                  {/* Universities */}
+                  <UniversitySelector
+                    country={formData.country}
+                    universities={formData.universities}
+                    onChange={handleUniversitiesChange}
+                    error={errors.universities}
+                  />
+
+                  {/* Intake Month */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Intake Month & Year <span className="text-destructive">*</span>
+                    </Label>
+                    <MonthYearPicker
+                      value={formData.intake_month}
+                      onChange={(value) => {
+                        handleInputChange('intake_month', value);
+                      }}
+                      placeholder="Select intake month and year"
+                      error={!!errors.intake_month}
+                    />
+                    {errors.intake_month && (
+                      <p className="text-sm text-destructive">{errors.intake_month}</p>
+                    )}
+                  </div>
+
+                  {/* Loan Type */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Loan Type <span className="text-destructive">*</span>
+                    </Label>
+                    <RadioGroup
+                      value={formData.loan_type}
+                      onValueChange={(value: 'secured' | 'unsecured') => {
+                        handleInputChange('loan_type', value);
+                      }}
+                      className="flex space-x-6"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="secured" id="secured" />
+                        <Label htmlFor="secured" className="font-normal">Secured</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unsecured" id="unsecured" />
+                        <Label htmlFor="unsecured" className="font-normal">Unsecured</Label>
+                      </div>
+                    </RadioGroup>
+                    {errors.loan_type && (
+                      <p className="text-sm text-destructive">{errors.loan_type}</p>
+                    )}
+                  </div>
+
+                  {/* Requested Amount */}
+                  <div className="space-y-2">
+                    <Label htmlFor="amount_requested" className="text-sm font-medium">
+                      Requested Amount (₹)
+                    </Label>
+                    <Input
+                      id="amount_requested"
+                      type="number"
+                      value={formData.amount_requested}
+                      onChange={(e) => handleInputChange('amount_requested', e.target.value)}
+                      placeholder="Enter loan amount in rupees"
+                      step="1000"
+                    />
+                    {amountInWords && (
+                      <p className="text-sm text-muted-foreground">
+                        {amountInWords}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Co-applicant Section */}
+              <Collapsible open={coApplicantOpen} onOpenChange={setCoApplicantOpen}>
+                <Card className="border-muted">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-4 cursor-pointer hover:bg-accent/50 transition-colors">
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Users className="h-5 w-5 mr-2 text-primary" />
+                          Co-applicant Details
+                          <span className="text-destructive ml-1">*</span>
+                        </div>
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", coApplicantOpen && "transform rotate-180")} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Co-applicant Name */}
+                        <div className="space-y-2">
+                          <Label htmlFor="co_applicant_name" className="text-sm font-medium">
+                            Full Name <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="co_applicant_name"
+                            value={formData.co_applicant_name}
+                            onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
+                            placeholder="Co-applicant's full name"
+                            className={errors.co_applicant_name ? 'border-destructive' : ''}
+                          />
+                          {errors.co_applicant_name && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_name}</p>
+                          )}
+                        </div>
+
+                        {/* Co-applicant Email */}
+                        <div className="space-y-2">
+                          <Label htmlFor="co_applicant_email" className="text-sm font-medium">
+                            Email Address <span className="text-muted-foreground">(Optional)</span>
+                          </Label>
+                          <Input
+                            id="co_applicant_email"
+                            type="email"
+                            value={formData.co_applicant_email}
+                            onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
+                            placeholder="Recommended for faster communication"
+                            className={errors.co_applicant_email ? 'border-destructive' : ''}
+                          />
+                          {errors.co_applicant_email && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_email}</p>
+                          )}
+                        </div>
+
+                        {/* Co-applicant Phone */}
+                        <div className="space-y-2">
+                          <Label htmlFor="co_applicant_phone" className="text-sm font-medium">
+                            Phone Number <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="co_applicant_phone"
+                            value={formData.co_applicant_phone}
+                            onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
+                            placeholder="10-digit mobile number"
+                            className={errors.co_applicant_phone ? 'border-destructive' : ''}
+                          />
+                          {errors.co_applicant_phone && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_phone}</p>
+                          )}
+                        </div>
+
+                        {/* Co-applicant Relationship */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">
+                            Relationship <span className="text-destructive">*</span>
+                          </Label>
+                          <Select
+                            value={formData.co_applicant_relationship}
+                            onValueChange={(value) => {
+                              handleInputChange('co_applicant_relationship', value);
+                            }}
+                          >
+                            <SelectTrigger className={errors.co_applicant_relationship ? 'border-destructive' : ''}>
+                              <SelectValue placeholder="Select relationship" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="parent">Parent</SelectItem>
+                              <SelectItem value="spouse">Spouse</SelectItem>
+                              <SelectItem value="sibling">Sibling</SelectItem>
+                              <SelectItem value="guardian">Guardian</SelectItem>
+                              <SelectItem value="relative">Relative</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.co_applicant_relationship && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_relationship}</p>
+                          )}
+                        </div>
+
+                        {/* Co-applicant Salary */}
+                        <div className="space-y-2">
+                          <Label htmlFor="co_applicant_salary" className="text-sm font-medium">
+                            Annual Salary (₹) <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="co_applicant_salary"
+                            type="number"
+                            value={formData.co_applicant_salary}
+                            onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
+                            placeholder="Annual salary in rupees"
+                            min="0"
+                            className={errors.co_applicant_salary ? 'border-destructive' : ''}
+                          />
+                          {errors.co_applicant_salary && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_salary}</p>
+                          )}
+                        </div>
+
+                        {/* Co-applicant PIN Code */}
+                        <div className="space-y-2">
+                          <Label htmlFor="co_applicant_pin_code" className="text-sm font-medium">
+                            PIN Code <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="co_applicant_pin_code"
+                            value={formData.co_applicant_pin_code}
+                            onChange={(e) => handleInputChange('co_applicant_pin_code', e.target.value)}
+                            placeholder="6-digit PIN code"
+                            maxLength={6}
+                            className={errors.co_applicant_pin_code ? 'border-destructive' : ''}
+                          />
+                          {errors.co_applicant_pin_code && (
+                            <p className="text-sm text-destructive">{errors.co_applicant_pin_code}</p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Form Actions */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button
                   type="button"
-                  variant="secondary"
-                  onClick={() => setPhase('form')}
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={loading}
                 >
-                  Back to Form
+                  Cancel
                 </Button>
                 <Button
-                  type="button"
-                  onClick={handleCompleteProcess}
-                  className="bg-gradient-primary hover:bg-primary-hover"
-                  disabled={documentsRequired > 0 && documentsUploaded === 0}
+                  type="submit"
+                  disabled={loading}
+                  className="bg-gradient-primary hover:bg-primary-hover min-w-24"
                 >
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  Complete
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Lead'
+                  )}
                 </Button>
               </div>
+            </form>
+          ) : (
+            // Document Upload Phase
+            <div className="space-y-6">
+              <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-success mb-2">
+                  <FileText className="h-5 w-5" />
+                  <span className="font-medium">Lead Created Successfully!</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Now let's upload the required documents to complete your application.
+                </p>
+              </div>
+
+              <DocumentUploadSection
+                leadId={createdLead?.id}
+                loanType={formData.loan_type as 'secured' | 'unsecured'}
+                onDocumentsChange={(uploaded, required) => {
+                  setDocumentsUploaded(uploaded);
+                  setDocumentsRequired(required);
+                }}
+              />
+
+              {/* Document Upload Actions */}
+              <div className="flex justify-between space-x-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSkipDocuments}
+                >
+                  Skip for Now
+                </Button>
+                <div className="flex space-x-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setPhase('form')}
+                  >
+                    Back to Form
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleCompleteProcess}
+                    className="bg-gradient-primary hover:bg-primary-hover"
+                    disabled={documentsRequired > 0 && documentsUploaded === 0}
+                  >
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    Complete
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </DialogContent>
       </ErrorBoundary>
     </Dialog>

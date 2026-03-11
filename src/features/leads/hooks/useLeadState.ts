@@ -27,10 +27,12 @@ const initialFormData: LeadFormData = {
 export const useLeadState = () => {
     const [formData, setFormData] = useState<LeadFormData>(initialFormData);
     const [currentStep, setCurrentStep] = useState<Step>('student');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [createdLead, setCreatedLead] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateField = (field: keyof LeadFormData, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         // Clear error when field is updated

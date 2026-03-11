@@ -25,6 +25,7 @@ const MAX_ROWS = 10000;
 interface ValidationResult {
     valid: boolean;
     errors: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any[];
 }
 
@@ -69,8 +70,10 @@ export const UniversityBulkUpload = () => {
         document.body.removeChild(a);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const validateData = (data: any[]): ValidationResult => {
         const errors: string[] = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const validRows: any[] = [];
 
         if (data.length > MAX_ROWS) {
@@ -79,6 +82,7 @@ export const UniversityBulkUpload = () => {
 
         data.forEach((row, index) => {
             // Normalize keys to lowercase for flexible matching
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const normalizedRow: any = {};
             Object.keys(row).forEach(key => {
                 // specific fix for "Global Rank" -> "global rank" and "University_Name" -> "university_name"
@@ -128,6 +132,7 @@ export const UniversityBulkUpload = () => {
         setLoading(true);
         setSummary(null);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parseComplete = async (results: any[]) => {
             const validation = validateData(results);
 
@@ -140,7 +145,7 @@ export const UniversityBulkUpload = () => {
             // Perform Upsert in Batches
             const BATCH_SIZE = 100;
             let successCount = 0;
-            let upsertErrors: string[] = [...validation.errors];
+            const upsertErrors: string[] = [...validation.errors];
 
             for (let i = 0; i < validation.data.length; i += BATCH_SIZE) {
                 const batch = validation.data.slice(i, i + BATCH_SIZE);
@@ -194,6 +199,7 @@ export const UniversityBulkUpload = () => {
                 toast({ variant: "destructive", title: "Invalid File", description: "Please upload .csv or .xlsx" });
                 setLoading(false);
             }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             setSummary({ updated: 0, errors: 1, errorList: [e.message] });
             setLoading(false);
@@ -215,6 +221,7 @@ export const UniversityBulkUpload = () => {
 
             toast({ title: "Database Cleared", description: `All universities have been permanently deleted.` });
             setSummary(null);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {

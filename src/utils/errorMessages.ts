@@ -122,6 +122,7 @@ export const NETWORK_ERROR_MESSAGES = {
 };
 
 // Backend error message transformation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const transformBackendError = (error: string | Error | any): string => {
   const errorMessage = typeof error === 'string' ? error : error?.message || '';
   const errorCode = error?.code || '';

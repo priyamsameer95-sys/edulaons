@@ -46,6 +46,7 @@ export function LenderSelector({
     if (studyDestination) {
       fetchPreferences();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studyDestination]);
 
   const fetchLenders = async () => {
@@ -72,6 +73,7 @@ export function LenderSelector({
       const { data, error } = await supabase
         .from("university_lender_preferences")
         .select("lender_id, compatibility_score, is_preferred")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .eq("study_destination", studyDestination as any);
 
       if (error) throw error;

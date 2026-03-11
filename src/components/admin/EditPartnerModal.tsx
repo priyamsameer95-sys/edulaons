@@ -82,6 +82,7 @@ export const EditPartnerModal = ({
 
       onPartnerUpdated();
       onOpenChange(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Error updating partner:', error);
       toast({

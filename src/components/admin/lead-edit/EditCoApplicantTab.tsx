@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 
 interface EditCoApplicantTabProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     formData: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handleInputChange: (field: any, value: string) => void;
     RELATIONSHIPS: string[];
     EMPLOYMENT_TYPE_OPTIONS: { value: string; label: string }[];
@@ -37,6 +39,7 @@ export const EditCoApplicantTab = ({
                             id="co_applicant_name"
                             value={formData.co_applicant_name}
                             onChange={(e) => handleInputChange('co_applicant_name', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
@@ -45,7 +48,7 @@ export const EditCoApplicantTab = ({
                             value={formData.co_applicant_relationship}
                             onValueChange={(value) => handleInputChange('co_applicant_relationship', value)}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-11 shadow-sm">
                                 <SelectValue placeholder="Select relationship" />
                             </SelectTrigger>
                             <SelectContent>
@@ -64,15 +67,27 @@ export const EditCoApplicantTab = ({
                             type="email"
                             value={formData.co_applicant_email}
                             onChange={(e) => handleInputChange('co_applicant_email', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="co_applicant_phone">Phone</Label>
-                        <Input
-                            id="co_applicant_phone"
-                            value={formData.co_applicant_phone}
-                            onChange={(e) => handleInputChange('co_applicant_phone', e.target.value)}
-                        />
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                                +91
+                            </span>
+                            <Input
+                                id="co_applicant_phone"
+                                value={formData.co_applicant_phone}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    handleInputChange('co_applicant_phone', val);
+                                }}
+                                className="h-11 shadow-sm pl-11"
+                                placeholder="9876543210"
+                                maxLength={10}
+                            />
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -88,11 +103,24 @@ export const EditCoApplicantTab = ({
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="co_applicant_occupation">Occupation</Label>
-                            <Input
-                                id="co_applicant_occupation"
+                            <Select
                                 value={formData.co_applicant_occupation}
-                                onChange={(e) => handleInputChange('co_applicant_occupation', e.target.value)}
-                            />
+                                onValueChange={(value) => handleInputChange('co_applicant_occupation', value)}
+                            >
+                                <SelectTrigger className="h-11 shadow-sm">
+                                    <SelectValue placeholder="Select occupation" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="SALARIED">Salaried</SelectItem>
+                                    <SelectItem value="SELF_EMPLOYED">Self-Employed</SelectItem>
+                                    <SelectItem value="BUSINESS">Business Owner</SelectItem>
+                                    <SelectItem value="PROFESSIONAL">Professional (Doctor/CA/Lawyer)</SelectItem>
+                                    <SelectItem value="GOVERNMENT">Government Employee</SelectItem>
+                                    <SelectItem value="RETIRED">Retired</SelectItem>
+                                    <SelectItem value="HOUSEWIFE">Homemaker</SelectItem>
+                                    <SelectItem value="OTHER">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="co_applicant_employer">Employer Name</Label>
@@ -100,6 +128,7 @@ export const EditCoApplicantTab = ({
                                 id="co_applicant_employer"
                                 value={formData.co_applicant_employer}
                                 onChange={(e) => handleInputChange('co_applicant_employer', e.target.value)}
+                                className="h-11 shadow-sm"
                             />
                         </div>
                     </div>
@@ -125,18 +154,24 @@ export const EditCoApplicantTab = ({
                             <Label htmlFor="co_applicant_salary">Monthly Income (₹)</Label>
                             <Input
                                 id="co_applicant_salary"
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 value={formData.co_applicant_salary}
                                 onChange={(e) => handleInputChange('co_applicant_salary', e.target.value)}
+                                className="h-11 shadow-sm"
+                                placeholder="e.g. 75,000"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="co_applicant_credit_score">CIBIL Score</Label>
                             <Input
                                 id="co_applicant_credit_score"
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 value={formData.co_applicant_credit_score}
                                 onChange={(e) => handleInputChange('co_applicant_credit_score', e.target.value)}
+                                className="h-11 shadow-sm"
+                                placeholder="e.g. 750"
                             />
                         </div>
                     </div>
@@ -147,6 +182,7 @@ export const EditCoApplicantTab = ({
 };
 
 // Helper Icon
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function BriefcaseIcon(props: any) {
     return (
         <svg

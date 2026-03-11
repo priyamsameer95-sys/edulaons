@@ -37,10 +37,6 @@ const App = () => (
           <Routes>
             {/* Root = Student Landing Page (Primary) */}
             <Route path="/" element={<StudentLanding />} />
-            <Route path="/" element={<StudentLanding />} />
-            <Route path="/test-new-lead" element={<NewLeadPage />} /> {/* TEMP TEST ROUTE */}
-            <Route path="/design-system" element={<DesignPreview />} /> {/* DESIGN SYSTEM PREVIEW */}
-            <Route path="/qa-system-test" element={<SystemTestPage />} /> {/* QA SYSTEM TEST RUNNER */}
 
             {/* ============ NEW STANDARDIZED ROUTES ============ */}
 

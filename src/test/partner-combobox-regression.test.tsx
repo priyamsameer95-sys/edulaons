@@ -4,27 +4,37 @@ import React from 'react';
 
 // Mock dependencies
 vi.mock('@/components/ui/button', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Button: ({ children, disabled, ...props }: any) => (
         <button disabled={disabled} {...props}>{children}</button>
     ),
 }));
 
 vi.mock('@/components/ui/command', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Command: ({ children }: any) => <div data-testid="command">{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CommandEmpty: ({ children }: any) => <div>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CommandGroup: ({ children, heading }: any) => <div data-testid={`group-${heading}`}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CommandInput: ({ value, onValueChange, ...props }: any) => (
         <input value={value} onChange={(e) => onValueChange?.(e.target.value)} {...props} />
     ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CommandItem: ({ children, onSelect, value }: any) => (
         <div data-testid={`item-${value}`} onClick={() => onSelect?.(value)}>{children}</div>
     ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CommandList: ({ children }: any) => <div>{children}</div>,
 }));
 
 vi.mock('@/components/ui/popover', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Popover: ({ children, open }: any) => <div data-state={open ? 'open' : 'closed'}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PopoverTrigger: ({ children, asChild }: any) => <div data-testid="trigger">{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PopoverContent: ({ children }: any) => <div data-testid="content">{children}</div>,
 }));
 
@@ -35,6 +45,7 @@ vi.mock('lucide-react', () => ({
 }));
 
 vi.mock('@/lib/utils', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
 }));
 
@@ -70,6 +81,7 @@ describe('PartnerCombobox - Regression Tests', () => {
         expect(() => {
             render(
                 <PartnerCombobox
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     partners={undefined as any}
                     value={null}
                     onChange={vi.fn()}
@@ -84,6 +96,7 @@ describe('PartnerCombobox - Regression Tests', () => {
     it('TEST 2: should show "Loading partners..." when partners is undefined', () => {
         render(
             <PartnerCombobox
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 partners={undefined as any}
                 value={null}
                 onChange={vi.fn()}
@@ -99,13 +112,14 @@ describe('PartnerCombobox - Regression Tests', () => {
     it('TEST 3: should disable button when partners is undefined', () => {
         render(
             <PartnerCombobox
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 partners={undefined as any}
                 value={null}
                 onChange={vi.fn()}
             />
         );
 
-        const button = screen.getByRole('button');
+        const button = screen.getByRole('combobox');
         expect(button).toBeDisabled();
     });
 
@@ -116,6 +130,7 @@ describe('PartnerCombobox - Regression Tests', () => {
         expect(() => {
             render(
                 <PartnerCombobox
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     partners={null as any}
                     value={null}
                     onChange={vi.fn()}
@@ -155,7 +170,7 @@ describe('PartnerCombobox - Regression Tests', () => {
         );
 
         // Button should be enabled
-        const button = screen.getByRole('button');
+        const button = screen.getByRole('combobox');
         expect(button).not.toBeDisabled();
         expect(screen.queryByText('Loading partners...')).not.toBeInTheDocument();
     });
@@ -172,8 +187,9 @@ describe('PartnerCombobox - Regression Tests', () => {
             />
         );
 
-        expect(screen.getByText('Partner One')).toBeInTheDocument();
-        expect(screen.getByText('(P001)')).toBeInTheDocument();
+        const combobox = screen.getByRole('combobox');
+        expect(combobox).toHaveTextContent('Partner One');
+        expect(combobox).toHaveTextContent('(P001)');
     });
 });
 
@@ -185,6 +201,7 @@ describe('Add Lead Modal Initialization - Regression Tests', () => {
     it('TEST 8: Modal should handle partners prop transitioning from undefined to array', () => {
         const { rerender } = render(
             <PartnerCombobox
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 partners={undefined as any}
                 value={null}
                 onChange={vi.fn()}
@@ -205,6 +222,6 @@ describe('Add Lead Modal Initialization - Regression Tests', () => {
         // Should no longer show loading
         expect(screen.queryByText('Loading partners...')).not.toBeInTheDocument();
         // Button should be enabled
-        expect(screen.getByRole('button')).not.toBeDisabled();
+        expect(screen.getByRole('combobox')).not.toBeDisabled();
     });
 });

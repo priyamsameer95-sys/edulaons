@@ -165,6 +165,7 @@ export async function importCourses(courses: CourseData[]) {
         starting_month: course.starting_month,
       };
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter(Boolean) as any[];
   
   console.log(`Matched ${coursesWithIds.length}/${courses.length} courses to universities`);

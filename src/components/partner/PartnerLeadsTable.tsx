@@ -47,6 +47,7 @@ const isIncompleteQuickLead = (lead: RefactoredLead): boolean => {
   return false;
 };
 const isEligibilityCheckedLead = (lead: RefactoredLead): boolean => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (lead as any).eligibility_score !== null && (lead as any).eligibility_score !== undefined;
 };
 const getLeadAgeUrgency = (createdAt: string): 'urgent' | 'warning' | 'normal' => {
@@ -65,7 +66,9 @@ const EligibilityBadge = memo(({
 }: {
   lead: RefactoredLead;
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const score = (lead as any).eligibility_score;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = (lead as any).eligibility_result;
   if (!score) return null;
   const badgeClass = result === 'eligible' || score >= 70 ? "bg-green-50 text-green-700 border-green-200" : result === 'conditional' || score >= 50 ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-orange-50 text-orange-700 border-orange-200";

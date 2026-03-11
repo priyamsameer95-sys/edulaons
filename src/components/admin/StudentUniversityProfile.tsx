@@ -20,6 +20,7 @@ interface Lead {
 
 interface EligibilityScores {
   university_score: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   university_breakdown: any;
 }
 

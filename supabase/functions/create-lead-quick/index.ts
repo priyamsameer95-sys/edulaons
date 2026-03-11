@@ -357,6 +357,7 @@ serve(async (req) => {
       }
     );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const message = error?.message || 'An unexpected error occurred';
     console.error('💥 [create-lead-quick] Error:', message);

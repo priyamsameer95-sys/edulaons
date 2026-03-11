@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
   try {
     const { phone, otp, name } = await req.json()
-    
+
     console.log('🔐 OTP verification request:', { phone, otp: otp ? '****' : 'missing', name })
 
     // Validate inputs
@@ -36,15 +36,15 @@ Deno.serve(async (req) => {
     }
 
     // Clean phone number (remove spaces, dashes, +, etc.) and normalize country code
-    let cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '')
-    
+    let cleanPhone = phone.replace(/[\s\-()+]/g, '')
+
     // Strip +91 or 91 prefix for Indian numbers (normalize to 10 digits)
     if (cleanPhone.startsWith('91') && cleanPhone.length === 12) {
       cleanPhone = cleanPhone.substring(2)
     }
-    
+
     console.log('📱 Phone normalized:', { original: phone, cleaned: cleanPhone })
-    
+
     // Validate OTP (hardcoded for now)
     if (otp !== VALID_OTP) {
       console.log('❌ Invalid OTP provided')
@@ -85,25 +85,25 @@ Deno.serve(async (req) => {
       console.log('📋 Found existing student:', existingStudent.id)
       studentId = existingStudent.id
       studentName = existingStudent.name
-      
+
       // Phone is primary ID - email handling:
       // - If email is synthetic/placeholder → set to NULL (will be updated when user provides real email in form)
       // - If email is real → preserve it
-      const isSyntheticOrPlaceholder = 
+      const isSyntheticOrPlaceholder =
         !existingStudent.email ||
-        existingStudent.email.includes('placeholder') || 
+        existingStudent.email.includes('placeholder') ||
         existingStudent.email.includes('@lead.') ||
         existingStudent.email.endsWith('@student.loan.app');
 
       if (isSyntheticOrPlaceholder) {
         // Clear synthetic email - real email will come from application form
         console.log('🔄 Clearing synthetic/placeholder email, will be set from application form')
-        
+
         await supabase
           .from('students')
           .update({ email: null })
           .eq('id', studentId)
-        
+
         // For auth, we still need an email - use synthetic for Supabase Auth only
         studentEmail = `${cleanPhone}@student.loan.app`
       } else {
@@ -128,9 +128,9 @@ Deno.serve(async (req) => {
         if (!existingStudent.is_activated) {
           const { error: activateError } = await supabase
             .from('students')
-            .update({ 
-              is_activated: true, 
-              activated_at: new Date().toISOString() 
+            .update({
+              is_activated: true,
+              activated_at: new Date().toISOString()
             })
             .eq('id', studentId)
 
@@ -148,11 +148,11 @@ Deno.serve(async (req) => {
       // Phone is primary ID - email is NULL until user provides real email in application form
       isNewUser = true
       studentName = name || `Student ${cleanPhone.slice(-4)}`
-      
+
       // For Supabase Auth we need an email, but students table will have NULL
       const authEmail = `${cleanPhone}@student.loan.app`
       console.log('🆕 Creating new student with phone as primary ID (email=NULL)')
-      
+
       // Try to insert new student with NULL email
       const { data: newStudent, error: insertError } = await supabase
         .from('students')
@@ -175,12 +175,12 @@ Deno.serve(async (req) => {
             .select('id, email, name')
             .eq('phone', cleanPhone)
             .maybeSingle()
-          
+
           if (existingByPhone) {
             studentId = existingByPhone.id
             // Use real email if exists, otherwise synthetic for auth only
-            studentEmail = existingByPhone.email && !existingByPhone.email.endsWith('@student.loan.app') 
-              ? existingByPhone.email 
+            studentEmail = existingByPhone.email && !existingByPhone.email.endsWith('@student.loan.app')
+              ? existingByPhone.email
               : authEmail
             studentName = existingByPhone.name
             isNewUser = false
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
     // Check if auth user exists for this phone (search by pattern to catch duplicates)
     // This prevents creating duplicate users like +919955240477@student.loan.app AND 9955240477@student.loan.app
     const { data: authUsers } = await supabase.auth.admin.listUsers()
-    
+
     // Find any existing auth user that matches this phone number
     const phonePattern = cleanPhone.slice(-10); // Last 10 digits
     const existingAuthUser = authUsers?.users?.find(u => {
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
     if (existingAuthUser) {
       userId = existingAuthUser.id
       console.log('👤 Found existing auth user:', userId, 'email:', existingAuthUser.email)
-      
+
       // If the existing user has a different email format, update it to the canonical one
       if (existingAuthUser.email !== studentEmail) {
         console.log('🔄 Updating auth user email from', existingAuthUser.email, 'to', studentEmail)
@@ -237,9 +237,9 @@ Deno.serve(async (req) => {
     } else {
       // Create auth user with a random password (phone-based login, no password needed)
       const randomPassword = crypto.randomUUID()
-      
+
       console.log('🆕 Creating new auth user with email:', studentEmail)
-      
+
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: studentEmail,
         password: randomPassword,
@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
           actionLink: sessionData.properties.action_link
         },
         // KB: Clear message for "no lead" state
-        message: hasLead 
+        message: hasLead
           ? 'Welcome back! Your application is ready.'
           : 'Welcome! Start your loan application now.',
       }),

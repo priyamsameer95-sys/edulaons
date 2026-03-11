@@ -22,7 +22,9 @@ interface AuditLog {
   performed_by: string;
   target_user_id: string | null;
   target_user_email: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   old_values: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   new_values: any;
   reason: string | null;
   ip_address: string | null;
@@ -42,7 +44,9 @@ export function AuditLogViewer() {
 
   useEffect(() => {
     fetchAuditLogs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+ 
 
   const fetchAuditLogs = async () => {
     try {

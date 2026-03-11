@@ -46,6 +46,7 @@ const AMOUNT_FIELDS = ['amount_requested', 'loan_amount'] as const;
  * Validate required fields exist (basic presence check)
  * @deprecated Use validateLeadData for comprehensive validation
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateRequiredFields(body: any): void {
   const missingFields: string[] = [];
   
@@ -72,6 +73,7 @@ export function validateRequiredFields(body: any): void {
  * Comprehensive lead data validation
  * Validates all fields with proper format checks
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateLeadData(body: any): ValidationResult {
   return validateCreateLeadRequest(body);
 }
@@ -79,6 +81,7 @@ export function validateLeadData(body: any): ValidationResult {
 /**
  * Validate and throw if errors exist
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateOrThrow(body: any): void {
   // First check required fields exist
   validateRequiredFields(body);

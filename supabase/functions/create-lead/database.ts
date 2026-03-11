@@ -13,26 +13,27 @@ export async function validateUniversities(
   country: string
 ): Promise<void> {
   if (!universities || universities.length === 0) return;
-  
+
   const { uuids } = separateUniversities(universities);
-  
+
   if (uuids.length === 0) return;
-  
+
   const { data: dbUniversities, error } = await supabaseAdmin
     .from('universities')
     .select('id, country')
     .in('id', uuids);
-  
+
   if (error) {
     throw new Error(`Failed to validate universities: ${error.message}`);
   }
-  
+
   // Use smart country matching that handles all variations:
   // UK/United Kingdom, USA/United States, UAE/Dubai, NZ/New Zealand, etc.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const invalidUniversities = dbUniversities?.filter((uni: any) => {
     return !countriesMatch(uni.country, country);
   });
-  
+
   if (invalidUniversities && invalidUniversities.length > 0) {
     throw new Error(`Selected universities must be from ${country}`);
   }
@@ -46,39 +47,39 @@ export async function checkProtectedEmail(
   email: string
 ): Promise<void> {
   if (!email) return;
-  
+
   // Normalize email for all checks
   const normalizedEmail = email.trim().toLowerCase();
-  
+
   // Check protected_accounts table
   const { data: protectedAccount } = await supabaseAdmin
     .from('protected_accounts')
     .select('email, reason')
     .eq('email', normalizedEmail)
     .maybeSingle();
-  
+
   if (protectedAccount) {
     throw new Error('This email ID already exists in the system. Please use a different email ID.');
   }
-  
+
   // Check if email belongs to an admin or partner (not student)
   const { data: appUser } = await supabaseAdmin
     .from('app_users')
     .select('email, role')
     .ilike('email', normalizedEmail)
     .maybeSingle();
-  
+
   if (appUser && appUser.role !== 'student') {
     throw new Error('This email ID already exists in the system. Please use a different email ID.');
   }
-  
+
   // Check if email belongs to a partner
   const { data: partner } = await supabaseAdmin
     .from('partners')
     .select('email')
     .ilike('email', normalizedEmail)
     .maybeSingle();
-  
+
   if (partner) {
     throw new Error('This email ID already exists in the system. Please use a different email ID.');
   }
@@ -96,20 +97,20 @@ export async function checkDuplicateApplication(
   studyDestination: string
 ): Promise<void> {
   const cleanPhone = cleanPhoneNumber(studentPhone);
-  
+
   // First check if email is protected/reserved
   if (studentEmail) {
     await checkProtectedEmail(supabaseAdmin, studentEmail);
   }
-  
+
   const { data: existingStudent } = await supabaseAdmin
     .from('students')
     .select('id')
     .or(`email.eq.${studentEmail},phone.eq.${cleanPhone}`)
     .maybeSingle();
-  
+
   if (!existingStudent) return;
-  
+
   const { data: isDuplicate, error } = await supabaseAdmin
     .rpc('check_duplicate_application', {
       _student_id: existingStudent.id,
@@ -117,7 +118,7 @@ export async function checkDuplicateApplication(
       _intake_year: intakeYear,
       _study_destination: studyDestination
     });
-  
+
   if (error) {
     console.warn('⚠️ Duplicate check failed:', error);
   } else if (isDuplicate) {
@@ -130,11 +131,13 @@ export async function checkDuplicateApplication(
  */
 export async function createStudent(
   supabaseAdmin: SupabaseClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const studentEmail = body.student_email?.trim();
   const cleanPhone = cleanPhoneNumber(body.student_phone);
-  
+
   // Check if student already exists by email
   if (studentEmail) {
     const { data: existingStudent } = await supabaseAdmin
@@ -142,10 +145,10 @@ export async function createStudent(
       .select('*')
       .eq('email', studentEmail)
       .maybeSingle();
-    
+
     if (existingStudent) {
       console.log('✅ Found existing student:', existingStudent.id);
-      
+
       // Update student with latest information
       const updateData = {
         name: body.student_name.trim(),
@@ -163,23 +166,23 @@ export async function createStudent(
         bachelors_cgpa: body.bachelors_cgpa || existingStudent.bachelors_cgpa,
         credit_score: body.student_credit_score || existingStudent.credit_score
       };
-      
+
       const { data: updatedStudent, error: updateError } = await supabaseAdmin
         .from('students')
         .update(updateData)
         .eq('id', existingStudent.id)
         .select()
         .single();
-      
+
       if (updateError) {
         console.warn('⚠️ Failed to update student info:', updateError);
         return existingStudent;
       }
-      
+
       return updatedStudent;
     }
   }
-  
+
   // Create new student
   const studentData = {
     name: body.student_name.trim(),
@@ -199,17 +202,17 @@ export async function createStudent(
     bachelors_cgpa: body.bachelors_cgpa || null,
     credit_score: body.student_credit_score || null
   };
-  
+
   const { data: student, error } = await supabaseAdmin
     .from('students')
     .insert(studentData)
     .select()
     .single();
-  
+
   if (error) {
     throw new Error(`Failed to create student: ${error.message}`);
   }
-  
+
   console.log('✅ Created new student:', student.id);
   return student;
 }
@@ -219,11 +222,13 @@ export async function createStudent(
  */
 export async function createCoApplicant(
   supabaseAdmin: SupabaseClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const coApplicantEmail = body.co_applicant_email?.trim();
   const cleanPhone = cleanPhoneNumber(body.co_applicant_phone);
-  
+
   const coApplicantData = {
     name: body.co_applicant_name.trim(),
     email: coApplicantEmail || null,
@@ -238,17 +243,17 @@ export async function createCoApplicant(
     pin_code: body.co_applicant_pin_code.trim(),
     credit_score: body.co_applicant_credit_score || null
   };
-  
+
   const { data: coApplicant, error } = await supabaseAdmin
     .from('co_applicants')
     .insert(coApplicantData)
     .select()
     .single();
-  
+
   if (error) {
     throw new Error(`Failed to create co-applicant: ${error.message}`);
   }
-  
+
   return coApplicant;
 }
 
@@ -259,11 +264,12 @@ export async function getDefaultLender(
   supabaseAdmin: SupabaseClient,
   studyDestination?: string,
   universityIds?: string[]
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   // Phase 3: Intelligent lender assignment based on university preferences
   if (studyDestination && universityIds && universityIds.length > 0) {
     console.log('🎯 Looking for lender preferences for universities...');
-    
+
     const { data: preferences } = await supabaseAdmin
       .from('university_lender_preferences')
       .select('lender_id, compatibility_score, is_preferred')
@@ -272,7 +278,7 @@ export async function getDefaultLender(
       .eq('is_preferred', true)
       .order('compatibility_score', { ascending: false })
       .limit(1);
-    
+
     if (preferences && preferences.length > 0) {
       const { data: preferredLender } = await supabaseAdmin
         .from('lenders')
@@ -280,14 +286,14 @@ export async function getDefaultLender(
         .eq('id', preferences[0].lender_id)
         .eq('is_active', true)
         .single();
-      
+
       if (preferredLender) {
         console.log('✅ Found preferred lender:', preferredLender.name);
         return preferredLender;
       }
     }
   }
-  
+
   // Fallback: Get lender with best overall performance (using display_order as proxy)
   const { data: lender, error } = await supabaseAdmin
     .from('lenders')
@@ -296,11 +302,11 @@ export async function getDefaultLender(
     .order('display_order', { ascending: true })
     .limit(1)
     .single();
-  
+
   if (error || !lender) {
     throw new Error('No active lender configured in system');
   }
-  
+
   console.log('✅ Using default lender:', lender.name);
   return lender;
 }
@@ -314,10 +320,12 @@ export async function createLead(
   coApplicantId: string,
   lenderId: string,
   partnerId: string | null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const caseId = `EDU-${Date.now()}`;
-  
+
   const leadData = {
     case_id: caseId,
     student_id: studentId,
@@ -332,17 +340,17 @@ export async function createLead(
     status: 'new',
     documents_status: 'pending'
   };
-  
+
   const { data: lead, error } = await supabaseAdmin
     .from('leads_new')
     .insert(leadData)
     .select()
     .single();
-  
+
   if (error) {
     throw new Error(`Failed to create lead: ${error.message}`);
   }
-  
+
   return lead;
 }
 
@@ -352,22 +360,24 @@ export async function createLead(
 export async function createTestRecords(
   supabaseAdmin: SupabaseClient,
   studentId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tests: any[]
 ): Promise<void> {
   if (!tests || !Array.isArray(tests) || tests.length === 0) return;
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const testRecords = tests.map((test: any) => ({
     student_id: studentId,
-    test_type: test.testType,
-    score: test.testScore?.toString(),
-    certificate_number: test.testCertificateNumber || null,
-    test_date: test.testDate || null
+    test_type: test.test_type,
+    score: test.score?.toString(),
+    certificate_number: test.certificate_number || null,
+    test_date: test.test_date || null
   }));
-  
+
   const { error } = await supabaseAdmin
     .from('academic_tests')
     .insert(testRecords);
-  
+
   if (error) {
     console.warn('⚠️ Test scores creation failed:', error);
   }
@@ -382,20 +392,20 @@ export async function createUniversityAssociations(
   universities: string[]
 ): Promise<void> {
   if (!universities || universities.length === 0) return;
-  
+
   const { uuids } = separateUniversities(universities);
-  
+
   if (uuids.length === 0) return;
-  
+
   const universityRecords = uuids.map((universityId: string) => ({
     lead_id: leadId,
     university_id: universityId
   }));
-  
+
   const { error } = await supabaseAdmin
     .from('lead_universities')
     .insert(universityRecords);
-  
+
   if (error) {
     console.warn('⚠️ University associations failed:', error);
   }

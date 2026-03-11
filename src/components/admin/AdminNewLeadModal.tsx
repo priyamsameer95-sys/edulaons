@@ -23,6 +23,7 @@ import { EditStudentTab } from "./lead-edit/EditStudentTab";
 import { EditStudyTab } from "./lead-edit/EditStudyTab";
 import { EditCoApplicantTab } from "./lead-edit/EditCoApplicantTab";
 import { EditTestsTab } from "./lead-edit/EditTestsTab";
+import { AILenderRecommendation } from "./AILenderRecommendation";
 
 interface AdminNewLeadModalProps {
   open: boolean;
@@ -108,8 +109,17 @@ function FieldWrapper({
   );
 }
 
-// Consistent Options
-const STUDY_DESTINATIONS = ['Australia', 'Canada', 'Germany', 'Ireland', 'New Zealand', 'UK', 'USA', 'Other'];
+// Consistent Options - MUST match study_destination_enum in database
+const STUDY_DESTINATIONS = [
+  'USA',
+  'UK',
+  'Australia',
+  'Canada',
+  'Germany',
+  'Ireland',
+  'New Zealand',
+  'Other'
+];
 const LOAN_TYPES = ['secured', 'unsecured'];
 const RELATIONSHIPS = ['parent', 'spouse', 'sibling', 'guardian', 'other'];
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: new Date(0, i).toLocaleString('default', { month: 'long' }) }));
@@ -119,11 +129,9 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 const EMPLOYMENT_TYPE_OPTIONS = [
-  { value: 'full-time', label: 'Full-time' },
-  { value: 'part-time', label: 'Part-time' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'freelance', label: 'Freelance' },
-  { value: 'self-employed', label: 'Self-employed' },
+  { value: 'salaried', label: 'Salaried' },
+  { value: 'self_employed', label: 'Self-Employed' },
+  { value: 'business_owner', label: 'Business Owner' },
 ];
 const TEST_TYPES = [
   { value: 'IELTS', label: 'IELTS', maxScore: 9, minScore: 0 },
@@ -179,6 +187,12 @@ interface FormData {
   admin_notes: string;
 }
 
+// Logic for Smart Defaults
+const currentDate = new Date();
+const currentYear = currentDate.getFullYear();
+const nextIntakeYear = (currentYear + 1).toString();
+const smartIntakeMonth = currentDate.getMonth() > 5 ? '9' : '1'; // Sept if after June, else Jan
+
 const initialFormData: FormData = {
   partner_id: '',
   student_name: '',
@@ -197,13 +211,13 @@ const initialFormData: FormData = {
   student_bachelors_percentage: '',
   student_bachelors_cgpa: '',
   student_credit_score: '',
-  study_destination: '',
+  study_destination: 'India',
   loan_amount: '',
-  loan_type: '',
-  intake_month: '',
-  intake_year: '',
+  loan_type: 'unsecured',
+  intake_month: smartIntakeMonth,
+  intake_year: nextIntakeYear,
   co_applicant_name: '',
-  co_applicant_relationship: '',
+  co_applicant_relationship: 'parent',
   co_applicant_phone: '',
   co_applicant_salary: '',
   co_applicant_pin_code: '',
@@ -228,6 +242,13 @@ export const AdminNewLeadModal = ({
   const [loading, setLoading] = useState(false);
   // activeTab state removed as we are now using a long-scrolling form with all sections open
   const [topLevelError, setTopLevelError] = useState<string | null>(null);
+
+  // Post-submit state for lender selection
+  const [submissionResult, setSubmissionResult] = useState<{
+    lead: { id: string; case_id: string; requested_amount: number };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recommended_lenders: any[];
+  } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -254,9 +275,41 @@ export const AdminNewLeadModal = ({
     setCourseId('');
     setIsCustomCourse(false);
     setTopLevelError(null);
+    setSubmissionResult(null);
   }, [defaultPartnerId]);
 
   const handleInputChange = useCallback((field: keyof FormData, value: string) => {
+    // Currency Auto-Format for specific fields
+    if (['loan_amount', 'co_applicant_salary'].includes(field)) {
+      // Remove existing commas and non-digits
+      const rawValue = value.replace(/,/g, '').replace(/\D/g, '');
+      if (rawValue) {
+        // Format as Indian Currency (e.g. 10,00,000)
+        const formatted = new Intl.NumberFormat('en-IN').format(parseInt(rawValue, 10));
+        setFormData(prev => ({ ...prev, [field]: formatted }));
+      } else {
+        setFormData(prev => ({ ...prev, [field]: '' }));
+      }
+      return;
+    }
+
+    // PIN Code Intelligence (Student Only)
+    if (field === 'student_postal_code' && value.length === 6) {
+      fetch(`https://api.postalpincode.in/pincode/${value}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data?.[0]?.Status === 'Success') {
+            const details = data[0].PostOffice[0];
+            setFormData(prev => ({
+              ...prev,
+              student_city: details.District,
+              student_state: details.State,
+            }));
+          }
+        })
+        .catch(() => { });
+    }
+
     setFormData(prev => ({ ...prev, [field]: value }));
     setTopLevelError(null);
   }, []);
@@ -302,7 +355,8 @@ export const AdminNewLeadModal = ({
     ];
 
     for (const field of required) {
-      if (!formData[field.key as keyof FormData]) {
+      const val = formData[field.key as keyof FormData];
+      if (!val || (typeof val === 'string' && !val.trim())) {
         toast({
           title: 'Missing Required Field',
           description: `${field.label} is required.`,
@@ -334,8 +388,14 @@ export const AdminNewLeadModal = ({
       }));
 
       // Prepare payload - ENSURE CORRECT TYPES
-      // Numbers: amount_requested, salary, percentages, scores
-      // Strings: ranks, names, codes
+      // Clean commas from currency fields
+      const cleanAmount = (val: string) => val ? parseInt(val.replace(/,/g, ''), 10) : undefined;
+      const cleanFloat = (val: string) => val ? parseFloat(val) : undefined;
+
+      // Helper to normalize enum values (e.g. "SALARIED" -> "Salaried")
+      const toTitleCase = (str: string) =>
+        str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
       const payload = {
         partner_id: formData.partner_id,
         student_name: formData.student_name.trim(),
@@ -349,10 +409,10 @@ export const AdminNewLeadModal = ({
         student_state: formData.student_state || undefined,
         student_nationality: formData.student_nationality || undefined,
         student_street_address: formData.student_street_address || undefined,
-        student_tenth_percentage: formData.student_tenth_percentage ? parseFloat(formData.student_tenth_percentage) : undefined,
-        student_twelfth_percentage: formData.student_twelfth_percentage ? parseFloat(formData.student_twelfth_percentage) : undefined,
-        student_bachelors_percentage: formData.student_bachelors_percentage ? parseFloat(formData.student_bachelors_percentage) : undefined,
-        student_bachelors_cgpa: formData.student_bachelors_cgpa ? parseFloat(formData.student_bachelors_cgpa) : undefined,
+        student_tenth_percentage: cleanFloat(formData.student_tenth_percentage),
+        student_twelfth_percentage: cleanFloat(formData.student_twelfth_percentage),
+        student_bachelors_percentage: cleanFloat(formData.student_bachelors_percentage),
+        student_bachelors_cgpa: cleanFloat(formData.student_bachelors_cgpa),
         student_credit_score: formData.student_credit_score ? parseInt(formData.student_credit_score, 10) : undefined,
 
         // Study Fields
@@ -361,14 +421,14 @@ export const AdminNewLeadModal = ({
         intake_month: formData.intake_month ? parseInt(formData.intake_month, 10) : undefined,
         intake_year: formData.intake_year ? parseInt(formData.intake_year, 10) : undefined,
         loan_type: formData.loan_type || undefined,
-        // FIX: amount_requested MUST be a NUMBER, not string
-        amount_requested: formData.loan_amount ? parseInt(formData.loan_amount, 10) : undefined,
+        // FIX: amount_requested MUST be a NUMBER, not string (strip commas)
+        amount_requested: cleanAmount(formData.loan_amount),
 
         // Co-Applicant Fields
         co_applicant_name: formData.co_applicant_name.trim(),
         co_applicant_phone: formData.co_applicant_phone,
-        // FIX: co_applicant_monthly_salary MUST be a NUMBER, not string
-        co_applicant_monthly_salary: formData.co_applicant_salary ? parseInt(formData.co_applicant_salary, 10) : undefined,
+        // FIX: co_applicant_monthly_salary MUST be a NUMBER (strip commas)
+        co_applicant_monthly_salary: cleanAmount(formData.co_applicant_salary),
         co_applicant_relationship: formData.co_applicant_relationship,
         co_applicant_pin_code: formData.co_applicant_pin_code || '000000', // Default if missing
         co_applicant_email: formData.co_applicant_email || undefined,
@@ -393,45 +453,50 @@ export const AdminNewLeadModal = ({
       console.group('🚀 [SUBMISSION_GUARD] Lead Creation Payload');
       console.log('Timestamp:', new Date().toISOString());
       console.log('Payload:', JSON.stringify(payload, null, 2));
-      console.log('Type Checks:', {
-        amount_requested: typeof payload.amount_requested,
-        co_applicant_monthly_salary: typeof payload.co_applicant_monthly_salary,
-        intake_month: typeof payload.intake_month,
-        intake_year: typeof payload.intake_year,
-        student_credit_score: typeof payload.student_credit_score,
+      console.log('Cleaned Amounts:', {
+        orig_amount: formData.loan_amount,
+        clean_amount: payload.amount_requested,
+        orig_salary: formData.co_applicant_salary,
+        clean_salary: payload.co_applicant_monthly_salary
       });
       console.groupEnd();
 
       const { data, error } = await supabase.functions.invoke('create-lead', { body: payload });
 
       if (error || (data && !data.success)) {
-        const errorMsg = error?.message || data?.error || 'Failed to create lead';
-        const apiError = parseApiError(errorMsg);
+        // Pass full error object so parseApiError can extract context
+        const errorObj = error || data?.error || 'Failed to create lead';
+        const apiError = parseApiError(errorObj);
         setTopLevelError(apiError.message);
+
+        // DEBUG: Capture raw error for visibility since users are seeing generic 400s
+        const rawDebug = JSON.stringify(errorObj).slice(0, 200);
+        console.error('❌ Lead Creation Failed:', errorObj);
+
         toast({
           title: 'Failed to Create Lead',
-          description: apiError.message,
+          // Show user-friendly message + debug info if generic
+          description: apiError.message.includes('Edge Function')
+            ? `${apiError.message} (Raw: ${rawDebug})`
+            : apiError.message,
           variant: 'destructive'
         });
         return;
       }
 
-      toast({ title: 'Success', description: SUCCESS_COPY.LEAD_CREATED });
+      // Store result for lender selection panel instead of closing
+      setSubmissionResult({
+        lead: {
+          id: data.lead.id,
+          case_id: data.lead.case_id,
+          requested_amount: cleanAmount(formData.loan_amount) || 0,
+        },
+        recommended_lenders: data.recommended_lenders || [],
+      });
 
-      // Trigger AI lender recommendation
-      if (data.lead?.id) {
-        triggerRecommendation({
-          leadId: data.lead.id,
-          studyDestination: formData.study_destination,
-          loanAmount: parseInt(formData.loan_amount) || 0,
-          silent: true,
-        });
-      }
+      toast({ title: 'Lead Created!', description: `Case ID: ${data.lead.case_id}` });
 
-      resetForm();
-      onSuccess();
-      onOpenChange(false);
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setTopLevelError(err.message || 'Unknown error');
     } finally {
@@ -439,6 +504,18 @@ export const AdminNewLeadModal = ({
     }
   };
 
+  // Completion handlers for lender selection
+  const handleLenderSelectionComplete = () => {
+    resetForm();
+    onSuccess();
+    onOpenChange(false);
+  };
+
+  // Handle AI lender acceptance - unified with LenderAssignmentModal
+  const handleAIAccept = (lenderId: string, mode: 'ai' | 'ai_override') => {
+    // Lender already assigned by AILenderRecommendation component
+    handleLenderSelectionComplete();
+  };
 
   return (
     <CollapsibleModal
@@ -447,109 +524,150 @@ export const AdminNewLeadModal = ({
         if (!newOpen) resetForm();
         onOpenChange(newOpen);
       }}
-      title="Create Lead on Behalf of Partner"
-      description="Enter the details below to create a new student application."
+      title={submissionResult ? "Assign Lender" : "Create Lead on Behalf of Partner"}
+      description={submissionResult
+        ? "Call the customer to confirm their preference, then select a lender."
+        : "Enter the details below to create a new student application."
+      }
+      preventCloseOnEsc={!submissionResult}
       footer={
-        <>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={loading} className="gap-2">
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            <Save className="h-4 w-4" />
-            Create Lead
-          </Button>
-        </>
+        submissionResult ? null : (
+          <>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={loading} className="gap-2">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Save className="h-4 w-4" />
+              Create Lead
+            </Button>
+          </>
+        )
       }
     >
-      <div className="max-h-[70vh] overflow-y-auto pr-4">
-        {/* Top-level error banner */}
-        {topLevelError && (
-          <Alert variant="destructive" className="mb-4 mx-1">
-            <XCircle className="h-4 w-4" />
-            <AlertDescription>{topLevelError}</AlertDescription>
-          </Alert>
-        )}
+      {/* Conditional Rendering: Show Lender Selection or Form */}
+      {submissionResult ? (
+        <div className="px-1 pb-2">
+          {/* Lead Creation Success Header */}
+          <div className="text-center py-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100 mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mb-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Lead Created Successfully!</h3>
+            <p className="text-sm text-slate-600">Case ID: <span className="font-mono font-semibold">{submissionResult.lead.case_id}</span></p>
+          </div>
 
-        {/* Partner Selection */}
-        <CollapsibleSection
-          title="Partner Selection"
-          defaultOpen={true}
-          rightElement={formData.partner_id ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
-        >
-          <FieldWrapper label="Select Partner" required isValid={!!formData.partner_id} id="partner_id">
-            <PartnerCombobox
-              partners={partners}
-              value={formData.partner_id || null}
-              onChange={value => handleInputChange('partner_id', value || '')}
-              placeholder="Search and select a partner..."
-              className="mt-1"
+          {/* Unified AI Lender Recommendation using v3.0 BRE */}
+          <AILenderRecommendation
+            leadId={submissionResult.lead.id}
+            currentLenderId=""
+            studyDestination={formData.study_destination}
+            loanAmount={submissionResult.lead.requested_amount}
+            onAccept={handleAIAccept}
+            onDefer={handleLenderSelectionComplete}
+          />
+
+          {/* Skip Button */}
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              onClick={handleLenderSelectionComplete}
+              className="w-full"
+            >
+              Skip for Now
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="max-h-[65vh] overflow-y-auto px-1 pb-2">
+          {/* Top-level error banner */}
+          {topLevelError && (
+            <Alert variant="destructive" className="mb-4 mx-1">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>{topLevelError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Partner Selection */}
+          <CollapsibleSection
+            title="Partner Selection"
+            defaultOpen={true}
+            rightElement={formData.partner_id ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
+          >
+            <FieldWrapper label="Select Partner" required isValid={!!formData.partner_id} id="partner_id">
+              <PartnerCombobox
+                partners={partners}
+                value={formData.partner_id || null}
+                onChange={value => handleInputChange('partner_id', value || '')}
+                placeholder="Search and select a partner..."
+                className="mt-1"
+              />
+            </FieldWrapper>
+          </CollapsibleSection>
+
+          {/* Student Details */}
+          <CollapsibleSection
+            title="Student Details"
+            defaultOpen={true}
+            rightElement={formData.student_name ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
+          >
+            <EditStudentTab
+              formData={formData}
+              handleInputChange={handleInputChange}
+              GENDER_OPTIONS={GENDER_OPTIONS}
             />
-          </FieldWrapper>
-        </CollapsibleSection>
+          </CollapsibleSection>
 
-        {/* Student Details */}
-        <CollapsibleSection
-          title="Student Details"
-          defaultOpen={true}
-          rightElement={formData.student_name ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
-        >
-          <EditStudentTab
-            formData={formData}
-            handleInputChange={handleInputChange}
-            GENDER_OPTIONS={GENDER_OPTIONS}
-          />
-        </CollapsibleSection>
+          {/* Study Details */}
+          <CollapsibleSection
+            title="Study Details"
+            defaultOpen={true}
+            rightElement={formData.study_destination ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
+          >
+            <EditStudyTab
+              formData={formData}
+              handleInputChange={handleInputChange}
+              universities={universities}
+              setUniversities={setUniversities}
+              courseId={courseId}
+              setCourseId={setCourseId}
+              isCustomCourse={isCustomCourse}
+              setIsCustomCourse={setIsCustomCourse}
+              STUDY_DESTINATIONS={STUDY_DESTINATIONS}
+              LOAN_TYPES={LOAN_TYPES}
+              MONTHS={MONTHS}
+            />
+          </CollapsibleSection>
 
-        {/* Study Details */}
-        <CollapsibleSection
-          title="Study Details"
-          defaultOpen={true}
-          rightElement={formData.study_destination ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
-        >
-          <EditStudyTab
-            formData={formData}
-            handleInputChange={handleInputChange}
-            universities={universities}
-            setUniversities={setUniversities}
-            courseId={courseId}
-            setCourseId={setCourseId}
-            isCustomCourse={isCustomCourse}
-            setIsCustomCourse={setIsCustomCourse}
-            STUDY_DESTINATIONS={STUDY_DESTINATIONS}
-            LOAN_TYPES={LOAN_TYPES}
-            MONTHS={MONTHS}
-          />
-        </CollapsibleSection>
+          {/* Co-Applicant Details */}
+          <CollapsibleSection
+            title="Co-Applicant Details"
+            defaultOpen={false}
+            rightElement={formData.co_applicant_name ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
+          >
+            <EditCoApplicantTab
+              formData={formData}
+              handleInputChange={handleInputChange}
+              RELATIONSHIPS={RELATIONSHIPS}
+              EMPLOYMENT_TYPE_OPTIONS={EMPLOYMENT_TYPE_OPTIONS}
+            />
+          </CollapsibleSection>
 
-        {/* Co-Applicant Details */}
-        <CollapsibleSection
-          title="Co-Applicant Details"
-          defaultOpen={true}
-          rightElement={formData.co_applicant_name ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
-        >
-          <EditCoApplicantTab
-            formData={formData}
-            handleInputChange={handleInputChange}
-            RELATIONSHIPS={RELATIONSHIPS}
-            EMPLOYMENT_TYPE_OPTIONS={EMPLOYMENT_TYPE_OPTIONS}
-          />
-        </CollapsibleSection>
-
-        {/* Academic Tests */}
-        <CollapsibleSection
-          title="Academic Tests"
-          defaultOpen={true}
-          rightElement={academicTests.length > 0 ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
-        >
-          <EditTestsTab
-            academicTests={academicTests}
-            addAcademicTest={addAcademicTest}
-            updateAcademicTest={updateAcademicTest}
-            removeAcademicTest={removeAcademicTest}
-            validateTestScore={validateTestScore}
-            getTestMaxScore={getTestMaxScore}
-          />
-        </CollapsibleSection>
-      </div>
+          {/* Academic Tests */}
+          <CollapsibleSection
+            title="Academic Tests (Optional)"
+            defaultOpen={false}
+            rightElement={academicTests.length > 0 ? <CheckCircle2 className="h-4 w-4 text-success" /> : undefined}
+          >
+            <EditTestsTab
+              academicTests={academicTests}
+              addAcademicTest={addAcademicTest}
+              updateAcademicTest={updateAcademicTest}
+              removeAcademicTest={removeAcademicTest}
+              validateTestScore={validateTestScore}
+              getTestMaxScore={getTestMaxScore}
+            />
+          </CollapsibleSection>
+        </div>
+      )}
     </CollapsibleModal>
   );
 };

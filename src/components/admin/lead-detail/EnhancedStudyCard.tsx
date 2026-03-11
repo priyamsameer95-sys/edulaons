@@ -190,6 +190,7 @@ export function EnhancedStudyCard({
             loan_amount: editData.loan_amount,
             loan_type: editData.loan_type as 'secured' | 'unsecured',
             loan_classification: editData.loan_classification as 'unsecured_nbfc' | 'secured_property' | 'psu_bank' | 'undecided' | 'secured_fd' | 'unsecured' | null || null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             study_destination: editData.study_destination as any,
             intake_month: editData.intake_month,
             intake_year: editData.intake_year,

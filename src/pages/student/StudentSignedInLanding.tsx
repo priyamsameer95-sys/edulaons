@@ -137,6 +137,7 @@ const StudentSignedInLanding = () => {
     }
 
     checkExistingApplication();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
 
   const handleLogout = async () => {

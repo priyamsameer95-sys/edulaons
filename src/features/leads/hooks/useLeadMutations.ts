@@ -11,6 +11,7 @@ export const useCreateOrUpdateLead = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mutationFn: ({ formData, isUpdate }: { formData: any, isUpdate: boolean }) =>
             leadService.createLead(formData, isUpdate),
         onSuccess: (data) => {

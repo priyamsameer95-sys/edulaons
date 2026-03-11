@@ -70,6 +70,7 @@ export const LeadTableRow = React.memo(function LeadTableRow({
   const urgent = isLeadUrgent(lead);
   const ageDays = getAgeDays(lead.created_at);
   const action = needsAdminAction(lead);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const completeness = getLeadCompleteness(lead as any);
   const isIncomplete = !completeness.isComplete;
 

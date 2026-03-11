@@ -53,6 +53,7 @@ vi.mock('@/hooks/use-toast', () => ({
 describe('Admin Smoke Tests - Form Validation', () => {
     describe('Lead Form Validation', () => {
         it('validates required student fields', () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const validateStudent = (data: any) => {
                 const errors: string[] = [];
                 if (!data.name?.trim()) errors.push('Student name is required');
@@ -137,6 +138,7 @@ describe('Admin Smoke Tests - State Management', () => {
             const original = { name: 'John', email: 'john@test.com', phone: '9876543210' };
             const current = { name: 'John Doe', email: 'john@test.com', phone: '9876543210' };
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const getChanges = (orig: any, curr: any) => {
                 return Object.keys(orig).filter(key => orig[key] !== curr[key]);
             };

@@ -158,7 +158,9 @@ async function fetchCompleteLeadData(leadId: string, fallbackLead: LeadData): Pr
     .eq('lead_id', leadId);
 
   const universities: LeadUniversity[] = (univData || [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((u: any) => u.universities)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((u: any) => ({
       name: u.universities.name,
       city: u.universities.city,
@@ -176,6 +178,7 @@ async function fetchCompleteLeadData(leadId: string, fallbackLead: LeadData): Pr
     `)
     .eq('lead_id', leadId);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const documents: LeadDocument[] = (fullDocuments || []).map((doc: any) => ({
     id: doc.id,
     document_type_id: doc.document_type_id,

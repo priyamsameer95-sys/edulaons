@@ -28,6 +28,7 @@ interface AdminModalsManagerProps {
   modals: ModalState;
   selectedLead: PaginatedLead | null;
   selectedLeads: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selectedDocument: any;
   allPartners: Partner[];
   leads: PaginatedLead[];
@@ -80,6 +81,7 @@ export const AdminModalsManager = React.memo(function AdminModalsManager({
           <LeadDetailSheet
             open={modals.leadDetail}
             onOpenChange={(open) => !open && onCloseModal('leadDetail')}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             lead={selectedLead as any}
             onLeadUpdated={onStatusUpdated}
           />
@@ -88,7 +90,9 @@ export const AdminModalsManager = React.memo(function AdminModalsManager({
             onOpenChange={(open) => !open && onCloseModal('statusUpdate')}
             leadId={selectedLead.id}
             studentName={selectedLead.student?.name}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             currentStatus={selectedLead.status as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             currentDocumentsStatus={selectedLead.documents_status as any}
             stageStartedAt={selectedLead.current_stage_started_at}
             onStatusUpdated={onStatusUpdated}
@@ -127,6 +131,7 @@ export const AdminModalsManager = React.memo(function AdminModalsManager({
       <CompleteLeadModal
         open={modals.completeLead}
         onClose={() => onCloseModal('completeLead')}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         lead={selectedLead as any}
         onSuccess={onLeadCompleted}
       />

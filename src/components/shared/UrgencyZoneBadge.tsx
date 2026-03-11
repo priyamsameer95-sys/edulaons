@@ -96,6 +96,7 @@ interface UrgencyZoneTooltipProps {
   daysUntil?: number;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getUrgencyZoneTooltip({ zone, daysUntil }: UrgencyZoneTooltipProps): string {
   const config = zoneConfig[zone];
   const daysText = daysUntil !== undefined ? ` ${daysUntil} days until intake.` : '';

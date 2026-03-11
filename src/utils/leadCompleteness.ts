@@ -59,7 +59,9 @@ function convertToLegacyFormat(result: LeadCompletionResult): LeadCompletenessRe
  * Now uses the unified schema from leadCompletionSchema.ts
  */
 export function getLeadCompleteness(lead: PaginatedLead & { 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   student?: any; 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   co_applicant?: any 
 }): LeadCompletenessResult {
   const result = getLeadMissingFields(lead);
@@ -93,6 +95,7 @@ export function getMissingFieldsBySection(result: LeadCompletenessResult): Recor
 /**
  * Check if a lead needs admin attention for missing fields
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function needsFieldCompletion(lead: PaginatedLead & { student?: any; co_applicant?: any }): boolean {
   const result = getLeadCompleteness(lead);
   return result.missingRequired.length > 0;

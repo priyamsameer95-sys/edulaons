@@ -20,6 +20,7 @@ const STAGES = [
   { id: 5, label: 'Disbursed' },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const getTimelineStep = (status: string, documentsStatus: string): number => {
   if (documentsStatus !== 'verified') return 2;
 

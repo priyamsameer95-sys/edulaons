@@ -101,6 +101,7 @@ export function shouldTriggerRecommendation(
   newValue: unknown
 ): boolean {
   // Only trigger for specific fields
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!RECOMMENDATION_TRIGGER_FIELDS.includes(changedField as any)) {
     return false;
   }

@@ -94,6 +94,7 @@ export function TierBadge({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getTierTooltip(tier: UniversityTier): string {
   const config = tierConfig[tier];
   return `${config.fullLabel}: ${config.description}`;

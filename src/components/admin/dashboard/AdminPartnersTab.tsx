@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Eye, MoreHorizontal, Users, TrendingUp, Edit, Info } from 'lucide-react';
+import { Search, Plus, Eye, MoreHorizontal, Users, TrendingUp, Edit, Info, UserCheck } from 'lucide-react';
 import { TableSkeleton } from '@/components/common/LoadingStates';
 import { usePartnerStats } from '@/hooks/usePartnerStats';
 import { formatRelativeTime } from '@/utils/formatters';
@@ -42,8 +43,10 @@ export const AdminPartnersTab = ({ onViewLeads }: AdminPartnersTabProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const totalPartners = stats.length;
+  const activePartners = stats.filter(p => (p as any).is_active !== false).length;
   const totalLeadsViaPartners = stats.reduce((sum, p) => sum + p.totalLeads, 0);
 
   const handleViewDetails = (partner: Partner) => {
@@ -73,7 +76,7 @@ export const AdminPartnersTab = ({ onViewLeads }: AdminPartnersTabProps) => {
   return (
     <div className="space-y-4">
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -96,16 +99,38 @@ export const AdminPartnersTab = ({ onViewLeads }: AdminPartnersTabProps) => {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <UserCheck className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold">{activePartners}</p>
+              <p className="text-sm text-muted-foreground">Active Partners</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Partners Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between py-4">
           <CardTitle className="text-lg">Partners</CardTitle>
-          <Button size="sm" onClick={() => setShowCreateModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Partner
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search partners..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-[200px] pl-8 h-8 text-sm"
+              />
+            </div>
+            <Button size="sm" onClick={() => setShowCreateModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Partner
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -122,12 +147,22 @@ export const AdminPartnersTab = ({ onViewLeads }: AdminPartnersTabProps) => {
             <TableBody>
               {stats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No partners found. Create your first partner to get started.
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <Users className="h-6 w-6 opacity-40" />
+                      </div>
+                      <p className="text-sm font-medium">No partners yet</p>
+                      <p className="text-xs">Create your first partner to get started</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                stats.map((partner) => (
+                stats.filter(p => {
+                  if (!searchTerm) return true;
+                  const term = searchTerm.toLowerCase();
+                  return p.name.toLowerCase().includes(term) || p.partner_code.toLowerCase().includes(term);
+                }).map((partner) => (
                   <TableRow key={partner.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetails(partner as Partner)}>
                     <TableCell className="font-medium">{partner.name}</TableCell>
                     <TableCell>

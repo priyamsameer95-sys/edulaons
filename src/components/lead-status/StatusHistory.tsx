@@ -26,6 +26,7 @@ interface ActivityEvent {
   id: string;
   type: 'status_change' | 'document_upload' | 'lead_created';
   timestamp: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
 }
 

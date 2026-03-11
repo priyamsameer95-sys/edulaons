@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 // Helper function to log audit trail
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function logAudit(supabase: any, action: string, performedBy: string, targetUserId: string | null, targetUserEmail: string, oldValues: any, newValues: any, reason: string | null, success: boolean, errorMessage: string | null, req: Request) {
   const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
   const userAgent = req.headers.get('user-agent') || 'unknown';
@@ -36,7 +37,9 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let requestUser: any = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let requestUserRole: any = null;
 
   try {
@@ -256,6 +259,7 @@ serve(async (req) => {
       }
 
       // Update app_users fields
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updates: any = {};
       if (partner_id !== undefined) updates.partner_id = partner_id;
       if (is_active !== undefined) updates.is_active = is_active;

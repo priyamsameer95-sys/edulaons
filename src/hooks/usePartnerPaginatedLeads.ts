@@ -75,8 +75,10 @@ export function usePartnerPaginatedLeads(
 
       if (fetchError) throw fetchError;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedLeads = (data || []).map(lead => mapDbRefactoredLeadToLead(lead as any));
       setLeads(mappedLeads);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error fetching paginated leads:', err);
       setError(err.message || 'Failed to load leads');

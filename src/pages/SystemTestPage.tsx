@@ -8,6 +8,7 @@ interface TestResult {
     name: string;
     status: "pass" | "fail" | "running" | "pending";
     message?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     details?: any;
 }
 
@@ -19,6 +20,7 @@ const SystemTestPage = () => {
         { name: "University CRUD: Update Rank", status: "pending" },
     ]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateResult = (name: string, status: TestResult["status"], message?: string, details?: any) => {
         setResults(prev => prev.map(r => r.name === name ? { ...r, status, message, details } : r));
     };
@@ -46,6 +48,7 @@ const SystemTestPage = () => {
                 intake_month: targetDate.getMonth() + 1,
                 intake_year: targetDate.getFullYear(),
                 study_destination: "USA"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any).select().single();
 
             if (!lead) throw new Error("Failed to create test lead");
@@ -69,6 +72,7 @@ const SystemTestPage = () => {
                 updateResult("Lender Logic: Panic Zone (30 days)", "fail", `Expected RED, got ${zone}`, data.recommendation_context);
             }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             updateResult("Lender Logic: Panic Zone (30 days)", "fail", e.message);
         }
@@ -92,6 +96,7 @@ const SystemTestPage = () => {
                 intake_month: targetDate.getMonth() + 1,
                 intake_year: targetDate.getFullYear(),
                 study_destination: "USA"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any).select().single();
 
             // CALL FUNCTION
@@ -112,6 +117,7 @@ const SystemTestPage = () => {
             } else {
                 updateResult("Lender Logic: Safe Zone (31 days)", "fail", `Expected YELLOW, got ${zone}`, data.recommendation_context);
             }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             updateResult("Lender Logic: Safe Zone (31 days)", "fail", e.message);
         }
@@ -126,11 +132,13 @@ const SystemTestPage = () => {
             const { error } = await supabase.from('universities').insert({
                 name: testName,
                 country: "Testland",
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 global_rank: "Top 50" as any
             });
 
             if (error) throw error;
             updateResult("University CRUD: Create Text Rank", "pass", "Successfully created university with rank 'Top 50'");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             updateResult("University CRUD: Create Text Rank", "fail", e.message);
             return;
@@ -140,6 +148,7 @@ const SystemTestPage = () => {
         updateResult("University CRUD: Update Rank", "running");
         try {
             const { error } = await supabase.from('universities')
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .update({ global_rank: "Rank 1" as any })
                 .eq('name', testName);
 
@@ -147,6 +156,7 @@ const SystemTestPage = () => {
 
             // Verify
             const { data } = await supabase.from('universities').select('global_rank').eq('name', testName).single();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (data?.global_rank === "Rank 1" as any) {
                 updateResult("University CRUD: Update Rank", "pass", "Successfully updated rank to 'Rank 1'");
             } else {
@@ -156,6 +166,7 @@ const SystemTestPage = () => {
             // Cleanup
             await supabase.from('universities').delete().eq('name', testName);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             updateResult("University CRUD: Update Rank", "fail", e.message);
         }

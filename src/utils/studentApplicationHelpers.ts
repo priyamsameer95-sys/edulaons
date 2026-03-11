@@ -40,6 +40,7 @@ export const separateUniversities = (universities: string[]) => {
 /**
  * Clean and filter test scores - remove empty or invalid entries
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const cleanTestScores = (tests?: Array<any>) => {
   if (!tests || !Array.isArray(tests)) return undefined;
   

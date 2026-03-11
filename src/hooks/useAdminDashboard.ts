@@ -31,6 +31,7 @@ export interface AdminDashboardState {
   };
   
   // Document verification state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selectedDocument: any;
   documentLeadId: string | null;
   
@@ -64,6 +65,7 @@ export function useAdminDashboard(defaultPageSize = 50) {
   const [modals, setModals] = useState(initialModalState);
   
   // Document verification state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [documentLeadId, setDocumentLeadId] = useState<string | null>(null);
   
@@ -209,6 +211,7 @@ export function useAdminDashboard(defaultPageSize = 50) {
         .single();
         
       if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setSelectedLead(data as any);
         openModal('leadDetail');
       }

@@ -20,6 +20,10 @@ export interface LeadDocument {
   ai_confidence_score?: number | null;
   ai_quality_assessment?: string | null;
   ai_validation_notes?: string | null;
+  ai_verified?: boolean | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ai_extracted_data?: any | null;
+  ai_mismatch_flag?: boolean | null;
   version: number | null;
   uploaded_at: string | null;
   verified_at?: string | null;
@@ -39,7 +43,9 @@ export function useLeadDocuments(leadId?: string) {
     if (leadId) {
       fetchDocuments();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
+ 
 
   const fetchDocuments = async () => {
     if (!leadId) return;
@@ -140,10 +146,10 @@ export function useLeadDocuments(leadId?: string) {
     }
   };
 
-  return { 
-    documents, 
-    loading, 
-    refetch: fetchDocuments, 
+  return {
+    documents,
+    loading,
+    refetch: fetchDocuments,
     deleteDocument,
     getDownloadUrl
   };

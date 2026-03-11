@@ -49,6 +49,7 @@ export const useUniversities = (country: string) => {
         console.log('[useUniversities] fetched', data?.length || 0, 'universities');
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (data || []).map((uni: any) => ({
         id: uni.id,
         name: uni.name,

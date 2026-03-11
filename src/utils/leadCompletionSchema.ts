@@ -27,32 +27,32 @@ export interface LeadCompletionField {
 
 // Student required fields
 const STUDENT_REQUIRED_FIELDS: LeadCompletionField[] = [
-  { 
-    key: 'student_name', 
-    path: 'student.name', 
-    displayName: 'Student Name', 
-    section: 'student', 
-    isRequired: true 
+  {
+    key: 'student_name',
+    path: 'student.name',
+    displayName: 'Student Name',
+    section: 'student',
+    isRequired: true
   },
-  { 
-    key: 'student_phone', 
-    path: 'student.phone', 
-    displayName: 'Student Phone', 
-    section: 'student', 
-    isRequired: true 
+  {
+    key: 'student_phone',
+    path: 'student.phone',
+    displayName: 'Student Phone',
+    section: 'student',
+    isRequired: true
   },
-  { 
-    key: 'student_email', 
-    path: 'student.email', 
-    displayName: 'Student Email', 
-    section: 'student', 
-    isRequired: true 
+  {
+    key: 'student_email',
+    path: 'student.email',
+    displayName: 'Student Email',
+    section: 'student',
+    isRequired: true
   },
-  { 
-    key: 'student_postal_code', 
-    path: 'student.postal_code', 
-    displayName: 'Student PIN Code', 
-    section: 'student', 
+  {
+    key: 'student_postal_code',
+    path: 'student.postal_code',
+    displayName: 'Student PIN Code',
+    section: 'student',
     isRequired: true,
     formFieldKey: 'studentPinCode',
     isEditable: true
@@ -61,87 +61,87 @@ const STUDENT_REQUIRED_FIELDS: LeadCompletionField[] = [
 
 // Study details required fields
 const STUDY_REQUIRED_FIELDS: LeadCompletionField[] = [
-  { 
-    key: 'study_destination', 
-    path: 'study_destination', 
-    displayName: 'Study Destination', 
-    section: 'study', 
-    isRequired: true 
+  {
+    key: 'study_destination',
+    path: 'study_destination',
+    displayName: 'Study Destination',
+    section: 'study',
+    isRequired: true
   },
-  { 
-    key: 'loan_amount', 
-    path: 'loan_amount', 
-    displayName: 'Loan Amount', 
-    section: 'study', 
-    isRequired: true 
+  {
+    key: 'loan_amount',
+    path: 'loan_amount',
+    displayName: 'Loan Amount',
+    section: 'study',
+    isRequired: true
   },
-  { 
-    key: 'intake_month', 
-    path: 'intake_month', 
-    displayName: 'Intake Month', 
-    section: 'study', 
-    isRequired: true 
+  {
+    key: 'intake_month',
+    path: 'intake_month',
+    displayName: 'Intake Month',
+    section: 'study',
+    isRequired: true
   },
-  { 
-    key: 'intake_year', 
-    path: 'intake_year', 
-    displayName: 'Intake Year', 
-    section: 'study', 
-    isRequired: true 
+  {
+    key: 'intake_year',
+    path: 'intake_year',
+    displayName: 'Intake Year',
+    section: 'study',
+    isRequired: true
   },
 ];
 
 // Co-applicant fields - conditionally required when co-applicant exists
 const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
-  { 
-    key: 'co_applicant_name', 
-    path: 'co_applicant.name', 
-    displayName: 'Co-Applicant Name', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_name',
+    path: 'co_applicant.name',
+    displayName: 'Co-Applicant Name',
+    section: 'co_applicant',
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
     formFieldKey: 'coApplicantName',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_relationship', 
-    path: 'co_applicant.relationship', 
-    displayName: 'Relationship', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_relationship',
+    path: 'co_applicant.relationship',
+    displayName: 'Relationship',
+    section: 'co_applicant',
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
     formFieldKey: 'coApplicantRelationship',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_phone', 
-    path: 'co_applicant.phone', 
-    displayName: 'Co-Applicant Phone', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_phone',
+    path: 'co_applicant.phone',
+    displayName: 'Co-Applicant Phone',
+    section: 'co_applicant',
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
     formFieldKey: 'coApplicantPhone',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_salary', 
-    path: 'co_applicant.salary', 
-    displayName: 'Co-Applicant Salary', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_salary',
+    path: 'co_applicant.salary',
+    displayName: 'Co-Applicant Salary',
+    section: 'co_applicant',
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required for loan eligibility calculation',
     formFieldKey: 'coApplicantSalary',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_pin_code', 
-    path: 'co_applicant.pin_code', 
-    displayName: 'Co-Applicant PIN Code', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_pin_code',
+    path: 'co_applicant.pin_code',
+    displayName: 'Co-Applicant PIN Code',
+    section: 'co_applicant',
     isRequired: true,
     isConditionallyRequired: true,
     conditionDescription: 'Required when co-applicant exists',
@@ -152,189 +152,189 @@ const CO_APPLICANT_REQUIRED_FIELDS: LeadCompletionField[] = [
 
 // Optional fields (for completeness % but not blocking)
 const OPTIONAL_FIELDS: LeadCompletionField[] = [
-  { 
-    key: 'student_dob', 
-    path: 'student.date_of_birth', 
-    displayName: 'Date of Birth', 
-    section: 'student', 
+  {
+    key: 'student_dob',
+    path: 'student.date_of_birth',
+    displayName: 'Date of Birth',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentDob',
     isEditable: true
   },
-  { 
-    key: 'student_gender', 
-    path: 'student.gender', 
-    displayName: 'Gender', 
-    section: 'student', 
+  {
+    key: 'student_gender',
+    path: 'student.gender',
+    displayName: 'Gender',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentGender',
     isEditable: true
   },
-  { 
-    key: 'student_city', 
-    path: 'student.city', 
-    displayName: 'City', 
-    section: 'student', 
+  {
+    key: 'student_city',
+    path: 'student.city',
+    displayName: 'City',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentCity',
     isEditable: true
   },
-  { 
-    key: 'student_state', 
-    path: 'student.state', 
-    displayName: 'State', 
-    section: 'student', 
+  {
+    key: 'student_state',
+    path: 'student.state',
+    displayName: 'State',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentState',
     isEditable: true
   },
   // Phase 9: New student optional fields
-  { 
-    key: 'student_nationality', 
-    path: 'student.nationality', 
-    displayName: 'Nationality', 
-    section: 'student', 
+  {
+    key: 'student_nationality',
+    path: 'student.nationality',
+    displayName: 'Nationality',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentNationality',
     isEditable: true
   },
-  { 
-    key: 'student_street_address', 
-    path: 'student.street_address', 
-    displayName: 'Street Address', 
-    section: 'student', 
+  {
+    key: 'student_street_address',
+    path: 'student.street_address',
+    displayName: 'Street Address',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentStreetAddress',
     isEditable: true
   },
-  { 
-    key: 'student_highest_qualification', 
-    path: 'student.highest_qualification', 
-    displayName: 'Highest Qualification', 
-    section: 'student', 
+  {
+    key: 'student_highest_qualification',
+    path: 'student.highest_qualification',
+    displayName: 'Highest Qualification',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentHighestQualification',
     isEditable: true
   },
-  { 
-    key: 'student_tenth_percentage', 
-    path: 'student.tenth_percentage', 
-    displayName: '10th Percentage', 
-    section: 'student', 
+  {
+    key: 'student_tenth_percentage',
+    path: 'student.tenth_percentage',
+    displayName: '10th Percentage',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentTenthPercentage',
     isEditable: true
   },
-  { 
-    key: 'student_twelfth_percentage', 
-    path: 'student.twelfth_percentage', 
-    displayName: '12th Percentage', 
-    section: 'student', 
+  {
+    key: 'student_twelfth_percentage',
+    path: 'student.twelfth_percentage',
+    displayName: '12th Percentage',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentTwelfthPercentage',
     isEditable: true
   },
-  { 
-    key: 'student_bachelors_percentage', 
-    path: 'student.bachelors_percentage', 
-    displayName: "Bachelor's Percentage", 
-    section: 'student', 
+  {
+    key: 'student_bachelors_percentage',
+    path: 'student.bachelors_percentage',
+    displayName: "Bachelor's Percentage",
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentBachelorsPercentage',
     isEditable: true
   },
-  { 
-    key: 'student_bachelors_cgpa', 
-    path: 'student.bachelors_cgpa', 
-    displayName: "Bachelor's CGPA", 
-    section: 'student', 
+  {
+    key: 'student_bachelors_cgpa',
+    path: 'student.bachelors_cgpa',
+    displayName: "Bachelor's CGPA",
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentBachelorsCgpa',
     isEditable: true
   },
-  { 
-    key: 'student_credit_score', 
-    path: 'student.credit_score', 
-    displayName: 'Student Credit Score', 
-    section: 'student', 
+  {
+    key: 'student_credit_score',
+    path: 'student.credit_score',
+    displayName: 'Student Credit Score',
+    section: 'student',
     isRequired: false,
     formFieldKey: 'studentCreditScore',
     isEditable: true
   },
-  { 
-    key: 'loan_type', 
-    path: 'loan_type', 
-    displayName: 'Loan Type', 
-    section: 'study', 
-    isRequired: false 
+  {
+    key: 'loan_type',
+    path: 'loan_type',
+    displayName: 'Loan Type',
+    section: 'study',
+    isRequired: false
   },
-  { 
-    key: 'co_applicant_email', 
-    path: 'co_applicant.email', 
-    displayName: 'Co-Applicant Email', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_email',
+    path: 'co_applicant.email',
+    displayName: 'Co-Applicant Email',
+    section: 'co_applicant',
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantEmail',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_occupation', 
-    path: 'co_applicant.occupation', 
-    displayName: 'Co-Applicant Occupation', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_occupation',
+    path: 'co_applicant.occupation',
+    displayName: 'Co-Applicant Occupation',
+    section: 'co_applicant',
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantOccupation',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_employer', 
-    path: 'co_applicant.employer', 
-    displayName: 'Co-Applicant Employer', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_employer',
+    path: 'co_applicant.employer',
+    displayName: 'Co-Applicant Employer',
+    section: 'co_applicant',
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantEmployer',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_employment_type', 
-    path: 'co_applicant.employment_type', 
-    displayName: 'Employment Type', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_employment_type',
+    path: 'co_applicant.employment_type',
+    displayName: 'Employment Type',
+    section: 'co_applicant',
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantEmploymentType',
     isEditable: true
   },
-  { 
-    key: 'co_applicant_employment_duration', 
-    path: 'co_applicant.employment_duration_years', 
-    displayName: 'Employment Duration', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_employment_duration',
+    path: 'co_applicant.employment_duration_years',
+    displayName: 'Employment Duration',
+    section: 'co_applicant',
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantEmploymentDuration',
     isEditable: true
   },
   // Phase 9: New co-applicant optional field
-  { 
-    key: 'co_applicant_credit_score', 
-    path: 'co_applicant.credit_score', 
-    displayName: 'Co-Applicant Credit Score', 
-    section: 'co_applicant', 
+  {
+    key: 'co_applicant_credit_score',
+    path: 'co_applicant.credit_score',
+    displayName: 'Co-Applicant Credit Score',
+    section: 'co_applicant',
     isRequired: false,
     isConditionallyRequired: true,
     formFieldKey: 'coApplicantCreditScore',
     isEditable: true
   },
-  { 
-    key: 'partner_id', 
-    path: 'partner_id', 
-    displayName: 'Partner Assignment', 
-    section: 'lead', 
-    isRequired: false 
+  {
+    key: 'partner_id',
+    path: 'partner_id',
+    displayName: 'Partner Assignment',
+    section: 'lead',
+    isRequired: false
   },
 ];
 
@@ -349,11 +349,11 @@ export const LEAD_COMPLETION_FIELDS = {
 // Get all required fields (base + co-applicant when applicable)
 export function getRequiredFields(hasCoApplicant: boolean): LeadCompletionField[] {
   const baseRequired = [...STUDENT_REQUIRED_FIELDS, ...STUDY_REQUIRED_FIELDS];
-  
+
   if (hasCoApplicant) {
     return [...baseRequired, ...CO_APPLICANT_REQUIRED_FIELDS];
   }
-  
+
   return baseRequired;
 }
 
@@ -379,7 +379,7 @@ export function hasValidCoApplicant(lead: {
 }): boolean {
   // Must have a co_applicant_id
   if (!lead.co_applicant_id) return false;
-  
+
   // If co_applicant data exists, check if it's not a placeholder
   if (lead.co_applicant) {
     const name = lead.co_applicant.name;
@@ -388,13 +388,13 @@ export function hasValidCoApplicant(lead: {
       // Check if there's any real data (salary or relationship set)
       const hasSalary = lead.co_applicant.salary && lead.co_applicant.salary > 0;
       const hasRelationship = lead.co_applicant.relationship && lead.co_applicant.relationship !== '';
-      
+
       // If has salary or relationship, it's a real co-applicant even with placeholder name
       return hasSalary || hasRelationship;
     }
     return true;
   }
-  
+
   // Has co_applicant_id but no co_applicant data loaded - assume it exists
   return true;
 }
@@ -402,43 +402,45 @@ export function hasValidCoApplicant(lead: {
 /**
  * Get nested value from object using dot notation
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getNestedValue(obj: any, path: string): any {
   const parts = path.split('.');
   let current = obj;
-  
+
   for (const part of parts) {
     if (current === null || current === undefined) {
       return undefined;
     }
     current = current[part];
   }
-  
+
   return current;
 }
 
 /**
  * Check if a value is considered "filled"
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isFieldFilled(value: any, fieldKey: string): boolean {
   if (value === null || value === undefined) return false;
   if (typeof value === 'string' && value.trim() === '') return false;
-  
+
   // Special cases for placeholder values
   if (fieldKey === 'student_postal_code' || fieldKey === 'co_applicant_pin_code') {
     // "000000" is a placeholder PIN code
     if (value === '000000' || value === 0) return false;
   }
-  
+
   if (fieldKey === 'co_applicant_name') {
     // "Co-Applicant" is a placeholder name
     if (value === 'Co-Applicant') return false;
   }
-  
+
   if (fieldKey === 'co_applicant_salary') {
     // 0 is not a valid salary
     if (typeof value === 'number' && value === 0) return false;
   }
-  
+
   return true;
 }
 
@@ -466,18 +468,21 @@ export interface LeadCompletionResult {
  * This is the SINGLE SOURCE OF TRUTH used by tooltip and form
  */
 export function getLeadMissingFields(lead: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   student?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   co_applicant?: any;
   co_applicant_id?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }): LeadCompletionResult {
   const hasCoApp = hasValidCoApplicant(lead);
   const requiredFields = getRequiredFields(hasCoApp);
   const optionalFields = getOptionalFields(hasCoApp);
-  
+
   const missingRequired: MissingFieldResult[] = [];
   const missingOptional: MissingFieldResult[] = [];
-  
+
   // Check required fields
   for (const field of requiredFields) {
     const value = getNestedValue(lead, field.path);
@@ -492,7 +497,7 @@ export function getLeadMissingFields(lead: {
       });
     }
   }
-  
+
   // Check optional fields
   for (const field of optionalFields) {
     const value = getNestedValue(lead, field.path);
@@ -507,11 +512,11 @@ export function getLeadMissingFields(lead: {
       });
     }
   }
-  
+
   const totalFields = requiredFields.length + optionalFields.length;
   const filledFields = totalFields - missingRequired.length - missingOptional.length;
   const completenessScore = Math.round((filledFields / totalFields) * 100);
-  
+
   return {
     missingRequired,
     missingOptional,
@@ -543,9 +548,9 @@ export function getAllEditableFields(): LeadCompletionField[] {
     STUDENT_REQUIRED_FIELDS.find(f => f.key === 'student_postal_code')!,
     ...CO_APPLICANT_REQUIRED_FIELDS,
   ];
-  
+
   const editableOptional = OPTIONAL_FIELDS.filter(f => f.isEditable);
-  
+
   return [...editableRequired, ...editableOptional];
 }
 
@@ -584,10 +589,9 @@ export const OCCUPATION_OPTIONS = [
 ] as const;
 
 export const EMPLOYMENT_TYPE_OPTIONS = [
-  { value: 'full_time', label: 'Full-time' },
-  { value: 'part_time', label: 'Part-time' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'freelance', label: 'Freelance' },
+  { value: 'salaried', label: 'Salaried' },
+  { value: 'self_employed', label: 'Self-Employed' },
+  { value: 'business_owner', label: 'Business Owner' },
 ] as const;
 
 // Employer type options for conditional display based on occupation

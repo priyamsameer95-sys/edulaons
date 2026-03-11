@@ -1,0 +1,988 @@
+[
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\scripts\\audit-bre.ts",
+    "msgs": [
+      "73:34 Unexpected any. Specify a different type.",
+      "104:33 Unexpected any. Specify a different type.",
+      "147:33 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\AdminLeadEditModal.tsx",
+    "msgs": [
+      "480:45 Unexpected any. Specify a different type.",
+      "482:22 Unexpected any. Specify a different type.",
+      "499:42 Unexpected any. Specify a different type.",
+      "501:22 Unexpected any. Specify a different type.",
+      "523:43 Unexpected any. Specify a different type.",
+      "525:22 Unexpected any. Specify a different type.",
+      "660:99 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\AdminNewLeadModal.tsx",
+    "msgs": [
+      "249:26 Unexpected any. Specify a different type.",
+      "498:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\AdminNotificationBell.tsx",
+    "msgs": [
+      "28:29 Unexpected any. Specify a different type.",
+      "190:43 Unexpected any. Specify a different type.",
+      "203:112 Unexpected any. Specify a different type.",
+      "206:46 Unexpected any. Specify a different type.",
+      "236:43 Unexpected any. Specify a different type.",
+      "261:109 Unexpected any. Specify a different type.",
+      "264:53 Unexpected any. Specify a different type.",
+      "272:53 Unexpected any. Specify a different type.",
+      "273:36 Unexpected any. Specify a different type.",
+      "301:109 Unexpected any. Specify a different type.",
+      "304:53 Unexpected any. Specify a different type.",
+      "312:39 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\AuditLogViewer.tsx",
+    "msgs": [
+      "25:15 Unexpected any. Specify a different type.",
+      "26:15 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\CommandPalette.tsx",
+    "msgs": [
+      "95:39 Unexpected any. Specify a different type.",
+      "96:63 Unexpected any. Specify a different type.",
+      "103:53 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\CreateLenderModal.tsx",
+    "msgs": [
+      "114:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\CreateUserModal.tsx",
+    "msgs": [
+      "174:71 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\DocumentVerificationBadge.tsx",
+    "msgs": [
+      "27:23 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\DocumentVerificationModal.tsx",
+    "msgs": [
+      "39:13 Unexpected any. Specify a different type.",
+      "107:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\EditLenderModal.tsx",
+    "msgs": [
+      "213:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\EditPartnerModal.tsx",
+    "msgs": [
+      "85:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\EditUserModal.tsx",
+    "msgs": [
+      "42:20 Unexpected any. Specify a different type.",
+      "94:52 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\LenderDetailsSheet.tsx",
+    "msgs": [
+      "36:18 Unexpected any. Specify a different type.",
+      "37:23 Unexpected any. Specify a different type.",
+      "232:54 Unexpected any. Specify a different type.",
+      "250:59 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\LenderManagementTab.tsx",
+    "msgs": [
+      "36:17 Unexpected any. Specify a different type.",
+      "37:23 Unexpected any. Specify a different type.",
+      "38:22 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\LenderSelectionPanel.tsx",
+    "msgs": [
+      "93:23 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\LenderSelector.tsx",
+    "msgs": [
+      "75:54 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\RaiseClarificationModal.tsx",
+    "msgs": [
+      "233:89 Unexpected any. Specify a different type.",
+      "247:89 Unexpected any. Specify a different type.",
+      "266:79 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\StudentProfileSheet.tsx",
+    "msgs": [
+      "156:64 Unexpected any. Specify a different type.",
+      "157:58 Unexpected any. Specify a different type.",
+      "158:67 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\StudentUniversityProfile.tsx",
+    "msgs": [
+      "23:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\UniversityCourseImporter.tsx",
+    "msgs": [
+      "109:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\UserManagementTab.tsx",
+    "msgs": [
+      "76:13 Unexpected lexical declaration in case block.",
+      "242:67 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\dashboard\\AdminModalsManager.tsx",
+    "msgs": [
+      "31:21 Unexpected any. Specify a different type.",
+      "83:35 Unexpected any. Specify a different type.",
+      "91:51 Unexpected any. Specify a different type.",
+      "92:70 Unexpected any. Specify a different type.",
+      "130:31 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\dashboard\\AdminPartnersTab.tsx",
+    "msgs": [
+      "138:51 Unexpected any. Specify a different type.",
+      "139:38 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\dashboard\\lead-table\\LeadTableRow.tsx",
+    "msgs": [
+      "73:52 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\data\\UniversityBulkUpload.tsx",
+    "msgs": [
+      "28:11 Unexpected any. Specify a different type.",
+      "72:33 Unexpected any. Specify a different type.",
+      "74:26 Unexpected any. Specify a different type.",
+      "82:34 Unexpected any. Specify a different type.",
+      "131:47 Unexpected any. Specify a different type.",
+      "143:17 'upsertErrors' is never reassigned. Use 'const' instead.",
+      "197:21 Unexpected any. Specify a different type.",
+      "218:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\data\\UniversityManualEntry.tsx",
+    "msgs": [
+      "79:40 Unexpected any. Specify a different type.",
+      "86:40 Unexpected any. Specify a different type.",
+      "99:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lead-detail\\EnhancedStudyCard.tsx",
+    "msgs": [
+      "193:62 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lead-edit\\EditAdminTab.tsx",
+    "msgs": [
+      "8:32 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lead-edit\\EditCoApplicantTab.tsx",
+    "msgs": [
+      "8:15 Unexpected any. Specify a different type.",
+      "9:32 Unexpected any. Specify a different type.",
+      "183:31 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lead-edit\\EditStudentTab.tsx",
+    "msgs": [
+      "33:32 Unexpected any. Specify a different type.",
+      "279:31 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lead-edit\\EditStudyTab.tsx",
+    "msgs": [
+      "10:15 Unexpected any. Specify a different type.",
+      "11:32 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lender-config\\PremiumUniversitiesSection.tsx",
+    "msgs": [
+      "69:38 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\admin\\lender-config\\RankedUniversitiesSection.tsx",
+    "msgs": [
+      "101:38 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\common\\ErrorBoundaries.tsx",
+    "msgs": [
+      "8:39 Unexpected any. Specify a different type.",
+      "26:46 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\dashboard\\DocumentUploadSection.tsx",
+    "msgs": [
+      "43:9 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\dashboard\\LeadDetailSheet.tsx",
+    "msgs": [
+      "59:9 Unexpected any. Specify a different type.",
+      "134:21 Unexpected any. Specify a different type.",
+      "135:18 Unexpected any. Specify a different type.",
+      "155:25 Unexpected any. Specify a different type.",
+      "156:22 Unexpected any. Specify a different type.",
+      "185:41 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\dashboard\\NewLeadModal.tsx",
+    "msgs": [
+      "71:35 Unnecessary escape character: \\(.",
+      "71:37 Unnecessary escape character: \\).",
+      "115:35 Unnecessary escape character: \\(.",
+      "115:37 Unnecessary escape character: \\).",
+      "137:50 Unexpected any. Specify a different type.",
+      "328:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\lead-status\\StatusHistory.tsx",
+    "msgs": [
+      "29:9 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\partner\\AddNewLeadModal.tsx",
+    "msgs": [
+      "396:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\partner\\BulkUploadModal.tsx",
+    "msgs": [
+      "88:23 Unexpected any. Specify a different type.",
+      "170:44 Unexpected any. Specify a different type.",
+      "181:23 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\partner\\CompleteLeadModal.tsx",
+    "msgs": [
+      "150:58 Unexpected any. Specify a different type.",
+      "291:61 Unexpected any. Specify a different type.",
+      "307:58 Unexpected any. Specify a different type.",
+      "309:42 Unexpected any. Specify a different type.",
+      "340:17 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\partner\\EligibilityCheckModal.tsx",
+    "msgs": [
+      "408:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\partner\\PartnerLeadsTable.tsx",
+    "msgs": [
+      "50:19 Unexpected any. Specify a different type.",
+      "50:63 Unexpected any. Specify a different type.",
+      "68:26 Unexpected any. Specify a different type.",
+      "69:27 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\partner\\QuickLeadModal.tsx",
+    "msgs": [
+      "313:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\LenderComparisonGrid.tsx",
+    "msgs": [
+      "38:23 Unexpected any. Specify a different type.",
+      "54:27 Unexpected any. Specify a different type.",
+      "80:38 React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\LenderComparisonTable.tsx",
+    "msgs": [
+      "41:29 Unexpected any. Specify a different type.",
+      "43:25 Unexpected any. Specify a different type.",
+      "51:29 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\LenderFeaturedCard.tsx",
+    "msgs": [
+      "45:23 Unexpected any. Specify a different type.",
+      "65:27 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\LenderRowCard.tsx",
+    "msgs": [
+      "48:23 Unexpected any. Specify a different type.",
+      "68:27 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\PostSubmitDocumentUpload.tsx",
+    "msgs": [
+      "146:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\StudentApplicationFlow.tsx",
+    "msgs": [
+      "16:60 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\StudentDocumentChecklist.tsx",
+    "msgs": [
+      "139:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\student\\SuccessStep.tsx",
+    "msgs": [
+      "24:23 Unexpected any. Specify a different type.",
+      "49:70 Unexpected any. Specify a different type.",
+      "78:68 Unexpected any. Specify a different type.",
+      "79:73 Unexpected any. Specify a different type.",
+      "80:78 Unexpected any. Specify a different type.",
+      "85:56 Unexpected any. Specify a different type.",
+      "98:83 Unexpected any. Specify a different type.",
+      "99:32 Unexpected any. Specify a different type.",
+      "99:62 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\ui\\command.tsx",
+    "msgs": [
+      "24:11 An interface declaring no members is equivalent to its supertype."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\ui\\document-upload.tsx",
+    "msgs": [
+      "34:31 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\ui\\enhanced-document-upload.tsx",
+    "msgs": [
+      "40:31 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\ui\\input.tsx",
+    "msgs": [
+      "5:18 An interface declaring no members is equivalent to its supertype."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\ui\\lottie-animation.tsx",
+    "msgs": [
+      "21:56 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\components\\ui\\textarea.tsx",
+    "msgs": [
+      "5:18 An interface declaring no members is equivalent to its supertype."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\features\\leads\\components\\DocumentStep.tsx",
+    "msgs": [
+      "7:18 Unexpected any. Specify a different type.",
+      "20:44 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\features\\leads\\components\\LeadSteps.tsx",
+    "msgs": [
+      "7:18 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\features\\leads\\hooks\\useLeadForm.ts",
+    "msgs": [
+      "145:30 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\features\\leads\\hooks\\useLeadMutations.ts",
+    "msgs": [
+      "14:58 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\features\\leads\\hooks\\useLeadState.ts",
+    "msgs": [
+      "30:52 Unexpected any. Specify a different type.",
+      "34:60 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useAdminDashboard.ts",
+    "msgs": [
+      "34:21 Unexpected any. Specify a different type.",
+      "67:60 Unexpected any. Specify a different type.",
+      "212:33 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useBulkDocumentDownload.ts",
+    "msgs": [
+      "122:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useClarifications.ts",
+    "msgs": [
+      "77:19 Unexpected any. Specify a different type.",
+      "95:19 Unexpected any. Specify a different type.",
+      "149:19 Unexpected any. Specify a different type.",
+      "183:19 Unexpected any. Specify a different type.",
+      "218:19 Unexpected any. Specify a different type.",
+      "247:19 Unexpected any. Specify a different type.",
+      "273:44 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useDynamicDocuments.ts",
+    "msgs": [
+      "67:50 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useErrorHandler.ts",
+    "msgs": [
+      "39:74 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useFormValidation.ts",
+    "msgs": [
+      "24:60 Unexpected any. Specify a different type.",
+      "33:59 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useLeadDocuments.ts",
+    "msgs": [
+      "24:23 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useLeadStatusHistory.ts",
+    "msgs": [
+      "40:52 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useLenderConfig.ts",
+    "msgs": [
+      "38:18 Unexpected any. Specify a different type.",
+      "180:42 Unexpected any. Specify a different type.",
+      "181:44 Unexpected any. Specify a different type.",
+      "182:71 Unexpected any. Specify a different type.",
+      "183:49 Unexpected any. Specify a different type.",
+      "184:49 Unexpected any. Specify a different type.",
+      "194:21 Unexpected any. Specify a different type.",
+      "217:50 Unexpected any. Specify a different type.",
+      "218:52 Unexpected any. Specify a different type.",
+      "219:78 Unexpected any. Specify a different type.",
+      "220:56 Unexpected any. Specify a different type.",
+      "221:56 Unexpected any. Specify a different type.",
+      "234:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useLenderRecommendationTrigger.ts",
+    "msgs": [
+      "104:63 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\usePartnerPaginatedLeads.ts",
+    "msgs": [
+      "78:86 Unexpected any. Specify a different type.",
+      "80:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useRefactoredLeads.ts",
+    "msgs": [
+      "57:36 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useStatusManager.ts",
+    "msgs": [
+      "63:12 Unexpected any. Specify a different type.",
+      "82:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useStudentApplication.ts",
+    "msgs": [
+      "41:9 Unexpected any. Specify a different type.",
+      "42:12 Unexpected any. Specify a different type.",
+      "43:16 Unexpected any. Specify a different type.",
+      "155:13 'userEmail' is never reassigned. Use 'const' instead.",
+      "536:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useStudentProfile.ts",
+    "msgs": [
+      "13:9 Unexpected any. Specify a different type.",
+      "22:25 Unexpected any. Specify a different type.",
+      "23:22 Unexpected any. Specify a different type.",
+      "24:27 Unexpected any. Specify a different type.",
+      "93:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useTableFilters.ts",
+    "msgs": [
+      "3:35 Unexpected any. Specify a different type.",
+      "5:44 Unexpected any. Specify a different type.",
+      "10:69 Unexpected any. Specify a different type.",
+      "16:32 Unexpected any. Specify a different type.",
+      "30:42 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useUniversities.ts",
+    "msgs": [
+      "52:37 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useUniversitySelection.ts",
+    "msgs": [
+      "71:37 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\hooks\\useUserManagement.ts",
+    "msgs": [
+      "57:21 Unexpected any. Specify a different type.",
+      "81:21 Unexpected any. Specify a different type.",
+      "115:21 Unexpected any. Specify a different type.",
+      "156:21 Unexpected any. Specify a different type.",
+      "190:21 Unexpected any. Specify a different type.",
+      "224:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\pages\\PartnerDashboard.tsx",
+    "msgs": [
+      "157:60 Unexpected any. Specify a different type.",
+      "199:60 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\pages\\SystemTestPage.tsx",
+    "msgs": [
+      "11:15 Unexpected any. Specify a different type.",
+      "22:99 Unexpected any. Specify a different type.",
+      "49:18 Unexpected any. Specify a different type.",
+      "72:21 Unexpected any. Specify a different type.",
+      "95:18 Unexpected any. Specify a different type.",
+      "115:21 Unexpected any. Specify a different type.",
+      "129:42 Unexpected any. Specify a different type.",
+      "134:21 Unexpected any. Specify a different type.",
+      "143:52 Unexpected any. Specify a different type.",
+      "150:51 Unexpected any. Specify a different type.",
+      "159:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\pages\\student\\StudentAuth.tsx",
+    "msgs": [
+      "350:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\pages\\student\\StudentDashboard.tsx",
+    "msgs": [
+      "93:84 Unexpected any. Specify a different type.",
+      "336:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\pages\\student\\StudentLanding.tsx",
+    "msgs": [
+      "202:21 Unexpected any. Specify a different type.",
+      "262:21 Unexpected any. Specify a different type.",
+      "359:19 Unexpected any. Specify a different type.",
+      "363:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\scripts\\importData.ts",
+    "msgs": [
+      "96:12 Unexpected any. Specify a different type.",
+      "97:12 Unexpected any. Specify a different type.",
+      "98:12 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\test\\admin-e2e.test.ts",
+    "msgs": [
+      "56:44 Unexpected any. Specify a different type.",
+      "140:39 Unexpected any. Specify a different type.",
+      "140:50 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\test\\partner-combobox-regression.test.tsx",
+    "msgs": [
+      "7:48 Unexpected any. Specify a different type.",
+      "13:29 Unexpected any. Specify a different type.",
+      "14:34 Unexpected any. Specify a different type.",
+      "15:43 Unexpected any. Specify a different type.",
+      "16:56 Unexpected any. Specify a different type.",
+      "19:50 Unexpected any. Specify a different type.",
+      "22:33 Unexpected any. Specify a different type.",
+      "26:35 Unexpected any. Specify a different type.",
+      "27:45 Unexpected any. Specify a different type.",
+      "28:36 Unexpected any. Specify a different type.",
+      "38:22 Unexpected any. Specify a different type.",
+      "73:44 Unexpected any. Specify a different type.",
+      "87:40 Unexpected any. Specify a different type.",
+      "102:40 Unexpected any. Specify a different type.",
+      "119:39 Unexpected any. Specify a different type.",
+      "189:40 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\types\\refactored-lead.ts",
+    "msgs": [
+      "157:19 Unexpected any. Specify a different type.",
+      "158:14 Unexpected any. Specify a different type.",
+      "159:13 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\types\\selection.ts",
+    "msgs": [
+      "32:29 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\apiErrors.ts",
+    "msgs": [
+      "88:29 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\dataImport.ts",
+    "msgs": [
+      "168:25 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\downloadLeadPackage.ts",
+    "msgs": [
+      "161:17 Unexpected any. Specify a different type.",
+      "162:14 Unexpected any. Specify a different type.",
+      "179:69 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\errorMessages.ts",
+    "msgs": [
+      "125:63 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\excelParser.ts",
+    "msgs": [
+      "147:84 Unexpected any. Specify a different type.",
+      "155:56 Unexpected any. Specify a different type.",
+      "191:24 Unexpected any. Specify a different type.",
+      "196:35 Unexpected any. Specify a different type.",
+      "258:29 Unexpected any. Specify a different type.",
+      "263:28 Unexpected any. Specify a different type.",
+      "268:29 Unexpected any. Specify a different type.",
+      "275:28 Unexpected any. Specify a different type.",
+      "287:27 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\leadCompleteness.ts",
+    "msgs": [
+      "62:13 Unexpected any. Specify a different type.",
+      "63:18 Unexpected any. Specify a different type.",
+      "96:72 Unexpected any. Specify a different type.",
+      "96:92 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\leadCompletionSchema.ts",
+    "msgs": [
+      "405:30 Unexpected any. Specify a different type.",
+      "405:50 Unexpected any. Specify a different type.",
+      "422:31 Unexpected any. Specify a different type.",
+      "469:13 Unexpected any. Specify a different type.",
+      "470:18 Unexpected any. Specify a different type.",
+      "472:18 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\logger.ts",
+    "msgs": [
+      "9:19 Unexpected any. Specify a different type.",
+      "14:19 Unexpected any. Specify a different type.",
+      "18:20 Unexpected any. Specify a different type.",
+      "23:20 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\rolePermissions.ts",
+    "msgs": [
+      "25:63 Unexpected any. Specify a different type.",
+      "40:66 Unexpected any. Specify a different type.",
+      "60:59 Unexpected any. Specify a different type.",
+      "65:62 Unexpected any. Specify a different type.",
+      "78:66 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\seo.ts",
+    "msgs": [
+      "29:107 Unexpected any. Specify a different type.",
+      "53:47 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\studentApplicationHelpers.ts",
+    "msgs": [
+      "43:47 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\src\\utils\\validation.ts",
+    "msgs": [
+      "146:35 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\_shared\\validation.ts",
+    "msgs": [
+      "90:11 Unexpected any. Specify a different type.",
+      "105:36 Unexpected any. Specify a different type.",
+      "149:38 Unexpected any. Specify a different type.",
+      "180:42 Unexpected any. Specify a different type.",
+      "202:38 Unexpected any. Specify a different type.",
+      "236:44 Unexpected any. Specify a different type.",
+      "276:40 Unexpected any. Specify a different type.",
+      "317:39 Unexpected any. Specify a different type.",
+      "317:50 Unexpected any. Specify a different type.",
+      "393:52 Unexpected any. Specify a different type.",
+      "589:42 Unexpected any. Specify a different type.",
+      "613:44 Unexpected any. Specify a different type.",
+      "635:43 Unexpected any. Specify a different type.",
+      "669:37 Unexpected any. Specify a different type.",
+      "705:10 Unexpected any. Specify a different type.",
+      "753:43 Unexpected any. Specify a different type.",
+      "797:47 Unexpected any. Specify a different type.",
+      "822:43 Unexpected any. Specify a different type.",
+      "851:43 Unexpected any. Specify a different type.",
+      "882:49 Unexpected any. Specify a different type.",
+      "909:50 Unexpected any. Specify a different type.",
+      "963:48 Unexpected any. Specify a different type.",
+      "1008:52 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\bulk-create-leads\\index.ts",
+    "msgs": [
+      "175:27 Unexpected any. Specify a different type.",
+      "192:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\create-lead-quick\\index.ts",
+    "msgs": [
+      "360:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\create-lead-student\\index.ts",
+    "msgs": [
+      "43:12 Unexpected any. Specify a different type.",
+      "46:27 Unexpected any. Specify a different type.",
+      "72:76 Unexpected any. Specify a different type.",
+      "73:81 Unexpected any. Specify a different type.",
+      "74:86 Unexpected any. Specify a different type.",
+      "75:80 Unexpected any. Specify a different type.",
+      "82:52 Unexpected any. Specify a different type.",
+      "99:64 Unexpected any. Specify a different type.",
+      "100:28 Unexpected any. Specify a different type.",
+      "100:58 Unexpected any. Specify a different type.",
+      "154:21 Unexpected any. Specify a different type.",
+      "175:58 Unexpected any. Specify a different type.",
+      "306:23 Unexpected any. Specify a different type.",
+      "545:31 Unexpected any. Specify a different type.",
+      "607:31 Unexpected any. Specify a different type.",
+      "647:31 Unexpected any. Specify a different type.",
+      "943:29 Unexpected any. Specify a different type.",
+      "981:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\create-lead\\database.ts",
+    "msgs": [
+      "32:60 Unexpected any. Specify a different type.",
+      "133:9 Unexpected any. Specify a different type.",
+      "134:12 Unexpected any. Specify a different type.",
+      "222:9 Unexpected any. Specify a different type.",
+      "223:12 Unexpected any. Specify a different type.",
+      "262:12 Unexpected any. Specify a different type.",
+      "317:9 Unexpected any. Specify a different type.",
+      "318:12 Unexpected any. Specify a different type.",
+      "355:10 Unexpected any. Specify a different type.",
+      "359:40 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\create-lead\\index.ts",
+    "msgs": [
+      "152:29 Unexpected any. Specify a different type.",
+      "178:68 Unexpected any. Specify a different type.",
+      "196:24 Unexpected any. Specify a different type.",
+      "211:54 Unexpected any. Specify a different type.",
+      "246:13 Unexpected any. Specify a different type.",
+      "294:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\create-lead\\validation.ts",
+    "msgs": [
+      "49:46 Unexpected any. Specify a different type.",
+      "75:40 Unexpected any. Specify a different type.",
+      "82:39 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\data-sanity-check\\index.ts",
+    "msgs": [
+      "12:13 Unexpected any. Specify a different type.",
+      "59:50 Unexpected any. Specify a different type.",
+      "65:53 Unexpected any. Specify a different type.",
+      "225:57 Unexpected any. Specify a different type.",
+      "250:54 Unexpected any. Specify a different type.",
+      "278:26 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\import-university-courses\\index.ts",
+    "msgs": [
+      "50:17 Unexpected any. Specify a different type.",
+      "71:35 Unexpected any. Specify a different type.",
+      "79:43 Unexpected any. Specify a different type.",
+      "223:28 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\manage-user\\index.ts",
+    "msgs": [
+      "10:35 Unexpected any. Specify a different type.",
+      "10:142 Unexpected any. Specify a different type.",
+      "10:158 Unexpected any. Specify a different type.",
+      "39:20 Unexpected any. Specify a different type.",
+      "40:24 Unexpected any. Specify a different type.",
+      "259:22 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\suggest-lender\\index.ts",
+    "msgs": [
+      "221:11 Unexpected any. Specify a different type.",
+      "290:11 Unexpected any. Specify a different type.",
+      "382:46 Unexpected any. Specify a different type.",
+      "383:53 Unexpected any. Specify a different type.",
+      "671:19 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\update-lead-lender\\index.ts",
+    "msgs": [
+      "86:24 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\verify-document-ai\\index.ts",
+    "msgs": [
+      "217:21 Unexpected any. Specify a different type."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\supabase\\functions\\verify-student-otp\\index.ts",
+    "msgs": [
+      "39:42 Unnecessary escape character: \\(.",
+      "39:44 Unnecessary escape character: \\).",
+      "39:46 Unnecessary escape character: \\+."
+    ]
+  },
+  {
+    "file": "D:\\OneDrive - Pouring Pounds India Pvt. Ltd\\Documents\\el anti\\tailwind.config.ts",
+    "msgs": [
+      "182:13 A `require()` style import is forbidden."
+    ]
+  }
+]

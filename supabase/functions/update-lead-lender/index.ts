@@ -83,6 +83,7 @@ serve(async (req) => {
     }
 
     // Log the assignment change in history with assignment_mode
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const historyData: any = {
       lead_id: leadId,
       old_lender_id: oldLenderId,

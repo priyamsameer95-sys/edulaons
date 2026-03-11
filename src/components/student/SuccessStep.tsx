@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import LenderComparisonGrid from './LenderComparisonGrid';
 import { ConfettiAnimation } from './ConfettiAnimation';
 import { LottieAnimation } from '@/components/ui/lottie-animation';
+import { UrgencyZoneBadge } from '@/components/shared/UrgencyZoneBadge';
 
 interface LenderData {
   lender_id: string;
@@ -20,6 +21,7 @@ interface LenderData {
   loan_amount_max: number | null;
   processing_time_days: number | null;
   approval_rate?: number | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eligible_expenses?: any[] | null;
   compatibility_score: number;
   is_preferred?: boolean;
@@ -45,6 +47,7 @@ const SuccessStep = ({
   const [selectedLenderId, setSelectedLenderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [recommendedLenders, setRecommendedLenders] = useState<LenderData[]>(initialLenders);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [recommendationContext, setRecommendationContext] = useState<any>(null);
   const [isLoadingLenders, setIsLoadingLenders] = useState(false);
 
@@ -74,13 +77,17 @@ const SuccessStep = ({
           if (data.grouped_evaluations) {
             // Merge all groups into one list
             const allEvaluations = [
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...(data.grouped_evaluations.best_fit || []).map((e: any) => ({ ...e, fit_group: 'best_fit' })),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...(data.grouped_evaluations.also_consider || []).map((e: any) => ({ ...e, fit_group: 'also_consider' })),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...(data.grouped_evaluations.possible_but_risky || []).map((e: any) => ({ ...e, fit_group: 'possible_but_risky' })),
             ];
 
             if (allEvaluations.length > 0) {
               // Fetch full lender details
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const lenderIds = allEvaluations.map((e: any) => e.lender_id);
 
               const { data: lenderDetails } = await supabase
@@ -94,7 +101,9 @@ const SuccessStep = ({
                 .in('id', lenderIds);
 
               // Merge AI scores with lender details
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const mergedLenders: LenderData[] = allEvaluations.map((evalResult: any) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const details: any = lenderDetails?.find((l: any) => l.id === evalResult.lender_id) || {};
                 return {
                   lender_id: evalResult.lender_id,
@@ -178,29 +187,39 @@ const SuccessStep = ({
       {/* Confetti Animation */}
       {showConfetti && <ConfettiAnimation />}
 
-      {/* Success Header */}
-      <div className="text-center space-y-4 relative pt-6">
-        {/* Background Celebration Lottie */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 opacity-70">
-          <LottieAnimation
-            animationUrl="https://assets10.lottiefiles.com/packages/lf20_u4yrau.json"
-            className="w-[500px] h-[500px]"
-            loop={false}
-          />
-        </div>
+      {/* Professional Success Header */}
+      <div className="space-y-6 relative pt-4">
+        <div className="text-center max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full text-primary text-xs font-bold uppercase tracking-wider mb-4 border border-primary/20">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Analysis Complete
+          </div>
 
-        <div className="space-y-2 relative z-0">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
-            Woohoo! Great job, {firstName}!
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-2">
+            We found <span className="text-primary">{recommendedLenders.length} offers</span> for your profile
           </h2>
-          <p className="text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            We’ve analyzed your profile and found these <span className="text-foreground font-semibold">top lenders</span> for you.
+
+          <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+            Our AI analyzed your university tier, income potential, and timeline to curate these top options.
           </p>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 rounded-full border border-blue-100 shadow-sm mt-2">
-            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Case ID</span>
-            <span className="font-mono font-bold text-blue-700">{caseId}</span>
+
+          <div className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 px-3 py-1.5 rounded-md border">
+            <span className="font-semibold">Case ID:</span>
+            <span className="font-mono">{caseId}</span>
           </div>
         </div>
+
+        {/* Urgency Zone Warning */}
+        {recommendationContext?.urgency_zone && recommendationContext?.urgency_zone !== 'GREEN' && (
+          <div className="flex justify-center">
+            <UrgencyZoneBadge
+              zone={recommendationContext.urgency_zone}
+              daysUntil={recommendationContext.days_until_deadline}
+              size="lg"
+              className="shadow-sm"
+            />
+          </div>
+        )}
       </div>
 
       {/* Loading Lenders State */}

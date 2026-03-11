@@ -78,6 +78,7 @@ export function useAuditLog() {
     } catch (err) {
       console.error('Error in logFieldChange:', err);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, appUser, changedByType]);
 
   /**
@@ -110,6 +111,7 @@ export function useAuditLog() {
     } catch (err) {
       console.error('Error in logFieldChanges:', err);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, appUser, changedByType]);
 
   /**

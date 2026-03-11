@@ -30,6 +30,7 @@ interface FormData {
 
 interface EditStudentTabProps {
     formData: FormData;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handleInputChange: (field: any, value: string) => void;
     GENDER_OPTIONS: { value: string; label: string }[];
 }
@@ -49,11 +50,12 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="student_name">Full Name</Label>
+                        <Label htmlFor="student_name">Full Name <span className="text-red-500">*</span></Label>
                         <Input
                             id="student_name"
                             value={formData.student_name}
                             onChange={(e) => handleInputChange('student_name', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
@@ -63,15 +65,27 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             type="email"
                             value={formData.student_email}
                             onChange={(e) => handleInputChange('student_email', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="student_phone">Phone</Label>
-                        <Input
-                            id="student_phone"
-                            value={formData.student_phone}
-                            onChange={(e) => handleInputChange('student_phone', e.target.value)}
-                        />
+                        <Label htmlFor="student_phone">Phone <span className="text-red-500">*</span></Label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                                +91
+                            </span>
+                            <Input
+                                id="student_phone"
+                                value={formData.student_phone}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                    handleInputChange('student_phone', val);
+                                }}
+                                className="h-11 shadow-sm pl-11"
+                                placeholder="9876543210"
+                                maxLength={10}
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2 flex flex-col">
                         <Label htmlFor="student_date_of_birth">Date of Birth</Label>
@@ -80,7 +94,7 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             setDate={(date) => handleInputChange('student_date_of_birth', date ? date.toISOString().split('T')[0] : "")}
                             placeholder="Select Date of Birth"
                             fromYear={1960}
-                            toYear={new Date().getFullYear()}
+                            toYear={new Date().getFullYear() - 15}
                         />
                     </div>
                     <div className="space-y-2">
@@ -89,7 +103,7 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             value={formData.student_gender}
                             onValueChange={(value) => handleInputChange('student_gender', value)}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-11 shadow-sm">
                                 <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                             <SelectContent>
@@ -103,11 +117,20 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="student_nationality">Nationality</Label>
-                        <Input
-                            id="student_nationality"
+                        <Select
                             value={formData.student_nationality}
-                            onChange={(e) => handleInputChange('student_nationality', e.target.value)}
-                        />
+                            onValueChange={(value) => handleInputChange('student_nationality', value)}
+                        >
+                            <SelectTrigger className="h-11 shadow-sm">
+                                <SelectValue placeholder="Select nationality" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Indian">Indian</SelectItem>
+                                <SelectItem value="NRI">NRI (Non-Resident Indian)</SelectItem>
+                                <SelectItem value="OCI">OCI Card Holder</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardContent>
             </Card>
@@ -126,14 +149,16 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             id="student_street_address"
                             value={formData.student_street_address}
                             onChange={(e) => handleInputChange('student_street_address', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="student_postal_code">Postal Code</Label>
+                        <Label htmlFor="student_postal_code">Postal Code <span className="text-red-500">*</span></Label>
                         <Input
                             id="student_postal_code"
                             value={formData.student_postal_code}
                             onChange={(e) => handleInputChange('student_postal_code', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
@@ -142,6 +167,7 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             id="student_city"
                             value={formData.student_city}
                             onChange={(e) => handleInputChange('student_city', e.target.value)}
+                            className="h-11 shadow-sm"
                         />
                     </div>
                     <div className="space-y-2">
@@ -150,7 +176,7 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             value={formData.student_state}
                             onValueChange={(value) => handleInputChange('student_state', value)}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-11 shadow-sm">
                                 <SelectValue placeholder="Select state" />
                             </SelectTrigger>
                             <SelectContent>
@@ -196,10 +222,12 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             <Label htmlFor="student_credit_score">CIBIL Score (Optional)</Label>
                             <Input
                                 id="student_credit_score"
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 value={formData.student_credit_score}
                                 onChange={(e) => handleInputChange('student_credit_score', e.target.value)}
                                 placeholder="e.g 750"
+                                className="h-11 shadow-sm"
                             />
                         </div>
                     </div>
@@ -209,28 +237,36 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
                             <Label htmlFor="student_tenth_percentage">10th %</Label>
                             <Input
                                 id="student_tenth_percentage"
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 value={formData.student_tenth_percentage}
                                 onChange={(e) => handleInputChange('student_tenth_percentage', e.target.value)}
+                                placeholder="e.g. 85"
+                                className="h-11 shadow-sm"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="student_twelfth_percentage">12th %</Label>
                             <Input
                                 id="student_twelfth_percentage"
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 value={formData.student_twelfth_percentage}
                                 onChange={(e) => handleInputChange('student_twelfth_percentage', e.target.value)}
+                                placeholder="e.g. 78"
+                                className="h-11 shadow-sm"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="student_bachelors_cgpa">Bachelors CGPA</Label>
                             <Input
                                 id="student_bachelors_cgpa"
-                                type="number"
-                                step="0.1"
+                                type="text"
+                                inputMode="decimal"
                                 value={formData.student_bachelors_cgpa}
                                 onChange={(e) => handleInputChange('student_bachelors_cgpa', e.target.value)}
+                                placeholder="e.g. 8.5"
+                                className="h-11 shadow-sm"
                             />
                         </div>
                     </div>
@@ -241,6 +277,7 @@ export const EditStudentTab = ({ formData, handleInputChange, GENDER_OPTIONS }: 
 };
 
 // Helper Icon
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Building2Icon(props: any) {
     return (
         <svg

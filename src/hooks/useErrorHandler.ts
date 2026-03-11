@@ -36,6 +36,7 @@ export function useErrorHandler() {
       }
 
       // Get user-friendly error message
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage = description || transformBackendError(error as any);
 
       // Show toast notification

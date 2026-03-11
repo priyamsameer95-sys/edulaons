@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { getCountryNameFromCode } from "@/utils/countryMapping";
+import { getCountryNameFromCode, getCountrySearchTerms } from "@/utils/countryMapping";
 import { University, isValidUUID } from "@/types/selection";
 
 interface UseUniversitySelectionOptions {
@@ -13,14 +13,14 @@ interface UseUniversitySelectionReturn {
   // Data
   universities: University[];
   totalCount: number;
-  
+
   // State
   loading: boolean;
   error: string | null;
   selectedUniversity: University | null;
   inputValue: string;
   isCustom: boolean;
-  
+
   // Actions
   setInputValue: (value: string) => void;
   selectUniversity: (university: University) => void;
@@ -35,7 +35,7 @@ export function useUniversitySelection({
   initialValue,
 }: UseUniversitySelectionOptions): UseUniversitySelectionReturn {
   const countryName = country ? getCountryNameFromCode(country) : '';
-  
+
   const [inputValue, setInputValue] = useState('');
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [isCustom, setIsCustom] = useState(false);
@@ -44,15 +44,31 @@ export function useUniversitySelection({
   const { data: universities = [], isLoading, error, refetch } = useQuery({
     queryKey: ['universities', countryName],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Get primary search term (e.g. "Australia", "United States")
+      const primaryTerm = getCountryNameFromCode(country);
+
+      // 2. Build a robust query using mapped search terms
+      const searchTerms = getCountrySearchTerms(country);
+
+      let query = supabase
         .from('universities')
-        .select('*')
-        .eq('country', countryName)
+        .select('*');
+
+      if (searchTerms.length > 0) {
+        // Use .in() for exact matching against known variations (safer than complex OR strings)
+        query = query.in('country', searchTerms);
+      } else {
+        // Fallback for unmapped countries
+        query = query.ilike('country', `%${primaryTerm}%`);
+      }
+
+      const { data, error } = await query
         .order('global_rank', { ascending: true, nullsFirst: false })
         .limit(1000);
 
       if (error) throw new Error(error.message);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (data || []).map((uni: any): University => ({
         id: uni.id,
         name: uni.name,
@@ -69,13 +85,28 @@ export function useUniversitySelection({
   });
 
   // Sort universities (popular first, then by rank, then alphabetically)
+  // Helper to parse rank for sorting
+  const parseRank = (rank: string | number | null): number => {
+    if (typeof rank === 'number') return rank;
+    if (!rank) return 999999;
+    // Extract first number from string (e.g. "701-800" -> 701)
+    const match = String(rank).match(/\d+/);
+    return match ? parseInt(match[0], 10) : 999999;
+  };
+
+  // Sort universities (popular first, then by rank, then alphabetically)
   const sortedUniversities = useMemo(() => {
     return [...universities].sort((a, b) => {
+      // 1. Popularity
       if (a.popular && !b.popular) return -1;
       if (!a.popular && b.popular) return 1;
-      if (a.qs_rank && b.qs_rank) return a.qs_rank - b.qs_rank;
-      if (a.qs_rank && !b.qs_rank) return -1;
-      if (!a.qs_rank && b.qs_rank) return 1;
+
+      // 2. Rank (ascending)
+      const rankA = parseRank(a.qs_rank);
+      const rankB = parseRank(b.qs_rank);
+      if (rankA !== rankB) return rankA - rankB;
+
+      // 3. Alphabetical
       return a.name.localeCompare(b.name);
     });
   }, [universities]);
@@ -116,7 +147,7 @@ export function useUniversitySelection({
   // Search function
   const searchUniversities = useCallback((query: string): University[] => {
     if (!query.trim()) return sortedUniversities;
-    
+
     const searchTerm = query.toLowerCase().trim();
     return sortedUniversities.filter(uni =>
       uni.name.toLowerCase().includes(searchTerm) ||

@@ -48,6 +48,7 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
     if (savedData && Object.keys(savedData).length > 0) {
       onUpdate(savedData);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totalSteps = TOTAL_STEPS;
@@ -152,11 +153,16 @@ const ConversationalForm = ({ data, onUpdate, onSubmit, isSubmitting }: Conversa
             </div>
           </div>
 
-          {/* Simple Step Indicator */}
+          {/* Simple Step Indicator with Time Estimate */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Step {currentStep} of {totalSteps}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Step {currentStep} of {totalSteps}
+              </span>
+              <span className="text-xs text-muted-foreground/70 hidden sm:inline">
+                • ~{totalSteps - currentStep + 1} min left
+              </span>
+            </div>
             <div className="flex-1 mx-4 h-1 bg-muted rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-primary rounded-full"

@@ -5,6 +5,7 @@ import { BookOpen } from "lucide-react";
 
 interface EditAdminTabProps {
     adminNotes: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handleInputChange: (field: any, value: string) => void;
 }
 

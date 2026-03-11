@@ -45,6 +45,7 @@ interface LenderData {
   compatibility_score: number;
   eligible_loan_max?: number | null;
   student_facing_reason?: StudentFacingReason | string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eligible_expenses?: any[] | null;
   moratorium_period?: string | null;
   processing_fee?: number | null;
@@ -65,6 +66,7 @@ interface LenderRowCardProps {
   isUpdating: boolean;
   marketRate?: number;
   lowestRate?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recommendationContext?: any;
 }
 

@@ -40,13 +40,13 @@ export const ERROR_COPY = {
   EMAIL_PROTECTED: 'This email is reserved for system use and cannot be used.',
   PARTNER_CODE_EXISTS: 'This partner code already exists. Please choose a different code.',
   DUPLICATE_APPLICATION: 'You already have an active application for this intake and destination.',
-  
+
   // Permission errors (Red)
   NO_PERMISSION: 'You do not have permission to perform this action.',
   UNAUTHORIZED: 'Please log in to continue.',
   SESSION_EXPIRED: 'Your session has expired. Please log in again.',
   ACCOUNT_INACTIVE: 'Your account is inactive. Please contact support.',
-  
+
   // Validation errors (Amber)
   REQUIRED_FIELD: 'This field cannot be empty.',
   INVALID_EMAIL: 'Please enter a valid email address.',
@@ -55,12 +55,12 @@ export const ERROR_COPY = {
   WEAK_PASSWORD: 'Password must be at least 8 characters long.',
   INVALID_PARTNER_CODE: 'Partner code must contain only lowercase letters and numbers.',
   MISSING_FIELDS: 'Please fill in all required fields.',
-  
+
   // Network/Server errors (Red)
   NETWORK_ERROR: 'Unable to connect. Please check your internet connection.',
   SERVER_ERROR: 'Something went wrong. Please try again later.',
   TIMEOUT_ERROR: 'Request timed out. Please try again.',
-  
+
   // Generic
   UNKNOWN_ERROR: 'An unexpected error occurred. Please try again.',
 } as const;
@@ -81,21 +81,29 @@ export function parseApiError(error: unknown): ApiError {
   if (typeof error === 'string') {
     return mapErrorMessage(error);
   }
-  
+
   if (error instanceof Error) {
+    // Supabase FunctionsHttpError puts the response body in 'context'
+    // We try to extract that first before falling back to the generic message
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errAny = error as any;
+    if (errAny.context && typeof errAny.context === 'object') {
+      const ctxMsg = extractErrorMessage({ context: errAny.context });
+      if (ctxMsg) return mapErrorMessage(ctxMsg);
+    }
     return mapErrorMessage(error.message);
   }
-  
+
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>;
-    
+
     // Try to extract nested error message from various structures
     const message = extractErrorMessage(err);
     if (message) {
       return mapErrorMessage(message);
     }
   }
-  
+
   return {
     type: 'unknown',
     message: ERROR_COPY.UNKNOWN_ERROR,
@@ -113,7 +121,7 @@ function extractErrorMessage(obj: Record<string, unknown>): string | null {
       return obj[prop] as string;
     }
   }
-  
+
   // Nested error object
   if (typeof obj.error === 'object' && obj.error !== null) {
     const nestedError = obj.error as Record<string, unknown>;
@@ -123,7 +131,7 @@ function extractErrorMessage(obj: Record<string, unknown>): string | null {
       }
     }
   }
-  
+
   // Context object (Supabase FunctionsHttpError structure)
   if (typeof obj.context === 'object' && obj.context !== null) {
     const context = obj.context as Record<string, unknown>;
@@ -131,7 +139,7 @@ function extractErrorMessage(obj: Record<string, unknown>): string | null {
       return context.error;
     }
   }
-  
+
   return null;
 }
 
@@ -140,7 +148,7 @@ function extractErrorMessage(obj: Record<string, unknown>): string | null {
  */
 function mapErrorMessage(rawMessage: string): ApiError {
   const msg = rawMessage.toLowerCase();
-  
+
   // Email exists with specific role - check for role-specific patterns first
   if (msg.includes('as student') || (msg.includes('student') && msg.includes('email'))) {
     return {
@@ -150,7 +158,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'EMAIL_EXISTS_AS_STUDENT',
     };
   }
-  
+
   if (msg.includes('as partner') || (msg.includes('partner') && msg.includes('email') && msg.includes('exists'))) {
     return {
       type: 'duplicate',
@@ -159,7 +167,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'EMAIL_EXISTS_AS_PARTNER',
     };
   }
-  
+
   if (msg.includes('as admin') || (msg.includes('admin') && msg.includes('email') && msg.includes('exists'))) {
     return {
       type: 'duplicate',
@@ -168,7 +176,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'EMAIL_EXISTS_AS_ADMIN',
     };
   }
-  
+
   // Protected/reserved email
   if (msg.includes('reserved') || msg.includes('protected')) {
     return {
@@ -178,7 +186,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'EMAIL_PROTECTED',
     };
   }
-  
+
   // Generic email exists patterns
   if (
     msg.includes('email already exists') ||
@@ -194,7 +202,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'EMAIL_EXISTS',
     };
   }
-  
+
   // Partner code exists
   if (msg.includes('partner code already exists') || msg.includes('code already exists')) {
     return {
@@ -204,7 +212,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'PARTNER_CODE_EXISTS',
     };
   }
-  
+
   // Duplicate application
   if (msg.includes('already have an active application') || msg.includes('duplicate application')) {
     return {
@@ -213,7 +221,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'DUPLICATE_APPLICATION',
     };
   }
-  
+
   // Permission errors
   if (msg.includes('permission') || msg.includes('not authorized') || msg.includes('forbidden')) {
     return {
@@ -222,7 +230,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'NO_PERMISSION',
     };
   }
-  
+
   if (msg.includes('unauthorized') || msg.includes('must be logged in')) {
     return {
       type: 'permission',
@@ -230,7 +238,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'UNAUTHORIZED',
     };
   }
-  
+
   if (msg.includes('inactive') || msg.includes('deactivated')) {
     return {
       type: 'permission',
@@ -238,7 +246,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'ACCOUNT_INACTIVE',
     };
   }
-  
+
   // Validation errors
   if (msg.includes('missing') && msg.includes('field')) {
     return {
@@ -247,7 +255,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'MISSING_FIELDS',
     };
   }
-  
+
   if (msg.includes('invalid email') || msg.includes('email format')) {
     return {
       type: 'validation',
@@ -256,7 +264,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'INVALID_EMAIL',
     };
   }
-  
+
   if (msg.includes('password') && (msg.includes('weak') || msg.includes('8 character') || msg.includes('too short'))) {
     return {
       type: 'validation',
@@ -265,7 +273,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'WEAK_PASSWORD',
     };
   }
-  
+
   // Network errors
   if (msg.includes('network') || msg.includes('fetch') || msg.includes('connection')) {
     return {
@@ -274,7 +282,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'NETWORK_ERROR',
     };
   }
-  
+
   if (msg.includes('timeout')) {
     return {
       type: 'network',
@@ -282,7 +290,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'TIMEOUT_ERROR',
     };
   }
-  
+
   // Server errors
   if (msg.includes('internal server') || msg.includes('500')) {
     return {
@@ -291,7 +299,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       code: 'SERVER_ERROR',
     };
   }
-  
+
   // If message is already user-friendly (starts with capital, no technical jargon), use it
   if (/^[A-Z]/.test(rawMessage) && !msg.includes('error:') && rawMessage.length < 150) {
     return {
@@ -299,7 +307,7 @@ function mapErrorMessage(rawMessage: string): ApiError {
       message: rawMessage,
     };
   }
-  
+
   // Default
   return {
     type: 'unknown',

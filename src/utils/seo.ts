@@ -26,6 +26,7 @@ export const pageSEO = {
   },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function generateStructuredData(type: 'WebApplication' | 'Organization' | 'BreadcrumbList', data?: any) {
   const schemas = {
     WebApplication: {
@@ -50,6 +51,7 @@ export function generateStructuredData(type: 'WebApplication' | 'Organization' |
     BreadcrumbList: data ? {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       itemListElement: data.items?.map((item: any, index: number) => ({
         '@type': 'ListItem',
         position: index + 1,

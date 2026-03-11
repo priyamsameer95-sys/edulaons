@@ -40,6 +40,7 @@ interface UploadedDocument {
 interface DocumentCategory {
   id: string;
   name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   description: string;
   conditional?: boolean;

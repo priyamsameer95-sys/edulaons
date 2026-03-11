@@ -57,7 +57,7 @@ export function StatusUpdateSheet({
 
   const { updateLeadStatus, loading } = useStatusManager();
   const { appUser } = useAuth();
-  
+
   const isAdmin = appUser?.role === 'admin' || appUser?.role === 'super_admin';
   const NOTES_MIN_LENGTH = 10;
   const NOTES_MAX_LENGTH = 150;
@@ -79,7 +79,7 @@ export function StatusUpdateSheet({
 
     const statusChanged = selectedStatus !== currentStatus;
     const documentsStatusChanged = selectedDocumentsStatus !== currentDocumentsStatus;
-    
+
     if (!statusChanged && !documentsStatusChanged) {
       setValidationError('Please make at least one status change before submitting.');
       return false;
@@ -123,7 +123,7 @@ export function StatusUpdateSheet({
 
     // Prepare additional data for the status update
     const additionalData: Record<string, unknown> = {};
-    
+
     if (conditionalValues.lanNumber) {
       additionalData.lan_number = conditionalValues.lanNumber;
     }
@@ -268,8 +268,8 @@ export function StatusUpdateSheet({
                 {isAdmin ? 'Admin Notes *' : 'Additional Notes'}
               </Label>
               <Textarea
-                placeholder={isAdmin 
-                  ? `Required (${NOTES_MIN_LENGTH}-${NOTES_MAX_LENGTH} characters)...` 
+                placeholder={isAdmin
+                  ? `Required (${NOTES_MIN_LENGTH}-${NOTES_MAX_LENGTH} characters)...`
                   : "Add any additional notes..."
                 }
                 value={notes}
@@ -279,10 +279,10 @@ export function StatusUpdateSheet({
                 className={!isNotesValid ? 'border-destructive' : ''}
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span className={!isNotesValid ? 'text-destructive' : ''}>
-                  {isAdmin && `Min: ${NOTES_MIN_LENGTH} characters`}
+                <span className={!isNotesValid ? 'text-destructive' : notesLength >= NOTES_MIN_LENGTH ? 'text-emerald-600' : 'text-amber-600'}>
+                  {isAdmin && (notesLength < NOTES_MIN_LENGTH ? `${NOTES_MIN_LENGTH - notesLength} more chars needed` : '✓ Minimum met')}
                 </span>
-                <span className={!isNotesValid ? 'text-destructive' : ''}>
+                <span className={notesLength > NOTES_MAX_LENGTH * 0.9 ? 'text-amber-600' : !isNotesValid ? 'text-destructive' : ''}>
                   {notesLength}/{NOTES_MAX_LENGTH}
                 </span>
               </div>
@@ -294,8 +294,8 @@ export function StatusUpdateSheet({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             disabled={loading || !hasChanges || !isNotesValid}
           >
             {loading ? 'Updating...' : 'Update Status'}

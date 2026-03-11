@@ -7,7 +7,9 @@ import { UniversitySelector } from "@/components/ui/university-selector";
 import { CourseTypeSelector } from '@/components/shared/CourseTypeSelector';
 
 interface EditStudyTabProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     formData: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handleInputChange: (field: any, value: string) => void;
     universities: string[];
     setUniversities: (val: string[]) => void;
@@ -48,24 +50,26 @@ export const EditStudyTab = ({
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="study_destination">Destination Country</Label>
-                            <Select
-                                value={formData.study_destination}
-                                onValueChange={(value) => handleInputChange('study_destination', value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select country" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {safeStudyDestinations.map((dest) => (
-                                        <SelectItem key={dest} value={dest}>
-                                            {dest}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="study_destination">Destination Country <span className="text-red-500">*</span></Label>
+                                <Select
+                                    value={formData.study_destination}
+                                    onValueChange={(value) => handleInputChange('study_destination', value)}
+                                >
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue placeholder="Select country" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {safeStudyDestinations.map((dest) => (
+                                            <SelectItem key={dest} value={dest}>
+                                                {dest}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -77,8 +81,8 @@ export const EditStudyTab = ({
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Target Course</Label>
+                        <div className="space-y-2 border-t pt-4">
+                            <Label className="text-base">Target Course</Label>
                             <CourseTypeSelector
                                 value={courseId}
                                 onChange={setCourseId}
@@ -86,14 +90,18 @@ export const EditStudyTab = ({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 border-t pt-4">
+                    {/* Financials & Intake - 2x2 Grid for Perfect Alignment */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
                         <div className="space-y-2">
-                            <Label htmlFor="loan_amount">Loan Amount (₹)</Label>
+                            <Label htmlFor="loan_amount">Loan Amount (₹) <span className="text-red-500">*</span></Label>
                             <Input
                                 id="loan_amount"
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 value={formData.loan_amount}
                                 onChange={(e) => handleInputChange('loan_amount', e.target.value)}
+                                className="h-11 shadow-sm"
+                                placeholder="e.g. 25,00,000"
                             />
                         </div>
                         <div className="space-y-2">
@@ -102,7 +110,7 @@ export const EditStudyTab = ({
                                 value={formData.loan_type}
                                 onValueChange={(value) => handleInputChange('loan_type', value)}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="h-11 shadow-sm">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -114,31 +122,30 @@ export const EditStudyTab = ({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-2">
-                                <Label>Intake Month</Label>
-                                <Select
-                                    value={formData.intake_month}
-                                    onValueChange={(value) => handleInputChange('intake_month', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Month" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {safeMonths.map((m) => (
-                                            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Year</Label>
-                                <Input
-                                    value={formData.intake_year}
-                                    onChange={(e) => handleInputChange('intake_year', e.target.value)}
-                                    placeholder="2025"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <Label>Intake Month</Label>
+                            <Select
+                                value={formData.intake_month}
+                                onValueChange={(value) => handleInputChange('intake_month', value)}
+                            >
+                                <SelectTrigger className="h-11 shadow-sm">
+                                    <SelectValue placeholder="Select month" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {safeMonths.map((m) => (
+                                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Intake Year</Label>
+                            <Input
+                                value={formData.intake_year}
+                                onChange={(e) => handleInputChange('intake_year', e.target.value)}
+                                placeholder="e.g. 2025"
+                                className="h-11 shadow-sm"
+                            />
                         </div>
                     </div>
                 </CardContent>

@@ -405,6 +405,7 @@ export const EligibilityCheckModal = ({
       toast.success('Eligibility checked & lead saved!');
       onSuccess?.(data.lead.id);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || 'Failed to check eligibility');
     } finally {

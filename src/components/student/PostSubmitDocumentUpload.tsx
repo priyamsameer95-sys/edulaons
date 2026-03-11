@@ -10,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  FileText, 
-  Upload, 
-  CheckCircle2, 
-  Clock, 
+import {
+  FileText,
+  Upload,
+  CheckCircle2,
+  Clock,
   AlertCircle,
   ArrowRight,
   Loader2,
@@ -44,11 +44,11 @@ interface PostSubmitDocumentUploadProps {
   onSkip: () => void;
 }
 
-const PostSubmitDocumentUpload = ({ 
-  leadId, 
-  caseId, 
-  onComplete, 
-  onSkip 
+const PostSubmitDocumentUpload = ({
+  leadId,
+  caseId,
+  onComplete,
+  onSkip
 }: PostSubmitDocumentUploadProps) => {
   const navigate = useNavigate();
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
@@ -58,6 +58,7 @@ const PostSubmitDocumentUpload = ({
 
   useEffect(() => {
     fetchDocumentData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
 
   const fetchDocumentData = async () => {
@@ -117,7 +118,7 @@ const PostSubmitDocumentUpload = ({
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('lead-documents')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
@@ -143,6 +144,7 @@ const PostSubmitDocumentUpload = ({
 
       setUploadedDocs(prev => [...prev, newDoc]);
       toast.success('Document uploaded successfully');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error(err.message || 'Failed to upload document');
@@ -209,25 +211,25 @@ const PostSubmitDocumentUpload = ({
               const isUploading = uploading === docType.id;
 
               return (
-                <div 
+                <div
                   key={docType.id}
                   className={cn(
                     "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                    status === 'verified' 
+                    status === 'verified'
                       ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
                       : status === 'rejected'
-                      ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
-                      : uploaded
-                      ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
-                      : "bg-muted/30 border-border"
+                        ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800"
+                        : uploaded
+                          ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
+                          : "bg-muted/30 border-border"
                   )}
                 >
                   <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                     status === 'verified' ? "bg-emerald-100 dark:bg-emerald-900/30" :
-                    status === 'rejected' ? "bg-red-100 dark:bg-red-900/30" :
-                    uploaded ? "bg-amber-100 dark:bg-amber-900/30" :
-                    "bg-muted"
+                      status === 'rejected' ? "bg-red-100 dark:bg-red-900/30" :
+                        uploaded ? "bg-amber-100 dark:bg-amber-900/30" :
+                          "bg-muted"
                   )}>
                     {status === 'verified' ? (
                       <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -266,9 +268,9 @@ const PostSubmitDocumentUpload = ({
                         }}
                         disabled={isUploading}
                       />
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={isUploading}
                         asChild
                       >
@@ -287,7 +289,7 @@ const PostSubmitDocumentUpload = ({
                   ) : (
                     <span className={cn(
                       "text-xs font-medium px-2 py-1 rounded-full shrink-0",
-                      status === 'verified' 
+                      status === 'verified'
                         ? "bg-emerald-100 text-emerald-700"
                         : "bg-amber-100 text-amber-700"
                     )}>
@@ -303,14 +305,14 @@ const PostSubmitDocumentUpload = ({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={onSkip}
           className="flex-1"
         >
           Resume Later
         </Button>
-        <Button 
+        <Button
           onClick={onComplete}
           className="flex-1"
         >

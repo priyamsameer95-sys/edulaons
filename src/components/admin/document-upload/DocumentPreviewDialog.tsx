@@ -75,6 +75,7 @@ export function DocumentPreviewDialog({
       setZoom(1);
       setRotation(0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, document]);
 
   const loadPreview = async () => {

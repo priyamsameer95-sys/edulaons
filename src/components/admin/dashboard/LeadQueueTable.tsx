@@ -111,127 +111,135 @@ export function LeadQueueTable({
   const endItem = Math.min(page * pageSize, totalCount);
   if (loading) {
     return <div className="p-4 space-y-3">
-        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-      </div>;
+      {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+    </div>;
   }
   if (leads.length === 0) {
-    return <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <FileCheck className="h-12 w-12 mb-3 opacity-50" />
-        <p className="text-sm">No leads match your filters</p>
-      </div>;
+    return <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <FileCheck className="h-8 w-8 opacity-40" />
+      </div>
+      <p className="text-sm font-medium mb-1">No leads match your filters</p>
+      <p className="text-xs text-muted-foreground/70">Try adjusting your search or filter criteria</p>
+    </div>;
   }
   return <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col h-full">
-        <div className="overflow-auto flex-1">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[40px]">
-                  <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} aria-label="Select all" className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''} />
-                </TableHead>
-                <TableHead className="w-[100px]">
-                  <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('id')}>
-                    User ID <SortIcon field="id" />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[200px]">
-                  <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('student')}>
-                    Student <SortIcon field="student" />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[140px]">Partner</TableHead>
-                <TableHead className="w-[110px]">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('amount')}>
-                        Amount <SortIcon field="amount" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Requested loan amount</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TableHead>
-                <TableHead className="w-[110px]">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('status')}>
-                        Status <SortIcon field="status" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Current application status</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TableHead>
-                <TableHead className="w-[100px]">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="font-medium cursor-help">Documents</span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Document verification status</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TableHead>
-                <TableHead className="w-[100px]">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('age')}>
-                        <Clock className="h-3 w-3 mr-1" />
-                        Created   <SortIcon field="age" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Time since lead was created</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TableHead>
-                <TableHead className="w-[120px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedLeads.map(lead => <LeadTableRow key={lead.id} lead={lead} isSelected={selectedLeads.includes(lead.id)} copiedId={copiedId} onSelect={checked => handleSelectLead(lead.id, checked)} onCopyId={copyLeadId} onViewLead={() => onViewLead(lead)} onUpdateStatus={() => onUpdateStatus(lead)} onCompleteLead={onCompleteLead ? () => onCompleteLead(lead) : undefined} onEditLead={onEditLead ? () => onEditLead(lead) : undefined} />)}
-            </TableBody>
-          </Table>
+    <div className="flex flex-col h-full">
+      <div className="overflow-auto flex-1">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[40px]">
+                <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} aria-label="Select all" className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''} />
+              </TableHead>
+              <TableHead className="w-[100px]">
+                <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('id')}>
+                  User ID <SortIcon field="id" />
+                </Button>
+              </TableHead>
+              <TableHead className="w-[200px]">
+                <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('student')}>
+                  Student <SortIcon field="student" />
+                </Button>
+              </TableHead>
+              <TableHead className="w-[140px]">Partner</TableHead>
+              <TableHead className="w-[110px]">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('amount')}>
+                      Amount <SortIcon field="amount" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Requested loan amount</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TableHead>
+              <TableHead className="w-[110px]">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('status')}>
+                      Status <SortIcon field="status" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Current application status</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TableHead>
+              <TableHead className="w-[100px]">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="font-medium cursor-help">Documents</span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Document verification status</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TableHead>
+              <TableHead className="w-[100px]">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-auto p-0 font-medium hover:bg-transparent" onClick={() => handleSort('age')}>
+                      <Clock className="h-3 w-3 mr-1" />
+                      Created   <SortIcon field="age" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Time since lead was created</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TableHead>
+              <TableHead className="w-[120px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedLeads.map(lead => <LeadTableRow key={lead.id} lead={lead} isSelected={selectedLeads.includes(lead.id)} copiedId={copiedId} onSelect={checked => handleSelectLead(lead.id, checked)} onCopyId={copyLeadId} onViewLead={() => onViewLead(lead)} onUpdateStatus={() => onUpdateStatus(lead)} onCompleteLead={onCompleteLead ? () => onCompleteLead(lead) : undefined} onEditLead={onEditLead ? () => onEditLead(lead) : undefined} />)}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t bg-muted/30 gap-3 shrink-0">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Showing {startItem}-{endItem} of {totalCount.toLocaleString()} leads
+          </span>
+          {selectedLeads.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              {selectedLeads.length} selected
+            </span>
+          )}
         </div>
 
-        {/* Pagination Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t bg-muted/30 gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>
-              Showing {startItem}-{endItem} of {totalCount.toLocaleString()} leads
-            </span>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Per page:</span>
+            <Select value={pageSize.toString()} onValueChange={v => onPageSizeChange(parseInt(v))}>
+              <SelectTrigger className="w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Per page:</span>
-              <Select value={pageSize.toString()} onValueChange={v => onPageSizeChange(parseInt(v))}>
-                <SelectTrigger className="w-[70px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="h-8 px-2">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm px-2 min-w-[80px] text-center">
-                Page {page} of {totalPages}
-              </span>
-              <Button variant="outline" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="h-8 px-2">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="h-8 px-2">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-2 min-w-[80px] text-center">
+              Page {page} of {totalPages}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="h-8 px-2">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
-    </TooltipProvider>;
+    </div>
+  </TooltipProvider>;
 }

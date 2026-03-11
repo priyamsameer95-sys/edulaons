@@ -1,10 +1,18 @@
 /**
  * Unified Course Type Selector Component
  * 
- * Standard chip/pill toggle pattern for course type selection.
+ * Simple dropdown pattern for course type selection.
  * Used consistently across Admin, Partner, and Student flows.
  */
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { CourseType } from '@/types/student-application';
 
@@ -18,11 +26,11 @@ interface CourseTypeSelectorProps {
   required?: boolean;
 }
 
-const COURSE_TYPES: { value: CourseType; label: string }[] = [
-  { value: 'masters_stem', label: 'Masters STEM' },
-  { value: 'bachelors_stem', label: 'Bachelors STEM' },
-  { value: 'mba_management', label: 'MBA' },
-  { value: 'others', label: 'Others' },
+const COURSE_TYPES: { value: CourseType; label: string; icon: string }[] = [
+  { value: 'masters_stem', label: 'Masters STEM', icon: '🎓' },
+  { value: 'bachelors_stem', label: 'Bachelors STEM', icon: '📜' },
+  { value: 'mba_management', label: 'MBA / Management', icon: '💼' },
+  { value: 'others', label: 'Others', icon: '🌍' },
 ];
 
 export function CourseTypeSelector({
@@ -37,32 +45,35 @@ export function CourseTypeSelector({
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
-        <label className="text-sm font-medium text-foreground">
+        <Label>
           {label} {required && <span className="text-destructive">*</span>}
-        </label>
+        </Label>
       )}
-      <div className="flex flex-wrap gap-2">
-        {COURSE_TYPES.map((ct) => (
-          <button
-            key={ct.value}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(ct.value)}
-            className={cn(
-              'px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all',
-              value === ct.value
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border hover:border-primary/40 text-foreground',
-              error && !value && 'border-destructive',
-              disabled && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {ct.label}
-          </button>
-        ))}
-      </div>
+      <Select
+        value={value || ''}
+        onValueChange={(val) => onChange(val as CourseType)}
+        disabled={disabled}
+      >
+        <SelectTrigger className={cn(
+          "h-11 shadow-sm",
+          error && !value && "border-destructive"
+        )}>
+          <SelectValue placeholder="Select course type" />
+        </SelectTrigger>
+        <SelectContent>
+          {COURSE_TYPES.map((ct) => (
+            <SelectItem key={ct.value} value={ct.value}>
+              <span className="flex items-center gap-2">
+                <span>{ct.icon}</span>
+                <span>{ct.label}</span>
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { COURSE_TYPES };

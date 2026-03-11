@@ -81,6 +81,7 @@ export function PartnerNotificationBell({ partnerId }: PartnerNotificationBellPr
     return () => {
       supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partnerId]);
 
   const markAsRead = async (notificationId: string) => {

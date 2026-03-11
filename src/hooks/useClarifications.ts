@@ -74,6 +74,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
 
       if (fetchError) throw fetchError;
       setClarifications((data || []) as Clarification[]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error fetching clarifications:', err);
       setError(err.message);
@@ -92,6 +93,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
 
       if (fetchError) throw fetchError;
       setTemplates((data || []) as ClarificationTemplate[]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error fetching templates:', err);
     }
@@ -146,6 +148,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
 
       await fetchClarifications();
       return result as Clarification;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error creating clarification:', err);
       toast({
@@ -180,6 +183,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
       });
 
       await fetchClarifications();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error responding to clarification:', err);
       toast({
@@ -215,6 +219,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
       });
 
       await fetchClarifications();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error resolving clarification:', err);
       toast({
@@ -244,6 +249,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
       });
 
       await fetchClarifications();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Error dismissing clarification:', err);
       throw err;
@@ -270,6 +276,7 @@ export function useClarifications(options: UseClarificationsOptions = {}) {
 
 // Hook for fetching field audit log
 export function useFieldAuditLog(leadId: string | null) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auditLog, setAuditLog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

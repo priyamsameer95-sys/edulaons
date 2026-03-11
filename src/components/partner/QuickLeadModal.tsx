@@ -310,6 +310,7 @@ export const QuickLeadModal = ({ open, onClose, onSuccess, onContinueApplication
       setShowSuccess(true);
       toast.success('Lead created successfully!');
       onSuccess?.();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || 'Failed to create lead');
     } finally {

@@ -22,6 +22,7 @@ export type AppRole = 'admin' | 'super_admin' | 'partner' | 'student' | 'kam';
  * Filter lead data for student view
  * Removes all internal/commercial fields
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function filterLeadForStudent<T extends Record<string, any>>(lead: T): Partial<T> {
   const filtered: Partial<T> = {};
   
@@ -37,6 +38,7 @@ export function filterLeadForStudent<T extends Record<string, any>>(lead: T): Pa
 /**
  * Filter student profile for student view
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function filterProfileForStudent<T extends Record<string, any>>(profile: T): Partial<T> {
   const filtered: Partial<T> = {};
   
@@ -57,11 +59,13 @@ export function canStudentEditLeadField(
   currentStatus: string
 ): boolean {
   // Check if field is in editable list
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!STUDENT_EDITABLE_LEAD_FIELDS.includes(fieldName as any)) {
     return false;
   }
   
   // Check if lead is in a locked status
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (STUDENT_EDIT_LOCKED_STATUSES.includes(currentStatus as any)) {
     return false;
   }
@@ -75,6 +79,7 @@ export function canStudentEditLeadField(
 export function canStudentEditProfile(currentStatus: string): boolean {
   // Students can always edit their profile, but some lead-related data
   // might be locked after certain statuses
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return !STUDENT_EDIT_LOCKED_STATUSES.includes(currentStatus as any);
 }
 

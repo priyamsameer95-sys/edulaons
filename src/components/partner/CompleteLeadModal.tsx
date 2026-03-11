@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { formatIndianNumber } from "@/utils/currencyFormatter";
+import { isPlaceholderEmail } from "@/utils/formatters";
 
 // Reuse the Admin Components (Standardizing UI)
 import { EditStudentTab } from "../admin/lead-edit/EditStudentTab";
@@ -44,11 +45,9 @@ const LOAN_TYPES = ['secured', 'unsecured'];
 const RELATIONSHIPS = ['parent', 'spouse', 'sibling', 'guardian', 'other'];
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: new Date(0, i).toLocaleString('default', { month: 'long' }) }));
 const EMPLOYMENT_TYPE_OPTIONS = [
-  { value: 'full-time', label: 'Full-time' },
-  { value: 'part-time', label: 'Part-time' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'freelance', label: 'Freelance' },
-  { value: 'self-employed', label: 'Self-employed' },
+  { value: 'salaried', label: 'Salaried' },
+  { value: 'self_employed', label: 'Self-Employed' },
+  { value: 'business_owner', label: 'Business Owner' },
 ];
 
 interface CompleteLeadModalProps {
@@ -149,6 +148,7 @@ export const CompleteLeadModal = ({
   const [universities, setUniversities] = useState<string[]>(['']);
   const [courseId, setCourseId] = useState<string>('');
   const [isCustomCourse, setIsCustomCourse] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [existingSummary, setExistingSummary] = useState<any>(null);
 
   // Load Data
@@ -191,7 +191,7 @@ export const CompleteLeadModal = ({
         // Set Form Data
         setFormData({
           student_name: student?.name || '',
-          student_email: student?.email || '',
+          student_email: student?.email && !isPlaceholderEmail(student.email) ? student.email : '',
           student_phone: student?.phone || '',
           student_postal_code: student?.postal_code || '',
           student_city: student?.city || '',
@@ -220,7 +220,7 @@ export const CompleteLeadModal = ({
           co_applicant_pin_code: coApp?.pin_code || '',
           co_applicant_occupation: coApp?.occupation || '',
           co_applicant_employer: coApp?.employer || '',
-          co_applicant_email: coApp?.email || '',
+          co_applicant_email: coApp?.email && !isPlaceholderEmail(coApp.email) ? coApp.email : '',
           co_applicant_employment_type: coApp?.employment_type || '',
           co_applicant_employment_duration: coApp?.employment_duration_years?.toString() || '',
           co_applicant_credit_score: coApp?.credit_score?.toString() || '',
@@ -290,6 +290,7 @@ export const CompleteLeadModal = ({
       // Update Co-Applicant
       const { error: cErr } = await supabase.from("co_applicants").update({
         name: formData.co_applicant_name,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         relationship: formData.co_applicant_relationship as any,
         phone: formData.co_applicant_phone,
         salary: parseInt(formData.co_applicant_salary) || 0,
@@ -306,8 +307,10 @@ export const CompleteLeadModal = ({
       // Update Lead Details
       const { error: lErr } = await supabase.from("leads_new").update({
         quick_lead_completed_at: new Date().toISOString(), // MARK AS COMPLETE
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         study_destination: formData.study_destination as any || null,
         loan_amount: parseInt(formData.loan_amount) || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         loan_type: formData.loan_type as any || null,
         intake_month: parseInt(formData.intake_month) || null,
         intake_year: parseInt(formData.intake_year) || null,
@@ -339,6 +342,7 @@ export const CompleteLeadModal = ({
       onSuccess();
       onClose();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       console.error("Complete Lead Error", e);
       toast.error(e.message || "Failed to save details");

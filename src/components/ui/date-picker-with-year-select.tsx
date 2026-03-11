@@ -70,7 +70,7 @@ export function DatePickerWithYearSelect({
     }
 
     return (
-        <Popover>
+        <Popover modal={true}>
             <PopoverTrigger asChild>
                 <Button
                     variant={"outline"}
@@ -84,16 +84,22 @@ export function DatePickerWithYearSelect({
                     {date ? format(date, "PPP") : <span>{placeholder}</span>}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent
+                className="w-auto p-0"
+                align="end"
+                side="bottom"
+                sideOffset={4}
+                avoidCollisions={true}
+            >
                 <div className="flex justify-between p-3 gap-2">
                     <Select
                         value={months[month.getMonth()]}
                         onValueChange={handleMonthChange}
                     >
-                        <SelectTrigger className="w-[120px]">
+                        <SelectTrigger className="w-[120px] h-9">
                             <SelectValue placeholder="Month" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className="max-h-[200px] z-[9999]">
                             {months.map((m) => (
                                 <SelectItem key={m} value={m}>
                                     {m}
@@ -105,10 +111,10 @@ export function DatePickerWithYearSelect({
                         value={month.getFullYear().toString()}
                         onValueChange={handleYearChange}
                     >
-                        <SelectTrigger className="w-[100px]">
+                        <SelectTrigger className="w-[100px] h-9">
                             <SelectValue placeholder="Year" />
                         </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
+                        <SelectContent position="popper" className="max-h-[200px] z-[9999]">
                             {years.map((y) => (
                                 <SelectItem key={y} value={y.toString()}>
                                     {y}

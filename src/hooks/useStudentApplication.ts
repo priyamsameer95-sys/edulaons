@@ -38,8 +38,11 @@ const clearForeignDrafts = (currentPhone: string) => {
 
 // Transform database lead data to application form data
 const transformLeadToApplicationData = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lead: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   student: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   coApplicant: any,
   universityIds: string[]
 ): Partial<StudentApplicationData> => {
@@ -152,7 +155,7 @@ export const useStudentApplication = () => {
         // Get user's phone and email
         const { data: { user } } = await supabase.auth.getUser();
         let phone = userPhone;
-        let userEmail = user?.email;
+        const userEmail = user?.email;
         
         if (!phone) {
           if (user?.user_metadata?.phone) {
@@ -533,6 +536,7 @@ export const useStudentApplication = () => {
       console.log('🧹 [submitApplication] Draft cleared');
 
       return result;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('❌ [submitApplication] Submission error:', error);
       toast({

@@ -134,6 +134,7 @@ const StudentAuthContent = () => {
     };
     
     checkEligibilityFlowSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, navigate]);
 
   // Safety: force reset sessionChecking after 5 seconds if stuck
@@ -347,6 +348,7 @@ const StudentAuthContent = () => {
           }
         }
       }, 1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('Unexpected error:', err);
       setOtpError(true);

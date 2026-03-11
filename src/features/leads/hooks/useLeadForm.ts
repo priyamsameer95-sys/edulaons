@@ -142,6 +142,7 @@ export const useLeadForm = (partnerCode?: string) => {
                 });
                 setLoading(false);
             },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onError: (error: any) => {
                 handleError(error, { title: 'Failed to Submit Application' });
                 setLoading(false);

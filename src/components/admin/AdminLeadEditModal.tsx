@@ -102,11 +102,9 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 const EMPLOYMENT_TYPE_OPTIONS = [
-  { value: 'full-time', label: 'Full-time' },
-  { value: 'part-time', label: 'Part-time' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'freelance', label: 'Freelance' },
-  { value: 'self-employed', label: 'Self-employed' },
+  { value: 'salaried', label: 'Salaried' },
+  { value: 'self_employed', label: 'Self-Employed' },
+  { value: 'business_owner', label: 'Business Owner' },
 ];
 
 const initialFormData: FormData = {
@@ -178,6 +176,7 @@ export function AdminLeadEditModal({
     if (open && lead) {
       fetchLeadDetails();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lead?.id]);
 
   const fetchLeadDetails = async () => {
@@ -479,8 +478,10 @@ export function AdminLeadEditModal({
 
       // Update student
       if (studentChanges.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const studentUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
         studentChanges.forEach(c => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let value: any = c.newValue || null;
           // Convert numeric fields
           if (['tenth_percentage', 'twelfth_percentage', 'bachelors_percentage', 'bachelors_cgpa', 'credit_score'].includes(c.field) && value) {
@@ -498,8 +499,10 @@ export function AdminLeadEditModal({
 
       // Update lead
       if (leadChanges.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const leadUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
         leadChanges.forEach(c => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let value: any = c.newValue || null;
           // Convert numbers
           if (['loan_amount', 'intake_month', 'intake_year'].includes(c.field) && value) {
@@ -522,8 +525,10 @@ export function AdminLeadEditModal({
 
       // Update co-applicant
       if (coApplicantChanges.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const coAppUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
         coApplicantChanges.forEach(c => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let value: any = c.newValue || null;
           if (['salary', 'employment_duration_years', 'credit_score'].includes(c.field) && value) {
             value = c.field === 'employment_duration_years' ? parseInt(value, 10) : parseFloat(value);
@@ -659,6 +664,7 @@ export function AdminLeadEditModal({
       // Simple AI Trigger
       if (lead?.id) {
         // Simplified re-trigger logic to save space
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const shouldTrigger = changes.some(c => RECOMMENDATION_TRIGGER_FIELDS.includes(c.field as any));
         if (shouldTrigger) {
           triggerRecommendation({

@@ -4,6 +4,7 @@ import { LeadFormData } from "../types/leadTypes";
 import { cn } from "@/lib/utils";
 
 interface DocumentStepProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createdLead: any;
     formData: LeadFormData;
     onComplete?: () => void;
@@ -17,6 +18,7 @@ import { Loader2 } from "lucide-react";
 
 export const DocumentStep = ({ createdLead, formData, onComplete }: DocumentStepProps) => {
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [lenders, setLenders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 

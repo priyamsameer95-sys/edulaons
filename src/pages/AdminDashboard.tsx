@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutList, Building, Settings, Users } from 'lucide-react';
+import { LayoutList, Building, Settings, Users, GraduationCap } from 'lucide-react';
 import { assertAdminRole } from '@/utils/roleCheck';
 import { AdminErrorBoundary } from '@/components/admin/AdminErrorBoundary';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,7 +87,7 @@ const AdminDashboard = () => {
                   Lenders
                 </TabsTrigger>
                 <TabsTrigger value="universities" className="gap-1.5 data-[state=active]:bg-background">
-                  <Building className="h-4 w-4" />
+                  <GraduationCap className="h-4 w-4" />
                   Universities
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="gap-1.5 data-[state=active]:bg-background">

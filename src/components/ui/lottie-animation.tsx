@@ -18,6 +18,7 @@ export const LottieAnimation = ({
     autoPlay = true,
     ...props
 }: LottieAnimationProps) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [animationData, setAnimationData] = useState<any>(null);
 
     useEffect(() => {

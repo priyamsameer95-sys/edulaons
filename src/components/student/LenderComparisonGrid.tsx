@@ -5,6 +5,7 @@ import LenderFeaturedCard from './LenderFeaturedCard';
 import LenderRowCard from './LenderRowCard';
 import { UrgencyZoneBadge } from '@/components/shared/UrgencyZoneBadge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import LenderComparisonTable from './LenderComparisonTable';
 
 interface StudentFacingReason {
   greeting: string;
@@ -34,6 +35,7 @@ interface LenderData {
   eligible_loan_max?: number | null;
   student_facing_reason?: StudentFacingReason | string | null;
   lender_description?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eligible_expenses?: any[] | null;
   // New fields from AI recommendation
   pillar_breakdown?: PillarBreakdown | null;
@@ -50,6 +52,7 @@ interface LenderComparisonGridProps {
   onSelect: (lenderId: string) => void;
   isUpdating: boolean;
   urgencyZone?: 'GREEN' | 'YELLOW' | 'RED' | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recommendationContext?: any;
 }
 
@@ -76,6 +79,7 @@ const LenderComparisonGrid = ({
   const visibleOtherLenders = showAllOthers ? otherLenders : otherLenders.slice(0, 3);
 
   // Calculate Market Rate (Average of top lenders) & Lowest Rate
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { marketRate, lowestRate } = useMemo(() => {
     if (lenders.length === 0) return { marketRate: 10, lowestRate: 10 };
     const rates = lenders.map(l => l.interest_rate_min || 10);
@@ -99,8 +103,21 @@ const LenderComparisonGrid = ({
         </p>
       </div>
 
-      {/* Featured Lenders - Top 3 with equal height */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+      {/* Featured Lenders Section */}
+
+      {/* 1. Desktop View: Comparison Table (Top 3) */}
+      <div className="hidden lg:block">
+        <LenderComparisonTable
+          lenders={qualifiedLenders}
+          selectedLenderId={selectedLenderId}
+          onSelect={onSelect}
+          isUpdating={isUpdating}
+          recommendationContext={recommendationContext}
+        />
+      </div>
+
+      {/* 2. Mobile/Tablet View: Featured Cards */}
+      <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
         {featuredLenders.map((lender, index) => (
           <LenderFeaturedCard
             key={lender.lender_id}

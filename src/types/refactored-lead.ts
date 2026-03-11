@@ -154,8 +154,11 @@ export interface DbRefactoredLead {
 // Utility function to map database lead to frontend lead
 export const mapDbRefactoredLeadToLead = (dbLead: DbRefactoredLead & {
   students?: DbStudent;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   co_applicants?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   partners?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lenders?: any;
 }): RefactoredLead => ({
   id: dbLead.id,

@@ -64,6 +64,7 @@ export function useDynamicDocuments(
       if (fetchError) throw fetchError;
 
       // Map the response to our interface
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedDocs = (data || []).map((item: any) => ({
         id: item.id,
         document_type_id: item.document_type_id,

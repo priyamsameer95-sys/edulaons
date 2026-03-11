@@ -37,6 +37,7 @@ export function useLeadStatusHistory(leadId: string) {
       }
 
       // Map the data (no FK join available for changed_by)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedData = (data || []).map((record: any) => ({
         ...record,
         changer_email: null, // No FK relationship exists
@@ -55,7 +56,9 @@ export function useLeadStatusHistory(leadId: string) {
     if (leadId) {
       fetchHistory();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
+ 
 
   // Set up real-time subscription for status history
   useEffect(() => {
@@ -80,8 +83,10 @@ export function useLeadStatusHistory(leadId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
 
+   
   return {
     history,
     loading,

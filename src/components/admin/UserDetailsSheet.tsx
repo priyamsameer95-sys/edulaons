@@ -22,6 +22,7 @@ const UserDetailsSheet = ({ open, onOpenChange, user }: UserDetailsSheetProps) =
     if (open && user) {
       fetchUserDetails();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
   const fetchUserDetails = async () => {

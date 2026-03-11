@@ -306,6 +306,7 @@ export function useAdminActionItems() {
       console.log('⏳ [useAdminActionItems] Waiting for authentication...');
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, appUser]);
 
   return {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { DocumentVerificationBadge } from './DocumentVerificationBadge';
 import { Check, AlertTriangle, Clock, Upload, XCircle, CheckCircle2, Eye, ShieldCheck, ShieldX, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -56,24 +57,24 @@ export function AdminDocumentGrid({
   // Calculate per-category progress
   const categoryProgress = useMemo(() => {
     const progress: Record<string, { uploaded: number; total: number; required: number; requiredUploaded: number; verified: number }> = {};
-    
+
     Object.entries(groupedDocs).forEach(([category, docs]) => {
       const uploaded = docs.filter(d => {
         const status = getDocumentStatus(d.id, uploadedDocuments);
         return status !== 'not_uploaded';
       }).length;
-      
+
       const verified = docs.filter(d => {
         const status = getDocumentStatus(d.id, uploadedDocuments);
         return status === 'verified';
       }).length;
-      
+
       const requiredDocs = docs.filter(d => d.required);
       const requiredUploaded = requiredDocs.filter(d => {
         const status = getDocumentStatus(d.id, uploadedDocuments);
         return status !== 'not_uploaded';
       }).length;
-      
+
       progress[category] = {
         uploaded,
         total: docs.length,
@@ -82,24 +83,24 @@ export function AdminDocumentGrid({
         verified
       };
     });
-    
+
     return progress;
   }, [groupedDocs, uploadedDocuments]);
 
   // Summary stats
   const summary = useMemo(() => {
     const total = documentTypes.length;
-    const uploaded = documentTypes.filter(d => 
+    const uploaded = documentTypes.filter(d =>
       uploadedDocuments.some(doc => doc.document_type_id === d.id)
     ).length;
     const verified = uploadedDocuments.filter(doc => doc.verification_status === 'verified').length;
-    const needsAttention = documentTypes.filter(d => 
+    const needsAttention = documentTypes.filter(d =>
       getDocumentStatus(d.id, uploadedDocuments) === 'rejected'
     ).length;
-    const pendingReview = uploadedDocuments.filter(doc => 
+    const pendingReview = uploadedDocuments.filter(doc =>
       doc.verification_status === 'uploaded' || doc.verification_status === 'pending'
     ).length;
-    
+
     return { total, uploaded, verified, needsAttention, pendingReview };
   }, [documentTypes, uploadedDocuments]);
 
@@ -190,10 +191,10 @@ export function AdminDocumentGrid({
         };
       default:
         return {
-          container: isRequired 
+          container: isRequired
             ? 'border-red-200 bg-red-50/50 dark:border-red-800/50 dark:bg-red-950/20 border-dashed'
             : 'border-slate-200 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/20 border-dashed',
-          icon: isRequired 
+          icon: isRequired
             ? <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
             : <Upload className="h-4 w-4 text-slate-400 dark:text-slate-500" />,
           badge: isRequired
@@ -207,9 +208,9 @@ export function AdminDocumentGrid({
     <TooltipProvider>
       <div className="space-y-6">
         {/* Document Preview Dialog with Verification Actions */}
-        <DocumentPreviewDialog 
-          document={previewDoc} 
-          open={previewOpen} 
+        <DocumentPreviewDialog
+          document={previewDoc}
+          open={previewOpen}
           onOpenChange={setPreviewOpen}
           onVerificationComplete={onRefresh}
           showVerificationActions={true}
@@ -278,10 +279,10 @@ export function AdminDocumentGrid({
           const colors = getCategoryColors(category);
           const progress = categoryProgress[category];
           const progressPercent = progress ? Math.round((progress.uploaded / progress.total) * 100) : 0;
-          
+
           return (
-            <div 
-              key={category} 
+            <div
+              key={category}
               className={cn(
                 'rounded-xl border overflow-hidden',
                 colors.border,
@@ -302,7 +303,7 @@ export function AdminDocumentGrid({
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Progress indicator */}
                   <div className="flex items-center gap-3">
                     <div className="text-right">
@@ -313,7 +314,7 @@ export function AdminDocumentGrid({
                     </div>
                     <div className="w-20">
                       <div className={cn('h-2 rounded-full overflow-hidden', colors.progressBg)}>
-                        <div 
+                        <div
                           className={cn('h-full rounded-full transition-all duration-500', colors.progressFill)}
                           style={{ width: `${progressPercent}%` }}
                         />
@@ -336,7 +337,7 @@ export function AdminDocumentGrid({
                     const isPendingReview = status === 'pending';
                     const statusStyles = getStatusStyles(status, isRequired);
                     const isVerifying = uploadedDoc && verifyingId === uploadedDoc.id;
-                    
+
                     return (
                       <Tooltip key={doc.id}>
                         <TooltipTrigger asChild>
@@ -355,29 +356,19 @@ export function AdminDocumentGrid({
                               <div className="absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900" />
                             )}
 
-                            {/* AI confidence badge */}
-                            {uploadedDoc?.ai_confidence_score && (
-                              <div className="absolute -top-1.5 -left-1.5">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className={cn(
-                                      "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white dark:border-slate-900",
-                                      uploadedDoc.ai_confidence_score >= 70 
-                                        ? "bg-emerald-500 text-white" 
-                                        : uploadedDoc.ai_confidence_score >= 50 
-                                          ? "bg-amber-500 text-white"
-                                          : "bg-red-500 text-white"
-                                    )}>
-                                      {Math.round(uploadedDoc.ai_confidence_score)}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    AI confidence: {uploadedDoc.ai_confidence_score}%
-                                  </TooltipContent>
-                                </Tooltip>
+
+                            {/* AI Verification Badge */}
+                            {uploadedDoc && (
+                              <div className="absolute -top-1.5 -left-1.5 z-10">
+                                <DocumentVerificationBadge
+                                  aiVerified={uploadedDoc.ai_verified}
+                                  aiConfidenceScore={uploadedDoc.ai_confidence_score}
+                                  aiMismatchFlag={uploadedDoc.ai_mismatch_flag}
+                                  aiExtractedData={uploadedDoc.ai_extracted_data}
+                                />
                               </div>
                             )}
-                            
+
                             {/* Header row */}
                             <div className="flex items-start gap-2 w-full">
                               <div className="flex-shrink-0 mt-0.5">
@@ -398,15 +389,15 @@ export function AdminDocumentGrid({
                                 </span>
                               </div>
                             </div>
-                            
+
                             {/* Status badge */}
                             <div className={cn(
                               'text-xs font-medium px-2 py-1 rounded-md w-fit',
                               statusStyles.badge
                             )}>
-                              {status === 'not_uploaded' 
+                              {status === 'not_uploaded'
                                 ? (isRequired ? 'Required' : 'Optional')
-                                : status === 'verified' 
+                                : status === 'verified'
                                   ? 'Verified ✓'
                                   : status === 'rejected'
                                     ? 'Re-upload needed'
@@ -427,7 +418,7 @@ export function AdminDocumentGrid({
                                   <Eye className="h-3 w-3 mr-1" />
                                   View
                                 </Button>
-                                
+
                                 {isPendingReview && (
                                   <>
                                     <Button

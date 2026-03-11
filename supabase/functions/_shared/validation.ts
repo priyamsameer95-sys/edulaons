@@ -28,7 +28,7 @@ export const VALIDATION_RULES = {
     MAX_LENGTH: 255,
     PATTERN: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   },
-  
+
   // Academic
   PERCENTAGE: {
     MIN: 0,
@@ -38,7 +38,7 @@ export const VALIDATION_RULES = {
     MIN: 0,
     MAX: 10,
   },
-  
+
   // Test Scores
   TEST_SCORES: {
     IELTS: { MIN: 0, MAX: 9 },
@@ -48,7 +48,7 @@ export const VALIDATION_RULES = {
     GMAT: { MIN: 200, MAX: 800 },
     SAT: { MIN: 400, MAX: 1600 },
   },
-  
+
   // Study Details
   UNIVERSITIES: {
     MIN_COUNT: 1,
@@ -61,13 +61,13 @@ export const VALIDATION_RULES = {
   COURSE_NAME: {
     MAX_LENGTH: 200,
   },
-  
+
   // Co-Applicant
   SALARY: {
     MIN: 0,
     MAX: 10000000, // ₹1 Crore/month
   },
-  
+
   // Intake
   INTAKE_MONTH: {
     MIN: 1,
@@ -87,6 +87,7 @@ export interface ValidationError {
   field: string;
   message: string;
   code: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value?: any;
 }
 
@@ -102,13 +103,14 @@ export interface ValidationResult {
 /**
  * Validate a name field (student, co-applicant)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateName(name: any, fieldName: string = 'name'): ValidationError | null {
   if (!name || typeof name !== 'string') {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const trimmed = name.trim();
-  
+
   if (trimmed.length < VALIDATION_RULES.NAME.MIN_LENGTH) {
     return {
       field: fieldName,
@@ -117,7 +119,7 @@ export function validateName(name: any, fieldName: string = 'name'): ValidationE
       value: trimmed,
     };
   }
-  
+
   if (trimmed.length > VALIDATION_RULES.NAME.MAX_LENGTH) {
     return {
       field: fieldName,
@@ -126,7 +128,7 @@ export function validateName(name: any, fieldName: string = 'name'): ValidationE
       value: trimmed,
     };
   }
-  
+
   if (!VALIDATION_RULES.NAME.PATTERN.test(trimmed)) {
     return {
       field: fieldName,
@@ -135,7 +137,7 @@ export function validateName(name: any, fieldName: string = 'name'): ValidationE
       value: trimmed,
     };
   }
-  
+
   return null;
 }
 
@@ -146,13 +148,14 @@ export function cleanPhoneNumber(phone: string): string {
   return String(phone || '').trim().replace(/^\+91/, '').replace(/\D/g, '');
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validatePhone(phone: any, fieldName: string = 'phone'): ValidationError | null {
   if (!phone) {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const cleaned = cleanPhoneNumber(phone);
-  
+
   if (cleaned.length !== VALIDATION_RULES.PHONE.LENGTH) {
     return {
       field: fieldName,
@@ -161,7 +164,7 @@ export function validatePhone(phone: any, fieldName: string = 'phone'): Validati
       value: cleaned,
     };
   }
-  
+
   if (!VALIDATION_RULES.PHONE.PATTERN.test(cleaned)) {
     return {
       field: fieldName,
@@ -170,20 +173,21 @@ export function validatePhone(phone: any, fieldName: string = 'phone'): Validati
       value: cleaned,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Validate postal/PIN code
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validatePostalCode(code: any, fieldName: string = 'postal_code'): ValidationError | null {
   if (!code) {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const trimmed = String(code).trim();
-  
+
   if (!VALIDATION_RULES.POSTAL_CODE.PATTERN.test(trimmed)) {
     return {
       field: fieldName,
@@ -192,13 +196,14 @@ export function validatePostalCode(code: any, fieldName: string = 'postal_code')
       value: trimmed,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Validate email address
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateEmail(email: any, fieldName: string = 'email', required: boolean = true): ValidationError | null {
   if (!email) {
     if (required) {
@@ -206,9 +211,9 @@ export function validateEmail(email: any, fieldName: string = 'email', required:
     }
     return null;
   }
-  
+
   const trimmed = String(email).trim().toLowerCase();
-  
+
   if (trimmed.length > VALIDATION_RULES.EMAIL.MAX_LENGTH) {
     return {
       field: fieldName,
@@ -217,7 +222,7 @@ export function validateEmail(email: any, fieldName: string = 'email', required:
       value: trimmed,
     };
   }
-  
+
   if (!VALIDATION_RULES.EMAIL.PATTERN.test(trimmed)) {
     return {
       field: fieldName,
@@ -226,20 +231,21 @@ export function validateEmail(email: any, fieldName: string = 'email', required:
       value: trimmed,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Validate loan amount
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateLoanAmount(amount: any, fieldName: string = 'loan_amount'): ValidationError | null {
   if (amount === undefined || amount === null || amount === '') {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const numAmount = typeof amount === 'number' ? amount : parseInt(String(amount), 10);
-  
+
   if (isNaN(numAmount)) {
     return {
       field: fieldName,
@@ -248,7 +254,7 @@ export function validateLoanAmount(amount: any, fieldName: string = 'loan_amount
       value: amount,
     };
   }
-  
+
   if (numAmount < VALIDATION_RULES.LOAN_AMOUNT.MIN) {
     return {
       field: fieldName,
@@ -257,7 +263,7 @@ export function validateLoanAmount(amount: any, fieldName: string = 'loan_amount
       value: numAmount,
     };
   }
-  
+
   if (numAmount > VALIDATION_RULES.LOAN_AMOUNT.MAX) {
     return {
       field: fieldName,
@@ -266,20 +272,21 @@ export function validateLoanAmount(amount: any, fieldName: string = 'loan_amount
       value: numAmount,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Validate monthly salary
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateSalary(salary: any, fieldName: string = 'monthly_salary'): ValidationError | null {
   if (salary === undefined || salary === null || salary === '') {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const numSalary = typeof salary === 'number' ? salary : parseFloat(String(salary));
-  
+
   if (isNaN(numSalary)) {
     return {
       field: fieldName,
@@ -288,7 +295,7 @@ export function validateSalary(salary: any, fieldName: string = 'monthly_salary'
       value: salary,
     };
   }
-  
+
   if (numSalary < VALIDATION_RULES.SALARY.MIN) {
     return {
       field: fieldName,
@@ -297,7 +304,7 @@ export function validateSalary(salary: any, fieldName: string = 'monthly_salary'
       value: numSalary,
     };
   }
-  
+
   if (numSalary > VALIDATION_RULES.SALARY.MAX) {
     return {
       field: fieldName,
@@ -306,7 +313,7 @@ export function validateSalary(salary: any, fieldName: string = 'monthly_salary'
       value: numSalary,
     };
   }
-  
+
   return null;
 }
 
@@ -314,21 +321,22 @@ export function validateSalary(salary: any, fieldName: string = 'monthly_salary'
  * Validate intake month and year
  * Note: (0, 0) is valid and means "Not sure yet"
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateIntake(month: any, year: any): ValidationError[] {
   const errors: ValidationError[] = [];
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;
-  
+
   const numMonth = typeof month === 'number' ? month : parseInt(String(month), 10);
   const numYear = typeof year === 'number' ? year : parseInt(String(year), 10);
-  
+
   // Handle "Not sure yet" case - both month and year are 0
   if (numMonth === 0 && numYear === 0) {
     // This is valid - "Not sure yet" option
     return errors;
   }
-  
+
   // If only one is 0, that's invalid (partial "not sure" state)
   if (numMonth === 0 || numYear === 0) {
     errors.push({
@@ -338,7 +346,7 @@ export function validateIntake(month: any, year: any): ValidationError[] {
     });
     return errors;
   }
-  
+
   // Validate month (1-12)
   if (month === undefined || month === null || month === '') {
     errors.push({ field: 'intake_month', message: 'Intake month is required', code: 'REQUIRED' });
@@ -352,14 +360,14 @@ export function validateIntake(month: any, year: any): ValidationError[] {
       });
     }
   }
-  
+
   // Validate year
   if (year === undefined || year === null || year === '') {
     errors.push({ field: 'intake_year', message: 'Intake year is required', code: 'REQUIRED' });
   } else {
     const minYear = currentYear + VALIDATION_RULES.INTAKE_YEAR.MIN_OFFSET;
     const maxYear = currentYear + VALIDATION_RULES.INTAKE_YEAR.MAX_OFFSET;
-    
+
     if (isNaN(numYear) || numYear < minYear || numYear > maxYear) {
       errors.push({
         field: 'intake_year',
@@ -368,7 +376,7 @@ export function validateIntake(month: any, year: any): ValidationError[] {
         value: year,
       });
     }
-    
+
     // Check if intake is in the past
     if (!isNaN(numYear) && !isNaN(numMonth)) {
       if (numYear === currentYear && numMonth < currentMonth) {
@@ -381,7 +389,7 @@ export function validateIntake(month: any, year: any): ValidationError[] {
       }
     }
   }
-  
+
   return errors;
 }
 
@@ -390,13 +398,14 @@ export function validateIntake(month: any, year: any): ValidationError[] {
  */
 const VALID_RELATIONSHIPS = ['parent', 'spouse', 'sibling', 'guardian', 'other'];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateRelationship(relationship: any, fieldName: string = 'relationship'): ValidationError | null {
   if (!relationship) {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const trimmed = String(relationship).trim().toLowerCase();
-  
+
   if (!VALID_RELATIONSHIPS.includes(trimmed)) {
     return {
       field: fieldName,
@@ -405,7 +414,7 @@ export function validateRelationship(relationship: any, fieldName: string = 'rel
       value: relationship,
     };
   }
-  
+
   return null;
 }
 
@@ -414,7 +423,7 @@ export function validateRelationship(relationship: any, fieldName: string = 'rel
  * UI sends: 'USA', 'UK', 'Canada', etc.
  * DB universities use: 'United States', 'United Kingdom', etc.
  */
-const VALID_COUNTRIES = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'Ireland', 'New Zealand', 'Singapore', 'Hong Kong', 'Japan', 'Switzerland', 'China', 'Other'];
+const VALID_COUNTRIES = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'Ireland', 'New Zealand', 'Singapore', 'Hong Kong', 'Japan', 'Switzerland', 'China', 'India', 'Other'];
 
 // UI value → normalized value for validation/storage
 const COUNTRY_MAPPING: Record<string, string> = {
@@ -438,6 +447,7 @@ export const UI_TO_DB_COUNTRY: Record<string, string> = {
   'Japan': 'Japan',
   'Switzerland': 'Switzerland',
   'China': 'China',
+  'India': 'India',
   'Ireland': 'Ireland',
   'Other': '',
 };
@@ -519,13 +529,13 @@ const COUNTRY_ALIASES: Record<string, string[]> = {
 // Build reverse lookup for O(1) matching
 function buildCountryMatcher(): Record<string, string> {
   const aliasToCanonical: Record<string, string> = {};
-  
+
   for (const [canonical, aliases] of Object.entries(COUNTRY_ALIASES)) {
     for (const alias of aliases) {
       aliasToCanonical[alias.toLowerCase().trim()] = canonical;
     }
   }
-  
+
   return aliasToCanonical;
 }
 
@@ -553,17 +563,17 @@ export function getCanonicalCountry(country: string): string {
  */
 export function countriesMatch(country1: string, country2: string): boolean {
   if (!country1 || !country2) return false;
-  
+
   const c1 = country1.toLowerCase().trim();
   const c2 = country2.toLowerCase().trim();
-  
+
   // Exact match (case-insensitive)
   if (c1 === c2) return true;
-  
+
   // Check if both resolve to the same canonical country
   const canonical1 = COUNTRY_MATCHER[c1] || c1;
   const canonical2 = COUNTRY_MATCHER[c2] || c2;
-  
+
   return canonical1 === canonical2;
 }
 
@@ -585,13 +595,14 @@ export function getDbCountryName(uiCountry: string): string {
   return UI_TO_DB_COUNTRY[uiCountry] || uiCountry;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateCountry(country: any, fieldName: string = 'country'): ValidationError | null {
   if (!country) {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const normalized = normalizeCountry(country);
-  
+
   if (!VALID_COUNTRIES.includes(normalized)) {
     return {
       field: fieldName,
@@ -600,7 +611,7 @@ export function validateCountry(country: any, fieldName: string = 'country'): Va
       value: country,
     };
   }
-  
+
   return null;
 }
 
@@ -609,13 +620,14 @@ export function validateCountry(country: any, fieldName: string = 'country'): Va
  */
 const VALID_LOAN_TYPES = ['secured', 'unsecured', 'hybrid'];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateLoanType(loanType: any, fieldName: string = 'loan_type'): ValidationError | null {
   if (!loanType) {
     return { field: fieldName, message: `${fieldName} is required`, code: 'REQUIRED' };
   }
-  
+
   const trimmed = String(loanType).trim().toLowerCase();
-  
+
   if (!VALID_LOAN_TYPES.includes(trimmed)) {
     return {
       field: fieldName,
@@ -624,13 +636,14 @@ export function validateLoanType(loanType: any, fieldName: string = 'loan_type')
       value: loanType,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Validate percentage (0-100)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validatePercentage(value: any, fieldName: string, required: boolean = false): ValidationError | null {
   if (value === undefined || value === null || value === '') {
     if (required) {
@@ -638,9 +651,9 @@ export function validatePercentage(value: any, fieldName: string, required: bool
     }
     return null;
   }
-  
+
   const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-  
+
   if (isNaN(numValue)) {
     return {
       field: fieldName,
@@ -649,7 +662,7 @@ export function validatePercentage(value: any, fieldName: string, required: bool
       value,
     };
   }
-  
+
   if (numValue < VALIDATION_RULES.PERCENTAGE.MIN || numValue > VALIDATION_RULES.PERCENTAGE.MAX) {
     return {
       field: fieldName,
@@ -658,13 +671,14 @@ export function validatePercentage(value: any, fieldName: string, required: bool
       value: numValue,
     };
   }
-  
+
   return null;
 }
 
 /**
  * Validate CGPA (0-10)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateCGPA(value: any, fieldName: string, required: boolean = false): ValidationError | null {
   if (value === undefined || value === null || value === '') {
     if (required) {
@@ -672,9 +686,9 @@ export function validateCGPA(value: any, fieldName: string, required: boolean = 
     }
     return null;
   }
-  
+
   const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-  
+
   if (isNaN(numValue)) {
     return {
       field: fieldName,
@@ -683,7 +697,7 @@ export function validateCGPA(value: any, fieldName: string, required: boolean = 
       value,
     };
   }
-  
+
   if (numValue < VALIDATION_RULES.CGPA.MIN || numValue > VALIDATION_RULES.CGPA.MAX) {
     return {
       field: fieldName,
@@ -692,7 +706,7 @@ export function validateCGPA(value: any, fieldName: string, required: boolean = 
       value: numValue,
     };
   }
-  
+
   return null;
 }
 
@@ -700,18 +714,19 @@ export function validateCGPA(value: any, fieldName: string, required: boolean = 
  * Validate test score based on test type
  */
 export function validateTestScore(
-  testType: string, 
-  score: any, 
+  testType: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  score: any,
   fieldName: string = 'score'
 ): ValidationError | null {
   if (score === undefined || score === null || score === '') {
     return { field: fieldName, message: `${fieldName} is required for ${testType}`, code: 'REQUIRED' };
   }
-  
+
   const numScore = typeof score === 'number' ? score : parseFloat(String(score));
   const upperTestType = testType.toUpperCase() as keyof typeof VALIDATION_RULES.TEST_SCORES;
   const rules = VALIDATION_RULES.TEST_SCORES[upperTestType];
-  
+
   if (!rules) {
     return {
       field: 'test_type',
@@ -720,7 +735,7 @@ export function validateTestScore(
       value: testType,
     };
   }
-  
+
   if (isNaN(numScore)) {
     return {
       field: fieldName,
@@ -729,7 +744,7 @@ export function validateTestScore(
       value: score,
     };
   }
-  
+
   if (numScore < rules.MIN || numScore > rules.MAX) {
     return {
       field: fieldName,
@@ -738,7 +753,7 @@ export function validateTestScore(
       value: numScore,
     };
   }
-  
+
   return null;
 }
 
@@ -749,111 +764,115 @@ export function validateTestScore(
 /**
  * Validate student data
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateStudentData(data: any): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   // Required fields
   const nameError = validateName(data.student_name, 'student_name');
   if (nameError) errors.push(nameError);
-  
+
   const phoneError = validatePhone(data.student_phone, 'student_phone');
   if (phoneError) errors.push(phoneError);
-  
+
   const pinCodeError = validatePostalCode(data.student_pin_code, 'student_pin_code');
   if (pinCodeError) errors.push(pinCodeError);
-  
+
   // Optional email (validate format if provided)
   const emailError = validateEmail(data.student_email, 'student_email', false);
   if (emailError) errors.push(emailError);
-  
+
   // Optional academic scores
   if (data.tenth_percentage !== undefined) {
     const tenthError = validatePercentage(data.tenth_percentage, 'tenth_percentage');
     if (tenthError) errors.push(tenthError);
   }
-  
+
   if (data.twelfth_percentage !== undefined) {
     const twelfthError = validatePercentage(data.twelfth_percentage, 'twelfth_percentage');
     if (twelfthError) errors.push(twelfthError);
   }
-  
+
   if (data.bachelors_percentage !== undefined) {
     const bachelorsError = validatePercentage(data.bachelors_percentage, 'bachelors_percentage');
     if (bachelorsError) errors.push(bachelorsError);
   }
-  
+
   if (data.bachelors_cgpa !== undefined) {
     const cgpaError = validateCGPA(data.bachelors_cgpa, 'bachelors_cgpa');
     if (cgpaError) errors.push(cgpaError);
   }
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
 /**
  * Validate co-applicant data
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateCoApplicantData(data: any): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   // Required fields
   const nameError = validateName(data.co_applicant_name, 'co_applicant_name');
   if (nameError) errors.push(nameError);
-  
+
   const phoneError = validatePhone(data.co_applicant_phone, 'co_applicant_phone');
   if (phoneError) errors.push(phoneError);
-  
+
   const pinCodeError = validatePostalCode(data.co_applicant_pin_code, 'co_applicant_pin_code');
   if (pinCodeError) errors.push(pinCodeError);
-  
+
   const relationshipError = validateRelationship(data.co_applicant_relationship, 'co_applicant_relationship');
   if (relationshipError) errors.push(relationshipError);
-  
+
   const salaryError = validateSalary(data.co_applicant_monthly_salary, 'co_applicant_monthly_salary');
   if (salaryError) errors.push(salaryError);
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
 /**
  * Validate loan/study details
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateLoanDetails(data: any): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   // Country validation
   const countryError = validateCountry(data.country, 'country');
   if (countryError) errors.push(countryError);
-  
+
   // Loan amount validation
   const loanAmountField = data.loan_amount !== undefined ? 'loan_amount' : 'amount_requested';
   const loanAmount = data.loan_amount || data.amount_requested;
   const amountError = validateLoanAmount(loanAmount, loanAmountField);
   if (amountError) errors.push(amountError);
-  
+
   // Loan type validation (optional, defaults to 'unsecured')
   if (data.loan_type) {
     const loanTypeError = validateLoanType(data.loan_type, 'loan_type');
     if (loanTypeError) errors.push(loanTypeError);
   }
-  
+
   // Intake validation
   const intakeErrors = validateIntake(data.intake_month, data.intake_year);
   errors.push(...intakeErrors);
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
 /**
  * Validate test scores array
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateTestScores(tests: any[]): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   if (!Array.isArray(tests)) {
     return { isValid: true, errors: [] }; // Optional field
   }
-  
+
   tests.forEach((test, index) => {
     if (!test.test_type) {
       errors.push({
@@ -863,11 +882,11 @@ export function validateTestScores(tests: any[]): ValidationResult {
       });
       return;
     }
-    
+
     const scoreError = validateTestScore(test.test_type, test.score, `tests[${index}].score`);
     if (scoreError) errors.push(scoreError);
   });
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
@@ -878,103 +897,106 @@ export function validateTestScores(tests: any[]): ValidationResult {
 /**
  * Validate full lead creation request (partner/admin creating lead)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateCreateLeadRequest(body: any): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   // Validate student data
   const studentResult = validateStudentData(body);
   errors.push(...studentResult.errors);
-  
+
   // Validate co-applicant data
   const coApplicantResult = validateCoApplicantData(body);
   errors.push(...coApplicantResult.errors);
-  
+
   // Validate loan details
   const loanResult = validateLoanDetails(body);
   errors.push(...loanResult.errors);
-  
+
   // Validate test scores if provided
   if (body.tests) {
     const testResult = validateTestScores(body.tests);
     errors.push(...testResult.errors);
   }
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
 /**
  * Validate student-initiated lead request (lighter validation)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateStudentLeadRequest(body: any): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   // Required: name, phone, country, loan_amount
   const nameError = validateName(body.student_name, 'student_name');
   if (nameError) errors.push(nameError);
-  
+
   const phoneError = validatePhone(body.student_phone, 'student_phone');
   if (phoneError) errors.push(phoneError);
-  
+
   const countryError = validateCountry(body.country, 'country');
   if (countryError) errors.push(countryError);
-  
+
   const amountError = validateLoanAmount(body.loan_amount, 'loan_amount');
   if (amountError) errors.push(amountError);
-  
+
   // Optional fields with validation if provided
   if (body.student_pin_code) {
     const pinError = validatePostalCode(body.student_pin_code, 'student_pin_code');
     if (pinError) errors.push(pinError);
   }
-  
+
   if (body.student_email) {
     const emailError = validateEmail(body.student_email, 'student_email', false);
     if (emailError) errors.push(emailError);
   }
-  
+
   // Co-applicant validation if provided
   if (body.co_applicant_name) {
     const coNameError = validateName(body.co_applicant_name, 'co_applicant_name');
     if (coNameError) errors.push(coNameError);
   }
-  
+
   if (body.co_applicant_phone) {
     const coPhoneError = validatePhone(body.co_applicant_phone, 'co_applicant_phone');
     if (coPhoneError) errors.push(coPhoneError);
   }
-  
+
   if (body.co_applicant_monthly_salary) {
     const salaryError = validateSalary(body.co_applicant_monthly_salary, 'co_applicant_monthly_salary');
     if (salaryError) errors.push(salaryError);
   }
-  
+
   if (body.co_applicant_relationship) {
     const relationError = validateRelationship(body.co_applicant_relationship, 'co_applicant_relationship');
     if (relationError) errors.push(relationError);
   }
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
 /**
  * Validate quick lead request (minimal validation)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateQuickLeadRequest(body: any): ValidationResult {
   const errors: ValidationError[] = [];
-  
+
   // Minimal required fields for quick lead
   const nameError = validateName(body.student_name, 'student_name');
   if (nameError) errors.push(nameError);
-  
+
   const phoneError = validatePhone(body.student_phone, 'student_phone');
   if (phoneError) errors.push(phoneError);
-  
+
   const countryError = validateCountry(body.country, 'country');
   if (countryError) errors.push(countryError);
-  
+
   const amountError = validateLoanAmount(body.loan_amount, 'loan_amount');
   if (amountError) errors.push(amountError);
-  
+
   return { isValid: errors.length === 0, errors };
 }
 
@@ -989,7 +1011,7 @@ export function formatValidationErrors(errors: ValidationError[]): string {
   if (errors.length === 1) {
     return errors[0].message;
   }
-  
+
   return `Validation failed: ${errors.map(e => e.message).join('; ')}`;
 }
 
@@ -1004,14 +1026,15 @@ export function isUUID(str: string): boolean {
 /**
  * Separate university IDs (UUIDs) from custom university names
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function separateUniversities(universities: any[]): { uuids: string[]; custom: string[] } {
   const uuids: string[] = [];
   const custom: string[] = [];
-  
+
   if (!Array.isArray(universities)) {
     return { uuids, custom };
   }
-  
+
   universities.forEach(uni => {
     if (uni && typeof uni === 'string' && uni.trim()) {
       if (isUUID(uni)) {
@@ -1021,6 +1044,6 @@ export function separateUniversities(universities: any[]): { uuids: string[]; cu
       }
     }
   });
-  
+
   return { uuids, custom };
 }

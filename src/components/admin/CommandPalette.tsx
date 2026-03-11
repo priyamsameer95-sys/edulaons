@@ -92,7 +92,9 @@ export function CommandPalette({
             searchResults.push({
               type: 'lead',
               id: lead.id,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               title: (lead.student as any).name || 'Unknown',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               subtitle: `${lead.case_id} • ${(lead.student as any).email}`,
             });
           }
@@ -100,6 +102,7 @@ export function CommandPalette({
 
         // Add leads from student search
         studentLeads?.forEach(student => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const studentLeadsList = student.leads as any[];
           studentLeadsList?.forEach(lead => {
             if (!searchResults.find(r => r.id === lead.id)) {

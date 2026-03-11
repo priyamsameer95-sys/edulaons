@@ -47,6 +47,7 @@ interface ImportSummary {
 function parseCSV(csvContent: string): { courses: CourseRow[], errors: Array<{ row: number; message: string }> } {
   const parseErrors: Array<{ row: number; message: string }> = [];
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: any = Papa.parse(csvContent, {
     header: true,
     skipEmptyLines: true,
@@ -68,6 +69,7 @@ function parseCSV(csvContent: string): { courses: CourseRow[], errors: Array<{ r
   });
 
   if (result.errors && result.errors.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     result.errors.forEach((error: any) => {
       parseErrors.push({
         row: error.row || 0,
@@ -76,6 +78,7 @@ function parseCSV(csvContent: string): { courses: CourseRow[], errors: Array<{ r
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const courses = ((result.data || []) as any[]).map((row, index) => ({
     university_name: row.university_name || '',
     degree: row.degree || '',
@@ -220,6 +223,7 @@ Deno.serve(async (req) => {
 
     // Step 4: Process courses in chunks
     const BATCH_SIZE = 500;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const coursesToInsert: any[] = [];
 
     for (let i = 0; i < courses.length; i++) {

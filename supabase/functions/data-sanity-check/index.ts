@@ -9,6 +9,7 @@ interface ValidationIssue {
   severity: 'error' | 'warning' | 'info';
   category: string;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details?: any;
 }
 
@@ -56,12 +57,14 @@ Deno.serve(async (req) => {
       });
     } else {
       // Check status counts
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const statusCounts = allLeads.reduce((acc: any, lead) => {
         acc[lead.status] = (acc[lead.status] || 0) + 1;
         return acc;
       }, {});
 
       // Check document status counts
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const docStatusCounts = allLeads.reduce((acc: any, lead) => {
         acc[lead.documents_status] = (acc[lead.documents_status] || 0) + 1;
         return acc;
@@ -222,6 +225,7 @@ Deno.serve(async (req) => {
       });
 
       // Validate document status consistency with leads
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const leadDocumentCounts = documents.reduce((acc: any, doc) => {
         if (!acc[doc.lead_id]) {
           acc[doc.lead_id] = { total: 0, byStatus: {} };
@@ -247,6 +251,7 @@ Deno.serve(async (req) => {
 
     // 5. VALIDATE PARTNER STATISTICS
     console.log('Validating partner statistics...');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const partnerLeadCounts = allLeads?.reduce((acc: any, lead) => {
       if (lead.partner_id) {
         if (!acc[lead.partner_id]) {
@@ -275,6 +280,7 @@ Deno.serve(async (req) => {
       .select('email, name');
     
     if (studentsWithEmail) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const emailCounts: any = {};
       studentsWithEmail.forEach((student) => {
         if (student.email) {

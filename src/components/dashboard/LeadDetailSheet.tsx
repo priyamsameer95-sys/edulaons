@@ -56,6 +56,7 @@ import {
 } from "@/components/admin/lead-detail";
 
 interface LeadDetailSheetProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lead: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -131,7 +132,9 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
 
     if (univData) {
       const universities = univData
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((u: any) => u.universities)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((u: any) => ({
           id: u.universities.id,
           name: u.universities.name,
@@ -152,7 +155,9 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
 
         if (prefData) {
           const lenders = prefData
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .filter((p: any) => p.lenders)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((p: any) => ({
               id: p.lenders.id,
               name: p.lenders.name
@@ -182,6 +187,7 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
       .eq('lead_id', lead.id);
 
     if (courseData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setLeadCourses(courseData.map((c: any) => ({
         id: c.id,
         course_id: c.course_id,
@@ -199,7 +205,9 @@ export const LeadDetailSheet = ({ lead, open, onOpenChange, onLeadUpdated }: Lea
     // Silent background logging
     logLeadView(lead.id);
     fetchAdditionalData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead?.id, lead?.study_destination, fetchAdditionalData]);
+ 
 
   // Fetch all lenders for the loan configuration dropdown
   useEffect(() => {

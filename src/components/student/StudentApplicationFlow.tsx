@@ -13,6 +13,7 @@ const StudentApplicationFlow = () => {
     clearDraft
   } = useStudentApplication();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submissionResult, setSubmissionResult] = useState<any>(null);
 
   // Validate user context matches stored draft

@@ -33,6 +33,19 @@ export const STEPS: { id: Step; label: string; icon: React.ElementType }[] = [
 ];
 
 export const COUNTRIES = [
-  'United States', 'Canada', 'United Kingdom', 'Australia',
-  'Germany', 'France', 'Netherlands', 'Singapore', 'Ireland', 'New Zealand'
+  'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahrain', 'Bangladesh',
+  'Belarus', 'Belgium', 'Bosnia & Herzegovina', 'Brazil', 'Brunei', 'Bulgaria', 'Canada',
+  'Chile', 'China (Mainland)', 'Colombia', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus',
+  'Czechia', 'Denmark', 'Dominican Republic', 'Ecuador', 'Egypt', 'Estonia', 'Ethiopia',
+  'Finland', 'France', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Guatemala', 'Honduras',
+  'Hong Kong SAR', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland',
+  'Israel', 'Italy', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kuwait', 'Kyrgyzstan',
+  'Latvia', 'Lebanon', 'Libya', 'Lithuania', 'Luxembourg', 'Macau SAR', 'Malaysia', 'Malta',
+  'Mexico', 'Morocco', 'Netherlands', 'New Zealand', 'Nigeria', 'Northern Cyprus', 'Norway',
+  'Oman', 'Pakistan', 'Palestine', 'Panama', 'Paraguay', 'Peru', 'Philippines', 'Poland',
+  'Portugal', 'Puerto Rico', 'Qatar', 'Romania', 'Russia', 'Saudi Arabia', 'Serbia',
+  'Singapore', 'Slovakia', 'Slovenia', 'South Africa', 'South Korea', 'Spain', 'Sri Lanka',
+  'Sudan', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Thailand', 'Tunisia', 'Türkiye',
+  'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay',
+  'Uzbekistan', 'Venezuela', 'Vietnam', 'Other'
 ];

@@ -18,14 +18,15 @@ import { STUDENT_EDIT_LOCKED_STATUSES } from '@/constants/studentPermissions';
 import ChangeLenderModal from '@/components/student/ChangeLenderModal';
 import StudentUploadSheet from '@/components/student/StudentUploadSheet';
 import { toast } from 'sonner';
-import { 
+import {
   CompactStatusHeader,
   ApplicationDetailsCard,
   CollapsibleDocumentSection,
   type DocumentItem,
 } from '@/components/student/dashboard';
-import { 
-  LogOut, 
+import { generateProcessGuidePDF } from '@/utils/generateProcessGuidePDF';
+import {
+  LogOut,
   GraduationCap,
   Sparkles,
   ChevronRight,
@@ -90,6 +91,7 @@ const StudentDashboard = () => {
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isEditLocked = lead ? STUDENT_EDIT_LOCKED_STATUSES.includes(lead.status as any) : true;
 
   const fetchStudentData = useCallback(async () => {
@@ -97,28 +99,28 @@ const StudentDashboard = () => {
 
     try {
       let studentData = null;
-      
+
       // PHONE-FIRST LOOKUP: If synthetic email, extract phone and lookup by phone first
       // This is more reliable since phone is the student's primary identity
       const syntheticMatch = user.email.match(/^(\d{10})@student\.loan\.app$/i);
-      
+
       if (syntheticMatch) {
         // Synthetic OTP email - lookup by phone FIRST
         const phoneDigits = syntheticMatch[1];
-        console.log('[StudentDashboard] Synthetic email detected, looking up by phone:', phoneDigits);
-        
+        if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] Synthetic email detected, looking up by phone:', phoneDigits);
+
         const { data: byPhone, error: phoneError } = await supabase
           .from('students')
           .select('id, name, email, phone')
           .eq('phone', phoneDigits)
           .maybeSingle();
-        
+
         if (!phoneError && byPhone) {
           studentData = byPhone;
-          console.log('[StudentDashboard] Found student by phone:', studentData.id);
+          if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] Found student by phone:', studentData.id);
         }
       }
-      
+
       // If not found by phone (or not synthetic), try email lookup
       if (!studentData) {
         const { data: byEmail, error: emailError } = await supabase
@@ -129,7 +131,7 @@ const StudentDashboard = () => {
 
         if (!emailError && byEmail) {
           studentData = byEmail;
-          console.log('[StudentDashboard] Found student by email:', studentData.id);
+          if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] Found student by email:', studentData.id);
         } else {
           // Final fallback: Extract any 10 digits from email
           const emailMatch = user.email.match(/(\d{10})/);
@@ -140,10 +142,10 @@ const StudentDashboard = () => {
               .select('id, name, email, phone')
               .eq('phone', phoneDigits)
               .maybeSingle();
-            
+
             if (!phoneError && byPhone) {
               studentData = byPhone;
-              console.log('[StudentDashboard] Found student by extracted phone:', studentData.id);
+              if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] Found student by extracted phone:', studentData.id);
             }
           }
         }
@@ -176,15 +178,15 @@ const StudentDashboard = () => {
             target_lender: leadData.target_lender,
           } as StudentLead);
           setHasLead(true);
-          console.log('[StudentDashboard] Found lead:', leadData.case_id);
+          if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] Found lead:', leadData.case_id);
 
           // Fetch documents for this lead
           await fetchDocuments(leadData.id);
         } else {
-          console.log('[StudentDashboard] No lead found for student');
+          if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] No lead found for student');
         }
       } else {
-        console.log('[StudentDashboard] No student profile found');
+        if (process.env.NODE_ENV === 'development') console.log('[StudentDashboard] No student profile found');
       }
     } catch (err) {
       console.error('Error fetching student data:', err);
@@ -213,7 +215,7 @@ const StudentDashboard = () => {
   // Key fix: Don't give up too early on slow auth, retry when user becomes available
   useEffect(() => {
     let isMounted = true;
-    
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -232,7 +234,7 @@ const StudentDashboard = () => {
     // If auth is still loading, wait for it - but set a max timeout
     if (authLoading) {
       console.log('[StudentDashboard] Auth still loading, waiting...');
-      
+
       // Set a safety timeout - if auth takes too long, we'll check again
       timeoutRef.current = setTimeout(() => {
         if (isMounted && !user) {
@@ -241,7 +243,7 @@ const StudentDashboard = () => {
           setLoading(false);
         }
       }, LOADING_TIMEOUT_MS);
-      
+
       return () => {
         isMounted = false;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -263,7 +265,9 @@ const StudentDashboard = () => {
       isMounted = false;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.email, fetchStudentData]);
+
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -282,6 +286,19 @@ const StudentDashboard = () => {
 
   const handleEditApplication = () => {
     navigate('/student/apply');
+  };
+
+  const handleDownloadProcessGuide = () => {
+    if (!profile || !lead || !lead.target_lender) return;
+
+    generateProcessGuidePDF({
+      studentName: profile.name,
+      loanAmount: lead.loan_amount,
+      studyDestination: lead.study_destination,
+      targetLenderName: lead.target_lender.name || 'Lender',
+    });
+    // Add toast to let user know
+    toast.success('Your process guide is being downloaded');
   };
 
   // Document helpers
@@ -308,7 +325,7 @@ const StudentDashboard = () => {
       const fileName = `${lead.id}/${typeId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('lead-documents')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
@@ -333,6 +350,7 @@ const StudentDashboard = () => {
 
       setUploadedDocs(prev => [...prev, newDoc]);
       toast.success('Document uploaded successfully');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
     } finally {
@@ -400,8 +418,34 @@ const StudentDashboard = () => {
   // Show loading only if auth is still loading or we're fetching data
   if (loading && !loadingTimedOut) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="min-h-screen bg-gradient-to-b from-muted/30 via-background to-background">
+        {/* Skeleton Header */}
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-muted animate-pulse" />
+                <div className="w-24 h-4 bg-muted rounded animate-pulse" />
+              </div>
+              <div className="w-20 h-8 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+        </header>
+
+        {/* Skeleton Content */}
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+          <div className="space-y-4">
+            {/* Skeleton Status Card */}
+            <div className="h-24 bg-muted rounded-xl animate-pulse" />
+            {/* Skeleton Application Details */}
+            <div className="h-32 bg-muted rounded-xl animate-pulse" />
+            {/* Skeleton Documents Section */}
+            <div className="h-48 bg-muted rounded-xl animate-pulse" />
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-8 animate-pulse">
+            Loading your dashboard...
+          </p>
+        </main>
       </div>
     );
   }
@@ -414,7 +458,7 @@ const StudentDashboard = () => {
           <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-lg font-semibold mb-2">Session Issue</h2>
           <p className="text-muted-foreground text-center max-w-sm">
-            {!user 
+            {!user
               ? "Your session may have expired. Please try refreshing or login again."
               : "Something went wrong loading your data."
             }
@@ -444,10 +488,10 @@ const StudentDashboard = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-semibold text-lg text-foreground leading-tight">Eduloans</span>
-                <span className="text-[10px] text-muted-foreground">by cashakro</span>
+                <span className="text-[10px] text-muted-foreground">by CashKaro</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               {profile && hasLead && lead && (
                 <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-full bg-muted/50 border border-border">
@@ -459,9 +503,9 @@ const StudentDashboard = () => {
                   <span className="text-sm font-medium">{studentName}</span>
                 </div>
               )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleLogout}
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -476,25 +520,27 @@ const StudentDashboard = () => {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {!hasLead ? (
           /* ================== NO APPLICATION STATE ================== */
-          <motion.div 
-            className="max-w-xl mx-auto text-center pt-12"
+          <motion.div
+            className="max-w-2xl mx-auto text-center pt-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mb-8">
               <Globe className="w-12 h-12 text-primary" />
             </div>
-            
-            <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
-              Your Dream Abroad<br />
-              <span className="text-primary">Starts Here</span>
+
+            <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-2">
+              {profile ? `Hello, ${studentName} 👋` : 'Your Dream Abroad'}
             </h1>
-            
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+              <span className="text-primary">Your journey starts here</span>
+            </h2>
+
             <p className="text-lg text-muted-foreground mb-10">
-              Get personalized loan offers in just 5 minutes
+              Get personalized loan offers from India's top lenders in just 5 minutes
             </p>
 
-            <Button 
+            <Button
               onClick={handleStartApplication}
               size="lg"
               className="h-14 px-12 text-lg font-semibold shadow-lg shadow-primary/20"
@@ -503,10 +549,35 @@ const StudentDashboard = () => {
               Start Application
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
+
+            {/* Benefit Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12">
+              <div className="p-5 rounded-xl border bg-card/50 text-left">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Globe className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="font-semibold text-sm mb-1">Compare Lenders</h3>
+                <p className="text-xs text-muted-foreground">Side-by-side comparison of 20+ education loan providers</p>
+              </div>
+              <div className="p-5 rounded-xl border bg-card/50 text-left">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
+                  <Sparkles className="w-5 h-5 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-sm mb-1">Quick Approval</h3>
+                <p className="text-xs text-muted-foreground">Pre-approved offers within 24–48 hours</p>
+              </div>
+              <div className="p-5 rounded-xl border bg-card/50 text-left">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-sm mb-1">Secure & Free</h3>
+                <p className="text-xs text-muted-foreground">Zero cost to you — your data is shared only with verified lenders</p>
+              </div>
+            </div>
           </motion.div>
         ) : (
           /* ================== HAS APPLICATION - COMPACT 3-SECTION DASHBOARD ================== */
-          <motion.div 
+          <motion.div
             className="space-y-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -527,6 +598,7 @@ const StudentDashboard = () => {
               createdAt={lead.created_at}
               isEditLocked={isEditLocked}
               onEditClick={handleEditApplication}
+              onDownloadGuide={handleDownloadProcessGuide}
             />
 
             {/* Section 3: Collapsible Document Section */}

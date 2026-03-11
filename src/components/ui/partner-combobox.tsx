@@ -65,6 +65,7 @@ export function PartnerCombobox({
   const [searchQuery, setSearchQuery] = React.useState('');
 
   // DEFENSIVE GUARD: Handle undefined/null partners
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const safePartners = partners ?? [];
   const isLoading = !partners;
 

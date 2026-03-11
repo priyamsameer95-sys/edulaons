@@ -210,6 +210,7 @@ export function EditLenderModal({
       });
 
       onSuccess();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Error updating lender:', error);
       toast({

@@ -21,6 +21,7 @@ export interface FieldConfig {
   [key: string]: ValidationRule;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useFormValidation<T extends Record<string, any>>(
   initialState: T,
   fieldConfig: FieldConfig
@@ -30,6 +31,7 @@ export function useFormValidation<T extends Record<string, any>>(
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Validate a single field
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const validateField = useCallback((name: string, value: any): string | null => {
     const config = fieldConfig[name];
     if (!config) return null;

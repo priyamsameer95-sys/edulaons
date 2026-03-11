@@ -285,6 +285,7 @@ export const AdminSmartUpload = forwardRef<AdminSmartUploadRef, AdminSmartUpload
     }
     
     return { hasIssue: false, message: '' };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentTypes, studentName, coApplicantName]);
 
   const handleApproveUpload = useCallback(async (queuedFile: QueuedFile, skipConfirmation = false) => {

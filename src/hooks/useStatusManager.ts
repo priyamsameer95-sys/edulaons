@@ -60,6 +60,7 @@ export function useStatusManager() {
         notes: params.notes,
         changed_by: userData.user?.id,
         reason_code: params.reason_code, // New field for structured tracking
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
     if (error) {
@@ -79,6 +80,7 @@ export function useStatusManager() {
       }
 
       // Prepare update data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {};
       let statusChanged = false;
       let documentsStatusChanged = false;

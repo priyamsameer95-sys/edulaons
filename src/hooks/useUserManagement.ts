@@ -54,6 +54,7 @@ export function useUserManagement() {
 
       setUsers(usersWithRoles);
       return usersWithRoles;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       logger.error('Error fetching users:', error);
       toast({
@@ -78,6 +79,7 @@ export function useUserManagement() {
       if (error) throw error;
       setPartners(data || []);
       return data || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       logger.error('Error fetching partners:', error);
       return [];
@@ -112,6 +114,7 @@ export function useUserManagement() {
 
       await fetchUsers();
       return { success: true, user: data.user, password };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       logger.error('Error creating user:', error);
       toast({
@@ -153,6 +156,7 @@ export function useUserManagement() {
 
       await fetchUsers();
       return { success: true };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       logger.error('Error updating user:', error);
       toast({
@@ -187,6 +191,7 @@ export function useUserManagement() {
 
       await fetchUsers();
       return { success: true };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       logger.error('Error deactivating user:', error);
       toast({
@@ -221,6 +226,7 @@ export function useUserManagement() {
 
       await fetchUsers();
       return { success: true };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       logger.error('Error reactivating user:', error);
       toast({

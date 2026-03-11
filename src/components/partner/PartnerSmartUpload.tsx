@@ -274,6 +274,7 @@ export function PartnerSmartUpload({
     }
     
     return { hasIssue: false, message: '' };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentTypes, studentName, coApplicantName]);
 
   const handleApproveUpload = useCallback(async (queuedFile: QueuedFile, skipConfirmation = false) => {
@@ -387,6 +388,7 @@ export function PartnerSmartUpload({
         description: "We couldn't save that one. Let's try again! 💪",
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId, documentTypes, onUploadSuccess, checkForMismatches]);
 
   const handleConfirmUpload = useCallback(() => {

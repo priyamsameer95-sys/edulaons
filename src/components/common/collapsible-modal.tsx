@@ -58,21 +58,34 @@ export function CollapsibleModal({
     description,
     children,
     footer,
-    className
-}: CollapsibleModalProps) {
+    className,
+    preventCloseOnEsc = false
+}: CollapsibleModalProps & { preventCloseOnEsc?: boolean }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className={cn("sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0", className)}>
+            <DialogContent
+                className={cn("sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0", className)}
+                onEscapeKeyDown={(e) => {
+                    if (preventCloseOnEsc) {
+                        e.preventDefault();
+                    }
+                }}
+                onInteractOutside={(e) => {
+                    if (preventCloseOnEsc) {
+                        e.preventDefault();
+                    }
+                }}
+            >
                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle className="text-xl font-bold text-primary">{title}</DialogTitle>
                     {description && <DialogDescription>{description}</DialogDescription>}
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 p-6 bg-gray-50/50">
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
                     <div className="space-y-1">
                         {children}
                     </div>
-                </ScrollArea>
+                </div>
 
                 {footer && (
                     <div className="p-4 border-t bg-white flex justify-end gap-3">

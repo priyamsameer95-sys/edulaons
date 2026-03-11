@@ -37,6 +37,7 @@ interface UploadedFile {
 interface EnhancedDocumentUploadProps {
   leadId?: string;
   documentType: DocumentType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onUploadSuccess: (document: any) => void;
   onUploadError: (error: string) => void;
   className?: string;

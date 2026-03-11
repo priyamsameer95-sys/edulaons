@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Plus, Edit, Eye, Power, Loader2, Star } from 'lucide-react';
+import { Search, Plus, Edit, Eye, Power, Loader2, Star, Building, Zap } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { CreateLenderModal } from './CreateLenderModal';
 import { EditLenderModal } from './EditLenderModal';
@@ -33,8 +34,11 @@ interface Lender {
   foreclosure_charges: number | null;
   disbursement_time_days: number | null;
   moratorium_period: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   key_features: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   required_documents: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eligible_expenses: any;
   display_order: number | null;
   preferred_rank: number | null;
@@ -58,10 +62,13 @@ export function LenderManagementTab() {
   } = useToast();
   useEffect(() => {
     fetchLenders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     filterLenders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lenders, searchTerm, showActiveOnly]);
+
   const fetchLenders = async () => {
     setLoading(true);
     try {
@@ -181,10 +188,53 @@ export function LenderManagementTab() {
   };
   if (loading) {
     return <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>;
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>;
   }
-  return <div className="space-y-4">
+  const activeLenders = lenders.filter(l => l.is_active).length;
+  const preferredCount = lenders.filter(l => l.preferred_rank !== null).length;
+  const avgRate = lenders.filter(l => l.interest_rate_min && l.interest_rate_max)
+    .reduce((sum, l, _, arr) => sum + ((l.interest_rate_min! + l.interest_rate_max!) / 2) / arr.length, 0);
+
+  return <TooltipProvider delayDuration={200}>
+    <div className="space-y-4">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Building className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold">{activeLenders}</p>
+              <p className="text-sm text-muted-foreground">Active Lenders</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 rounded-lg">
+              <Star className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold">{preferredCount}/2</p>
+              <p className="text-sm text-muted-foreground">Preferred Lenders</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <Zap className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold">{avgRate > 0 ? avgRate.toFixed(1) + '%' : 'N/A'}</p>
+              <p className="text-sm text-muted-foreground">Avg Interest Rate</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -225,56 +275,82 @@ export function LenderManagementTab() {
               </TableHeader>
               <TableBody>
                 {filteredLenders.length === 0 ? <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
-                      No lenders found
-                    </TableCell>
-                  </TableRow> : [...filteredLenders].sort((a, b) => {
-                // Preferred lenders first
-                if (a.preferred_rank && !b.preferred_rank) return -1;
-                if (!a.preferred_rank && b.preferred_rank) return 1;
-                if (a.preferred_rank && b.preferred_rank) return a.preferred_rank - b.preferred_rank;
-                return 0;
-              }).map(lender => <TableRow key={lender.id}>
-                      <TableCell>
-                        {lender.preferred_rank && <Badge variant="default" className="bg-amber-500 text-white">
-                            {lender.preferred_rank === 1 ? '1st' : '2nd'}
-                          </Badge>}
-                      </TableCell>
-                      <TableCell className="font-medium">{lender.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{lender.code}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={lender.is_active ? 'default' : 'secondary'}>
-                          {lender.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {lender.interest_rate_min && lender.interest_rate_max ? `${lender.interest_rate_min}% - ${lender.interest_rate_max}%` : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {lender.loan_amount_min && lender.loan_amount_max ? `₹${lender.loan_amount_min >= 10000000 ? lender.loan_amount_min / 10000000 + 'Cr' : lender.loan_amount_min / 100000 + 'L'} - ₹${lender.loan_amount_max >= 10000000 ? lender.loan_amount_max / 10000000 + 'Cr' : lender.loan_amount_max / 100000 + 'L'}` : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {lender.processing_time_days ? `${lender.processing_time_days} days` : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => togglePreferred(lender)} title={lender.preferred_rank ? 'Remove from preferred' : 'Set as preferred'}>
+                  <TableCell colSpan={8} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <Building className="h-6 w-6 opacity-40" />
+                      </div>
+                      <p className="text-sm font-medium">No lenders found</p>
+                      <p className="text-xs">Try adjusting your search or filter</p>
+                    </div>
+                  </TableCell>
+                </TableRow> : [...filteredLenders].sort((a, b) => {
+                  // Preferred lenders first
+                  if (a.preferred_rank && !b.preferred_rank) return -1;
+                  if (!a.preferred_rank && b.preferred_rank) return 1;
+                  if (a.preferred_rank && b.preferred_rank) return a.preferred_rank - b.preferred_rank;
+                  return 0;
+                }).map(lender => <TableRow key={lender.id}>
+                  <TableCell>
+                    {lender.preferred_rank && <Badge variant="default" className="bg-amber-500 text-white">
+                      {lender.preferred_rank === 1 ? '1st' : '2nd'}
+                    </Badge>}
+                  </TableCell>
+                  <TableCell className="font-medium">{lender.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{lender.code}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={lender.is_active ? 'default' : 'secondary'}>
+                      {lender.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {lender.interest_rate_min && lender.interest_rate_max ? `${lender.interest_rate_min}% - ${lender.interest_rate_max}%` : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {lender.loan_amount_min && lender.loan_amount_max ? `₹${lender.loan_amount_min >= 10000000 ? lender.loan_amount_min / 10000000 + 'Cr' : lender.loan_amount_min / 100000 + 'L'} - ₹${lender.loan_amount_max >= 10000000 ? lender.loan_amount_max / 10000000 + 'Cr' : lender.loan_amount_max / 100000 + 'L'}` : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {lender.processing_time_days ? `${lender.processing_time_days} days` : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" onClick={() => togglePreferred(lender)}>
                             <Star className={`h-4 w-4 ${lender.preferred_rank ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'}`} />
                           </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{lender.preferred_rank ? 'Remove from preferred' : 'Set as preferred'}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button variant="ghost" size="sm" onClick={() => handleViewDetails(lender)}>
                             <Eye className="h-4 w-4" />
                           </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View details</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(lender)}>
                             <Edit className="h-4 w-4" />
                           </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit lender</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button variant="ghost" size="sm" onClick={() => toggleLenderStatus(lender)}>
                             <Power className={`h-4 w-4 ${lender.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>)}
+                        </TooltipTrigger>
+                        <TooltipContent>{lender.is_active ? 'Deactivate' : 'Activate'}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableCell>
+                </TableRow>)}
               </TableBody>
             </Table>
           </div>
@@ -284,8 +360,9 @@ export function LenderManagementTab() {
       <CreateLenderModal open={showCreateModal} onOpenChange={setShowCreateModal} onSuccess={handleSuccess} />
 
       {selectedLender && <>
-          <EditLenderModal open={showEditModal} onOpenChange={setShowEditModal} lender={selectedLender} onSuccess={handleSuccess} />
-          <LenderDetailsSheet open={showDetailsSheet} onOpenChange={setShowDetailsSheet} lender={selectedLender} />
-        </>}
-    </div>;
+        <EditLenderModal open={showEditModal} onOpenChange={setShowEditModal} lender={selectedLender} onSuccess={handleSuccess} />
+        <LenderDetailsSheet open={showDetailsSheet} onOpenChange={setShowDetailsSheet} lender={selectedLender} />
+      </>}
+    </div>
+  </TooltipProvider>;
 }

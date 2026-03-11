@@ -153,8 +153,11 @@ const StudentProfileSheet = ({ open, onOpenChange, leadId }: StudentProfileSheet
                     overall: scores.overall_score
                   }}
                   breakdowns={{
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     university: scores.university_breakdown as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     student: scores.student_breakdown as any,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     coApplicant: scores.co_applicant_breakdown as any
                   }}
                   eligibility={{

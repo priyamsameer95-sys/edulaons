@@ -31,11 +31,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { StatusSelect } from '@/components/lead-status/StatusSelect';
 import type { DocumentStatus } from '@/utils/statusUtils';
-import { Bot, AlertTriangle, CheckCircle, XCircle, Sparkles, FileType } from 'lucide-react';
+import { Bot, AlertTriangle, CheckCircle, XCircle, Sparkles, FileType, ExternalLink, Calendar, User } from 'lucide-react';
 
 interface DocumentVerificationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   document: any;
   onVerificationComplete: () => void;
 }
@@ -53,7 +54,7 @@ export function DocumentVerificationModal({
     document?.verification_status || 'pending'
   );
   const [acceptAISuggestion, setAcceptAISuggestion] = useState(false);
-  
+
   const { toast } = useToast();
   const { logDocumentChange } = useAuditLog();
 
@@ -65,7 +66,9 @@ export function DocumentVerificationModal({
       setRejectReason('');
       setAcceptAISuggestion(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [document?.id]);
+
 
   const isRejecting = selectedStatus === 'rejected' || selectedStatus === 'resubmission_required';
   const hasAISuggestion = document?.ai_validation_status && document.ai_validation_status !== 'pending';
@@ -104,6 +107,7 @@ export function DocumentVerificationModal({
 
       const { data: { user } } = await supabase.auth.getUser();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {
         verification_status: selectedStatus,
         admin_notes: adminNotes.trim() || null,
@@ -170,6 +174,32 @@ export function DocumentVerificationModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Document Meta + Preview Link */}
+          <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
+            {document?.created_at && (
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Uploaded {new Date(document.created_at).toLocaleDateString()}
+              </span>
+            )}
+            {document?.uploaded_by_role && (
+              <span className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                By {document.uploaded_by_role}
+              </span>
+            )}
+            {document?.file_path && (
+              <a
+                href={document.file_path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-primary hover:underline ml-auto font-medium"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View Document
+              </a>
+            )}
+          </div>
           {/* AI Validation Panel - KB: AI flags issues, human approves */}
           {hasAISuggestion && (
             <div className="p-3 bg-muted/50 rounded-lg border space-y-2">
@@ -178,7 +208,7 @@ export function DocumentVerificationModal({
                   <Bot className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">AI Analysis</span>
                 </div>
-                
+
                 {/* AI Status Badge */}
                 {document.ai_validation_status === 'validated' && (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30">
@@ -206,11 +236,10 @@ export function DocumentVerificationModal({
                   </span>
                 )}
                 {document.ai_confidence_score != null && (
-                  <Badge variant="outline" className={`text-xs ${
-                    document.ai_confidence_score >= 75 ? "bg-green-50 text-green-700" :
-                    document.ai_confidence_score >= 50 ? "bg-amber-50 text-amber-700" :
-                    "bg-red-50 text-red-700"
-                  }`}>
+                  <Badge variant="outline" className={`text-xs ${document.ai_confidence_score >= 75 ? "bg-green-50 text-green-700" :
+                      document.ai_confidence_score >= 50 ? "bg-amber-50 text-amber-700" :
+                        "bg-red-50 text-red-700"
+                    }`}>
                     {document.ai_confidence_score}% confidence
                   </Badge>
                 )}
@@ -300,14 +329,14 @@ export function DocumentVerificationModal({
           >
             Cancel
           </Button>
-          
+
           <Button
             onClick={handleVerification}
             disabled={loading || (isRejecting && !rejectReason.trim())}
             variant={isRejecting ? "destructive" : "default"}
           >
-            {selectedStatus === 'verified' ? 'Verify Document' : 
-             isRejecting ? 'Reject Document' : 'Update Status'}
+            {selectedStatus === 'verified' ? 'Verify Document' :
+              isRejecting ? 'Reject Document' : 'Update Status'}
           </Button>
         </DialogFooter>
       </DialogContent>

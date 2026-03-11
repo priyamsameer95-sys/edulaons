@@ -21,6 +21,7 @@ const STEPS = [
 ];
 
 // Map lead status to stepper step
+// eslint-disable-next-line react-refresh/only-export-components
 export const getStepFromStatus = (status: string, documentsStatus: string): number => {
   // If documents are not complete, we're on step 2
   if (documentsStatus !== 'verified') {

@@ -59,6 +59,46 @@ export const getCountryNameFromCode = (code: string): string => {
 };
 
 /**
+ * Get all possible database values for a country code to ensure robust matching
+ */
+export const getCountrySearchTerms = (code: string): string[] => {
+  const primary = COUNTRY_CODE_TO_NAME[code] || code;
+  const terms = new Set([code, primary]);
+
+  // Add common variations
+  if (code === 'USA' || code === 'US' || primary === 'United States') {
+    terms.add('USA');
+    terms.add('US');
+    terms.add('United States');
+    terms.add('United States of America');
+    terms.add('U.S.A.');
+  } else if (code === 'UK' || code === 'GB' || primary === 'United Kingdom') {
+    terms.add('UK');
+    terms.add('GB');
+    terms.add('United Kingdom');
+    terms.add('Britain');
+    terms.add('Great Britain');
+  } else if (code === 'UAE' || primary === 'United Arab Emirates') {
+    terms.add('UAE');
+    terms.add('United Arab Emirates');
+  }
+
+  // Add uppercase versions of all terms to handle case inconsistencies
+  const upperTerms = new Set<string>();
+  terms.forEach(term => {
+    upperTerms.add(term.toUpperCase());
+    // Also title case if needed, but primary list usually has it.
+    // Adding 'United states' just in case of bad capitalization
+    upperTerms.add(term.charAt(0).toUpperCase() + term.slice(1).toLowerCase());
+  });
+
+  // Merge sets
+  upperTerms.forEach(t => terms.add(t));
+
+  return Array.from(terms);
+};
+
+/**
  * Convert country name to code for display
  * @param name - Full country name (e.g., "United Kingdom")
  * @returns Country code (e.g., "UK")

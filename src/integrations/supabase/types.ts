@@ -1157,13 +1157,13 @@ export type Database = {
           id: string
           lead_id: string
           new_documents_status:
-            | Database["public"]["Enums"]["document_status_enum"]
-            | null
+          | Database["public"]["Enums"]["document_status_enum"]
+          | null
           new_status: Database["public"]["Enums"]["lead_status_enum"]
           notes: string | null
           old_documents_status:
-            | Database["public"]["Enums"]["document_status_enum"]
-            | null
+          | Database["public"]["Enums"]["document_status_enum"]
+          | null
           old_status: Database["public"]["Enums"]["lead_status_enum"] | null
           reason_code: string | null
         }
@@ -1174,13 +1174,13 @@ export type Database = {
           id?: string
           lead_id: string
           new_documents_status?:
-            | Database["public"]["Enums"]["document_status_enum"]
-            | null
+          | Database["public"]["Enums"]["document_status_enum"]
+          | null
           new_status: Database["public"]["Enums"]["lead_status_enum"]
           notes?: string | null
           old_documents_status?:
-            | Database["public"]["Enums"]["document_status_enum"]
-            | null
+          | Database["public"]["Enums"]["document_status_enum"]
+          | null
           old_status?: Database["public"]["Enums"]["lead_status_enum"] | null
           reason_code?: string | null
         }
@@ -1191,13 +1191,13 @@ export type Database = {
           id?: string
           lead_id?: string
           new_documents_status?:
-            | Database["public"]["Enums"]["document_status_enum"]
-            | null
+          | Database["public"]["Enums"]["document_status_enum"]
+          | null
           new_status?: Database["public"]["Enums"]["lead_status_enum"]
           notes?: string | null
           old_documents_status?:
-            | Database["public"]["Enums"]["document_status_enum"]
-            | null
+          | Database["public"]["Enums"]["document_status_enum"]
+          | null
           old_status?: Database["public"]["Enums"]["lead_status_enum"] | null
           reason_code?: string | null
         }
@@ -1271,8 +1271,8 @@ export type Database = {
       leads_new: {
         Row: {
           case_complexity:
-            | Database["public"]["Enums"]["case_complexity_enum"]
-            | null
+          | Database["public"]["Enums"]["case_complexity_enum"]
+          | null
           case_id: string
           co_applicant_id: string
           course_type: string | null
@@ -1293,8 +1293,8 @@ export type Database = {
           lender_id: string
           loan_amount: number
           loan_classification:
-            | Database["public"]["Enums"]["loan_classification_enum"]
-            | null
+          | Database["public"]["Enums"]["loan_classification_enum"]
+          | null
           loan_config_updated_at: string | null
           loan_config_updated_by: string | null
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
@@ -1318,8 +1318,8 @@ export type Database = {
         }
         Insert: {
           case_complexity?:
-            | Database["public"]["Enums"]["case_complexity_enum"]
-            | null
+          | Database["public"]["Enums"]["case_complexity_enum"]
+          | null
           case_id: string
           co_applicant_id: string
           course_type?: string | null
@@ -1340,8 +1340,8 @@ export type Database = {
           lender_id: string
           loan_amount: number
           loan_classification?:
-            | Database["public"]["Enums"]["loan_classification_enum"]
-            | null
+          | Database["public"]["Enums"]["loan_classification_enum"]
+          | null
           loan_config_updated_at?: string | null
           loan_config_updated_by?: string | null
           loan_type: Database["public"]["Enums"]["loan_type_enum"]
@@ -1365,8 +1365,8 @@ export type Database = {
         }
         Update: {
           case_complexity?:
-            | Database["public"]["Enums"]["case_complexity_enum"]
-            | null
+          | Database["public"]["Enums"]["case_complexity_enum"]
+          | null
           case_id?: string
           co_applicant_id?: string
           course_type?: string | null
@@ -1387,8 +1387,8 @@ export type Database = {
           lender_id?: string
           loan_amount?: number
           loan_classification?:
-            | Database["public"]["Enums"]["loan_classification_enum"]
-            | null
+          | Database["public"]["Enums"]["loan_classification_enum"]
+          | null
           loan_config_updated_at?: string | null
           loan_config_updated_by?: string | null
           loan_type?: Database["public"]["Enums"]["loan_type_enum"]
@@ -2296,8 +2296,8 @@ export type Database = {
           min_loan_amount: number | null
           notes: string | null
           preferred_for_loan_type:
-            | Database["public"]["Enums"]["loan_type_enum"]
-            | null
+          | Database["public"]["Enums"]["loan_type_enum"]
+          | null
           special_requirements: Json | null
           study_destination: Database["public"]["Enums"]["study_destination_enum"]
           university_id: string
@@ -2313,8 +2313,8 @@ export type Database = {
           min_loan_amount?: number | null
           notes?: string | null
           preferred_for_loan_type?:
-            | Database["public"]["Enums"]["loan_type_enum"]
-            | null
+          | Database["public"]["Enums"]["loan_type_enum"]
+          | null
           special_requirements?: Json | null
           study_destination: Database["public"]["Enums"]["study_destination_enum"]
           university_id: string
@@ -2330,8 +2330,8 @@ export type Database = {
           min_loan_amount?: number | null
           notes?: string | null
           preferred_for_loan_type?:
-            | Database["public"]["Enums"]["loan_type_enum"]
-            | null
+          | Database["public"]["Enums"]["loan_type_enum"]
+          | null
           special_requirements?: Json | null
           study_destination?: Database["public"]["Enums"]["study_destination_enum"]
           university_id?: string
@@ -2601,75 +2601,174 @@ export type Database = {
     Enums: {
       app_role: "partner" | "admin" | "super_admin" | "student" | "kam"
       case_complexity_enum:
-        | "straightforward"
-        | "edge_case"
-        | "high_risk"
-        | "nri_case"
-        | "low_credit_case"
-        | "late_intake_case"
-        | "rejected_case"
+      | "straightforward"
+      | "edge_case"
+      | "high_risk"
+      | "nri_case"
+      | "low_credit_case"
+      | "late_intake_case"
+      | "rejected_case"
       document_status_enum:
-        | "pending"
-        | "uploaded"
-        | "verified"
-        | "rejected"
-        | "resubmission_required"
+      | "pending"
+      | "uploaded"
+      | "verified"
+      | "rejected"
+      | "resubmission_required"
       lead_status_enum:
-        | "new"
-        | "contacted"
-        | "in_progress"
-        | "document_review"
-        | "approved"
-        | "rejected"
-        | "withdrawn"
-        | "lead_intake"
-        | "first_contact"
-        | "lenders_mapped"
-        | "checklist_shared"
-        | "docs_uploading"
-        | "docs_submitted"
-        | "docs_verified"
-        | "logged_with_lender"
-        | "counselling_done"
-        | "pd_scheduled"
-        | "pd_completed"
-        | "additional_docs_pending"
-        | "property_verification"
-        | "credit_assessment"
-        | "sanctioned"
-        | "pf_pending"
-        | "pf_paid"
-        | "sanction_letter_issued"
-        | "docs_dispatched"
-        | "security_creation"
-        | "ops_verification"
-        | "disbursed"
+      | "new"
+      | "contacted"
+      | "in_progress"
+      | "document_review"
+      | "approved"
+      | "rejected"
+      | "withdrawn"
+      | "lead_intake"
+      | "first_contact"
+      | "lenders_mapped"
+      | "checklist_shared"
+      | "docs_uploading"
+      | "docs_submitted"
+      | "docs_verified"
+      | "logged_with_lender"
+      | "counselling_done"
+      | "pd_scheduled"
+      | "pd_completed"
+      | "additional_docs_pending"
+      | "property_verification"
+      | "credit_assessment"
+      | "sanctioned"
+      | "pf_pending"
+      | "pf_paid"
+      | "sanction_letter_issued"
+      | "docs_dispatched"
+      | "security_creation"
+      | "ops_verification"
+      | "disbursed"
       loan_classification_enum:
-        | "unsecured_nbfc"
-        | "secured_property"
-        | "psu_bank"
-        | "undecided"
-        | "secured_fd"
-        | "unsecured"
+      | "unsecured_nbfc"
+      | "secured_property"
+      | "psu_bank"
+      | "undecided"
+      | "secured_fd"
+      | "unsecured"
       loan_type_enum: "secured" | "unsecured"
       relationship_enum: "parent" | "spouse" | "sibling" | "guardian" | "other"
       study_destination_enum:
-        | "Australia"
-        | "Canada"
-        | "Germany"
-        | "Ireland"
-        | "New Zealand"
-        | "UK"
-        | "USA"
-        | "Other"
+      | "Argentina"
+      | "Armenia"
+      | "Australia"
+      | "Austria"
+      | "Azerbaijan"
+      | "Bahrain"
+      | "Bangladesh"
+      | "Belarus"
+      | "Belgium"
+      | "Bosnia & Herzegovina"
+      | "Brazil"
+      | "Brunei"
+      | "Bulgaria"
+      | "Canada"
+      | "Chile"
+      | "China (Mainland)"
+      | "Colombia"
+      | "Costa Rica"
+      | "Croatia"
+      | "Cuba"
+      | "Cyprus"
+      | "Czechia"
+      | "Denmark"
+      | "Dominican Republic"
+      | "Ecuador"
+      | "Egypt"
+      | "Estonia"
+      | "Ethiopia"
+      | "Finland"
+      | "France"
+      | "Georgia"
+      | "Germany"
+      | "Ghana"
+      | "Greece"
+      | "Guatemala"
+      | "Honduras"
+      | "Hong Kong SAR"
+      | "Hungary"
+      | "Iceland"
+      | "India"
+      | "Indonesia"
+      | "Iran"
+      | "Iraq"
+      | "Ireland"
+      | "Israel"
+      | "Italy"
+      | "Japan"
+      | "Jordan"
+      | "Kazakhstan"
+      | "Kenya"
+      | "Kuwait"
+      | "Kyrgyzstan"
+      | "Latvia"
+      | "Lebanon"
+      | "Libya"
+      | "Lithuania"
+      | "Luxembourg"
+      | "Macau SAR"
+      | "Malaysia"
+      | "Malta"
+      | "Mexico"
+      | "Morocco"
+      | "Netherlands"
+      | "New Zealand"
+      | "Nigeria"
+      | "Northern Cyprus"
+      | "Norway"
+      | "Oman"
+      | "Pakistan"
+      | "Palestine"
+      | "Panama"
+      | "Paraguay"
+      | "Peru"
+      | "Philippines"
+      | "Poland"
+      | "Portugal"
+      | "Puerto Rico"
+      | "Qatar"
+      | "Romania"
+      | "Russia"
+      | "Saudi Arabia"
+      | "Serbia"
+      | "Singapore"
+      | "Slovakia"
+      | "Slovenia"
+      | "South Africa"
+      | "South Korea"
+      | "Spain"
+      | "Sri Lanka"
+      | "Sudan"
+      | "Sweden"
+      | "Switzerland"
+      | "Syria"
+      | "Taiwan"
+      | "Thailand"
+      | "Tunisia"
+      | "Türkiye"
+      | "Uganda"
+      | "Ukraine"
+      | "United Arab Emirates"
+      | "United Kingdom"
+      | "United States"
+      | "Uruguay"
+      | "Uzbekistan"
+      | "Venezuela"
+      | "Vietnam"
+      | "Other"
       test_type_enum:
-        | "IELTS"
-        | "TOEFL"
-        | "PTE"
-        | "GRE"
-        | "GMAT"
-        | "SAT"
-        | "Other"
+      | "IELTS"
+      | "TOEFL"
+      | "PTE"
+      | "GRE"
+      | "GMAT"
+      | "SAT"
+      | "Other"
       upload_status_enum: "uploading" | "uploaded" | "failed" | "processing"
     }
     CompositeTypes: {
@@ -2684,116 +2783,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
@@ -2857,13 +2956,112 @@ export const Constants = {
       loan_type_enum: ["secured", "unsecured"],
       relationship_enum: ["parent", "spouse", "sibling", "guardian", "other"],
       study_destination_enum: [
+        "Argentina",
+        "Armenia",
         "Australia",
+        "Austria",
+        "Azerbaijan",
+        "Bahrain",
+        "Bangladesh",
+        "Belarus",
+        "Belgium",
+        "Bosnia & Herzegovina",
+        "Brazil",
+        "Brunei",
+        "Bulgaria",
         "Canada",
+        "Chile",
+        "China (Mainland)",
+        "Colombia",
+        "Costa Rica",
+        "Croatia",
+        "Cuba",
+        "Cyprus",
+        "Czechia",
+        "Denmark",
+        "Dominican Republic",
+        "Ecuador",
+        "Egypt",
+        "Estonia",
+        "Ethiopia",
+        "Finland",
+        "France",
+        "Georgia",
         "Germany",
+        "Ghana",
+        "Greece",
+        "Guatemala",
+        "Honduras",
+        "Hong Kong SAR",
+        "Hungary",
+        "Iceland",
+        "India",
+        "Indonesia",
+        "Iran",
+        "Iraq",
         "Ireland",
+        "Israel",
+        "Italy",
+        "Japan",
+        "Jordan",
+        "Kazakhstan",
+        "Kenya",
+        "Kuwait",
+        "Kyrgyzstan",
+        "Latvia",
+        "Lebanon",
+        "Libya",
+        "Lithuania",
+        "Luxembourg",
+        "Macau SAR",
+        "Malaysia",
+        "Malta",
+        "Mexico",
+        "Morocco",
+        "Netherlands",
         "New Zealand",
-        "UK",
-        "USA",
+        "Nigeria",
+        "Northern Cyprus",
+        "Norway",
+        "Oman",
+        "Pakistan",
+        "Palestine",
+        "Panama",
+        "Paraguay",
+        "Peru",
+        "Philippines",
+        "Poland",
+        "Portugal",
+        "Puerto Rico",
+        "Qatar",
+        "Romania",
+        "Russia",
+        "Saudi Arabia",
+        "Serbia",
+        "Singapore",
+        "Slovakia",
+        "Slovenia",
+        "South Africa",
+        "South Korea",
+        "Spain",
+        "Sri Lanka",
+        "Sudan",
+        "Sweden",
+        "Switzerland",
+        "Syria",
+        "Taiwan",
+        "Thailand",
+        "Tunisia",
+        "Türkiye",
+        "Uganda",
+        "Ukraine",
+        "United Arab Emirates",
+        "United Kingdom",
+        "United States",
+        "Uruguay",
+        "Uzbekistan",
+        "Venezuela",
+        "Vietnam",
         "Other",
       ],
       test_type_enum: ["IELTS", "TOEFL", "PTE", "GRE", "GMAT", "SAT", "Other"],

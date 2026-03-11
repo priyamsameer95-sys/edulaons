@@ -143,6 +143,7 @@ export function validateForm<T extends object>(
 
   for (const [field, validator] of Object.entries(schema)) {
     if (!validator) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const value = String((data as any)[field] || '');
     const result = (validator as { validate: (value: string) => ValidationResult }).validate(value);
     

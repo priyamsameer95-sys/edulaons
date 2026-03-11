@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, X, Zap, Sparkles } from "lucide-react";
+import { Plus, Search, X, Zap, Sparkles, Upload } from "lucide-react";
 
 interface QuickActionsBarProps {
   onNewLead: () => void;
   onEligibilityCheck?: () => void;
+  onBulkUpload?: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }
@@ -12,6 +13,7 @@ interface QuickActionsBarProps {
 export const QuickActionsBar = ({
   onNewLead,
   onEligibilityCheck,
+  onBulkUpload,
   searchQuery,
   onSearchChange,
 }: QuickActionsBarProps) => {
@@ -19,12 +21,12 @@ export const QuickActionsBar = ({
     <div className="relative">
       {/* Glass morphism container */}
       <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-background/80 via-background/60 to-background/80 backdrop-blur-sm border border-border/50 shadow-xl">
-        
+
         {/* Quick Actions Section */}
         <div className="flex items-center gap-3">
           {/* New Lead - Primary CTA */}
-          <Button 
-            onClick={onNewLead} 
+          <Button
+            onClick={onNewLead}
             size="lg"
             className="gap-2.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 hover:scale-[1.02] font-semibold px-5 rounded-xl"
           >
@@ -36,14 +38,14 @@ export const QuickActionsBar = ({
 
           {/* Eligibility Check - Hero CTA */}
           {onEligibilityCheck && (
-            <Button 
-              onClick={onEligibilityCheck} 
+            <Button
+              onClick={onEligibilityCheck}
               size="lg"
               className="relative gap-2.5 overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 text-white border-0 shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300 hover:scale-[1.02] font-bold px-6 rounded-xl group"
             >
               {/* Animated background shimmer */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              
+
               <div className="relative flex items-center gap-2.5">
                 <div className="p-1.5 bg-white/25 rounded-lg">
                   <Zap className="h-4 w-4" />
@@ -54,6 +56,21 @@ export const QuickActionsBar = ({
                 </div>
                 <Sparkles className="h-4 w-4 ml-1 animate-pulse" />
               </div>
+            </Button>
+          )}
+
+          {/* Bulk Upload Button */}
+          {onBulkUpload && (
+            <Button
+              onClick={onBulkUpload}
+              variant="outline"
+              size="lg"
+              className="gap-2.5 bg-background border-primary/20 hover:border-primary/50 text-foreground hover:bg-primary/5 shadow-sm transition-all duration-300 hover:scale-[1.02] font-semibold px-5 rounded-xl ml-2"
+            >
+              <div className="p-1 bg-primary/10 rounded-lg">
+                <Upload className="h-4 w-4 text-primary" />
+              </div>
+              <span>Bulk Upload</span>
             </Button>
           )}
         </div>

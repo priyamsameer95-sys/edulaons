@@ -66,6 +66,7 @@ export function PremiumUniversitiesSection({
           const parsed: PremiumUniversity[] = [];
           let skipped = 0;
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           results.data.forEach((row: any) => {
             // Support multiple column name formats
             const name =

@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  FileText, 
+import {
+  FileText,
   Loader2,
   User,
   Users,
@@ -52,10 +52,10 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; 
   'Other': { label: 'Other Documents', icon: FileText, order: 6 },
 };
 
-const StudentDocumentChecklist = ({ 
-  leadId, 
+const StudentDocumentChecklist = ({
+  leadId,
   compact = false,
-  onStatsUpdate 
+  onStatsUpdate
 }: StudentDocumentChecklistProps) => {
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
@@ -64,6 +64,7 @@ const StudentDocumentChecklist = ({
 
   useEffect(() => {
     fetchDocumentData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
 
   const fetchDocumentData = async () => {
@@ -111,7 +112,7 @@ const StudentDocumentChecklist = ({
       const fileName = `${leadId}/${typeId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('lead-documents')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
@@ -136,6 +137,7 @@ const StudentDocumentChecklist = ({
 
       setUploadedDocs(prev => [...prev, newDoc]);
       toast.success('Document uploaded successfully');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
     } finally {
@@ -259,7 +261,7 @@ const StudentDocumentChecklist = ({
           </span>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-3">
         {/* Progress Overview */}
         <div className="mb-4">
@@ -274,10 +276,10 @@ const StudentDocumentChecklist = ({
         {sortedCategories.map((category) => {
           const config = CATEGORY_CONFIG[category] || { label: category, icon: FileText, order: 99 };
           const docs = groupedDocuments[category];
-          
+
           // Determine if this category should be expanded (has pending items)
           const hasPending = docs.some(d => d.status === 'required' || d.status === 'rejected');
-          
+
           return (
             <DocumentCategoryGroup
               key={category}

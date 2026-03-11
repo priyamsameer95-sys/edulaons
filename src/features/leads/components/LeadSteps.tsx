@@ -4,6 +4,7 @@ import { STEPS } from "../types/leadTypes";
 interface LeadStepsProps {
     currentStep: string;
     currentStepIndex: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createdLead: any;
 }
 

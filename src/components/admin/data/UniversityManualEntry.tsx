@@ -76,6 +76,7 @@ export const UniversityManualEntry = ({ initialData, onSuccess, onCancel }: Univ
                 // Update
                 const { error: updateError } = await supabase
                     .from('universities')
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .update(payload as any)
                     .eq('id', initialData.id);
                 error = updateError;
@@ -83,6 +84,7 @@ export const UniversityManualEntry = ({ initialData, onSuccess, onCancel }: Univ
                 // Upsert (Insert/Update by name)
                 const { error: insertError } = await supabase
                     .from('universities')
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .upsert(payload as any, {
                         onConflict: 'name',
                         ignoreDuplicates: false
@@ -96,6 +98,7 @@ export const UniversityManualEntry = ({ initialData, onSuccess, onCancel }: Univ
             if (!initialData) resetForm();
             onSuccess?.();
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {

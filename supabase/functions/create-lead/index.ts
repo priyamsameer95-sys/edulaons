@@ -82,10 +82,10 @@ serve(async (req) => {
     if (body.universities && body.universities.length > 0) {
       console.log('🎓 Validating universities...');
       await validateUniversities(supabaseAdmin, body.universities, body.country);
-      
+
       const { uuids, custom } = separateUniversities(body.universities);
       console.log(`✅ Found ${uuids.length} DB universities, ${custom.length} custom entries`);
-      
+
       if (custom.length > 0) {
         console.log('📝 Custom universities:', custom);
       }
@@ -147,52 +147,62 @@ serve(async (req) => {
       console.log('✅ University associations created');
     }
 
-    // Get recommended lenders
-    console.log('🏦 Fetching recommended lenders...');
+    // Get recommended lenders using the unified BRE engine
+    console.log('🏦 Calling unified BRE (suggest-lender) for recommendations...');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let recommendedLenders: any[] = [];
-    
-    const { uuids } = separateUniversities(body.universities || []);
-    
-    if (uuids.length > 0) {
-      const { data: preferences } = await supabaseAdmin
-        .from('university_lender_preferences')
-        .select('lender_id, compatibility_score, is_preferred')
-        .in('university_id', uuids)
-        .eq('study_destination', body.country)
-        .order('compatibility_score', { ascending: false })
-        .limit(5);
 
-      if (preferences && preferences.length > 0) {
-        const lenderIds = [...new Set(preferences.map((p: any) => p.lender_id))];
-        
-        const { data: lenders } = await supabaseAdmin
-          .from('lenders')
-          .select('*')
-          .in('id', lenderIds)
-          .eq('is_active', true);
-
-        if (lenders) {
-          recommendedLenders = preferences
-            .map((pref: any) => {
-              const lenderData = lenders.find((l: any) => l.id === pref.lender_id);
-              if (!lenderData) return null;
-              return {
-                ...lenderData,
-                lender_id: lenderData.id,
-                lender_name: lenderData.name,
-                lender_code: lenderData.code,
-                lender_description: lenderData.description,
-                compatibility_score: pref.compatibility_score,
-                is_preferred: pref.is_preferred
-              };
-            })
-            .filter(Boolean);
+    try {
+      // Call the suggest-lender edge function directly via internal fetch
+      const breResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/suggest-lender`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            leadId: lead.id,
+            studyDestination: body.country,
+            loanAmount: body.amount_requested,
+          }),
         }
+      );
+
+      if (breResponse.ok) {
+        const breData = await breResponse.json();
+        console.log(`✅ BRE returned ${breData.results?.length || 0} scored lenders`);
+
+        // Transform BRE results to our expected format
+        if (breData.results && Array.isArray(breData.results)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          recommendedLenders = breData.results.slice(0, 5).map((r: any) => ({
+            lender_id: r.lender_id,
+            lender_name: r.lender_name,
+            lender_code: r.lender_code,
+            lender_description: r.reason || '',
+            compatibility_score: r.score, // Use BRE-computed score
+            is_preferred: r.status === 'BEST_FIT',
+            interest_rate_min: parseFloat(r.interest_rate_display?.split('-')[0] || '10'),
+            interest_rate_max: parseFloat(r.interest_rate_display?.split('-')[1] || '12'),
+            processing_time_estimate: r.processing_time_estimate,
+            status: r.status,
+            badges: r.badges || [],
+            pillar_breakdown: r.pillar_breakdown,
+          }));
+        }
+      } else {
+        console.warn(`⚠️ BRE call failed: ${breResponse.status}, falling back to simple list`);
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (breError: any) {
+      console.warn('⚠️ BRE call exception:', breError.message);
     }
-    
-    // Fallback to default lenders
+
+    // Fallback: If BRE failed, get simple lender list (but with honest "unscored" marker)
     if (recommendedLenders.length === 0) {
+      console.log('📋 Using fallback lender list (BRE unavailable)');
       const { data: allLenders } = await supabaseAdmin
         .from('lenders')
         .select('*')
@@ -201,24 +211,26 @@ serve(async (req) => {
         .limit(5);
 
       if (allLenders) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recommendedLenders = allLenders.map((lender: any) => ({
-          ...lender,
           lender_id: lender.id,
           lender_name: lender.name,
           lender_code: lender.code,
           lender_description: lender.description,
-          compatibility_score: 50,
-          is_preferred: false
+          compatibility_score: null, // IMPORTANT: null = unscored, not fake 50%
+          is_preferred: false,
+          interest_rate_min: lender.interest_rate_min,
+          interest_rate_max: lender.interest_rate_max,
         }));
       }
     }
-    
-    console.log(`✅ Found ${recommendedLenders.length} recommended lenders`);
-    
+
+    console.log(`✅ Returning ${recommendedLenders.length} recommended lenders`);
+
     // Wait a moment for trigger to complete (eligibility calculation happens async)
     console.log('⏳ Waiting for eligibility calculation trigger to complete...');
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Fetch eligibility score for the assigned lender
     console.log('📊 Fetching eligibility score for assigned lender...');
     const { data: eligibilityScore, error: eligibilityError } = await supabaseAdmin
@@ -232,12 +244,13 @@ serve(async (req) => {
       console.warn('⚠️ Error fetching eligibility score:', eligibilityError.message);
     } else if (eligibilityScore) {
       console.log('✅ Eligibility score fetched:', eligibilityScore.overall_score);
-      
+
       // Add eligibility to the assigned lender in recommended list
       const assignedLenderIndex = recommendedLenders.findIndex(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (l: any) => l.lender_id === lender.id
       );
-      
+
       if (assignedLenderIndex >= 0) {
         recommendedLenders[assignedLenderIndex] = {
           ...recommendedLenders[assignedLenderIndex],
@@ -262,7 +275,7 @@ serve(async (req) => {
     } else {
       console.warn('⚠️ No eligibility score found yet - may still be calculating');
     }
-    
+
     console.log('🎉 Application submission completed successfully');
 
     return new Response(
@@ -283,10 +296,11 @@ serve(async (req) => {
       }
     );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('💥 [create-lead] Error:', error.message);
     console.error('Stack:', error.stack);
-    
+
     return new Response(
       JSON.stringify({
         success: false,

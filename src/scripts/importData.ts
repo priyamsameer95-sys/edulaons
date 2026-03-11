@@ -93,8 +93,11 @@ export async function runDataImport() {
 }
 
 // Export for direct use in console
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).runDataImport = runDataImport;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).importUniversityData = importUniversityData;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).importCourseData = importCourseData;
 
 console.log('🌟 University Import Script Loaded');

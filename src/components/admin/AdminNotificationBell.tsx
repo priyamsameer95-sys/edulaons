@@ -25,6 +25,7 @@ interface ActivityItem {
   lead_id: string | null;
   is_read: boolean;
   is_notification: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
 
@@ -187,6 +188,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       const leadDataMap = new Map<string, { name: string; phone: string | null; case_id: string; loan_amount: number | null }>();
       if (leadsRes.data) {
         for (const lead of leadsRes.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const student = lead.student as any;
           leadDataMap.set(lead.id, {
             name: student?.name || 'Unknown',
@@ -200,9 +202,11 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       // Transform notifications - enrich with lead data
       if (notificationsRes.data) {
         for (const n of notificationsRes.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rawMeta = typeof n.metadata === 'object' && n.metadata !== null ? n.metadata as Record<string, any> : {};
           
           const leadData = n.lead_id ? leadDataMap.get(n.lead_id) : null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const enrichedMeta: Record<string, any> = {
             ...rawMeta,
             name: leadData?.name || rawMeta.student_name || rawMeta.name || 'Unknown',
@@ -233,6 +237,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       if (leadsRes.data) {
         for (const lead of leadsRes.data) {
           if (notificationLeadIds.has(lead.id)) continue;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const student = lead.student as any;
           const studentName = student?.name || 'Unknown';
           const studentPhone = student?.phone || null;
@@ -258,9 +263,11 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       // Transform documents
       const notificationDocIds = new Set(
         notificationsRes.data?.filter(n => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const meta = typeof n.metadata === 'object' && n.metadata !== null ? n.metadata as Record<string, any> : null;
           return n.notification_type === 'document_uploaded' && meta?.document_id;
         }).map(n => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const meta = n.metadata as Record<string, any>;
           return meta?.document_id;
         }) || []
@@ -269,7 +276,9 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       if (documentsRes.data) {
         for (const doc of documentsRes.data) {
           if (notificationDocIds.has(doc.id)) continue;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const docTypeName = (doc.document_type as any)?.name || 'Document';
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const lead = doc.lead as any;
           const studentName = lead?.student?.name || 'Unknown';
           const studentPhone = lead?.student?.phone || null;
@@ -298,9 +307,11 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       // Transform status changes
       const notificationStatusIds = new Set(
         notificationsRes.data?.filter(n => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const meta = typeof n.metadata === 'object' && n.metadata !== null ? n.metadata as Record<string, any> : null;
           return n.notification_type === 'status_change' && meta?.history_id;
         }).map(n => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const meta = n.metadata as Record<string, any>;
           return meta?.history_id;
         }) || []
@@ -309,6 +320,7 @@ export function AdminNotificationBell({ onOpenLead }: AdminNotificationBellProps
       if (statusHistoryRes.data) {
         for (const status of statusHistoryRes.data) {
           if (notificationStatusIds.has(status.id)) continue;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const lead = status.lead as any;
           const studentName = lead?.student?.name || 'Unknown';
           const studentPhone = lead?.student?.phone || null;

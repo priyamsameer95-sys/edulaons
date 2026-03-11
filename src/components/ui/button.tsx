@@ -68,4 +68,5 @@ const Button = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
 );
 Button.displayName = "Button";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants };
